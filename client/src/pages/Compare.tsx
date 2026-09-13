@@ -1,3 +1,4 @@
+import QuoteWorkbench from "./QuoteWorkbench";
 import { comparablePrices } from "../../../shared/pricing";
 import { formatPrice, unitLabel, pricingCopy } from "@/i18n/pricing";
 import { CatalogueState } from "@/components/CatalogueState";
@@ -18,6 +19,7 @@ export default function Compare() {
   const t = pageCopy[locale];
   const { providerFor, serviceFor } = useMarketplaceData();
   const { selected: compared, missing } = comparisonSelection(new URLSearchParams(window.location.search).get("services"), serviceFor);
+  if (!new URLSearchParams(window.location.search).get("services")) return <QuoteWorkbench/>;
   if (missing || compared.length < 2) return <PublicLayout><CatalogueState kind={missing ? "comparisonMissing" : "comparisonEmpty"} /></PublicLayout>;
   const comparable = comparablePrices(compared);
   const lowest = Math.min(...compared.map(service => service.priceAmount));
