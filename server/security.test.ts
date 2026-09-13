@@ -54,10 +54,17 @@ describe("scheduled synchronization identity", () => {
 
   it("accepts the scheduled workflow on main", () => {
     expect(assertScheduledWorkflowClaims(valid)).toMatchObject({ repository: "anasalkasem/providerbeacon", eventName: "schedule" });
+    expect(assertScheduledWorkflowClaims({ ...valid, sub: "repo:anasalkasem/providerbeacon" })).toMatchObject({
+      repository: "anasalkasem/providerbeacon",
+    });
+    expect(assertScheduledWorkflowClaims({ ...valid, sub: "repo:anasalkasem/providerbeacon:environment:production" })).toMatchObject({
+      eventName: "schedule",
+    });
   });
 
   it("rejects another repository or pull-request ref", () => {
     expect(() => assertScheduledWorkflowClaims({ ...valid, repository: "attacker/repo" })).toThrow();
     expect(() => assertScheduledWorkflowClaims({ ...valid, ref: "refs/pull/1/merge" })).toThrow();
+    expect(() => assertScheduledWorkflowClaims({ ...valid, sub: "repo:anasalkasem/providerbeacon-evil:ref:refs/heads/main" })).toThrow();
   });
 });
