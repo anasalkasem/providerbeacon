@@ -309,7 +309,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   it("rolls back both a catalogue batch and its checkpoint when the audit insert fails", async () => {
     const id = await addIntegration(); const queued = await syncStoredIntegration({ id, actorUserId: actorId });
     await runProviderSyncStep();
-    await state.db.execute(sql.raw("CREATE TRIGGER test_reject_sync_audit BEFORE INSERT ON audit_entries FOR EACH ROW BEGIN IF NEW.action = 'integration.services.batch' THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Test audit rejection'; END IF; END"));
+    await state.db.execute(sql.raw("ALTER TABLE audit_entries ADD CONSTRAINT test_sync_audit_check CHECK (action <> 'integration.services.batch')"));
     try {
       await expect(finishJob(queued.jobId!)).rejects.toThrow("storage error");
       expect(await state.db.select().from(serviceRecords)).toHaveLength(0);
@@ -317,7 +317,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
       const [job] = await state.db.select().from(providerSyncJobs).where(eq(providerSyncJobs.id, queued.jobId!));
       expect(job).toMatchObject({ status: "failed", processedCount: 0 });
       expect(job.lastError).not.toMatch(/local-test-key|insert into|params:/i);
-    } finally { await state.db.execute(sql.raw("DROP TRIGGER IF EXISTS test_reject_sync_audit")); }
+    } finally { await state.db.execute(sql.raw("ALTER TABLE audit_entries DROP CHECK test_sync_audit_check")); }
   });
   it("does not expose provider response bodies as failure messages", async () => {
     const id = await addIntegration();
