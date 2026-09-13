@@ -18,7 +18,13 @@ import {
 } from "./ui/dialog";
 import { Textarea } from "./ui/textarea";
 import ServiceReviewDetail from "./ServiceReviewDetail";
-import { catalogueViews, platforms } from "../../../shared/serviceReview";
+import ServiceReviewWorklist from "./ServiceReviewWorklist";
+import {
+  catalogueViews,
+  platforms,
+  reviewNeeds,
+  type ReviewNeed,
+} from "../../../shared/serviceReview";
 import type { AdminServicesInput } from "../../../shared/catalogueQuery";
 
 export const catalogueSelectClass =
@@ -34,13 +40,15 @@ export default function AdminServices({
   const { locale, dir } = useLocale();
   const searchParams = useSearch();
   const rawView = new URLSearchParams(searchParams).get("view");
+  const rawNeed = new URLSearchParams(searchParams).get("need");
+  const initialNeed = reviewNeeds.includes(rawNeed as ReviewNeed)
+    ? (rawNeed as ReviewNeed)
+    : undefined;
   const initialView = catalogueViews.includes(
     rawView as (typeof catalogueViews)[number]
   )
     ? (rawView as (typeof catalogueViews)[number])
-    : reviewMode
-      ? "pending"
-      : "all";
+    : "all";
   const utils = trpc.useUtils();
   const access = trpc.admin.access.useQuery();
   const [search, setSearch] = useState("");
@@ -49,6 +57,7 @@ export default function AdminServices({
     limit: 25,
     q: "",
     view: initialView,
+    need: initialNeed,
   });
   const [cursors, setCursors] = useState<(number | undefined)[]>([undefined]);
   const [selected, setSelected] = useState<{ id: number; revision: number }[]>(
@@ -58,10 +67,14 @@ export default function AdminServices({
   const [action, setAction] = useState<ReviewAction | null>(null);
   const [reason, setReason] = useState("");
   useEffect(() => {
-    setFilters(current => ({ ...current, view: initialView }));
+    setFilters(current => ({
+      ...current,
+      view: initialView,
+      need: initialNeed,
+    }));
     setCursors([undefined]);
     setSelected([]);
-  }, [initialView]);
+  }, [initialView, initialNeed]);
   useEffect(() => {
     if (search.trim() === filters.q) return;
     const timer = setTimeout(() => {
@@ -134,15 +147,9 @@ export default function AdminServices({
   const completeSelection =
     selected.length > 0 &&
     selectedRows.length === selected.length &&
-    selectedRows.every(row => !row.incomplete && row.available);
+    selectedRows.every(row => row.canApprove);
   const canPublish =
-    completeSelection &&
-    selectedRows.every(
-      row =>
-        row.reviewStatus === "approved" &&
-        row.providerStatus === "active" &&
-        !["paused", "archived"].includes(row.status)
-    );
+    completeSelection && selectedRows.every(row => row.canPublish);
   const actionLabel =
     action === "approve"
       ? "approveSelected"
@@ -264,6 +271,12 @@ export default function AdminServices({
           {text("refresh")}
         </Button>
       </div>
+      {reviewMode && (
+        <ServiceReviewWorklist
+          filters={filters}
+          onSelect={need => change({ need })}
+        />
+      )}
       <div
         className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500"
         role="status"
@@ -353,12 +366,10 @@ export default function AdminServices({
                       onChange={event =>
                         setSelected(
                           event.target.checked
-                            ? rows
-                                .slice(0, 50)
-                                .map(row => ({
-                                  id: row.id,
-                                  revision: row.revision,
-                                }))
+                            ? rows.slice(0, 50).map(row => ({
+                                id: row.id,
+                                revision: row.revision,
+                              }))
                             : []
                         )
                       }
@@ -503,6 +514,29 @@ export default function AdminServices({
                             {text("missing")}
                           </p>
                         )}
+                        {service.blockers.length > 0 && (
+                          <ul
+                            aria-label={text("blockers")}
+                            className="mt-2 max-w-64 space-y-1 text-xs leading-5 text-amber-800"
+                          >
+                            {service.blockers.map(blocker => (
+                              <li key={blocker}>
+                                • {text(blocker as AdminTextKey)}
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        {service.stale && (
+                          <p className="mt-2 text-xs font-semibold text-amber-800">
+                            {text("stale")}
+                          </p>
+                        )}
+                        {service.canApprove &&
+                          service.reviewStatus !== "approved" && (
+                            <p className="mt-2 text-xs font-semibold text-emerald-700">
+                              {text("need_ready")}
+                            </p>
+                          )}
                       </td>
                       <td className="px-4 py-4 text-xs text-slate-500">
                         {last ? new Date(last).toLocaleDateString(locale) : "—"}

@@ -13,6 +13,14 @@ The shared English/Arabic catalogue and review pages use the same components, AP
 
 Every human review mutation requires a reason. Revisions reject outdated decisions; bulk decisions are all-or-nothing. Audit writes and data mutations share a transaction. Review audit entries retain actor, request IP, reason and before/after values. Automated changes record provider source, changed values and revisions; they do not pretend to have a human reviewer or request IP.
 
+## Actionable review queues
+
+The review page opens all review states by default so previously requested corrections remain visible. Search, platform, country, publication status and review-state filters constrain both the table and its worklist counts. The worklist adds eight needs: unconfirmed pricing, missing evidence, unchecked eligibility, incomplete classification, invalid numeric values, unavailable source, stale evidence and ready for approval. These categories overlap. Choosing a need narrows the table without hiding the other counts; pagination never changes the totals. Each queue explains the next required action in Arabic and English.
+
+`admin.services.reviewSummary` is protected by `services.read` and returns nine numeric fields from a SQL aggregate. It does not load service objects or source JSON, and it is requested only on the review page. Counts refresh every 30 seconds and after service edits. The existing bounded list adds current blocker codes and server-computed approval/publication readiness using the same checks as the review mutation. Raw evidence URLs, source JSON and helper fields are excluded from the list response. Table rows display each missing requirement, and stale or otherwise blocked selections disable approval/publication controls. The API still rechecks the latest revision and requirements at submission.
+
+Ready for approval means complete current evidence and a review state other than approved. It does not set approval, attest a price, publish a service or activate a provider. Existing provider/status gates continue to control publication separately.
+
 ## Permissions
 
 | Action | Permission | Initial roles |
@@ -48,9 +56,11 @@ Deploy after the MySQL quality job passes. Wait for the `[Catalogue] Legacy norm
 - Legacy normalization: 100 rows per transaction. No API key is required for classifying already-stored records.
 - Review: 50 unique IDs maximum, server revisions, stable lock order. No operation selects all matching pages invisibly.
 - Dashboard: SQL aggregates. Incomplete/pending/stale categories overlap. Stale means the most recent source or explicit price check is older than 30 days or absent. Price-change cards cover the last seven days; missing-source cards cover currently unavailable records.
-- Connection alerts show up to 50 failures or schedules overdue by more than one hour and link to the existing credential vault. These are in-app alerts, not external notifications. The existing scheduled workflow must remain configured for ongoing synchronization. No configured connection is not evidence of a healthy provider API.
+- Connection alerts show up to 50 affected connections, including quarantined records from the last completed import, failures or schedules overdue by more than one hour. Source reports open on demand; see [background synchronization](background-catalogue-sync.md). These are in-app alerts, not external notifications. The existing scheduled workflow must remain configured for ongoing synchronization. No configured connection is not evidence of a healthy provider API.
 - The MySQL acceptance fixture exercises 50,000 stored services and bounded public/admin queries. It is not a guarantee of latency at arbitrary volume. SQL counts and substring search still scan eligible records; dedicated search and cached aggregates should follow measured bottlenecks.
 
 ## Validation
 
 The existing quality workflow runs type checking, unit/API/RTL checks, real MySQL 8.4 migration and transactional acceptance tests, and production builds. Added cases cover country/platform separation, unknown refill duration, invalid/duplicate response handling, atomic review rollback, stale revision rejection, permission boundaries, unavailable/returned services and stable price history.
+
+Review-worklist acceptance fixtures check all eight need counts against the matching rows and detailed review checks, including case-sensitive classification and missing dates. They verify combined filters, overlapping causes, 25-row paging without changing counts, readiness against actual approval/publication gates and a compact summary over the existing 50,000-service fixture. API checks reject unknown needs and unauthorized summary access.

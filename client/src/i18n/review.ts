@@ -2,6 +2,34 @@ export const reviewEn = {
   reviewQueue: "Service review",
   reviewSubtitle:
     "Inspect source data, correct details, then approve and publish with a recorded reason.",
+  reviewWorklist: "What needs attention?",
+  reviewWorklistBody:
+    "Counts follow the search and filters above. One service can appear under several reasons. Open its details to complete the required review.",
+  allReviewNeeds: "All review reasons",
+  need_pricing_unconfirmed: "Pricing unconfirmed",
+  need_evidence_missing: "Evidence missing",
+  need_policy_check: "Eligibility needs review",
+  need_classification: "Classification needs review",
+  need_invalid_values: "Invalid price or quantities",
+  need_source_missing: "Unavailable at source",
+  need_stale: "Stale evidence",
+  need_ready: "Ready for approval",
+  needHelp_pricing_unconfirmed:
+    "Check the currency and price unit against a source, attach its evidence link and explicitly confirm pricing in the service details.",
+  needHelp_evidence_missing:
+    "Attach a public evidence page supporting this service's price and terms. A provider name or an unsupported claim is insufficient.",
+  needHelp_policy_check:
+    "Review the service, delivery method and applicable terms before confirming publication eligibility in its details.",
+  needHelp_classification:
+    "Check the source and correct the platform and service type. Legacy records awaiting normalization remain here until that process finishes.",
+  needHelp_invalid_values:
+    "Compare the stored price and quantity limits with the source, then correct the values with a recorded reason.",
+  needHelp_source_missing:
+    "A complete provider synchronization must confirm the service has returned before it becomes eligible for approval.",
+  needHelp_stale:
+    "Refresh the source or recheck the linked price evidence. Approval requires evidence within the last 30 days.",
+  needHelp_ready:
+    "These services meet the current data requirements. Inspect their evidence, then approve with a recorded reason. Publishing is a separate action.",
   alertsTitle: "Sync alerts",
   alertsSubtitle:
     "Source records needing review, failed or overdue connections, price changes and unavailable services.",
@@ -112,6 +140,34 @@ export const reviewAr: Record<keyof typeof reviewEn, string> = {
   reviewQueue: "مراجعة الخدمات",
   reviewSubtitle:
     "افحص المصدر وصحّح التفاصيل، ثم اعتمد وانشر مع تسجيل سبب القرار.",
+  reviewWorklist: "ما الذي يحتاج إلى متابعة؟",
+  reviewWorklistBody:
+    "الأعداد تراعي البحث والفلاتر أعلاه. قد تظهر الخدمة تحت أكثر من سبب. افتح تفاصيلها لاستكمال المراجعة المطلوبة.",
+  allReviewNeeds: "كل أسباب المراجعة",
+  need_pricing_unconfirmed: "التسعير غير موثق",
+  need_evidence_missing: "دليل المصدر مفقود",
+  need_policy_check: "الأهلية تحتاج مراجعة",
+  need_classification: "التصنيف يحتاج مراجعة",
+  need_invalid_values: "السعر أو الكميات غير صالحة",
+  need_source_missing: "غير متاحة في المصدر",
+  need_stale: "الأدلة قديمة",
+  need_ready: "جاهزة للاعتماد",
+  needHelp_pricing_unconfirmed:
+    "تحقق من العملة ووحدة السعر بالرجوع إلى المصدر، وأرفق رابط الدليل ثم أكّد التسعير صراحةً من تفاصيل الخدمة.",
+  needHelp_evidence_missing:
+    "أرفق صفحة عامة تدعم سعر هذه الخدمة وشروطها. اسم المزود أو ادعاء بلا دليل لا يكفيان.",
+  needHelp_policy_check:
+    "راجع طبيعة الخدمة وطريقة تنفيذها والشروط المعمول بها قبل تأكيد أهليتها للنشر من التفاصيل.",
+  needHelp_classification:
+    "افحص المصدر وصحّح المنصة ونوع الخدمة. تبقى السجلات القديمة التي تنتظر التصنيف هنا حتى اكتمال معالجتها.",
+  needHelp_invalid_values:
+    "قارن السعر المحفوظ وحدود الكمية بالمصدر، ثم صحّح القيم مع تسجيل سبب التعديل.",
+  needHelp_source_missing:
+    "يجب أن تؤكد مزامنة مكتملة مع المزود عودة الخدمة إلى المصدر قبل أن تصبح مؤهلة للاعتماد.",
+  needHelp_stale:
+    "حدّث المصدر أو أعد التحقق من دليل السعر المرتبط. الاعتماد يتطلب دليلاً خلال آخر ٣٠ يومًا.",
+  needHelp_ready:
+    "هذه الخدمات تستوفي متطلبات البيانات الحالية. افحص أدلتها ثم اعتمدها مع تسجيل السبب. النشر إجراء منفصل.",
   alertsTitle: "تنبيهات المزامنة",
   alertsSubtitle:
     "سجلات المصدر التي تحتاج مراجعة، والاتصالات المتعثرة أو المتأخرة وتغيّر الأسعار والخدمات غير المتاحة.",
