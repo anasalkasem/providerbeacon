@@ -10,6 +10,7 @@ import { serveStatic } from "./static";
 import { runMigrations } from "../migrate";
 import { verifyScheduledWorkflowToken } from "../schedulerAuth";
 import { runDueProviderSyncs } from "../vaultDb";
+import { runLegacyNormalization } from "../serviceReviewDb";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -90,6 +91,7 @@ async function startServer() {
 
   server.listen(port, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${port}/`);
+    if (process.env.NODE_ENV === "production") void runLegacyNormalization();
   });
 }
 

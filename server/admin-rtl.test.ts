@@ -16,6 +16,7 @@ describe("shared dashboard in English and Arabic", () => {
     state.locale = locale;
     const html = renderToStaticMarkup(React.createElement(DashboardLayout, { children: React.createElement("h1", null, "Content") }));
     expect(html).toContain(`data-side="${side}"`);
+    expect(html).toContain(locale === "ar" ? "مراجعة الخدمات" : "Service review");
     expect(html).toContain(services); expect(html).toContain(`aria-label="${language}"`);
     expect(html).toContain("min-w-0"); expect(html).toContain("Content");
   });

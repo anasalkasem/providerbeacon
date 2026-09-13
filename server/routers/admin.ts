@@ -20,8 +20,10 @@ import {
 } from "../marketplaceDb";
 import { deleteProviderIntegration, listProviderIntegrations, saveProviderIntegration, setProviderIntegrationEnabled, syncStoredIntegration } from "../vaultDb";
 
-import { getAdminOverview, getProviderForAnalysis, listAdminServices } from "../adminCatalogueDb";
+import { getAdminOverview, getProviderForAnalysis, listAdminServices, listSyncAlerts } from "../adminCatalogueDb";
 import { adminServicesInput } from "../../shared/catalogueQuery";
+import { reviewBatchInput, reviewEditInput } from "../../shared/serviceReview";
+import { applyServiceReview, editServiceReview, getServiceReview } from "../serviceReviewDb";
 
 const teamRole = z.enum(["owner", "administrator", "operations_manager", "provider_reviewer", "catalogue_editor", "translation_manager", "auditor"]);
 
@@ -43,10 +45,16 @@ export const adminRouter = router({
     setStatus: permissionProcedure("providers.review").input(z.object({ id: z.number().int().positive(), status: z.enum(["draft", "pending_review", "active", "suspended"]) })).mutation(({ ctx, input }) => updateProviderStatus({ ...input, actorUserId: ctx.user!.id })),
   }),
   services: router({
+    detail: permissionProcedure("services.read").input(z.object({ id: z.number().int().positive() })).query(({ input }) => getServiceReview(input.id)),
+    editReview: permissionProcedure("services.write").input(reviewEditInput).mutation(({ ctx, input }) => editServiceReview({ ...input, actorUserId: ctx.user!.id, ipAddress: ctx.req.ip })),
+    approve: permissionProcedure("services.review").input(reviewBatchInput).mutation(({ ctx, input }) => applyServiceReview({ ...input, action: "approve", actorUserId: ctx.user!.id, ipAddress: ctx.req.ip })),
+    requestChanges: permissionProcedure("services.review").input(reviewBatchInput).mutation(({ ctx, input }) => applyServiceReview({ ...input, action: "request_changes", actorUserId: ctx.user!.id, ipAddress: ctx.req.ip })),
+    publish: permissionProcedure("services.publish").input(reviewBatchInput).mutation(({ ctx, input }) => applyServiceReview({ ...input, action: "publish", actorUserId: ctx.user!.id, ipAddress: ctx.req.ip })),
     list: permissionProcedure("services.read").input(adminServicesInput).query(({ input }) => listAdminServices(input)),
     update: permissionProcedure("services.write").input(z.object({ id: z.number().int().positive(), status: z.enum(["draft", "active", "paused", "archived"]).optional(), pricePerThousandUsd: z.number().positive().max(100000).optional() }).refine(value => value.status != null || value.pricePerThousandUsd != null)).mutation(({ ctx, input }) => updateServiceRecord({ ...input, actorUserId: ctx.user!.id })),
   }),
   integrations: router({
+    alerts: permissionProcedure("integrations.read").query(() => listSyncAlerts()),
     list: permissionProcedure("integrations.read").query(() => listProviderIntegrations()),
     save: permissionProcedure("integrations.write").input(z.object({
       id: z.number().int().positive().optional(), providerId: z.number().int().positive(), name: z.string().trim().min(2).max(160),

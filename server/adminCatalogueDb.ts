@@ -1,14 +1,17 @@
-import { and, count, desc, eq, like, lt, or } from "drizzle-orm";
-import { auditEntries, providerRecords, serviceRecords, teamMembers } from "../drizzle/schema";
+import { and, count, desc, eq, gt, like, lt, or, sql } from "drizzle-orm";
+import { auditEntries, providerRecords, providerIntegrations, serviceRecords, teamMembers } from "../drizzle/schema";
 import { adminServicesInput, searchPattern, type AdminServicesInput } from "../shared/catalogueQuery";
 import { getDb } from "./db";
 import type { Permission } from "./authorization";
+import { catalogueViewFilter } from "./catalogueRules";
 
 export async function listAdminServices(raw?: Partial<AdminServicesInput>) {
   const input = adminServicesInput.parse(raw);
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
   const filter = and(
+    catalogueViewFilter(input.view),
+    input.countryCode ? eq(serviceRecords.countryCode, input.countryCode) : undefined,
     input.providerId ? eq(serviceRecords.providerId, input.providerId) : undefined,
     input.status ? eq(serviceRecords.status, input.status) : undefined,
     input.platform ? eq(serviceRecords.platform, input.platform) : undefined,
@@ -21,7 +24,10 @@ export async function listAdminServices(raw?: Partial<AdminServicesInput>) {
       providerStatus: providerRecords.status, name: serviceRecords.name, externalId: serviceRecords.externalId,
       platform: serviceRecords.platform, category: serviceRecords.category, status: serviceRecords.status,
       pricePerThousandUsd: serviceRecords.pricePerThousandUsd, quality: serviceRecords.quality,
-      updatedAt: serviceRecords.updatedAt,
+      updatedAt: serviceRecords.updatedAt, countryCode: serviceRecords.countryCode, reviewStatus: serviceRecords.reviewStatus,
+      revision: serviceRecords.revision, incomplete: serviceRecords.incomplete, available: serviceRecords.available,
+      sourceUpdatedAt: serviceRecords.sourceUpdatedAt, priceCheckedAt: serviceRecords.priceCheckedAt,
+      lastPriceChangeAt: serviceRecords.lastPriceChangeAt, pricingConfirmed: serviceRecords.pricingConfirmed,
     }).from(serviceRecords).innerJoin(providerRecords, eq(serviceRecords.providerId, providerRecords.id))
       .where(and(filter, input.cursor ? lt(serviceRecords.id, input.cursor) : undefined))
       .orderBy(desc(serviceRecords.id)).limit(input.limit + 1),
@@ -35,17 +41,27 @@ export async function getAdminOverview(permissions: readonly Permission[]) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
   // Each aggregate has the same server-side permission boundary as its corresponding list.
-  const [providers, services, published, team, audit] = await Promise.all([
+  const [providers, services, published, team, audit, operations] = await Promise.all([
     permissions.includes("providers.read") ? db.select({ total: count() }).from(providerRecords).where(eq(providerRecords.verified, true)) : [],
     permissions.includes("services.read") ? db.select({ total: count() }).from(serviceRecords) : [],
     permissions.includes("services.read") ? db.select({ total: count() }).from(serviceRecords)
       .innerJoin(providerRecords, eq(providerRecords.id, serviceRecords.providerId))
-      .where(and(eq(serviceRecords.status, "active"), eq(providerRecords.status, "active"))) : [],
+      .where(catalogueViewFilter("published")) : [],
     permissions.includes("team.read") ? db.select({ total: count() }).from(teamMembers) : [],
     permissions.includes("audit.read") ? db.select({ total: count() }).from(auditEntries) : [],
+    permissions.includes("services.read") ? db.select({
+      pending: sql<number>`coalesce(sum(${serviceRecords.reviewStatus} = 'pending'), 0)`.mapWith(Number),
+      approved: sql<number>`coalesce(sum(${serviceRecords.reviewStatus} = 'approved'), 0)`.mapWith(Number),
+      changesRequested: sql<number>`coalesce(sum(${serviceRecords.reviewStatus} = 'changes_requested'), 0)`.mapWith(Number),
+      incomplete: sql<number>`coalesce(sum(${serviceRecords.incomplete} = true), 0)`.mapWith(Number),
+      stale: sql<number>`coalesce(sum(${catalogueViewFilter("stale")}), 0)`.mapWith(Number),
+      priceChanged: sql<number>`coalesce(sum(${catalogueViewFilter("price_changed")}), 0)`.mapWith(Number),
+      missing: sql<number>`coalesce(sum(${serviceRecords.available} = false), 0)`.mapWith(Number),
+      normalizationPending: sql<number>`coalesce(sum(${serviceRecords.normalizationVersion} = 0), 0)`.mapWith(Number),
+    }).from(serviceRecords) : [],
   ]);
   return { verifiedProviders: providers[0]?.total ?? null, totalServices: services[0]?.total ?? null,
-    publishedServices: published[0]?.total ?? null, teamMembers: team[0]?.total ?? null, recordedActions: audit[0]?.total ?? null };
+    publishedServices: published[0]?.total ?? null, teamMembers: team[0]?.total ?? null, recordedActions: audit[0]?.total ?? null, operations: operations[0] ?? null };
 }
 
 export async function getProviderForAnalysis(id: number) {
@@ -53,4 +69,19 @@ export async function getProviderForAnalysis(id: number) {
   if (!db) throw new Error("Database unavailable");
   const [provider] = await db.select().from(providerRecords).where(eq(providerRecords.id, id)).limit(1);
   return provider;
+}
+
+export async function listSyncAlerts() {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const filter = or(gt(providerIntegrations.consecutiveFailures, 0), eq(providerIntegrations.status, "error"),
+    and(eq(providerIntegrations.status, "active"), lt(providerIntegrations.nextSyncAt, new Date(Date.now() - 3600000))));
+  const [items, totals] = await Promise.all([
+    db.select({ id: providerIntegrations.id, providerId: providerIntegrations.providerId, providerName: providerRecords.name,
+      name: providerIntegrations.name, failures: providerIntegrations.consecutiveFailures, lastError: providerIntegrations.lastError,
+      lastSyncedAt: providerIntegrations.lastSyncedAt, nextSyncAt: providerIntegrations.nextSyncAt, status: providerIntegrations.status,
+    }).from(providerIntegrations).innerJoin(providerRecords, eq(providerRecords.id, providerIntegrations.providerId))
+      .where(filter).orderBy(desc(providerIntegrations.updatedAt)).limit(50),
+    db.select({ total: count() }).from(providerIntegrations).where(filter),
+  ]);
+  return { items, total: totals[0]?.total ?? 0 };
 }

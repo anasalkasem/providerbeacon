@@ -5,6 +5,8 @@ import { isIP } from "node:net";
 import { providers as seedProviders, services as seedServices } from "../client/src/data/marketplace";
 import { auditEntries, localizedContent, priceSnapshots, providerIntegrations, providerRecords, serviceRecords, staffSessions, teamMembers, type TeamRole } from "../drizzle/schema";
 import { getDb } from "./db";
+import { approvedService } from "./catalogueRules";
+import { normalizeApiService, NORMALIZATION_VERSION } from "./serviceNormalizer";
 import { catalogueInput, searchPattern, type CatalogueInput } from "../shared/catalogueQuery";
 
 const tierToDb = {
@@ -47,12 +49,12 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       .where(and(providerFilter, input.scope === "providers" && input.cursor ? lt(providerRecords.id, input.cursor.id) : undefined))
       .orderBy(desc(providerRecords.id)).limit(input.scope === "provider" ? 1 : input.limit + 1) : [];
     if (input.scope === "provider" && !providerPage.length) return empty("database");
-    const serviceFilter = and(eligible, eq(serviceRecords.status, "active"),
+    const serviceFilter = and(eligible, approvedService(),
       input.scope === "provider" ? eq(serviceRecords.providerId, providerPage[0]!.id) : undefined,
       input.scope === "compare" ? (input.ids.length ? inArray(serviceRecords.id, input.ids) : sql`false`) : undefined,
       input.platform ? eq(serviceRecords.platform, input.platform) : undefined,
       input.quality ? eq(serviceRecords.quality, input.quality) : undefined,
-      input.refillOnly ? ne(serviceRecords.refillMode, "none") : undefined,
+      input.refillOnly ? inArray(serviceRecords.refillMode, ["manual", "automatic", "lifetime"]) : undefined,
       input.q && !providerScope ? or(like(serviceRecords.name, searchPattern(input.q)), like(serviceRecords.category, searchPattern(input.q)),
         like(serviceRecords.platform, searchPattern(input.q)), like(providerRecords.name, searchPattern(input.q))) : undefined);
     const rank = input.sort === "price" ? sql<number>`${serviceRecords.pricePerThousandUsd}` : input.sort === "retention" ? sql<number>`coalesce(${serviceRecords.retentionBasisPoints}, -1)` : sql<number>`${serviceRecords.featured}`;
@@ -70,7 +72,7 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       .orderBy(providerRecords.name).limit(serviceProviderIds.length || 8);
     const providerIds = providerRows.map(row => row.id);
     const counts = providerIds.length ? await db.select({ providerId: serviceRecords.providerId, total: count() }).from(serviceRecords)
-      .where(and(eq(serviceRecords.status, "active"), inArray(serviceRecords.providerId, providerIds))).groupBy(serviceRecords.providerId) : [];
+      .where(and(approvedService(), inArray(serviceRecords.providerId, providerIds))).groupBy(serviceRecords.providerId) : [];
     const serviceCounts = new Map(counts.map(row => [row.providerId, row.total]));
     const totals = input.scope === "providers" ? await db.select({ total: count() }).from(providerRecords).where(providerFilter)
       : await db.select({ total: count() }).from(serviceRecords).innerJoin(providerRecords, eq(serviceRecords.providerId, providerRecords.id)).where(serviceFilter);
@@ -100,7 +102,7 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       name: row.name, pricePerThousand: Number(row.pricePerThousandUsd), min: row.minOrder, max: row.maxOrder,
       startTime: durationLabel(row.startMinutesMin, row.startMinutesMax),
       delivery: durationLabel(row.deliveryMinutesMin, row.deliveryMinutesMax),
-      refill: row.refillMode === "lifetime" ? "Lifetime guarantee" : row.refillMode === "none" ? "No refill" : `${row.refillDays ?? 0}-day ${row.refillMode === "automatic" ? "auto " : ""}refill`,
+      refill: row.refillMode === "unknown" ? "—" : row.refillMode === "lifetime" ? "Lifetime guarantee" : row.refillMode === "none" ? "No refill" : row.refillDays == null ? "Refill available; duration unspecified" : `${row.refillDays}-day ${row.refillMode === "automatic" ? "auto " : ""}refill`,
       quality: `${row.quality.charAt(0).toUpperCase()}${row.quality.slice(1)}` as "Standard" | "Premium" | "Elite",
       retention: row.retentionBasisPoints == null ? null : row.retentionBasisPoints / 100, featured: row.featured,
     }));
@@ -238,18 +240,21 @@ export async function updateProviderStatus(input: { id: number; status: "draft" 
 }
 
 export async function updateServiceRecord(input: { id: number; status?: "draft" | "active" | "paused" | "archived"; pricePerThousandUsd?: number; actorUserId: number }) {
+  if (input.status === "active") throw new Error("Use the service review and publication workflow");
   const db = await getDb(); if (!db) throw new Error("Database unavailable");
   return db.transaction(async tx => {
     const [before] = await tx.select().from(serviceRecords).where(eq(serviceRecords.id, input.id)).for("update");
     if (!before) throw new Error("Service not found");
-    const changes: { status?: "draft" | "active" | "paused" | "archived"; pricePerThousandUsd?: string; sourceUpdatedAt?: Date } = {};
-    if (input.status) changes.status = input.status;
-    if (input.pricePerThousandUsd != null) {
-      changes.pricePerThousandUsd = input.pricePerThousandUsd.toFixed(4);
-      changes.sourceUpdatedAt = new Date();
-    }
+    const priceChanged = input.pricePerThousandUsd != null && input.pricePerThousandUsd.toFixed(4) !== before.pricePerThousandUsd;
+    const changes = {
+      status: input.status ?? (priceChanged && before.status === "active" ? "draft" as const : before.status),
+      revision: before.revision + 1,
+      ...(priceChanged ? { pricePerThousandUsd: input.pricePerThousandUsd!.toFixed(4), pricingConfirmed: false,
+        priceCheckedAt: null, incomplete: true, reviewStatus: "pending" as const, reviewedAt: null, reviewedByUserId: null, lastPriceChangeAt: new Date() } : {}),
+    };
     await tx.update(serviceRecords).set(changes).where(eq(serviceRecords.id, input.id));
-    await writeAudit({ actorUserId: input.actorUserId, action: "service.update", entityType: "service", entityId: String(input.id), summary: "Service publishing or price data updated", metadata: { before: { status: before.status, pricePerThousandUsd: before.pricePerThousandUsd, sourceUpdatedAt: before.sourceUpdatedAt }, after: { ...changes } } }, tx);
+    if (priceChanged) await tx.insert(priceSnapshots).values({ serviceId: input.id, pricePerThousandUsd: changes.pricePerThousandUsd! });
+    await writeAudit({ actorUserId: input.actorUserId, action: "service.update", entityType: "service", entityId: String(input.id), summary: "Service status or unconfirmed price updated", metadata: { before: { status: before.status, pricePerThousandUsd: before.pricePerThousandUsd, revision: before.revision, reviewStatus: before.reviewStatus }, after: changes } }, tx);
     return { success: true };
   });
 }
@@ -289,63 +294,112 @@ export async function syncProviderServicesNow(input: { providerId: number; baseU
   const [provider] = await db.select().from(providerRecords).where(eq(providerRecords.id, input.providerId)).limit(1);
   if (!provider) throw new Error("Provider not found");
   const endpoint = await assertPublicHttpsUrl(input.baseUrl);
-  const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 15_000);
+  const sourceUrl = `${endpoint.origin}${endpoint.pathname}`;
+  const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 20_000);
   let payload: unknown;
   try {
     const response = await fetch(endpoint, { method: "POST", redirect: "error", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ key: input.apiKey, action: "services" }), signal: controller.signal });
     if (!response.ok) throw new Error(`Provider API returned HTTP ${response.status}`);
-    payload = await response.json();
+    const reader = response.body?.getReader();
+    if (!reader) throw new Error("Provider API returned an empty body");
+    const chunks: Uint8Array[] = []; let bytes = 0;
+    try {
+      while (true) {
+        const { value, done } = await reader.read(); if (done) break;
+        bytes += value.byteLength;
+        if (bytes > 8 * 1024 * 1024) { await reader.cancel(); throw new Error("Provider catalogue exceeds the 8 MB response limit; no changes were applied"); }
+        chunks.push(value);
+      }
+      try { payload = JSON.parse(Buffer.concat(chunks).toString("utf8")); }
+      catch { throw new Error("Provider API did not return valid JSON"); }
+    } finally { reader.releaseLock(); }
   } finally { clearTimeout(timeout); }
   if (!Array.isArray(payload)) throw new Error("Provider API did not return a service list");
   if (payload.length > 5000) throw new Error("Provider catalogue exceeds the 5000-service import limit; no changes were applied");
+  // An empty or invalid response is never interpreted as removal of the whole catalogue.
+  if (!payload.length) throw new Error("Provider returned an empty catalogue; existing services were preserved");
+  const normalized = payload.map(normalizeApiService);
   const seen = new Set<string>();
-  const normalized = payload.map(item => {
-    if (!item || typeof item !== "object") return null;
-    const row = item as Record<string, unknown>;
-    const rawId = row.service ?? row.id;
-    if ((typeof rawId !== "string" && typeof rawId !== "number") || (typeof rawId === "number" && !Number.isFinite(rawId))) return null;
-    const externalId = String(rawId).trim();
-    const name = typeof row.name === "string" ? row.name.trim() : "";
-    const price = Number(row.rate ?? row.price);
-    const min = Number(row.min ?? 1); const max = Number(row.max ?? min);
-    if (!externalId || externalId.length > 160 || !name || !Number.isFinite(price) || price < 0 || price > 100000 || !Number.isInteger(min) || !Number.isInteger(max) || min < 1 || max < min || max > 2147483647) return null;
-    if (seen.has(externalId)) throw new Error("Provider response contains duplicate service IDs; no changes were applied");
-    seen.add(externalId);
-    const platform = name.split(/\s|\||-/)[0]?.slice(0, 80) || "Other";
-    const category = String(row.category ?? "Imported").slice(0, 120);
-    // Preserve punctuation/case distinctions in external IDs without unsafe URL characters.
-    const slug = `${provider.slug}-${createHash("sha256").update(externalId).digest("hex").slice(0, 24)}`;
-    return { externalId, name: name.slice(0, 300), price, min, max, platform, category, slug };
-  }).filter((item): item is NonNullable<typeof item> => Boolean(item));
-  if (!normalized.length) throw new Error("No valid services with stable IDs were found in the provider response");
+  for (const row of normalized) {
+    if (seen.has(row.externalId)) throw new Error("Provider response contains duplicate service IDs; no changes were applied");
+    seen.add(row.externalId);
+  }
   return db.transaction(async tx => {
-    // Serialize imports for a provider and recheck suspension after the network call.
     const [currentProvider] = await tx.select().from(providerRecords).where(eq(providerRecords.id, provider.id)).for("update");
     if (!currentProvider || currentProvider.status === "suspended") throw new Error("Provider is unavailable or suspended");
-    let reviewCount = 0;
-    for (const item of normalized) {
-      const existingRows = await tx.select().from(serviceRecords).where(and(eq(serviceRecords.providerId, provider.id), eq(serviceRecords.externalId, item.externalId)));
-      if (existingRows.length > 1) throw new Error("Existing provider catalogue contains duplicate external IDs; manual review is required");
-      const existing = existingRows[0];
-      const values = { name: item.name, platform: item.platform, category: item.category, pricePerThousandUsd: item.price.toFixed(4), minOrder: item.min, maxOrder: item.max };
-      const changed = !existing || Object.entries(values).some(([key, value]) => existing[key as keyof typeof existing] !== value);
-      let serviceId: number;
-      if (existing) {
-        // Changed published offers must be approved again; pauses and archives stay in effect.
-        const status = changed && existing.status === "active" ? "draft" : existing.status;
-        await tx.update(serviceRecords).set({ ...values, status, sourceUpdatedAt: new Date() }).where(eq(serviceRecords.id, existing.id));
-        serviceId = existing.id;
-        if (changed && status === "draft") reviewCount++;
-      } else {
-        const inserted = await tx.insert(serviceRecords).values({ ...values, providerId: provider.id, externalId: item.externalId, slug: item.slug, status: "draft", sourceUpdatedAt: new Date() }).$returningId();
-        serviceId = inserted[0]!.id;
-        reviewCount++;
-      }
-      await tx.insert(priceSnapshots).values({ serviceId, pricePerThousandUsd: values.pricePerThousandUsd });
+    // One bounded lookup replaces a SELECT for every imported row. Provider locks serialize imports.
+    const existingRows = await tx.select({
+      id: serviceRecords.id, externalId: serviceRecords.externalId, sourceHash: serviceRecords.sourceHash, sourceUrl: serviceRecords.sourceUrl,
+      sourceKind: serviceRecords.sourceKind, available: serviceRecords.available, normalizationVersion: serviceRecords.normalizationVersion,
+      revision: serviceRecords.revision, status: serviceRecords.status, reviewStatus: serviceRecords.reviewStatus,
+      name: serviceRecords.name, platform: serviceRecords.platform, category: serviceRecords.category, countryCode: serviceRecords.countryCode,
+      pricePerThousandUsd: serviceRecords.pricePerThousandUsd, minOrder: serviceRecords.minOrder, maxOrder: serviceRecords.maxOrder,
+      refillMode: serviceRecords.refillMode, refillDays: serviceRecords.refillDays,
+    }).from(serviceRecords).where(eq(serviceRecords.providerId, provider.id)).orderBy(asc(serviceRecords.id)).limit(50001).for("update");
+    if (existingRows.length > 50000) throw new Error("Provider catalogue requires a larger background import; no changes were applied");
+    const existingById = new Map<string, typeof existingRows[number]>();
+    for (const row of existingRows) {
+      if (row.externalId == null) continue;
+      if (existingById.has(row.externalId)) throw new Error("Existing provider catalogue contains duplicate external IDs; manual review is required");
+      existingById.set(row.externalId, row);
     }
-    // Schedule ownership belongs exclusively to the vault's explicit enable/disable action.
-    await writeAudit({ actorUserId: input.actorUserId, action: "integration.services.sync", entityType: "provider", entityId: String(provider.id), summary: `Imported ${normalized.length} services; ${reviewCount} require review`, metadata: { importedCount: normalized.length, reviewCount, host: endpoint.host } }, tx);
-    return { success: true, importedCount: normalized.length, reviewCount, providerName: provider.name };
+    const now = new Date();
+    let reviewCount = 0; let priceChangeCount = 0; let missingCount = 0;
+    const unchanged: number[] = [];
+    const inserts: (typeof serviceRecords.$inferInsert)[] = [];
+    const snapshots: (typeof priceSnapshots.$inferInsert)[] = [];
+    const changeAudits: (typeof auditEntries.$inferInsert)[] = [];
+    for (const item of normalized) {
+      const existing = existingById.get(item.externalId);
+      const changed = !existing || existing.sourceHash !== item.sourceHash || existing.pricePerThousandUsd !== item.pricePerThousandUsd || !existing.available || existing.normalizationVersion < NORMALIZATION_VERSION || existing.sourceUrl !== sourceUrl;
+      if (!changed) { unchanged.push(existing!.id); continue; }
+      const priceChanged = Boolean(existing && existing.pricePerThousandUsd !== item.pricePerThousandUsd);
+      const { notes, ...data } = item;
+      const values = { ...data, refillMode: data.refillMode as typeof serviceRecords.$inferSelect.refillMode,
+        classificationNotes: notes, sourceKind: "provider_api" as const, sourceUrl, sourceUpdatedAt: now,
+        normalizationVersion: NORMALIZATION_VERSION, reviewStatus: "pending" as const, incomplete: true,
+        pricingConfirmed: false, policyReviewed: false, priceCheckedAt: null, evidenceUrl: null,
+        reviewedAt: null, reviewedByUserId: null, reviewReason: null, available: true, missingSourceAt: null,
+      };
+      if (existing) {
+        const legacySource = JSON.stringify({ service: existing.externalId, name: existing.name, category: existing.category, rate: existing.pricePerThousandUsd, min: existing.minOrder, max: existing.maxOrder, legacyPlatform: existing.platform, legacyRefillMode: existing.refillMode, legacyRefillDays: existing.refillDays, legacyCountry: existing.countryCode });
+        await tx.update(serviceRecords).set({ ...values, revision: existing.revision + 1,
+          originalSourceData: sql`coalesce(${serviceRecords.originalSourceData}, cast(${legacySource} as json))`,
+          status: existing.status === "active" ? "draft" : existing.status,
+          ...(priceChanged ? { lastPriceChangeAt: now } : {}),
+        }).where(eq(serviceRecords.id, existing.id));
+        if (priceChanged) { priceChangeCount++; snapshots.push({ serviceId: existing.id, pricePerThousandUsd: item.pricePerThousandUsd }); }
+        const keys = ["name", "platform", "category", "countryCode", "pricePerThousandUsd", "minOrder", "maxOrder", "refillMode", "refillDays", "sourceHash", "sourceUrl", "available"] as const;
+        changeAudits.push({ actorUserId: input.actorUserId, action: "service.source.changed", entityType: "service", entityId: String(existing.id), summary: "Provider source changed; service returned to review", metadata: {
+          reason: "Provider catalogue synchronization", before: { ...Object.fromEntries(keys.map(key => [key, existing[key]])), revision: existing.revision, status: existing.status, reviewStatus: existing.reviewStatus },
+          after: { ...Object.fromEntries(keys.map(key => [key, values[key]])), revision: existing.revision + 1, status: existing.status === "active" ? "draft" : existing.status, reviewStatus: "pending" },
+        } });
+      } else {
+        const slug = `${provider.slug}-${createHash("sha256").update(item.externalId).digest("hex").slice(0, 24)}`;
+        inserts.push({ ...values, originalSourceData: item.sourceData, providerId: provider.id, slug, status: "draft" });
+      }
+      reviewCount++;
+    }
+    for (let offset = 0; offset < inserts.length; offset += 100) {
+      const batch = inserts.slice(offset, offset + 100);
+      const inserted = await tx.insert(serviceRecords).values(batch).$returningId();
+      inserted.forEach((row, index) => snapshots.push({ serviceId: row.id, pricePerThousandUsd: batch[index]!.pricePerThousandUsd }));
+    }
+    for (let offset = 0; offset < unchanged.length; offset += 250) {
+      await tx.update(serviceRecords).set({ sourceUpdatedAt: now }).where(inArray(serviceRecords.id, unchanged.slice(offset, offset + 250)));
+    }
+    for (let offset = 0; offset < snapshots.length; offset += 250) await tx.insert(priceSnapshots).values(snapshots.slice(offset, offset + 250));
+    const missing = existingRows.filter(row => row.sourceKind === "provider_api" && row.sourceUrl === sourceUrl && row.externalId && !seen.has(row.externalId) && row.available);
+    for (const row of missing) {
+      await tx.update(serviceRecords).set({ available: false, missingSourceAt: now, reviewStatus: "pending", incomplete: true,
+        status: row.status === "active" ? "draft" : row.status, revision: row.revision + 1, reviewedAt: null, reviewedByUserId: null,
+      }).where(eq(serviceRecords.id, row.id));
+      changeAudits.push({ actorUserId: input.actorUserId, action: "service.source.missing", entityType: "service", entityId: String(row.id), summary: "Service no longer returned by its provider API", metadata: { reason: "Absent from complete validated API response", before: { available: true, status: row.status, revision: row.revision }, after: { available: false, status: row.status === "active" ? "draft" : row.status, revision: row.revision + 1 } } });
+      missingCount++;
+    }
+    for (let offset = 0; offset < changeAudits.length; offset += 100) await tx.insert(auditEntries).values(changeAudits.slice(offset, offset + 100));
+    await writeAudit({ actorUserId: input.actorUserId, action: "integration.services.sync", entityType: "provider", entityId: String(provider.id), summary: `Imported ${normalized.length} services; ${reviewCount} require review`, metadata: { importedCount: normalized.length, reviewCount, priceChangeCount, missingCount, unchangedCount: unchanged.length, newCount: inserts.length, host: endpoint.host } }, tx);
+    return { success: true, importedCount: normalized.length, reviewCount, priceChangeCount, missingCount, providerName: provider.name };
   });
 }
 export async function writeAudit(input: { actorUserId?: number; action: string; entityType: string; entityId: string; summary: string; metadata?: Record<string, unknown>; ipAddress?: string }, executor?: Pick<NonNullable<Awaited<ReturnType<typeof getDb>>>, "insert">) {

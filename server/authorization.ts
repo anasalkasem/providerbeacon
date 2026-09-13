@@ -6,14 +6,14 @@ import { getDb } from "./db";
 
 export type Permission =
   | "providers.read" | "providers.write" | "providers.review"
-  | "services.read" | "services.write"
+  | "services.read" | "services.write" | "services.review" | "services.publish"
   | "team.read" | "team.write"
   | "translations.read" | "translations.write"
   | "audit.read"
   | "integrations.read" | "integrations.write";
 
 const allPermissions: Permission[] = [
-  "providers.read", "providers.write", "providers.review", "services.read", "services.write",
+  "providers.read", "providers.write", "providers.review", "services.read", "services.write", "services.review", "services.publish",
   "team.read", "team.write", "translations.read", "translations.write", "audit.read",
   "integrations.read", "integrations.write",
 ];
@@ -21,8 +21,8 @@ const allPermissions: Permission[] = [
 export const rolePermissions: Record<TeamRole, Permission[]> = {
   owner: allPermissions,
   administrator: allPermissions.filter(permission => permission !== "team.write"),
-  operations_manager: ["providers.read", "providers.write", "providers.review", "services.read", "services.write", "translations.read", "audit.read", "integrations.read"],
-  provider_reviewer: ["providers.read", "providers.review", "services.read", "audit.read"],
+  operations_manager: ["providers.read", "providers.write", "providers.review", "services.read", "services.write", "services.review", "services.publish", "translations.read", "audit.read", "integrations.read"],
+  provider_reviewer: ["providers.read", "providers.review", "services.read", "services.review", "audit.read"],
   catalogue_editor: ["providers.read", "services.read", "services.write"],
   translation_manager: ["providers.read", "services.read", "translations.read", "translations.write"],
   auditor: ["providers.read", "services.read", "translations.read", "audit.read", "integrations.read"],

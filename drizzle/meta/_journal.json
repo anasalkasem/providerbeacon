@@ -29,6 +29,13 @@
       "when": 1789315544255,
       "tag": "0003_catalogue_pagination_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1789318115907,
+      "tag": "0004_catalogue_review",
+      "breakpoints": true
     }
   ]
 }

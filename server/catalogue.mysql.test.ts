@@ -3,16 +3,17 @@ import { createPool, type Pool } from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
 import { migrate } from "drizzle-orm/mysql2/migrator";
 import { eq } from "drizzle-orm";
-import { auditEntries, providerIntegrations, providerRecords, serviceRecords, users } from "../drizzle/schema";
+import { auditEntries, priceSnapshots, providerIntegrations, providerRecords, serviceRecords, users } from "../drizzle/schema";
 
 const state = vi.hoisted(() => ({ db: null as any }));
 vi.mock("./db", () => ({ getDb: async () => state.db }));
 vi.mock("node:dns/promises", () => ({ lookup: async () => [{ address: "93.184.216.34", family: 4 }] }));
 import { getMarketplaceSnapshot, syncProviderServicesNow, updateProviderStatus, updateServiceRecord } from "./marketplaceDb";
 import { runDueProviderSyncs, setProviderIntegrationEnabled, syncStoredIntegration } from "./vaultDb";
-import { getAdminOverview, listAdminServices } from "./adminCatalogueDb";
+import { getAdminOverview, listAdminServices, listSyncAlerts } from "./adminCatalogueDb";
 import { rolePermissions } from "./authorization";
 import { encryptValue } from "./security";
+import { applyServiceReview, editServiceReview, getServiceReview, normalizeLegacyBatch } from "./serviceReviewDb";
 
 const testUrl = process.env.TEST_DATABASE_URL;
 let pool: Pool; let actorId: number; let providerId: number;
@@ -46,7 +47,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   afterAll(async () => { if (pool) await pool.end(); });
 
   async function addService(status: "draft" | "active" | "paused" | "archived" = "active", owner = providerId) {
-    const inserted = await state.db.insert(serviceRecords).values({ providerId: owner, externalId: "100", slug: `legacy-service-${owner}`, name: "TikTok Views", platform: "TikTok", category: "Views", pricePerThousandUsd: "1.0000", minOrder: 100, maxOrder: 1000, status }).$returningId();
+    const inserted = await state.db.insert(serviceRecords).values({ providerId: owner, externalId: "100", slug: `legacy-service-${owner}`, name: "TikTok Views", platform: "TikTok", category: "Views", pricePerThousandUsd: "1.0000", minOrder: 100, maxOrder: 1000, status, reviewStatus: "approved", incomplete: false, normalizationVersion: 1, pricingConfirmed: true, policyReviewed: true, evidenceUrl: "https://provider.example/services", sourceUpdatedAt: new Date() }).$returningId();
     return inserted[0].id as number;
   }
   async function addIntegration(status: "active" | "disabled" = "disabled") {
@@ -57,6 +58,15 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     return id;
   }
   const sync = (actor = actorId) => syncProviderServicesNow({ providerId, baseUrl: "https://provider.example/api/v2", apiKey: "local-test-key-no-network", actorUserId: actor });
+
+  async function prepareAndPublish(id: number) {
+    const detail = await getServiceReview(id);
+    const edited = await editServiceReview({ id, revision: detail.service.revision, platform: "TikTok", category: "Views", countryCode: null,
+      price: Number(detail.service.pricePerThousandUsd), minOrder: 100, maxOrder: 1000, refillMode: "unknown", refillDays: null,
+      evidenceUrl: "https://provider.example/services", pricingConfirmed: true, policyReviewed: true, reason: "Test fixture source and eligibility checked", actorUserId: actorId });
+    await applyServiceReview({ items: [{ id, revision: edited.revision }], action: "approve", reason: "Test fixture review complete", actorUserId: actorId });
+    await applyServiceReview({ items: [{ id, revision: edited.revision + 1 }], action: "publish", reason: "Test fixture publication", actorUserId: actorId });
+  }
 
   it("suspending a provider removes its offers while leaving other providers visible", async () => {
     const [other] = await state.db.insert(providerRecords).values({ slug: "other-provider", name: "Other provider", initials: "OP", status: "active" }).$returningId();
@@ -102,11 +112,14 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     const rows = await state.db.select().from(serviceRecords);
     expect(rows).toHaveLength(1); expect(rows[0].status).toBe("draft");
     expect((await getMarketplaceSnapshot()).services).toEqual([]);
-    await updateServiceRecord({ id: rows[0].id, status: "active", actorUserId: actorId });
+    await expect(updateServiceRecord({ id: rows[0].id, status: "active", actorUserId: actorId })).rejects.toThrow("review and publication");
+    await prepareAndPublish(rows[0].id);
     expect((await getMarketplaceSnapshot()).services).toHaveLength(1);
   });
   it("keeps unchanged published offers active and sends changed prices back to review", async () => {
-    const id = await addService(); await sync();
+    await sync();
+    const [created] = await state.db.select().from(serviceRecords);
+    const id = created.id; await prepareAndPublish(id); await sync();
     let [row] = await state.db.select().from(serviceRecords).where(eq(serviceRecords.id, id));
     expect(row.status).toBe("active");
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([{ ...payload[0], rate: "2.00" }]))));
@@ -147,13 +160,75 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     await expect(sync()).rejects.toThrow("duplicate service IDs");
     expect(await state.db.select().from(serviceRecords)).toEqual([]);
   });
+  it("preserves original legacy data and freshness while normalizing in bounded idempotent batches", async () => {
+    const id = await addService();
+    const oldDate = new Date("2020-01-01T00:00:00Z");
+    await state.db.update(serviceRecords).set({ name: "🇻🇳 VIETNAM Website Traffic [FB, IG, YT, Tiktok]", platform: "🇻🇳", category: "Traffic", normalizationVersion: 0, sourceUpdatedAt: oldDate }).where(eq(serviceRecords.id, id));
+    expect(await normalizeLegacyBatch(1)).toBe(1); expect(await normalizeLegacyBatch(1)).toBe(0);
+    const detail = await getServiceReview(id);
+    expect(detail.service).toMatchObject({ platform: "Website", category: "Website traffic", countryCode: "VN", reviewStatus: "pending", status: "draft", normalizationVersion: 1, sourceKind: "legacy", sourceUpdatedAt: oldDate });
+    expect(detail.service.originalSourceData?.legacyPlatform).toBe("🇻🇳");
+  });
+  it("blocks incomplete approval and prevents stale review decisions from overwriting newer edits", async () => {
+    await sync(); const [row] = await state.db.select().from(serviceRecords);
+    await expect(applyServiceReview({ items: [{ id: row.id, revision: row.revision }], action: "approve", reason: "Attempt without evidence", actorUserId: actorId })).rejects.toMatchObject({ message: "review_not_ready" });
+    await applyServiceReview({ items: [{ id: row.id, revision: row.revision }], action: "request_changes", reason: "Missing currency and eligibility evidence", actorUserId: actorId, ipAddress: "127.0.0.1" });
+    await expect(applyServiceReview({ items: [{ id: row.id, revision: row.revision }], action: "approve", reason: "Obsolete review decision", actorUserId: actorId })).rejects.toMatchObject({ message: "review_conflict" });
+    const after = await getServiceReview(row.id); expect(after.service.reviewStatus).toBe("changes_requested");
+    const logs = await state.db.select().from(auditEntries).where(eq(auditEntries.action, "service.review.request_changes"));
+    expect(logs[0].metadata).toMatchObject({ reason: "Missing currency and eligibility evidence", before: { revision: 1 }, after: { revision: 2 } });
+    expect(logs[0].ipAddress).toBe("127.0.0.1");
+  });
+  it("rolls back the whole review batch if any revision conflicts or its audit fails", async () => {
+    const id = await addService();
+    await expect(applyServiceReview({ items: [{ id, revision: 1 }, { id: 2147483647, revision: 1 }], action: "request_changes", reason: "Atomic batch review", actorUserId: actorId })).rejects.toMatchObject({ message: "review_conflict" });
+    await expect(applyServiceReview({ items: [{ id, revision: 1 }], action: "request_changes", reason: "Missing audit actor", actorUserId: 2147483647 })).rejects.toThrow();
+    expect((await getServiceReview(id)).service).toMatchObject({ revision: 1, reviewStatus: "approved" });
+  });
+  it("stores prices only on initial import or price changes and holds disappeared services", async () => {
+    await sync(); await sync();
+    expect(await state.db.select().from(priceSnapshots)).toHaveLength(1);
+    const [first] = await state.db.select().from(serviceRecords); await prepareAndPublish(first.id);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([{ ...payload[0], service: 200 }]))));
+    const result = await sync(); expect(result.missingCount).toBe(1);
+    expect((await getServiceReview(first.id)).service).toMatchObject({ available: false, reviewStatus: "pending", status: "draft" });
+    expect((await getMarketplaceSnapshot()).services).toHaveLength(0);
+    vi.stubGlobal("fetch", vi.fn(async () => response())); await sync();
+    expect((await getServiceReview(first.id)).service).toMatchObject({ available: true, reviewStatus: "pending", pricingConfirmed: false });
+    expect(await state.db.select().from(priceSnapshots)).toHaveLength(2);
+  });
+  it("does not partially import invalid catalogues or treat empty responses as removals", async () => {
+    await sync(); const [row] = await state.db.select().from(serviceRecords);
+    for (const data of [[], [payload[0], { ...payload[0], service: 200, min: null }]]) {
+      vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(data)))); await expect(sync()).rejects.toThrow();
+      expect((await getServiceReview(row.id)).service).toMatchObject({ available: true, revision: 1 });
+      expect(await state.db.select().from(serviceRecords)).toHaveLength(1);
+    }
+  });
+  it("requires current approval and a published provider before publication", async () => {
+    await sync(); const [row] = await state.db.select().from(serviceRecords);
+    await expect(applyServiceReview({ items: [{ id: row.id, revision: 1 }], action: "publish", reason: "Attempt premature publication", actorUserId: actorId })).rejects.toMatchObject({ message: "review_not_ready" });
+    await prepareAndPublish(row.id);
+    await state.db.update(providerRecords).set({ status: "draft" }).where(eq(providerRecords.id, providerId));
+    const detail = await getServiceReview(row.id);
+    await expect(applyServiceReview({ items: [{ id: row.id, revision: detail.service.revision }], action: "publish", reason: "Attempt provider draft publication", actorUserId: actorId })).rejects.toMatchObject({ message: "review_not_ready" });
+    expect((await listAdminServices({ view: "published" })).total).toBe(0);
+    expect((await listAdminServices({ view: "approved" })).total).toBe(1);
+  });
+  it("surfaces credential failures as connection alerts without disclosing a key", async () => {
+    const [connection] = await state.db.insert(providerIntegrations).values({ providerId, name: "Unconfigured connection", baseUrl: "https://provider.example/api/v2", status: "disabled" }).$returningId();
+    await expect(syncStoredIntegration({ id: connection.id, actorUserId: actorId })).rejects.toThrow("credential is not configured");
+    const alerts = await listSyncAlerts(); expect(alerts.total).toBe(1);
+    expect(alerts.items[0]).toMatchObject({ id: connection.id, failures: 1, status: "disabled" });
+    expect(JSON.stringify(alerts)).not.toContain("credentialCiphertext");
+  });
   it("keeps payloads bounded across a 50,000-service catalogue and excludes unpublished providers", async () => {
     const size = 50_000;
     for (let start = 0; start < size; start += 500) {
       await state.db.insert(serviceRecords).values(Array.from({ length: 500 }, (_, offset) => {
         const n = start + offset;
         return { providerId, slug: `bulk-${n}`, name: `Campaign service ${n}`, platform: n % 2 ? "TikTok" : "Instagram", category: "Campaigns",
-          pricePerThousandUsd: "1.0000", minOrder: 10, maxOrder: 1000, status: "active", retentionBasisPoints: n % 2 ? null : 9500 };
+          pricePerThousandUsd: "1.0000", minOrder: 10, maxOrder: 1000, status: "active", reviewStatus: "approved", incomplete: false, normalizationVersion: 1, pricingConfirmed: true, policyReviewed: true, evidenceUrl: "https://provider.example/services", sourceUpdatedAt: new Date(), retentionBasisPoints: n % 2 ? null : 9500 };
       }));
     }
     const first = await listAdminServices();
