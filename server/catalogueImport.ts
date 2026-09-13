@@ -30,7 +30,11 @@ export async function applyCatalogueBatch(
     jobId: number;
   }
 ) {
-  const { provider, rows: normalized, sourceUrl, now, actorUserId } = input;
+  const { provider, sourceUrl, now, actorUserId } = input;
+  // Rebuild from retained source so pre-deployment staged payloads remain resumable.
+  const normalized = input.rows.map((row, index) =>
+    normalizeApiService(row.sourceData, index)
+  );
   if (!normalized.length || normalized.length > 100)
     throw new Error("Invalid catalogue batch size");
   // Read only the current batch, never the entire provider catalogue or retained source JSON.
@@ -50,7 +54,11 @@ export async function applyCatalogueBatch(
       platform: serviceRecords.platform,
       category: serviceRecords.category,
       countryCode: serviceRecords.countryCode,
-      pricePerThousandUsd: serviceRecords.pricePerThousandUsd,
+      priceAmount: serviceRecords.priceAmount,
+      sourceRate: serviceRecords.sourceRate,
+      priceCurrency: serviceRecords.priceCurrency,
+      priceUnit: serviceRecords.priceUnit,
+      packageDescription: serviceRecords.packageDescription,
       minOrder: serviceRecords.minOrder,
       maxOrder: serviceRecords.maxOrder,
       refillMode: serviceRecords.refillMode,
@@ -94,7 +102,10 @@ export async function applyCatalogueBatch(
     const changed =
       !existing ||
       existing.sourceHash !== item.sourceHash ||
-      existing.pricePerThousandUsd !== item.pricePerThousandUsd ||
+      (existing.platform === "Unknown" &&
+        existing.category === "Website traffic" &&
+        existing.reviewStatus === "pending" &&
+        item.platform === "Website") ||
       !existing.available ||
       existing.normalizationVersion < NORMALIZATION_VERSION ||
       existing.sourceUrl !== sourceUrl;
@@ -103,7 +114,9 @@ export async function applyCatalogueBatch(
       continue;
     }
     const priceChanged = Boolean(
-      existing && existing.pricePerThousandUsd !== item.pricePerThousandUsd
+      existing &&
+        Number(existing.sourceRate ?? existing.priceAmount) !==
+          Number(item.sourceRate)
     );
     const { notes, ...data } = item;
     const values = {
@@ -118,6 +131,9 @@ export async function applyCatalogueBatch(
       reviewStatus: "pending" as const,
       incomplete: true,
       pricingConfirmed: false,
+      priceCurrency: null,
+      priceUnit: null,
+      packageDescription: null,
       policyReviewed: false,
       priceCheckedAt: null,
       evidenceUrl: null,
@@ -132,7 +148,7 @@ export async function applyCatalogueBatch(
         service: existing.externalId,
         name: existing.name,
         category: existing.category,
-        rate: existing.pricePerThousandUsd,
+        rate: existing.priceAmount,
         min: existing.minOrder,
         max: existing.maxOrder,
         legacyPlatform: existing.platform,
@@ -154,7 +170,9 @@ export async function applyCatalogueBatch(
         priceChangeCount++;
         snapshots.push({
           serviceId: existing.id,
-          pricePerThousandUsd: item.pricePerThousandUsd,
+          priceAmount: item.priceAmount,
+          sourceRate: item.sourceRate,
+          kind: "source",
         });
       }
       const keys = [
@@ -162,7 +180,11 @@ export async function applyCatalogueBatch(
         "platform",
         "category",
         "countryCode",
-        "pricePerThousandUsd",
+        "priceAmount",
+        "sourceRate",
+        "priceCurrency",
+        "priceUnit",
+        "packageDescription",
         "minOrder",
         "maxOrder",
         "refillMode",
@@ -214,7 +236,9 @@ export async function applyCatalogueBatch(
     inserted.forEach((row, index) =>
       snapshots.push({
         serviceId: row.id,
-        pricePerThousandUsd: batch[index]!.pricePerThousandUsd,
+        priceAmount: batch[index]!.priceAmount,
+        sourceRate: batch[index]!.sourceRate,
+        kind: "source",
       })
     );
   }

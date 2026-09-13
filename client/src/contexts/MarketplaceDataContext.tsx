@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import { useLocation, useSearch } from "wouter";
 import type { CatalogueInput } from "../../../shared/catalogueQuery";
 
-type Filters = Partial<Pick<CatalogueInput, "q" | "platform" | "sort" | "quality" | "refillOnly">>;
+type Filters = Partial<Pick<CatalogueInput, "q" | "platform" | "sort" | "quality" | "refillOnly" | "priceCurrency" | "priceUnit">>;
 type Cursor = CatalogueInput["cursor"];
 type MarketplaceData = ReturnType<typeof catalogueIndex> & {
   source: "database" | "seed" | "unavailable";

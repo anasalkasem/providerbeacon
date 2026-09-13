@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { priceCurrencies, priceUnits } from "./pricing";
 import { catalogueViews, reviewNeeds } from "./serviceReview";
 
 // Limits are enforced at the API boundary; the browser cannot request the full catalogue.
@@ -21,12 +22,14 @@ export const catalogueInput = z.object({
   cursor: z.object({ id: z.number().int().positive(), rank: z.number().finite() }).optional(),
   q: z.string().trim().max(100).default(""),
   platform: z.string().trim().max(80).optional(),
+  priceCurrency: z.enum(priceCurrencies).optional(),
+  priceUnit: z.enum(priceUnits).optional(),
   quality: z.enum(["standard", "premium", "elite"]).optional(),
   refillOnly: z.boolean().default(false),
   sort: z.enum(["recommended", "price", "retention"]).default("recommended"),
   slug: z.string().max(190).optional(),
   ids: z.array(z.number().int().positive()).max(4).default([]),
-}).default({ scope: "home", limit: 25, q: "", refillOnly: false, sort: "recommended", ids: [] });
+}).refine(value => value.sort !== "price" || (value.priceCurrency && value.priceUnit && value.priceUnit !== "package"), { message: "Price sorting requires the same currency and a non-package unit" }).default({ scope: "home", limit: 25, q: "", refillOnly: false, sort: "recommended", ids: [] });
 export type CatalogueInput = z.output<typeof catalogueInput>;
 
 export function searchPattern(q: string) {

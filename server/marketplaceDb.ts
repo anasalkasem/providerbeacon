@@ -52,11 +52,13 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       input.scope === "provider" ? eq(serviceRecords.providerId, providerPage[0]!.id) : undefined,
       input.scope === "compare" ? (input.ids.length ? inArray(serviceRecords.id, input.ids) : sql`false`) : undefined,
       input.platform ? eq(serviceRecords.platform, input.platform) : undefined,
+      input.priceCurrency ? eq(serviceRecords.priceCurrency, input.priceCurrency) : undefined,
+      input.priceUnit ? eq(serviceRecords.priceUnit, input.priceUnit) : undefined,
       input.quality ? eq(serviceRecords.quality, input.quality) : undefined,
       input.refillOnly ? inArray(serviceRecords.refillMode, ["manual", "automatic", "lifetime"]) : undefined,
       input.q && !providerScope ? or(like(serviceRecords.name, searchPattern(input.q)), like(serviceRecords.category, searchPattern(input.q)),
         like(serviceRecords.platform, searchPattern(input.q)), like(providerRecords.name, searchPattern(input.q))) : undefined);
-    const rank = input.sort === "price" ? sql<number>`${serviceRecords.pricePerThousandUsd}` : input.sort === "retention" ? sql<number>`coalesce(${serviceRecords.retentionBasisPoints}, -1)` : sql<number>`${serviceRecords.featured}`;
+    const rank = input.sort === "price" ? sql<number>`${serviceRecords.priceAmount}` : input.sort === "retention" ? sql<number>`coalesce(${serviceRecords.retentionBasisPoints}, -1)` : sql<number>`${serviceRecords.featured}`;
     const after = input.cursor ? or(
       input.sort === "price" ? gt(rank, input.cursor.rank) : lt(rank, input.cursor.rank),
       and(eq(rank, input.cursor.rank), lt(serviceRecords.id, input.cursor.id))) : undefined;
@@ -98,7 +100,8 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
     const services = serviceRows.map(row => ({
       // Provider API IDs are only unique within that provider. The database ID is global.
       id: `service-${row.id}`, providerId: `provider-${row.providerId}`, platform: row.platform, category: row.category,
-      name: row.name, pricePerThousand: Number(row.pricePerThousandUsd), min: row.minOrder, max: row.maxOrder,
+      name: row.name, priceAmount: Number(row.priceAmount), priceCurrency: row.priceCurrency,
+      priceUnit: row.priceUnit, packageDescription: row.packageDescription, countryCode: row.countryCode, min: row.minOrder, max: row.maxOrder,
       startTime: durationLabel(row.startMinutesMin, row.startMinutesMax),
       delivery: durationLabel(row.deliveryMinutesMin, row.deliveryMinutesMax),
       refill: row.refillMode === "unknown" ? "—" : row.refillMode === "lifetime" ? "Lifetime guarantee" : row.refillMode === "none" ? "No refill" : row.refillDays == null ? "Refill available; duration unspecified" : `${row.refillDays}-day ${row.refillMode === "automatic" ? "auto " : ""}refill`,
@@ -159,7 +162,7 @@ export async function seedMarketplaceIfEmpty(actorUserId?: number) {
   for (const service of seedServices) {
     const providerId = providerIds.get(service.providerId); if (!providerId) continue;
     await db.insert(serviceRecords).values({ providerId, externalId: service.id, slug: service.id, platform: service.platform, category: service.category,
-      name: service.name, status: "active", pricePerThousandUsd: service.pricePerThousand.toString(), minOrder: service.min, maxOrder: service.max,
+      name: service.name, status: "active", priceAmount: service.priceAmount.toString(), priceCurrency: service.priceCurrency, priceUnit: service.priceUnit, minOrder: service.min, maxOrder: service.max,
       refillMode: service.refill.toLowerCase().includes("lifetime") ? "lifetime" : service.refill.toLowerCase().includes("auto") ? "automatic" : service.refill.toLowerCase().includes("no refill") ? "none" : "manual",
       refillDays: Number.parseInt(service.refill) || null, quality: service.quality.toLowerCase() as "standard" | "premium" | "elite",
       retentionBasisPoints: Math.round((service.retention ?? 0) * 100), featured: Boolean(service.featured), sourceUpdatedAt: new Date(),
@@ -238,22 +241,23 @@ export async function updateProviderStatus(input: { id: number; status: "draft" 
   });
 }
 
-export async function updateServiceRecord(input: { id: number; status?: "draft" | "active" | "paused" | "archived"; pricePerThousandUsd?: number; actorUserId: number }) {
+export async function updateServiceRecord(input: { id: number; status?: "draft" | "active" | "paused" | "archived"; priceAmount?: number; actorUserId: number }) {
   if (input.status === "active") throw new Error("Use the service review and publication workflow");
   const db = await getDb(); if (!db) throw new Error("Database unavailable");
   return db.transaction(async tx => {
     const [before] = await tx.select().from(serviceRecords).where(eq(serviceRecords.id, input.id)).for("update");
     if (!before) throw new Error("Service not found");
-    const priceChanged = input.pricePerThousandUsd != null && input.pricePerThousandUsd.toFixed(4) !== before.pricePerThousandUsd;
+    const priceChanged = input.priceAmount != null && input.priceAmount.toFixed(4) !== before.priceAmount;
     const changes = {
       status: input.status ?? (priceChanged && before.status === "active" ? "draft" as const : before.status),
       revision: before.revision + 1,
-      ...(priceChanged ? { pricePerThousandUsd: input.pricePerThousandUsd!.toFixed(4), pricingConfirmed: false,
+      ...(priceChanged ? { priceAmount: input.priceAmount!.toFixed(4), pricingConfirmed: false,
         priceCheckedAt: null, incomplete: true, reviewStatus: "pending" as const, reviewedAt: null, reviewedByUserId: null, lastPriceChangeAt: new Date() } : {}),
     };
     await tx.update(serviceRecords).set(changes).where(eq(serviceRecords.id, input.id));
-    if (priceChanged) await tx.insert(priceSnapshots).values({ serviceId: input.id, pricePerThousandUsd: changes.pricePerThousandUsd! });
-    await writeAudit({ actorUserId: input.actorUserId, action: "service.update", entityType: "service", entityId: String(input.id), summary: "Service status or unconfirmed price updated", metadata: { before: { status: before.status, pricePerThousandUsd: before.pricePerThousandUsd, revision: before.revision, reviewStatus: before.reviewStatus }, after: changes } }, tx);
+    if (priceChanged) await tx.insert(priceSnapshots).values({ serviceId: input.id, priceAmount: changes.priceAmount!, priceCurrency: before.priceCurrency,
+      priceUnit: before.priceUnit, packageDescription: before.packageDescription, kind: "review" });
+    await writeAudit({ actorUserId: input.actorUserId, action: "service.update", entityType: "service", entityId: String(input.id), summary: "Service status or unconfirmed price updated", metadata: { before: { status: before.status, priceAmount: before.priceAmount, revision: before.revision, reviewStatus: before.reviewStatus }, after: changes } }, tx);
     return { success: true };
   });
 }

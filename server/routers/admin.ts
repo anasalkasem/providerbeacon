@@ -53,7 +53,7 @@ export const adminRouter = router({
     requestChanges: permissionProcedure("services.review").input(reviewBatchInput).mutation(({ ctx, input }) => applyServiceReview({ ...input, action: "request_changes", actorUserId: ctx.user!.id, ipAddress: ctx.req.ip })),
     publish: permissionProcedure("services.publish").input(reviewBatchInput).mutation(({ ctx, input }) => applyServiceReview({ ...input, action: "publish", actorUserId: ctx.user!.id, ipAddress: ctx.req.ip })),
     list: permissionProcedure("services.read").input(adminServicesInput).query(({ input }) => listAdminServices(input)),
-    update: permissionProcedure("services.write").input(z.object({ id: z.number().int().positive(), status: z.enum(["draft", "active", "paused", "archived"]).optional(), pricePerThousandUsd: z.number().positive().max(100000).optional() }).refine(value => value.status != null || value.pricePerThousandUsd != null)).mutation(({ ctx, input }) => updateServiceRecord({ ...input, actorUserId: ctx.user!.id })),
+    update: permissionProcedure("services.write").input(z.object({ id: z.number().int().positive(), status: z.enum(["draft", "active", "paused", "archived"]).optional(), priceAmount: z.number().positive().max(100000).optional() }).refine(value => value.status != null || value.priceAmount != null)).mutation(({ ctx, input }) => updateServiceRecord({ ...input, actorUserId: ctx.user!.id })),
   }),
   integrations: router({
     issues: permissionProcedure("integrations.read").input(z.object({ jobId: z.number().int().positive(), cursor: z.number().int().nonnegative().optional() })).query(({ input }) => listProviderSyncIssues(input)),

@@ -90,7 +90,7 @@ describe("conservative catalogue normalization", () => {
     expect(source).toEqual(row);
     expect(normalizeApiService(row, 0)).toMatchObject({
       externalId: "100",
-      pricePerThousandUsd: "1.0000",
+      priceAmount: "1.0000",
       minOrder: 100,
       maxOrder: 1000,
       platform: "TikTok",
@@ -128,7 +128,7 @@ describe("conservative catalogue normalization", () => {
         policyReviewed: false,
         evidenceUrl: null,
         normalizationVersion: 1,
-        pricePerThousandUsd: "1",
+        priceAmount: "1",
         minOrder: 100,
         maxOrder: 1000,
         available: true,

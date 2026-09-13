@@ -50,6 +50,17 @@ describe("public catalogue rendering", () => {
     vi.stubGlobal("window", { location: { search: "?services=service-40,missing" } });
     expect(render(Compare)).toContain("Some selected services are no longer available");
   });
+  it("shows the actual price unit and suppresses a cheapest badge for mixed currencies", () => {
+    const provider = state.data.providers[0];
+    const a = {...state.data.services[0], priceCurrency: "INR", priceUnit: "per_item", priceAmount: 0.0001};
+    const b = {...a, id: "service-41", priceCurrency: "USD"};
+    state.data = {...state.data, ...catalogueIndex([provider], [a,b])};
+    vi.stubGlobal("window", {location: {search: "?services=service-40,service-41"}});
+    const html = render(Compare);
+    expect(html).toContain("INR 0.0001"); expect(html).toContain("per item");
+    expect(html).toContain("No lowest-price ranking"); expect(html).not.toContain(">Lowest price<");
+    expect(render(ServiceRow, {service: a, selected: false, onToggle: () => {}})).toContain("per item");
+  });
   it("marks absent scores as insufficient evidence without a positive grade", () => {
     const html = render(ScoreRing, { score: null, showLabel: true });
     expect(html).toContain("Insufficient evidence"); expect(html).not.toContain("Good"); expect(html).not.toContain("/100");

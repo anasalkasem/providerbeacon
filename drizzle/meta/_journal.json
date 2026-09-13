@@ -50,6 +50,13 @@
       "when": 1789325832723,
       "tag": "0006_quarantine_source_values",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1789332104923,
+      "tag": "0007_explicit_pricing",
+      "breakpoints": true
     }
   ]
 }

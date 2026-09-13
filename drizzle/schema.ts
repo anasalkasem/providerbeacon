@@ -83,7 +83,12 @@ export const serviceRecords = mysqlTable("service_records", {
   category: varchar("category", { length: 120 }).notNull(),
   name: varchar("name", { length: 300 }).notNull(),
   status: mysqlEnum("status", ["draft", "active", "paused", "archived"]).default("draft").notNull(),
-  pricePerThousandUsd: decimal("pricePerThousandUsd", { precision: 12, scale: 4 }).notNull(),
+  // Retain the physical column name for an additive, rolling deployment migration.
+  priceAmount: decimal("pricePerThousandUsd", { precision: 12, scale: 4 }).notNull(),
+  sourceRate: varchar("sourceRate", { length: 2000 }),
+  priceCurrency: varchar("priceCurrency", { length: 3 }),
+  priceUnit: mysqlEnum("priceUnit", ["per_1000", "per_item", "package"]),
+  packageDescription: varchar("packageDescription", { length: 300 }),
   minOrder: int("minOrder").notNull(),
   maxOrder: int("maxOrder").notNull(),
   startMinutesMin: int("startMinutesMin"),
@@ -124,7 +129,7 @@ export const serviceRecords = mysqlTable("service_records", {
   index("service_status_id_idx").on(table.status, table.id),
   index("service_platform_id_idx").on(table.platform, table.id),
   index("service_public_featured_idx").on(table.status, table.featured, table.id),
-  index("service_public_price_idx").on(table.status, table.pricePerThousandUsd, table.id),
+  index("service_public_price_idx").on(table.status, table.priceCurrency, table.priceUnit, table.priceAmount, table.id),
   index("service_provider_external_idx").on(table.providerId, table.externalId),
   index("service_review_id_idx").on(table.reviewStatus, table.id),
   index("service_normalization_id_idx").on(table.normalizationVersion, table.id),
@@ -223,7 +228,13 @@ export const providerSyncRows = mysqlTable("provider_sync_rows", {
 export const priceSnapshots = mysqlTable("price_snapshots", {
   id: int("id").autoincrement().primaryKey(),
   serviceId: int("serviceId").notNull().references(() => serviceRecords.id, { onDelete: "cascade" }),
-  pricePerThousandUsd: decimal("pricePerThousandUsd", { precision: 12, scale: 4 }).notNull(),
+  // Retain the physical column name for an additive, rolling deployment migration.
+  priceAmount: decimal("pricePerThousandUsd", { precision: 12, scale: 4 }).notNull(),
+  sourceRate: varchar("sourceRate", { length: 2000 }),
+  priceCurrency: varchar("priceCurrency", { length: 3 }),
+  priceUnit: mysqlEnum("priceUnit", ["per_1000", "per_item", "package"]),
+  packageDescription: varchar("packageDescription", { length: 300 }),
+  kind: mysqlEnum("kind", ["legacy", "source", "review"]).default("legacy").notNull(),
   capturedAt: timestamp("capturedAt").defaultNow().notNull(),
 }, table => [index("price_service_captured_idx").on(table.serviceId, table.capturedAt)]);
 

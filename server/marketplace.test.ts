@@ -52,7 +52,7 @@ describe("SMM Aggregator Marketplace Data Model", () => {
       const provider = providerFor(service);
       expect(provider).toBeDefined();
       expect(provider.id).toBe(service.providerId);
-      expect(service.pricePerThousand).toBeGreaterThan(0);
+      expect(service.priceAmount).toBeGreaterThan(0);
       expect(service.retention).toBeGreaterThan(80);
     }
   });
