@@ -190,6 +190,11 @@ export async function loginWithPassword(input: { email: string; password: string
     await writeAuthAudit({ actorUserId: row.user.id, action: "auth.login.failed", summary: "Rejected an invalid password", req: input.req });
     throw new Error("Email or password is incorrect");
   }
+  const [membership] = await db.select({ status: teamMembers.status }).from(teamMembers).where(eq(teamMembers.userId, row.user.id)).limit(1);
+  if (!membership || membership.status !== "active") {
+    await writeAuthAudit({ actorUserId: row.user.id, action: "auth.login.suspended", summary: "Rejected login for a non-active team account", req: input.req });
+    throw new Error("Account access is suspended");
+  }
   await db.update(staffAccounts).set({ failedLoginAttempts: 0, lockedUntil: null }).where(eq(staffAccounts.id, row.account.id));
   await db.update(users).set({ lastSignedIn: new Date() }).where(eq(users.id, row.user.id));
   const session = await createSession({ userId: row.user.id, mfaVerified: !row.account.mfaEnabled, req: input.req });
@@ -228,7 +233,8 @@ export async function authenticateStaffSession(token: string): Promise<User | nu
   if (!db || !token) return null;
   const [row] = await db.select({ session: staffSessions, user: users }).from(staffSessions)
     .innerJoin(users, eq(staffSessions.userId, users.id))
-    .where(and(eq(staffSessions.tokenHash, hashToken(token)), eq(staffSessions.mfaVerified, true), gt(staffSessions.expiresAt, new Date()))).limit(1);
+    .innerJoin(teamMembers, eq(teamMembers.userId, users.id))
+    .where(and(eq(staffSessions.tokenHash, hashToken(token)), eq(staffSessions.mfaVerified, true), gt(staffSessions.expiresAt, new Date()), eq(teamMembers.status, "active"))).limit(1);
   if (!row) return null;
   const stale = Date.now() - row.session.lastSeenAt.getTime() > 5 * 60_000;
   if (stale) await db.update(staffSessions).set({ lastSeenAt: new Date() }).where(eq(staffSessions.id, row.session.id));

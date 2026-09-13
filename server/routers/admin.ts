@@ -12,12 +12,13 @@ import {
   listLocalizedContent,
   listTeamMembers,
   seedMarketplaceIfEmpty,
+  setTeamMemberStatus,
   updateProviderStatus,
   updateServiceRecord,
   upsertLocalizedContent,
   writeAudit,
 } from "../marketplaceDb";
-import { listProviderIntegrations, saveProviderIntegration, setProviderIntegrationEnabled, syncStoredIntegration } from "../vaultDb";
+import { deleteProviderIntegration, listProviderIntegrations, saveProviderIntegration, setProviderIntegrationEnabled, syncStoredIntegration } from "../vaultDb";
 
 const teamRole = z.enum(["owner", "administrator", "operations_manager", "provider_reviewer", "catalogue_editor", "translation_manager", "auditor"]);
 
@@ -45,10 +46,12 @@ export const adminRouter = router({
     })).mutation(({ ctx, input }) => saveProviderIntegration({ ...input, actorUserId: ctx.user!.id })),
     setEnabled: permissionProcedure("integrations.write").input(z.object({ id: z.number().int().positive(), enabled: z.boolean() })).mutation(({ ctx, input }) => setProviderIntegrationEnabled({ ...input, actorUserId: ctx.user!.id })),
     syncNow: permissionProcedure("integrations.write").input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => syncStoredIntegration({ id: input.id, actorUserId: ctx.user!.id })),
+    remove: permissionProcedure("integrations.write").input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => deleteProviderIntegration({ id: input.id, actorUserId: ctx.user!.id })),
   }),
   team: router({
     list: permissionProcedure("team.read").query(() => listTeamMembers()),
     invite: permissionProcedure("team.write").input(z.object({ email: z.string().email().max(320), role: teamRole.exclude(["owner"]) })).mutation(({ ctx, input }) => createTeamInvite({ ...input, actorUserId: ctx.user!.id })),
+    setStatus: permissionProcedure("team.write").input(z.object({ id: z.number().int().positive(), status: z.enum(["active", "suspended"]) })).mutation(({ ctx, input }) => setTeamMemberStatus({ ...input, actorUserId: ctx.user!.id })),
   }),
   translations: router({
     list: permissionProcedure("translations.read").query(() => listLocalizedContent()),

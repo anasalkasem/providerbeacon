@@ -133,6 +133,24 @@ export async function setProviderIntegrationEnabled(input: { id: number; enabled
   return { success: true };
 }
 
+export async function deleteProviderIntegration(input: { id: number; actorUserId: number }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const [integration] = await db.select().from(providerIntegrations).where(eq(providerIntegrations.id, input.id)).limit(1);
+  if (!integration) throw new Error("Integration not found");
+  if (integration.status === "active") throw new Error("Disable scheduled synchronization before deleting this integration");
+  await db.delete(providerIntegrations).where(eq(providerIntegrations.id, input.id));
+  await writeAudit({
+    actorUserId: input.actorUserId,
+    action: "integration.vault.delete",
+    entityType: "provider_integration",
+    entityId: String(input.id),
+    summary: `Deleted disabled provider integration ${integration.name}`,
+    metadata: { providerId: integration.providerId, host: new URL(integration.baseUrl).host },
+  });
+  return { success: true };
+}
+
 export async function syncStoredIntegration(input: { id: number; actorUserId?: number; scheduled?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");

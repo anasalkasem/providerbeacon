@@ -3,7 +3,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { providers as seedProviders, services as seedServices } from "../client/src/data/marketplace";
-import { auditEntries, localizedContent, priceSnapshots, providerIntegrations, providerRecords, serviceRecords, teamMembers, type TeamRole } from "../drizzle/schema";
+import { auditEntries, localizedContent, priceSnapshots, providerIntegrations, providerRecords, serviceRecords, staffSessions, teamMembers, type TeamRole } from "../drizzle/schema";
 import { getDb } from "./db";
 
 const tierToDb = {
@@ -116,6 +116,17 @@ export async function seedMarketplaceIfEmpty(actorUserId?: number) {
 }
 
 export async function listTeamMembers() { const db = await getDb(); return db ? db.select().from(teamMembers).orderBy(desc(teamMembers.createdAt)) : []; }
+export async function setTeamMemberStatus(input: { id: number; status: "active" | "suspended"; actorUserId: number }) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const [member] = await db.select().from(teamMembers).where(eq(teamMembers.id, input.id)).limit(1);
+  if (!member) throw new Error("Team member not found");
+  if (member.role === "owner") throw new Error("The owner account cannot be suspended");
+  if (member.userId === input.actorUserId) throw new Error("You cannot suspend your own account");
+  await db.update(teamMembers).set({ status: input.status, invitationTokenHash: null, invitationExpiresAt: null }).where(eq(teamMembers.id, input.id));
+  if (input.status === "suspended" && member.userId) await db.delete(staffSessions).where(eq(staffSessions.userId, member.userId));
+  await writeAudit({ actorUserId: input.actorUserId, action: `team.member.${input.status}`, entityType: "team_member", entityId: String(input.id), summary: `${member.email} changed to ${input.status}` });
+  return { success: true };
+}
 export async function listAdminProviders() { const db = await getDb(); return db ? db.select().from(providerRecords).orderBy(desc(providerRecords.updatedAt)) : []; }
 export async function updateProviderStatus(input: { id: number; status: "draft" | "pending_review" | "active" | "suspended"; actorUserId: number }) {
   const db = await getDb(); if (!db) throw new Error("Database unavailable");

@@ -35,6 +35,15 @@ Build a production-ready aggregator for Social Media Marketing providers. Users 
 - [x] Hourly GitHub Actions schedule authenticated with short-lived OIDC
 - [x] Production migration, deployment and end-to-end verification
 
+## Operations milestone: first real provider onboarding
+
+- [x] Prevent suspended team members from authenticating and revoke their sessions
+- [x] Add owner controls to suspend/reactivate staff accounts
+- [x] Add audited deletion for obsolete provider integrations
+- [ ] Remove or deactivate production verification data without touching the owner account
+- [x] Improve the vault form for first-provider onboarding and validation
+- [ ] Deploy and verify the clean production state
+
 ## Role model
 
 - **Owner:** unrestricted access, billing/security and role administration

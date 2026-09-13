@@ -17,6 +17,7 @@ function functionBody(sourceText: string, name: string, nextName?: string) {
 describe("mutation audit contract", () => {
   it.each([
     ["seedMarketplaceIfEmpty", "listTeamMembers", "marketplace.seed"],
+    ["setTeamMemberStatus", "listAdminProviders", "team.member."],
     ["updateProviderStatus", "listAdminServices", "provider.status.update"],
     ["updateServiceRecord", "createTeamInvite", "service.update"],
     ["createTeamInvite", "acceptTeamInvite", "team.invite"],
@@ -44,7 +45,8 @@ describe("mutation audit contract", () => {
 
   it.each([
     ["saveProviderIntegration", "setProviderIntegrationEnabled", "integration.vault"],
-    ["setProviderIntegrationEnabled", "syncStoredIntegration", "integration.schedule.toggle"],
+    ["setProviderIntegrationEnabled", "deleteProviderIntegration", "integration.schedule.toggle"],
+    ["deleteProviderIntegration", "syncStoredIntegration", "integration.vault.delete"],
     ["syncStoredIntegration", "runDueProviderSyncs", "integration.schedule"],
   ])("requires %s to write a vault audit entry", (name, nextName, action) => {
     const source = functionBody(vaultSource, name, nextName);

@@ -1,4 +1,6 @@
 import DashboardLayout from "@/components/DashboardLayout";
+import ProviderIntegrationVault from "@/components/ProviderIntegrationVault";
+import TeamAccessTable from "@/components/TeamAccessTable";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,7 +31,7 @@ const roleKeys: Record<string, AdminTextKey> = { owner: "owner", administrator: 
 export default function AdminModule() {
   const [, params] = useRoute("/admin/:module"); const key = (params?.module ?? "providers") as ModuleKey; const config = modules[key] ?? modules.providers; const Icon = config.icon;
   const text = useAdminText();
-  return <DashboardLayout><div className="mx-auto max-w-[1450px] p-2 sm:p-5"><div className="flex items-center gap-4 border-b border-slate-200 pb-6"><div className="grid size-12 place-items-center rounded-2xl bg-blue-50 text-blue-700"><Icon/></div><div><p className="text-xs font-bold uppercase tracking-[.18em] text-cyan-700">{text("controlCenter")}</p><h1 className="mt-1 text-3xl font-extrabold text-slate-950">{text(config.title)}</h1><p className="mt-1 text-sm text-slate-500">{text(config.subtitle)}</p></div></div><div className="mt-6">{key === "providers" ? <ProviderTable/> : key === "services" ? <ServiceTable/> : key === "integrations" ? <IntegrationVault/> : key === "team" ? <TeamTable/> : key === "translations" ? <TranslationTable/> : <AuditTable/>}</div></div></DashboardLayout>;
+  return <DashboardLayout><div className="mx-auto max-w-[1450px] p-2 sm:p-5"><div className="flex items-center gap-4 border-b border-slate-200 pb-6"><div className="grid size-12 place-items-center rounded-2xl bg-blue-50 text-blue-700"><Icon/></div><div><p className="text-xs font-bold uppercase tracking-[.18em] text-cyan-700">{text("controlCenter")}</p><h1 className="mt-1 text-3xl font-extrabold text-slate-950">{text(config.title)}</h1><p className="mt-1 text-sm text-slate-500">{text(config.subtitle)}</p></div></div><div className="mt-6">{key === "providers" ? <ProviderTable/> : key === "services" ? <ServiceTable/> : key === "integrations" ? <ProviderIntegrationVault/> : key === "team" ? <TeamAccessTable/> : key === "translations" ? <TranslationTable/> : <AuditTable/>}</div></div></DashboardLayout>;
 }
 
 function Shell({ headers, children }: { headers: string[]; children: React.ReactNode }) { return <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div className="overflow-x-auto"><table className="w-full min-w-[800px]"><thead><tr className="border-b border-slate-200 bg-slate-50">{headers.map(h => <th key={h} className="px-5 py-3 text-start text-[10px] uppercase tracking-wider text-slate-400">{h}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{children}</tbody></table></div></div>; }
