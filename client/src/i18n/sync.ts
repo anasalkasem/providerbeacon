@@ -1,4 +1,23 @@
 export const syncEn = {
+  syncWithIssues: "Completed with source issues",
+  syncQuarantined: "Quarantined source records",
+  syncViewIssues: "Review source issues",
+  syncIssuesBody:
+    "These source records were excluded from import. Previous service values are retained and held for review. Prices below are raw API values; currency and unit are unconfirmed.",
+  syncIssueId: "Source ID",
+  syncIssueRate: "Source rate",
+  syncIssueMin: "Source minimum",
+  syncIssueMax: "Source maximum",
+  syncIssueName: "Missing name or name exceeds 300 characters",
+  syncIssuePrice: "Missing price or outside supported range (0.0001–100,000)",
+  syncIssueMinimum: "Minimum must be an integer from 1 to 2,147,483,647",
+  syncIssueMaximum:
+    "Maximum must be an integer within range and at least the minimum",
+  syncIssueIdentity: "Invalid source ID",
+  syncNoneApplied: "No service changes were applied.",
+  syncPartial:
+    "Completed batches were preserved. Retry to continue with a fresh source snapshot.",
+
   syncQueued: "Synchronization queued",
   syncPreparing: "Reading and checking the provider catalogue",
   syncImporting: "Importing services",
@@ -21,6 +40,25 @@ export const syncEn = {
   syncScheduleLabel: "Enable scheduled synchronization",
 } as const;
 export const syncAr: Record<keyof typeof syncEn, string> = {
+  syncWithIssues: "اكتملت مع ملاحظات على المصدر",
+  syncQuarantined: "سجلات مصدر معزولة",
+  syncViewIssues: "مراجعة سجلات المصدر المعيبة",
+  syncIssuesBody:
+    "استُبعدت هذه السجلات من الاستيراد. تُحفظ القيم السابقة للخدمات الموجودة وتُحال للمراجعة. الأسعار أدناه قيم API خام؛ العملة ووحدة التسعير غير مؤكّدتين.",
+  syncIssueId: "معرّف المصدر",
+  syncIssueRate: "سعر المصدر",
+  syncIssueMin: "أقل كمية في المصدر",
+  syncIssueMax: "أعلى كمية في المصدر",
+  syncIssueName: "الاسم مفقود أو يتجاوز ٣٠٠ حرف",
+  syncIssuePrice: "السعر مفقود أو خارج النطاق المدعوم (٠٫٠٠٠١–١٠٠٬٠٠٠)",
+  syncIssueMinimum: "أقل كمية يجب أن تكون عددًا صحيحًا من ١ إلى ٢٬١٤٧٬٤٨٣٬٦٤٧",
+  syncIssueMaximum:
+    "أعلى كمية يجب أن تكون عددًا صحيحًا ضمن النطاق وألا تقل عن أقل كمية",
+  syncIssueIdentity: "معرّف المصدر غير صالح",
+  syncNoneApplied: "لم تُطبّق تغييرات على الخدمات.",
+  syncPartial:
+    "حُفظت الدفعات المكتملة. أعد المحاولة للمتابعة باستخدام بيانات حديثة من المصدر.",
+
   syncQueued: "المزامنة في قائمة الانتظار",
   syncPreparing: "قراءة قائمة المزود والتحقق من بياناتها",
   syncImporting: "جارٍ استيراد الخدمات",

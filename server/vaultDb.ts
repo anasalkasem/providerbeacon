@@ -22,7 +22,7 @@ function safeInterval(value: number) {
 export async function listProviderIntegrations() {
   const db = await getDb();
   if (!db) return [];
-  const rows = await db.select({ integration: providerIntegrations, providerName: providerRecords.name, job: { id: providerSyncJobs.id, status: providerSyncJobs.status, totalCount: providerSyncJobs.totalCount, processedCount: providerSyncJobs.processedCount, reviewCount: providerSyncJobs.reviewCount, priceChangeCount: providerSyncJobs.priceChangeCount, missingCount: providerSyncJobs.missingCount, startedAt: providerSyncJobs.startedAt, finishedAt: providerSyncJobs.finishedAt, lastError: providerSyncJobs.lastError } })
+  const rows = await db.select({ integration: providerIntegrations, providerName: providerRecords.name, job: { id: providerSyncJobs.id, status: providerSyncJobs.status, totalCount: providerSyncJobs.totalCount, processedCount: providerSyncJobs.processedCount, invalidCount: providerSyncJobs.invalidCount, reviewCount: providerSyncJobs.reviewCount, priceChangeCount: providerSyncJobs.priceChangeCount, missingCount: providerSyncJobs.missingCount, startedAt: providerSyncJobs.startedAt, finishedAt: providerSyncJobs.finishedAt, lastError: providerSyncJobs.lastError } })
     .from(providerIntegrations)
     .innerJoin(providerRecords, eq(providerIntegrations.providerId, providerRecords.id))
     .leftJoin(providerSyncJobs, and(eq(providerSyncJobs.integrationId, providerIntegrations.id), eq(providerSyncJobs.id, sql`(select max(recent.id) from provider_sync_jobs recent where recent.integrationId = ${providerIntegrations.id})`)))

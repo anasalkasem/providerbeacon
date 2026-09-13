@@ -188,9 +188,10 @@ export const providerSyncJobs = mysqlTable("provider_sync_jobs", {
   scheduled: boolean("scheduled").default(false).notNull(),
   configFingerprint: varchar("configFingerprint", { length: 64 }).notNull(),
   sourceUrl: varchar("sourceUrl", { length: 500 }).notNull(),
-  status: mysqlEnum("status", ["queued", "preparing", "importing", "reconciling", "completed", "failed"]).default("queued").notNull(),
+  status: mysqlEnum("status", ["queued", "preparing", "importing", "reconciling", "completed", "completed_with_issues", "failed"]).default("queued").notNull(),
   totalCount: int("totalCount").default(0).notNull(),
   processedCount: int("processedCount").default(0).notNull(),
+  invalidCount: int("invalidCount").default(0).notNull(),
   reviewCount: int("reviewCount").default(0).notNull(),
   priceChangeCount: int("priceChangeCount").default(0).notNull(),
   missingCount: int("missingCount").default(0).notNull(),
@@ -212,10 +213,12 @@ export const providerSyncJobs = mysqlTable("provider_sync_jobs", {
 export const providerSyncRows = mysqlTable("provider_sync_rows", {
   jobId: int("jobId").notNull().references(() => providerSyncJobs.id, { onDelete: "cascade" }),
   ordinal: int("ordinal").notNull(),
+  invalid: boolean("invalid").default(false).notNull(),
   externalId: varchar("externalId", { length: 160 }).notNull(),
   payload: json("payload").notNull(),
 }, table => [primaryKey({ columns: [table.jobId, table.ordinal] }),
-  uniqueIndex("sync_row_external_unique").on(table.jobId, table.externalId)]);
+  uniqueIndex("sync_row_external_unique").on(table.jobId, table.externalId),
+  index("sync_row_issue_idx").on(table.jobId, table.invalid, table.ordinal)]);
 
 export const priceSnapshots = mysqlTable("price_snapshots", {
   id: int("id").autoincrement().primaryKey(),

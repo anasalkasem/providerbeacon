@@ -23,7 +23,7 @@ import {
 import { getDb } from "./db";
 import { assertPublicHttpsUrl, writeAudit } from "./marketplaceDb";
 import { decryptValue } from "./security";
-import { normalizeApiService } from "./serviceNormalizer";
+import { inspectApiService, normalizeApiService } from "./serviceNormalizer";
 import {
   applyCatalogueBatch,
   type NormalizedService,
@@ -42,6 +42,15 @@ const activeStatuses = [
 ] as const;
 type Job = typeof providerSyncJobs.$inferSelect;
 type Integration = typeof providerIntegrations.$inferSelect;
+type SourceIssue = {
+  sourceData: ReturnType<typeof inspectApiService>["sourceData"];
+  problems: string[];
+};
+type SnapshotItem = {
+  externalId: string;
+  invalid: boolean;
+  payload: NormalizedService | SourceIssue;
+};
 class SyncError extends Error {}
 class LostLease extends Error {}
 const leaseDate = () => new Date(Date.now() + LEASE_MS);
@@ -123,7 +132,7 @@ async function withJob<T>(
 
 async function fetchCatalogue(
   integration: Integration
-): Promise<NormalizedService[]> {
+): Promise<SnapshotItem[]> {
   if (
     !integration.credentialCiphertext ||
     !integration.credentialIv ||
@@ -209,27 +218,34 @@ async function fetchCatalogue(
     throw new SyncError(
       "Provider catalogue exceeds the 50,000-service safety limit; no changes were applied"
     );
-  const rows: NormalizedService[] = [];
+  const rows: SnapshotItem[] = [];
   const seen = new Set<string>();
   for (let index = 0; index < payload.length; index++) {
-    let row: NormalizedService;
-    try {
-      row = normalizeApiService(payload[index], index);
-    } catch {
+    const inspected = inspectApiService(payload[index]);
+    if (inspected.problems.includes("invalid_id"))
       throw new SyncError(
-        `Invalid ID, name, price or quantities at row ${index + 1} of ${payload.length}; no changes were applied`
+        `Invalid service identity at row ${index + 1} of ${payload.length}; no changes were applied`
       );
-    }
-    // MySQL uses case-insensitive external-ID comparisons; reject ambiguous identifiers before applying anything.
-    const key = row.externalId.toLowerCase();
+    const key = inspected.externalId.toLowerCase();
     if (seen.has(key))
       throw new SyncError(
         "Provider response contains duplicate service IDs; no changes were applied"
       );
     seen.add(key);
-    rows.push(row);
+    const invalid = inspected.problems.length > 0;
+    rows.push({
+      externalId: inspected.externalId,
+      invalid,
+      payload: invalid
+        ? { sourceData: inspected.sourceData, problems: inspected.problems }
+        : normalizeApiService(payload[index], index),
+    });
     if (index % 50 === 49) await yieldTurn();
   }
+  if (rows.every(row => row.invalid))
+    throw new SyncError(
+      `All ${rows.length} source services have invalid required values; existing services were preserved`
+    );
   return rows;
 }
 
@@ -264,18 +280,15 @@ async function prepareSnapshot(claim: Job) {
   const snapshotAt = new Date();
   for (let offset = 0; offset < rows.length; offset += SYNC_BATCH_SIZE) {
     await withJob(claim, async tx => {
-      await tx
-        .insert(providerSyncRows)
-        .values(
-          rows
-            .slice(offset, offset + SYNC_BATCH_SIZE)
-            .map((row, i) => ({
-              jobId: claim.id,
-              ordinal: offset + i + 1,
-              externalId: row.externalId,
-              payload: row,
-            }))
-        );
+      await tx.insert(providerSyncRows).values(
+        rows.slice(offset, offset + SYNC_BATCH_SIZE).map((row, i) => ({
+          jobId: claim.id,
+          ordinal: offset + i + 1,
+          externalId: row.externalId,
+          invalid: row.invalid,
+          payload: row.payload,
+        }))
+      );
     });
     await yieldTurn();
   }
@@ -285,6 +298,7 @@ async function prepareSnapshot(claim: Job) {
       .set({
         status: "importing",
         totalCount: rows.length,
+        invalidCount: rows.filter(row => row.invalid).length,
         snapshotAt,
         leaseToken: null,
         leaseUntil: null,
@@ -298,6 +312,8 @@ async function importSnapshotBatch(claim: Job) {
     const staged = await tx
       .select({
         payload: providerSyncRows.payload,
+        invalid: providerSyncRows.invalid,
+        externalId: providerSyncRows.externalId,
         ordinal: providerSyncRows.ordinal,
       })
       .from(providerSyncRows)
@@ -317,20 +333,121 @@ async function importSnapshotBatch(claim: Job) {
       throw new SyncError(
         "Validated snapshot is incomplete; run synchronization again"
       );
-    const result = await applyCatalogueBatch(tx, {
-      provider,
-      rows: staged.map(row => row.payload as NormalizedService),
-      sourceUrl: job.sourceUrl,
-      now: job.snapshotAt,
-      actorUserId: job.actorUserId ?? undefined,
-      jobId: job.id,
-    });
-    const processedCount = job.processedCount + result.importedCount;
+    const valid = staged.filter(row => !row.invalid);
+    const invalid = staged.filter(row => row.invalid);
+    const result = valid.length
+      ? await applyCatalogueBatch(tx, {
+          provider,
+          rows: valid.map(row => row.payload as NormalizedService),
+          sourceUrl: job.sourceUrl,
+          now: job.snapshotAt,
+          actorUserId: job.actorUserId ?? undefined,
+          jobId: job.id,
+        })
+      : { importedCount: 0, reviewCount: 0, priceChangeCount: 0 };
+    if (invalid.length) {
+      const existing = await tx
+        .select({
+          id: serviceRecords.id,
+          externalId: serviceRecords.externalId,
+          revision: serviceRecords.revision,
+          status: serviceRecords.status,
+          reviewStatus: serviceRecords.reviewStatus,
+          incomplete: serviceRecords.incomplete,
+          pricingConfirmed: serviceRecords.pricingConfirmed,
+          policyReviewed: serviceRecords.policyReviewed,
+          reviewReason: serviceRecords.reviewReason,
+          reviewedAt: serviceRecords.reviewedAt,
+          reviewedByUserId: serviceRecords.reviewedByUserId,
+        })
+        .from(serviceRecords)
+        .where(
+          and(
+            eq(serviceRecords.providerId, provider.id),
+            inArray(
+              serviceRecords.externalId,
+              invalid.map(row => row.externalId)
+            )
+          )
+        )
+        .limit(201)
+        .for("update");
+      for (const row of existing) {
+        await tx
+          .update(serviceRecords)
+          .set({
+            status: row.status === "active" ? "draft" : row.status,
+            reviewStatus: "changes_requested",
+            incomplete: true,
+            pricingConfirmed: false,
+            policyReviewed: false,
+            reviewedAt: null,
+            reviewedByUserId: null,
+            revision: row.revision + 1,
+            reviewReason:
+              "Invalid provider source values; inspect the quarantined source record in the connection's sync report",
+          })
+          .where(eq(serviceRecords.id, row.id));
+      }
+      if (existing.length)
+        await tx.insert(auditEntries).values(
+          existing.map(row => ({
+            actorUserId: job.actorUserId,
+            action: "service.source.invalid",
+            entityType: "service",
+            entityId: String(row.id),
+            summary:
+              "Invalid source values; retained previous values and held publication",
+            metadata: {
+              jobId: job.id,
+              before: {
+                revision: row.revision,
+                status: row.status,
+                reviewStatus: row.reviewStatus,
+                incomplete: row.incomplete,
+                pricingConfirmed: row.pricingConfirmed,
+                policyReviewed: row.policyReviewed,
+                reviewReason: row.reviewReason,
+                reviewedAt: row.reviewedAt,
+                reviewedByUserId: row.reviewedByUserId,
+              },
+              after: {
+                revision: row.revision + 1,
+                status: row.status === "active" ? "draft" : row.status,
+                reviewStatus: "changes_requested",
+                incomplete: true,
+                pricingConfirmed: false,
+                policyReviewed: false,
+                reviewedAt: null,
+                reviewedByUserId: null,
+                reviewReason:
+                  "Invalid provider source values; inspect the quarantined source record in the connection's sync report",
+              },
+            },
+          }))
+        );
+      await writeAudit(
+        {
+          actorUserId: job.actorUserId ?? undefined,
+          action: "integration.services.quarantine",
+          entityType: "provider",
+          entityId: String(provider.id),
+          summary: `Quarantined ${invalid.length} invalid source records`,
+          metadata: {
+            jobId: job.id,
+            invalidCount: invalid.length,
+            heldServices: existing.length,
+          },
+        },
+        tx
+      );
+    }
+    const processedCount = job.processedCount + staged.length;
     await tx
       .update(providerSyncJobs)
       .set({
         processedCount,
-        reviewCount: job.reviewCount + result.reviewCount,
+        reviewCount: job.reviewCount + result.reviewCount + invalid.length,
         priceChangeCount: job.priceChangeCount + result.priceChangeCount,
         status: processedCount === job.totalCount ? "reconciling" : "importing",
         leaseToken: null,
@@ -384,31 +501,29 @@ async function reconcileSnapshotBatch(claim: Job) {
         .where(eq(serviceRecords.id, row.id));
     }
     if (missing.length) {
-      await tx
-        .insert(auditEntries)
-        .values(
-          missing.map(row => ({
-            actorUserId: job.actorUserId,
-            action: "service.source.missing",
-            entityType: "service",
-            entityId: String(row.id),
-            summary: "Service no longer returned by its provider API",
-            metadata: {
-              jobId: job.id,
-              reason: "Absent from complete validated API response",
-              before: {
-                available: true,
-                status: row.status,
-                revision: row.revision,
-              },
-              after: {
-                available: false,
-                status: row.status === "active" ? "draft" : row.status,
-                revision: row.revision + 1,
-              },
+      await tx.insert(auditEntries).values(
+        missing.map(row => ({
+          actorUserId: job.actorUserId,
+          action: "service.source.missing",
+          entityType: "service",
+          entityId: String(row.id),
+          summary: "Service no longer returned by its provider API",
+          metadata: {
+            jobId: job.id,
+            reason: "Absent from complete validated API response",
+            before: {
+              available: true,
+              status: row.status,
+              revision: row.revision,
             },
-          }))
-        );
+            after: {
+              available: false,
+              status: row.status === "active" ? "draft" : row.status,
+              revision: row.revision + 1,
+            },
+          },
+        }))
+      );
       await tx
         .update(providerSyncJobs)
         .set({
@@ -422,7 +537,7 @@ async function reconcileSnapshotBatch(claim: Job) {
     await tx
       .update(providerSyncJobs)
       .set({
-        status: "completed",
+        status: job.invalidCount ? "completed_with_issues" : "completed",
         activeProviderId: null,
         finishedAt: now,
         leaseToken: null,
@@ -448,10 +563,11 @@ async function reconcileSnapshotBatch(claim: Job) {
         action: "integration.services.sync",
         entityType: "provider",
         entityId: String(provider.id),
-        summary: `Completed background synchronization of ${job.totalCount} services`,
+        summary: `Completed background synchronization: ${job.totalCount - job.invalidCount} imported, ${job.invalidCount} quarantined`,
         metadata: {
           jobId: job.id,
-          importedCount: job.processedCount,
+          importedCount: job.processedCount - job.invalidCount,
+          invalidCount: job.invalidCount,
           reviewCount: job.reviewCount,
           priceChangeCount: job.priceChangeCount,
           missingCount: job.missingCount,
@@ -604,13 +720,68 @@ export async function cleanupProviderSyncSnapshots() {
   if (!job) return;
   const [removed] = await db
     .delete(providerSyncRows)
-    .where(eq(providerSyncRows.jobId, job.id))
+    .where(
+      and(
+        eq(providerSyncRows.jobId, job.id),
+        eq(providerSyncRows.invalid, false)
+      )
+    )
     .limit(1000);
   if (removed.affectedRows < 1000)
     await db
       .update(providerSyncJobs)
       .set({ stagingCleared: true })
       .where(eq(providerSyncJobs.id, job.id));
+}
+
+export async function listProviderSyncIssues(input: {
+  jobId: number;
+  cursor?: number;
+}) {
+  const db = await database();
+  const [job] = await db
+    .select({ invalidCount: providerSyncJobs.invalidCount })
+    .from(providerSyncJobs)
+    .where(eq(providerSyncJobs.id, input.jobId))
+    .limit(1);
+  if (!job) throw new Error("Synchronization job not found");
+  const rows = await db
+    .select({
+      ordinal: providerSyncRows.ordinal,
+      externalId: providerSyncRows.externalId,
+      payload: providerSyncRows.payload,
+    })
+    .from(providerSyncRows)
+    .where(
+      and(
+        eq(providerSyncRows.jobId, input.jobId),
+        eq(providerSyncRows.invalid, true),
+        gt(providerSyncRows.ordinal, input.cursor ?? 0)
+      )
+    )
+    .orderBy(asc(providerSyncRows.ordinal))
+    .limit(26);
+  const items = rows.slice(0, 25).map(row => {
+    const issue = row.payload as SourceIssue;
+    const value = (key: string, limit = 80) =>
+      issue.sourceData[key] == null
+        ? null
+        : String(issue.sourceData[key]).slice(0, limit);
+    return {
+      ordinal: row.ordinal,
+      externalId: row.externalId,
+      name: value("name", 300),
+      rate: value("rate") ?? value("price"),
+      min: value("min"),
+      max: value("max"),
+      problems: issue.problems,
+    };
+  });
+  return {
+    items,
+    total: job.invalidCount,
+    nextCursor: rows.length > 25 ? items.at(-1)!.ordinal : null,
+  };
 }
 
 export function startProviderSyncWorker() {

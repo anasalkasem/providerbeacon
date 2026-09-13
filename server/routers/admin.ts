@@ -1,3 +1,4 @@
+import { listProviderSyncIssues } from "../providerSync";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { invokeLLM } from "../_core/llm";
@@ -54,6 +55,7 @@ export const adminRouter = router({
     update: permissionProcedure("services.write").input(z.object({ id: z.number().int().positive(), status: z.enum(["draft", "active", "paused", "archived"]).optional(), pricePerThousandUsd: z.number().positive().max(100000).optional() }).refine(value => value.status != null || value.pricePerThousandUsd != null)).mutation(({ ctx, input }) => updateServiceRecord({ ...input, actorUserId: ctx.user!.id })),
   }),
   integrations: router({
+    issues: permissionProcedure("integrations.read").input(z.object({ jobId: z.number().int().positive(), cursor: z.number().int().nonnegative().optional() })).query(({ input }) => listProviderSyncIssues(input)),
     alerts: permissionProcedure("integrations.read").query(() => listSyncAlerts()),
     list: permissionProcedure("integrations.read").query(() => listProviderIntegrations()),
     save: permissionProcedure("integrations.write").input(z.object({

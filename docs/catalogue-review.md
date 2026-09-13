@@ -9,7 +9,7 @@ The shared English/Arabic catalogue and review pages use the same components, AP
 3. An editor explicitly confirms the currency is USD and the rate is per 1,000 units, against a public evidence URL, and checks publication eligibility. A source response containing only a rate is insufficient to make those claims.
 4. A reviewer approves complete records with price/source evidence no older than 30 days. Approval does not publish a draft.
 5. A publisher publishes approved records only when their provider is active and the service is available. Paused/archived services must first return to draft.
-6. Source changes reset approval and withdraw active services to draft. A service missing from a complete, valid API catalogue is held, never deleted. Empty/invalid responses preserve the existing catalogue and report failure.
+6. Source changes reset approval and withdraw active services to draft. A service missing from a complete, valid API catalogue is held, never deleted. Empty responses and invalid/duplicate catalogue identities preserve the existing catalogue and report failure. Stable-ID rows with invalid values are quarantined while valid rows continue; see background-catalogue-sync.md.
 
 Every human review mutation requires a reason. Revisions reject outdated decisions; bulk decisions are all-or-nothing. Audit writes and data mutations share a transaction. Review audit entries retain actor, request IP, reason and before/after values. Automated changes record provider source, changed values and revisions; they do not pretend to have a human reviewer or request IP.
 
@@ -43,7 +43,7 @@ Deploy after the MySQL quality job passes. Wait for the `[Catalogue] Legacy norm
 
 ## Bounds and alerts
 
-- Import: 5,000 rows, 8 MB streamed response, 20-second network timeout. Oversized/invalid catalogues fail before writes; they are not truncated. Larger providers need a paginated upstream contract and a dedicated import job before raising these caps.
+- Import: durable background jobs, 100-row transactions, a 50,000-row / 16 MiB response safety limit and a 30-second upstream timeout. Invalid values are quarantined without inventing replacements. See [background synchronization](background-catalogue-sync.md) for checkpoints, recovery, source issues and explicit failure semantics.
 - A provider lock serializes imports, while an indexed, bounded metadata lookup replaces one SELECT per service. Raw source JSON stays in the database during this lookup. New records and audit/price inserts use small batches. Only initial/changed prices add snapshots. Changed service updates remain individual inside the transaction; large updates can occupy a connection and need a separate import worker at higher scale.
 - Legacy normalization: 100 rows per transaction. No API key is required for classifying already-stored records.
 - Review: 50 unique IDs maximum, server revisions, stable lock order. No operation selects all matching pages invisibly.
