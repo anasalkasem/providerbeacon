@@ -1,16 +1,30 @@
-import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { permissionProcedure, protectedProcedure, router } from "../_core/trpc";
+import { z } from "zod";
 import { invokeLLM } from "../_core/llm";
+import { permissionProcedure, protectedProcedure, router } from "../_core/trpc";
 import { resolveTeamRole, rolePermissions } from "../authorization";
-import { acceptTeamInvite, createTeamInvite, listAdminProviders, listAdminServices, listAuditEntries, listLocalizedContent, listTeamMembers, seedMarketplaceIfEmpty, syncProviderServicesNow, updateProviderStatus, updateServiceRecord, upsertLocalizedContent, writeAudit } from "../marketplaceDb";
+import {
+  acceptTeamInvite,
+  createTeamInvite,
+  listAdminProviders,
+  listAdminServices,
+  listAuditEntries,
+  listLocalizedContent,
+  listTeamMembers,
+  seedMarketplaceIfEmpty,
+  updateProviderStatus,
+  updateServiceRecord,
+  upsertLocalizedContent,
+  writeAudit,
+} from "../marketplaceDb";
+import { listProviderIntegrations, saveProviderIntegration, setProviderIntegrationEnabled, syncStoredIntegration } from "../vaultDb";
 
 const teamRole = z.enum(["owner", "administrator", "operations_manager", "provider_reviewer", "catalogue_editor", "translation_manager", "auditor"]);
 
 export const adminRouter = router({
   access: protectedProcedure.query(async ({ ctx }) => {
     const role = await resolveTeamRole(ctx.user!);
-    return { role, permissions: role ? rolePermissions[role] : [] };
+    return { role, permissions: role ? rolePermissions[role] : [], authMode: ctx.authMode ?? null };
   }),
   acceptInvite: protectedProcedure.input(z.object({ token: z.string().min(20).max(200) })).mutation(({ ctx, input }) => acceptTeamInvite({ token: input.token, userId: ctx.user!.id, email: ctx.user!.email })),
   seedMarketplace: permissionProcedure("providers.write").mutation(({ ctx }) => seedMarketplaceIfEmpty(ctx.user!.id)),
@@ -23,7 +37,14 @@ export const adminRouter = router({
     update: permissionProcedure("services.write").input(z.object({ id: z.number().int().positive(), status: z.enum(["draft", "active", "paused", "archived"]).optional(), pricePerThousandUsd: z.number().positive().max(100000).optional() }).refine(value => value.status != null || value.pricePerThousandUsd != null)).mutation(({ ctx, input }) => updateServiceRecord({ ...input, actorUserId: ctx.user!.id })),
   }),
   integrations: router({
-    syncNow: permissionProcedure("integrations.write").input(z.object({ providerId: z.number().int().positive(), baseUrl: z.string().url().max(500), apiKey: z.string().min(8).max(500) })).mutation(({ ctx, input }) => syncProviderServicesNow({ ...input, actorUserId: ctx.user!.id })),
+    list: permissionProcedure("integrations.read").query(() => listProviderIntegrations()),
+    save: permissionProcedure("integrations.write").input(z.object({
+      id: z.number().int().positive().optional(), providerId: z.number().int().positive(), name: z.string().trim().min(2).max(160),
+      baseUrl: z.string().url().max(500), apiKey: z.string().min(8).max(500).optional(),
+      syncIntervalMinutes: z.number().int().min(60).max(10080), enabled: z.boolean(),
+    })).mutation(({ ctx, input }) => saveProviderIntegration({ ...input, actorUserId: ctx.user!.id })),
+    setEnabled: permissionProcedure("integrations.write").input(z.object({ id: z.number().int().positive(), enabled: z.boolean() })).mutation(({ ctx, input }) => setProviderIntegrationEnabled({ ...input, actorUserId: ctx.user!.id })),
+    syncNow: permissionProcedure("integrations.write").input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => syncStoredIntegration({ id: input.id, actorUserId: ctx.user!.id })),
   }),
   team: router({
     list: permissionProcedure("team.read").query(() => listTeamMembers()),

@@ -22,6 +22,19 @@ Build a production-ready aggregator for Social Media Marketing providers. Users 
 - [x] Production database provisioned, migrated, seeded and verified live
 - [x] Custom-domain DNS and SSL activation for providerbeacon.com and www
 
+## Security milestone: independent team access and encrypted integrations
+
+- [x] Independent email/password authentication with scrypt password hashing
+- [x] Host-only secure session cookies, expiry and server-side revocation
+- [x] Failed-login lockout and timing-safe unknown-account handling
+- [x] TOTP multi-factor authentication with one-time recovery codes
+- [x] One-time owner bootstrap and invitation-based staff registration
+- [x] AES-256-GCM provider credential vault with purpose-bound encryption
+- [x] Granular integration permissions and complete audit logging
+- [x] Admin UI for credential rotation, scheduling and manual synchronization
+- [x] Hourly GitHub Actions schedule authenticated with short-lived OIDC
+- [ ] Production migration, deployment and end-to-end verification
+
 ## Role model
 
 - **Owner:** unrestricted access, billing/security and role administration

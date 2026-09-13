@@ -74,7 +74,7 @@ export function isPrivateAddress(address: string) {
   return a === 0 || a === 10 || a === 127 || (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || a >= 224;
 }
 
-async function assertPublicHttpsUrl(value: string) {
+export async function assertPublicHttpsUrl(value: string) {
   const endpoint = new URL(value);
   if (endpoint.protocol !== "https:" || endpoint.username || endpoint.password || (endpoint.port && endpoint.port !== "443")) throw new Error("Provider API must be a standard public HTTPS URL");
   if (endpoint.hostname === "localhost" || (isIP(endpoint.hostname) && isPrivateAddress(endpoint.hostname))) throw new Error("Private network addresses are not allowed");
@@ -165,7 +165,7 @@ export async function upsertLocalizedContent(input: { entityType: "provider" | "
   await writeAudit({ actorUserId: input.actorUserId, action: "translation.upsert", entityType: input.entityType, entityId: `${input.entityId}:${input.fieldName}:${input.locale}`, summary: `Updated ${input.locale} translation with ${input.status} status` });
   return { success: true };
 }
-export async function syncProviderServicesNow(input: { providerId: number; baseUrl: string; apiKey: string; actorUserId: number }) {
+export async function syncProviderServicesNow(input: { providerId: number; baseUrl: string; apiKey: string; actorUserId?: number }) {
   const db = await getDb(); if (!db) throw new Error("Database unavailable");
   const [provider] = await db.select().from(providerRecords).where(eq(providerRecords.id, input.providerId)).limit(1);
   if (!provider) throw new Error("Provider not found");

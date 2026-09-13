@@ -12,6 +12,36 @@ export const users = mysqlTable("users", {
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 });
 
+export const staffAccounts = mysqlTable("staff_accounts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  email: varchar("email", { length: 320 }).notNull(),
+  passwordHash: varchar("passwordHash", { length: 255 }).notNull(),
+  passwordChangedAt: timestamp("passwordChangedAt").defaultNow().notNull(),
+  failedLoginAttempts: int("failedLoginAttempts").default(0).notNull(),
+  lockedUntil: timestamp("lockedUntil"),
+  mfaEnabled: boolean("mfaEnabled").default(false).notNull(),
+  mfaSecretCiphertext: text("mfaSecretCiphertext"),
+  mfaSecretIv: varchar("mfaSecretIv", { length: 64 }),
+  mfaSecretTag: varchar("mfaSecretTag", { length: 64 }),
+  mfaSecretVersion: int("mfaSecretVersion").default(1).notNull(),
+  recoveryCodeHashes: json("recoveryCodeHashes").$type<string[]>(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [uniqueIndex("staff_account_user_unique").on(table.userId), uniqueIndex("staff_account_email_unique").on(table.email)]);
+
+export const staffSessions = mysqlTable("staff_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  tokenHash: varchar("tokenHash", { length: 64 }).notNull(),
+  mfaVerified: boolean("mfaVerified").default(false).notNull(),
+  ipAddress: varchar("ipAddress", { length: 64 }),
+  userAgent: varchar("userAgent", { length: 500 }),
+  expiresAt: timestamp("expiresAt").notNull(),
+  lastSeenAt: timestamp("lastSeenAt").defaultNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, table => [uniqueIndex("staff_session_token_unique").on(table.tokenHash), index("staff_session_user_expiry_idx").on(table.userId, table.expiresAt)]);
+
 export const providerRecords = mysqlTable("provider_records", {
   id: int("id").autoincrement().primaryKey(),
   slug: varchar("slug", { length: 160 }).notNull(),
@@ -101,12 +131,20 @@ export const providerIntegrations = mysqlTable("provider_integrations", {
   name: varchar("name", { length: 160 }).notNull(),
   baseUrl: varchar("baseUrl", { length: 500 }).notNull(),
   credentialReference: varchar("credentialReference", { length: 240 }),
+  credentialCiphertext: text("credentialCiphertext"),
+  credentialIv: varchar("credentialIv", { length: 64 }),
+  credentialTag: varchar("credentialTag", { length: 64 }),
+  credentialVersion: int("credentialVersion").default(1).notNull(),
   status: mysqlEnum("status", ["disabled", "active", "error"]).default("disabled").notNull(),
+  syncIntervalMinutes: int("syncIntervalMinutes").default(360).notNull(),
+  nextSyncAt: timestamp("nextSyncAt"),
+  syncLockUntil: timestamp("syncLockUntil"),
+  consecutiveFailures: int("consecutiveFailures").default(0).notNull(),
   lastSyncedAt: timestamp("lastSyncedAt"),
   lastError: text("lastError"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, table => [index("integration_provider_status_idx").on(table.providerId, table.status)]);
+}, table => [index("integration_provider_status_idx").on(table.providerId, table.status), index("integration_due_idx").on(table.status, table.nextSyncAt)]);
 
 export const priceSnapshots = mysqlTable("price_snapshots", {
   id: int("id").autoincrement().primaryKey(),
@@ -130,6 +168,7 @@ export const localizedContent = mysqlTable("localized_content", {
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+export type StaffAccount = typeof staffAccounts.$inferSelect;
 export type ProviderRecord = typeof providerRecords.$inferSelect;
 export type ServiceRecord = typeof serviceRecords.$inferSelect;
 export type TeamMember = typeof teamMembers.$inferSelect;

@@ -1,0 +1,38 @@
+name: Provider catalogue sync
+
+on:
+  schedule:
+    - cron: "7 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: provider-catalogue-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    name: Sync due provider catalogues
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Request short-lived GitHub OIDC token and trigger sync
+        shell: bash
+        env:
+          SYNC_AUDIENCE: https://providerbeacon.com
+          SYNC_ENDPOINT: https://providerbeacon.com/api/internal/provider-sync
+        run: |
+          set -euo pipefail
+          token_response=$(curl --fail --silent --show-error \
+            -H "Authorization: bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=${SYNC_AUDIENCE}")
+          oidc_token=$(printf '%s' "$token_response" | node -e 'let d="";process.stdin.on("data",c=>d+=c).on("end",()=>process.stdout.write(JSON.parse(d).value))')
+          curl --fail --silent --show-error \
+            --request POST \
+            --header "Authorization: Bearer ${oidc_token}" \
+            --header "Content-Type: application/json" \
+            --data '{"source":"github-actions"}' \
+            "$SYNC_ENDPOINT"

@@ -23,7 +23,7 @@ import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import { useAdminText, type AdminTextKey } from "@/i18n/admin";
-import { BadgeCheck, Languages, Layers3, LayoutDashboard, LogOut, PanelLeft, ScrollText, Users } from "lucide-react";
+import { BadgeCheck, KeyRound, Languages, Layers3, LayoutDashboard, LockKeyhole, LogOut, PanelLeft, ScrollText, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -33,9 +33,11 @@ const menuItems = [
   { icon: LayoutDashboard, label: "overview" as AdminTextKey, path: "/admin", permission: null },
   { icon: BadgeCheck, label: "providers" as AdminTextKey, path: "/admin/providers", permission: "providers.read" },
   { icon: Layers3, label: "services" as AdminTextKey, path: "/admin/services", permission: "services.read" },
+  { icon: KeyRound, label: "integrations" as AdminTextKey, path: "/admin/integrations", permission: "integrations.read" },
   { icon: Users, label: "team" as AdminTextKey, path: "/admin/team", permission: "team.read" },
   { icon: Languages, label: "translations" as AdminTextKey, path: "/admin/translations", permission: "translations.read" },
   { icon: ScrollText, label: "audit" as AdminTextKey, path: "/admin/audit", permission: "audit.read" },
+  { icon: LockKeyhole, label: "security" as AdminTextKey, path: "/admin/security", permission: null },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -55,7 +57,6 @@ export default function DashboardLayout({
   const { loading, user } = useAuth();
   const text = useAdminText();
   const access = trpc.admin.access.useQuery(undefined, { enabled: Boolean(user), retry: false });
-  const authConfigured = Boolean(import.meta.env.VITE_OAUTH_PORTAL_URL && import.meta.env.VITE_APP_ID);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
@@ -71,22 +72,19 @@ export default function DashboardLayout({
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-6">
             <h1 className="text-2xl font-semibold tracking-tight text-center">
-              {authConfigured ? text("signInContinue") : text("adminNotConfigured")}
+              {text("signInContinue")}
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              {authConfigured
-                ? text("authRequired") : text("authSetup")}
+              {text("authRequired")}
             </p>
           </div>
-          {authConfigured && (
-            <Button
-              onClick={() => startLogin()}
-              size="lg"
-              className="w-full shadow-lg hover:shadow-xl transition-all"
-            >
-              {text("signIn")}
-            </Button>
-          )}
+          <Button
+            onClick={() => startLogin()}
+            size="lg"
+            className="w-full shadow-lg hover:shadow-xl transition-all"
+          >
+            {text("signIn")}
+          </Button>
         </div>
       </div>
     );
@@ -247,6 +245,10 @@ function DashboardLayoutContent({
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setLocation("/admin/security")} className="cursor-pointer">
+                  <LockKeyhole className="mr-2 h-4 w-4" />
+                  <span>{text("security")}</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer text-destructive focus:text-destructive"

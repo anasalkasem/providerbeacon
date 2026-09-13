@@ -9,6 +9,8 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic } from "./static";
 import { runMigrations } from "../migrate";
+import { verifyScheduledWorkflowToken } from "../schedulerAuth";
+import { runDueProviderSyncs } from "../vaultDb";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -43,6 +45,19 @@ async function startServer() {
       timestamp: new Date().toISOString(),
       uptime: Math.round(process.uptime()),
     });
+  });
+  app.post("/api/internal/provider-sync", async (req, res) => {
+    const authorization = req.headers.authorization ?? "";
+    const token = authorization.startsWith("Bearer ") ? authorization.slice(7) : "";
+    if (!token) return res.status(401).json({ error: "Missing workflow identity token" });
+    try {
+      const identity = await verifyScheduledWorkflowToken(token);
+      const result = await runDueProviderSyncs(10);
+      return res.status(200).json({ ok: true, trigger: identity.claims.eventName, ...result });
+    } catch (error) {
+      console.warn("[Scheduler] Rejected scheduled sync request:", error instanceof Error ? error.message : error);
+      return res.status(401).json({ error: "Invalid workflow identity token" });
+    }
   });
   registerStorageProxy(app);
   registerOAuthRoutes(app);
