@@ -98,7 +98,12 @@ export const serviceRecords = mysqlTable("service_records", {
   sourceUpdatedAt: timestamp("sourceUpdatedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, table => [uniqueIndex("service_provider_slug_unique").on(table.providerId, table.slug), index("service_marketplace_idx").on(table.status, table.platform, table.category)]);
+}, table => [uniqueIndex("service_provider_slug_unique").on(table.providerId, table.slug), index("service_marketplace_idx").on(table.status, table.platform, table.category),
+  index("service_provider_id_idx").on(table.providerId, table.id),
+  index("service_status_id_idx").on(table.status, table.id),
+  index("service_platform_id_idx").on(table.platform, table.id),
+  index("service_public_featured_idx").on(table.status, table.featured, table.id),
+  index("service_public_price_idx").on(table.status, table.pricePerThousandUsd, table.id)]);
 
 export const teamMembers = mysqlTable("team_members", {
   id: int("id").autoincrement().primaryKey(),

@@ -11,7 +11,7 @@ afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 describe("public catalogue availability", () => {
   it("never returns fixtures in production, including when demo mode was accidentally enabled", async () => {
-    expect(await getMarketplaceSnapshot()).toEqual({ providers: [], services: [], source: "unavailable" });
+    expect(await getMarketplaceSnapshot()).toEqual({ providers: [], services: [], source: "unavailable", pagination: { total: 0, nextCursor: null } });
   });
   it("blocks the seed operation in production", async () => {
     expect(await seedMarketplaceIfEmpty()).toEqual({ seeded: false, reason: "demo_disabled" });
@@ -25,7 +25,7 @@ describe("public catalogue availability", () => {
   it("distinguishes a database failure from an empty catalogue without substituting fixtures", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     state.db = { select: () => { throw new Error("isolated database failure"); } };
-    expect(await getMarketplaceSnapshot()).toEqual({ providers: [], services: [], source: "unavailable" });
+    expect(await getMarketplaceSnapshot()).toEqual({ providers: [], services: [], source: "unavailable", pagination: { total: 0, nextCursor: null } });
   });
 });
 

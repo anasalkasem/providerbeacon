@@ -1,10 +1,11 @@
-import { and, desc, eq, gt, inArray, notInArray } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, like, lt, ne, notInArray, or, sql } from "drizzle-orm";
 import { createHash, randomBytes } from "node:crypto";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { providers as seedProviders, services as seedServices } from "../client/src/data/marketplace";
 import { auditEntries, localizedContent, priceSnapshots, providerIntegrations, providerRecords, serviceRecords, staffSessions, teamMembers, type TeamRole } from "../drizzle/schema";
 import { getDb } from "./db";
+import { catalogueInput, searchPattern, type CatalogueInput } from "../shared/catalogueQuery";
 
 const tierToDb = {
   "Tier 1 Direct Source": "tier_1_direct",
@@ -24,20 +25,58 @@ export function marketplaceDemoEnabled() {
   return process.env.NODE_ENV !== "production" && process.env.MARKETPLACE_DEMO_MODE === "true";
 }
 
-export async function getMarketplaceSnapshot() {
+export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
+  const input = catalogueInput.parse(raw);
+  const empty = (source: "database" | "unavailable") => ({ providers: [], services: [], source,
+    pagination: { total: 0, nextCursor: null as CatalogueInput["cursor"] | null } });
   const db = await getDb();
-  if (!db) return marketplaceDemoEnabled()
-    ? { providers: seedProviders, services: seedServices, source: "seed" as const }
-    : { providers: [], services: [], source: "unavailable" as const };
+  if (!db) {
+    if (!marketplaceDemoEnabled()) return empty("unavailable");
+    const services = seedServices.slice(0, input.limit);
+    return { providers: seedProviders.slice(0, 25), services, source: "seed" as const,
+      pagination: { total: services.length, nextCursor: null as CatalogueInput["cursor"] | null } };
+  }
   try {
-    const providerRows = await db.select().from(providerRecords).where(and(
-      eq(providerRecords.status, "active"),
-      marketplaceDemoEnabled() ? undefined : notInArray(providerRecords.slug, seedProviders.map(provider => provider.slug)),
-    )).orderBy(providerRecords.name);
-    if (!providerRows.length) return { providers: [], services: [], source: "database" as const };
-    const serviceRows = await db.select().from(serviceRecords).where(and(
-      eq(serviceRecords.status, "active"), inArray(serviceRecords.providerId, providerRows.map(row => row.id)),
-    ));
+    const eligible = and(eq(providerRecords.status, "active"),
+      marketplaceDemoEnabled() ? undefined : notInArray(providerRecords.slug, seedProviders.map(provider => provider.slug)));
+    const providerScope = input.scope === "providers" || input.scope === "provider";
+    const providerFilter = and(eligible,
+      input.scope === "provider" ? eq(providerRecords.slug, input.slug ?? "") : undefined,
+      input.scope === "providers" && input.q ? or(like(providerRecords.name, searchPattern(input.q)), like(providerRecords.location, searchPattern(input.q))) : undefined);
+    const providerPage = providerScope ? await db.select().from(providerRecords)
+      .where(and(providerFilter, input.scope === "providers" && input.cursor ? lt(providerRecords.id, input.cursor.id) : undefined))
+      .orderBy(desc(providerRecords.id)).limit(input.scope === "provider" ? 1 : input.limit + 1) : [];
+    if (input.scope === "provider" && !providerPage.length) return empty("database");
+    const serviceFilter = and(eligible, eq(serviceRecords.status, "active"),
+      input.scope === "provider" ? eq(serviceRecords.providerId, providerPage[0]!.id) : undefined,
+      input.scope === "compare" ? (input.ids.length ? inArray(serviceRecords.id, input.ids) : sql`false`) : undefined,
+      input.platform ? eq(serviceRecords.platform, input.platform) : undefined,
+      input.quality ? eq(serviceRecords.quality, input.quality) : undefined,
+      input.refillOnly ? ne(serviceRecords.refillMode, "none") : undefined,
+      input.q && !providerScope ? or(like(serviceRecords.name, searchPattern(input.q)), like(serviceRecords.category, searchPattern(input.q)),
+        like(serviceRecords.platform, searchPattern(input.q)), like(providerRecords.name, searchPattern(input.q))) : undefined);
+    const rank = input.sort === "price" ? sql<number>`${serviceRecords.pricePerThousandUsd}` : input.sort === "retention" ? sql<number>`coalesce(${serviceRecords.retentionBasisPoints}, -1)` : sql<number>`${serviceRecords.featured}`;
+    const after = input.cursor ? or(
+      input.sort === "price" ? gt(rank, input.cursor.rank) : lt(rank, input.cursor.rank),
+      and(eq(rank, input.cursor.rank), lt(serviceRecords.id, input.cursor.id))) : undefined;
+    const limit = input.scope === "home" ? 8 : input.scope === "compare" ? 4 : input.limit;
+    const servicePage = input.scope === "providers" ? [] : await db.select({ service: serviceRecords, rank }).from(serviceRecords)
+      .innerJoin(providerRecords, eq(providerRecords.id, serviceRecords.providerId)).where(and(serviceFilter, after))
+      .orderBy(input.sort === "price" ? asc(rank) : desc(rank), desc(serviceRecords.id)).limit(limit + 1);
+    const serviceRows = servicePage.slice(0, limit).map(row => row.service);
+    const serviceProviderIds = Array.from(new Set(serviceRows.map(row => row.providerId)));
+    const providerRows = providerScope ? providerPage.slice(0, input.limit) : await db.select().from(providerRecords)
+      .where(and(eligible, serviceProviderIds.length ? inArray(providerRecords.id, serviceProviderIds) : undefined))
+      .orderBy(providerRecords.name).limit(serviceProviderIds.length || 8);
+    const providerIds = providerRows.map(row => row.id);
+    const counts = providerIds.length ? await db.select({ providerId: serviceRecords.providerId, total: count() }).from(serviceRecords)
+      .where(and(eq(serviceRecords.status, "active"), inArray(serviceRecords.providerId, providerIds))).groupBy(serviceRecords.providerId) : [];
+    const serviceCounts = new Map(counts.map(row => [row.providerId, row.total]));
+    const totals = input.scope === "providers" ? await db.select({ total: count() }).from(providerRecords).where(providerFilter)
+      : await db.select({ total: count() }).from(serviceRecords).innerJoin(providerRecords, eq(serviceRecords.providerId, providerRecords.id)).where(serviceFilter);
+    const last = servicePage[Math.min(limit, servicePage.length) - 1];
+    const nextCursor = input.scope === "providers" ? (providerPage.length > input.limit ? { id: providerRows.at(-1)!.id, rank: 0 } : null)
+      : input.scope !== "home" && input.scope !== "compare" && servicePage.length > limit ? { id: last!.service.id, rank: Number(last!.rank) } : null;
     const providers = providerRows.map(row => ({
       id: `provider-${row.id}`, slug: row.slug, name: row.name, initials: row.initials, location: row.location ?? "",
       verified: row.verified, tier: tierFromDb[row.tier],
@@ -51,7 +90,7 @@ export async function getMarketplaceSnapshot() {
       updatedMinutes: row.sourceUpdatedAt ? Math.max(0, Math.round((Date.now() - row.sourceUpdatedAt.getTime()) / 60000)) : null,
       since: row.createdAt.getUTCFullYear(), minDeposit: row.minDepositUsd == null ? "—" : `$${row.minDepositUsd}`,
       refillPolicy: row.refillPolicy ?? "—", totalOrders: row.totalOrdersLabel ?? "—",
-      activeServicesCount: serviceRows.filter(service => service.providerId === row.id).length, priceLevel: "$$" as const,
+      activeServicesCount: serviceCounts.get(row.id) ?? 0, priceLevel: "$$" as const,
       paymentMethods: row.paymentMethods ?? [], specialties: row.specialties ?? [], description: row.description ?? "",
       strengths: row.strengths ?? [],
     }));
@@ -66,10 +105,10 @@ export async function getMarketplaceSnapshot() {
       retention: row.retentionBasisPoints == null ? null : row.retentionBasisPoints / 100, featured: row.featured,
     }));
     const hasDemoProfiles = providerRows.some(row => seedProviders.some(provider => provider.slug === row.slug));
-    return { providers, services, source: hasDemoProfiles ? "seed" as const : "database" as const };
+    return { providers, services, source: hasDemoProfiles ? "seed" as const : "database" as const, pagination: { total: totals[0]?.total ?? 0, nextCursor } };
   } catch {
     console.warn("[Marketplace] Catalogue query failed; no substitute data will be shown");
-    return { providers: [], services: [], source: "unavailable" as const };
+    return empty("unavailable");
   }
 }
 
@@ -198,7 +237,6 @@ export async function updateProviderStatus(input: { id: number; status: "draft" 
   });
 }
 
-export async function listAdminServices() { const db = await getDb(); return db ? db.select().from(serviceRecords).orderBy(desc(serviceRecords.updatedAt)) : []; }
 export async function updateServiceRecord(input: { id: number; status?: "draft" | "active" | "paused" | "archived"; pricePerThousandUsd?: number; actorUserId: number }) {
   const db = await getDb(); if (!db) throw new Error("Database unavailable");
   return db.transaction(async tx => {

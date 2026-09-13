@@ -10,6 +10,8 @@ vi.mock("./db", () => ({ getDb: async () => state.db }));
 vi.mock("node:dns/promises", () => ({ lookup: async () => [{ address: "93.184.216.34", family: 4 }] }));
 import { getMarketplaceSnapshot, syncProviderServicesNow, updateProviderStatus, updateServiceRecord } from "./marketplaceDb";
 import { runDueProviderSyncs, setProviderIntegrationEnabled, syncStoredIntegration } from "./vaultDb";
+import { getAdminOverview, listAdminServices } from "./adminCatalogueDb";
+import { rolePermissions } from "./authorization";
 import { encryptValue } from "./security";
 
 const testUrl = process.env.TEST_DATABASE_URL;
@@ -66,7 +68,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   });
   it("keeps an empty catalogue empty after all providers are suspended", async () => {
     await updateProviderStatus({ id: providerId, status: "suspended", actorUserId: actorId });
-    expect(await getMarketplaceSnapshot()).toEqual({ providers: [], services: [], source: "database" });
+    expect(await getMarketplaceSnapshot()).toEqual({ providers: [], services: [], source: "database", pagination: { total: 0, nextCursor: null } });
   });
   it("provides unique comparison IDs across identical provider-local IDs and no invented evidence", async () => {
     const [other] = await state.db.insert(providerRecords).values({ slug: "other-provider", name: "Other provider", initials: "OP", status: "active" }).$returningId();
@@ -145,4 +147,44 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     await expect(sync()).rejects.toThrow("duplicate service IDs");
     expect(await state.db.select().from(serviceRecords)).toEqual([]);
   });
+  it("keeps payloads bounded across a 50,000-service catalogue and excludes unpublished providers", async () => {
+    const size = 50_000;
+    for (let start = 0; start < size; start += 500) {
+      await state.db.insert(serviceRecords).values(Array.from({ length: 500 }, (_, offset) => {
+        const n = start + offset;
+        return { providerId, slug: `bulk-${n}`, name: `Campaign service ${n}`, platform: n % 2 ? "TikTok" : "Instagram", category: "Campaigns",
+          pricePerThousandUsd: "1.0000", minOrder: 10, maxOrder: 1000, status: "active", retentionBasisPoints: n % 2 ? null : 9500 };
+      }));
+    }
+    const first = await listAdminServices();
+    expect(first.items).toHaveLength(25); expect(first.total).toBe(size);
+    expect(Buffer.byteLength(JSON.stringify(first))).toBeLessThan(32_000);
+    const next = await listAdminServices({ cursor: first.nextCursor!, limit: 100 });
+    expect(next.items).toHaveLength(100);
+    expect(next.items.every(item => item.id < first.items.at(-1)!.id)).toBe(true);
+    const filtered = await listAdminServices({ platform: "TikTok", providerId });
+    expect(filtered.total).toBe(size / 2); expect(filtered.items.every(item => item.platform === "TikTok")).toBe(true);
+    expect((await listAdminServices({ q: "' OR 1=1 --" })).total).toBe(0);
+    expect((await listAdminServices({ q: "%" })).total).toBe(0);
+    const publicPage = await getMarketplaceSnapshot({ scope: "services" });
+    expect(publicPage.source).toBe("database"); expect(publicPage.services).toHaveLength(25);
+    expect(publicPage.pagination.total).toBe(size); expect(publicPage.providers[0]?.activeServicesCount).toBe(size);
+    const comparison = await getMarketplaceSnapshot({ scope: "compare", ids: [first.items.at(-1)!.id] });
+    expect(comparison.services.map(item => item.id)).toEqual([`service-${first.items.at(-1)!.id}`]);
+    const profile = await getMarketplaceSnapshot({ scope: "provider", slug: "test-provider" });
+    expect(profile.services).toHaveLength(25); expect(profile.pagination.nextCursor).not.toBeNull();
+    for (const sort of ["recommended", "price", "retention"] as const) {
+      const page = await getMarketplaceSnapshot({ scope: "services", sort });
+      const after = await getMarketplaceSnapshot({ scope: "services", sort, cursor: page.pagination.nextCursor! });
+      const ids = new Set(page.services.map(item => item.id));
+      expect(after.services).toHaveLength(25); expect(after.services.some(item => ids.has(item.id))).toBe(false);
+    }
+    await state.db.update(providerRecords).set({ status: "draft" }).where(eq(providerRecords.id, providerId));
+    const stats = await getAdminOverview(rolePermissions.catalogue_editor);
+    expect(stats).toMatchObject({ totalServices: size, publishedServices: 0, teamMembers: null, recordedActions: null });
+    expect((await getMarketplaceSnapshot({ scope: "services" })).services).toEqual([]);
+    expect((await getMarketplaceSnapshot({ scope: "compare", ids: [first.items[0]!.id] })).services).toEqual([]);
+    expect((await listAdminServices()).total).toBe(size);
+  }, 60_000);
+
 });
