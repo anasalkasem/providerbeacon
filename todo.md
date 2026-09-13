@@ -19,8 +19,8 @@ Build a production-ready aggregator for Social Media Marketing providers. Users 
 - [x] Translation review workflow and locale quality controls
 - [x] Provider API ingestion with manual refresh and price snapshots
 - [x] On-demand AI provider risk explanations with human decision control
-- [ ] Production database provisioned on Railway
-- [ ] Custom domain DNS and SSL activation for providerbeacon.com
+- [x] Production database provisioned, migrated, seeded and verified live
+- [x] Custom-domain DNS and SSL activation for providerbeacon.com and www
 
 ## Role model
 

@@ -79,7 +79,7 @@ Never commit `.env` files, credentials, provider API keys or production exports.
 
 ## Product roadmap
 
-The next launch stages are provisioning the production Railway database, selecting a portable staff-authentication provider, enabling scheduled refresh credentials in a secret manager, and completing custom-domain DNS/TLS verification.
+The operational foundation now includes a dedicated Railway MySQL database, automatic migrations and seed data, healthchecked deployments, and custom-domain DNS. The next launch stages are selecting a provider-independent staff-authentication system and adding encrypted connector-secret storage before enabling scheduled provider refreshes.
 
 ## License
 
