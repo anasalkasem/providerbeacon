@@ -9,6 +9,7 @@ import { CheckCircle2, Clock3, KeyRound, Loader2, Pencil, RefreshCw, ShieldCheck
 import { useEffect, useRef, useState } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { toast } from "sonner";
+import ProviderSourceIssues from "./ProviderSourceIssues";
 
 function Step({ number, title, body }: { number: number; title: string; body: string }) {
   return <div className="flex gap-3 rounded-2xl border border-cyan-100 bg-white p-4"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-cyan-700 text-sm font-black text-white">{number}</span><div><p className="font-extrabold text-slate-950">{title}</p><p className="mt-1 text-xs leading-5 text-slate-500">{body}</p></div></div>;
@@ -26,21 +27,6 @@ function formatInterval(minutes: number, text: ReturnType<typeof useAdminText>) 
 const jobLabels = { queued: "syncQueued", preparing: "syncPreparing", importing: "syncImporting", reconciling: "syncReconciling", completed: "syncCompleted", completed_with_issues: "syncWithIssues", failed: "syncFailed" } as const;
 const jobActive = (job: { status: string } | null | undefined) => Boolean(job && job.status !== "completed" && job.status !== "completed_with_issues" && job.status !== "failed");
 
-const issueLabels = { invalid_id: "syncIssueIdentity", invalid_name: "syncIssueName", invalid_price: "syncIssuePrice", invalid_minimum: "syncIssueMinimum", invalid_maximum: "syncIssueMaximum" } as const;
-function SourceIssues({ jobId }: { jobId: number }) {
-  const text = useAdminText();
-  const [cursors, setCursors] = useState<number[]>([0]);
-  const issues = trpc.admin.integrations.issues.useQuery({ jobId, cursor: cursors.at(-1) }, { retry: false });
-  return <div className="mt-4 space-y-3"><p className="text-xs leading-5 text-slate-600">{text("syncIssuesBody")}</p>
-    {issues.isLoading ? <p>{text("loading")}</p> : issues.error ? <p role="alert">{text("loadError")} <Button size="sm" variant="outline" onClick={() => void issues.refetch()}>{text("retry")}</Button></p> : issues.data?.items.map(item => <div key={item.ordinal} className="rounded-xl border border-amber-200 bg-white p-4">
-      <p className="text-xs font-bold text-slate-500">{text("syncIssueId")}: <bdi>{item.externalId}</bdi></p><p className="mt-1 break-words text-sm font-semibold text-slate-900">{item.name ?? "—"}</p>
-      <dl className="mt-3 grid grid-cols-3 gap-3 text-xs">{([["syncIssueRate", item.rate], ["syncIssueMin", item.min], ["syncIssueMax", item.max]] as const).map(([key, value]) => <div key={key}><dt className="text-slate-500">{text(key)}</dt><dd className="mt-1 font-bold"><bdi>{value ?? "—"}</bdi></dd></div>)}</dl>
-      <ul className="mt-3 space-y-1 text-xs text-amber-800">{item.problems.map(problem => <li key={problem}>{text(issueLabels[problem as keyof typeof issueLabels] ?? "syncDetails")}</li>)}</ul>
-    </div>)}
-    <div className="flex gap-2"><Button size="sm" variant="outline" disabled={cursors.length === 1 || issues.isFetching} onClick={() => setCursors(values => values.slice(0, -1))}>{text("previous")}</Button><Button size="sm" variant="outline" disabled={!issues.data?.nextCursor || issues.isFetching} onClick={() => setCursors(values => [...values, issues.data!.nextCursor!])}>{text("next")}</Button></div>
-  </div>;
-}
-
 function SyncProgress({ job, providerName }: { job: { id: number; status: keyof typeof jobLabels; totalCount: number; processedCount: number; invalidCount: number; reviewCount: number; priceChangeCount: number; missingCount: number; lastError: string | null }; providerName: string }) {
   const text = useAdminText();
   const { locale } = useLocale();
@@ -54,7 +40,7 @@ function SyncProgress({ job, providerName }: { job: { id: number; status: keyof 
     <div role="progressbar" aria-label={text("syncProgress")} aria-valuenow={job.totalCount ? percent : undefined} aria-valuemin={0} aria-valuemax={100} className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200"><div className={`h-full rounded-full ${job.status === "failed" ? "bg-red-500" : "bg-cyan-600"}`} style={{ width: `${percent}%` }}/></div>
     {job.totalCount > 0 && <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-5">{([["syncTotal", job.totalCount], ["syncQuarantined", job.invalidCount], ["syncReviewCount", job.reviewCount], ["syncPriceChanges", job.priceChangeCount], ["syncMissing", job.missingCount]] as const).map(([key, value]) => <div key={key}><dt className="text-xs text-slate-500">{text(key)}</dt><dd className="mt-1 font-extrabold text-slate-950">{number(value)}</dd></div>)}</dl>}
     <p className="mt-4 text-xs leading-5 text-slate-600">{active ? text("syncBackground") : job.status === "failed" ? text(job.processedCount ? "syncPartial" : "syncNoneApplied") : text("syncReviewNotice")}</p>
-    {job.invalidCount > 0 && <div className="mt-4"><Button variant="outline" size="sm" aria-expanded={showIssues} onClick={() => setShowIssues(value => !value)}>{text("syncViewIssues")} ({number(job.invalidCount)})</Button>{showIssues && <SourceIssues jobId={job.id}/>}</div>}
+    {job.invalidCount > 0 && <div className="mt-4"><Button variant="outline" size="sm" aria-expanded={showIssues} onClick={() => setShowIssues(value => !value)}>{text("syncViewIssues")} ({number(job.invalidCount)})</Button>{showIssues && <ProviderSourceIssues key={job.id} jobId={job.id}/>}</div>}
     {job.lastError && <details className="mt-3 text-xs text-red-700"><summary className="cursor-pointer font-bold">{text("syncDetails")}</summary><p dir="ltr" className="mt-2 break-words text-start">{job.lastError}</p></details>}
   </article>;
 }
@@ -79,7 +65,7 @@ export default function ProviderIntegrationVault() {
   const canWrite = access.data?.permissions.includes("integrations.write");
 
   const reset = () => { setId(undefined); setProviderId(""); setName(""); setBaseUrl(""); setApiKey(""); setInterval("360"); setEnabled(false); };
-  const refresh = () => Promise.all([utils.admin.integrations.list.invalidate(), utils.admin.audit.list.invalidate()]);
+  const refresh = () => Promise.all([utils.admin.integrations.list.invalidate(), utils.admin.integrations.alerts.invalidate(), utils.admin.audit.list.invalidate()]);
   const save = trpc.admin.integrations.save.useMutation({ onSuccess: async () => { toast.success(text(id ? "integrationUpdated" : "integrationSaved")); reset(); await refresh(); }, onError: error => toast.error(error.message) });
   const sync = trpc.admin.integrations.syncNow.useMutation({ onSuccess: async data => { toast.success(text("alreadyQueued" in data && data.alreadyQueued ? "syncAlreadyQueued" : "syncQueued")); await Promise.all([refresh(), utils.admin.overview.invalidate(), utils.admin.services.list.invalidate(), utils.marketplace.snapshot.invalidate()]); }, onError: error => toast.error(error.message) });
   const toggle = trpc.admin.integrations.setEnabled.useMutation({ onSuccess: refresh, onError: error => toast.error(error.message) });
