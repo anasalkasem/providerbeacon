@@ -44,7 +44,7 @@ Deploy after the MySQL quality job passes. Wait for the `[Catalogue] Legacy norm
 ## Bounds and alerts
 
 - Import: 5,000 rows, 8 MB streamed response, 20-second network timeout. Oversized/invalid catalogues fail before writes; they are not truncated. Larger providers need a paginated upstream contract and a dedicated import job before raising these caps.
-- A provider lock serializes imports, while an indexed, bounded lookup replaces one SELECT per service. New records and audit/price inserts use small batches. Only initial/changed prices add snapshots. Changed service updates remain individual inside the transaction; large updates can occupy a connection and need a separate import worker at higher scale.
+- A provider lock serializes imports, while an indexed, bounded metadata lookup replaces one SELECT per service. Raw source JSON stays in the database during this lookup. New records and audit/price inserts use small batches. Only initial/changed prices add snapshots. Changed service updates remain individual inside the transaction; large updates can occupy a connection and need a separate import worker at higher scale.
 - Legacy normalization: 100 rows per transaction. No API key is required for classifying already-stored records.
 - Review: 50 unique IDs maximum, server revisions, stable lock order. No operation selects all matching pages invisibly.
 - Dashboard: SQL aggregates. Incomplete/pending/stale categories overlap. Stale means the most recent source or explicit price check is older than 30 days or absent. Price-change cards cover the last seven days; missing-source cards cover currently unavailable records.

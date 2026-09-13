@@ -328,7 +328,14 @@ export async function syncProviderServicesNow(input: { providerId: number; baseU
     const [currentProvider] = await tx.select().from(providerRecords).where(eq(providerRecords.id, provider.id)).for("update");
     if (!currentProvider || currentProvider.status === "suspended") throw new Error("Provider is unavailable or suspended");
     // One bounded lookup replaces a SELECT for every imported row. Provider locks serialize imports.
-    const existingRows = await tx.select().from(serviceRecords).where(eq(serviceRecords.providerId, provider.id)).orderBy(asc(serviceRecords.id)).limit(50001).for("update");
+    const existingRows = await tx.select({
+      id: serviceRecords.id, externalId: serviceRecords.externalId, sourceHash: serviceRecords.sourceHash, sourceUrl: serviceRecords.sourceUrl,
+      sourceKind: serviceRecords.sourceKind, available: serviceRecords.available, normalizationVersion: serviceRecords.normalizationVersion,
+      revision: serviceRecords.revision, status: serviceRecords.status, reviewStatus: serviceRecords.reviewStatus,
+      name: serviceRecords.name, platform: serviceRecords.platform, category: serviceRecords.category, countryCode: serviceRecords.countryCode,
+      pricePerThousandUsd: serviceRecords.pricePerThousandUsd, minOrder: serviceRecords.minOrder, maxOrder: serviceRecords.maxOrder,
+      refillMode: serviceRecords.refillMode, refillDays: serviceRecords.refillDays,
+    }).from(serviceRecords).where(eq(serviceRecords.providerId, provider.id)).orderBy(asc(serviceRecords.id)).limit(50001).for("update");
     if (existingRows.length > 50000) throw new Error("Provider catalogue requires a larger background import; no changes were applied");
     const existingById = new Map<string, typeof existingRows[number]>();
     for (const row of existingRows) {
@@ -350,13 +357,14 @@ export async function syncProviderServicesNow(input: { providerId: number; baseU
       const { notes, ...data } = item;
       const values = { ...data, refillMode: data.refillMode as typeof serviceRecords.$inferSelect.refillMode,
         classificationNotes: notes, sourceKind: "provider_api" as const, sourceUrl, sourceUpdatedAt: now,
-        originalSourceData: existing?.originalSourceData ?? existing?.sourceData ?? item.sourceData,
         normalizationVersion: NORMALIZATION_VERSION, reviewStatus: "pending" as const, incomplete: true,
         pricingConfirmed: false, policyReviewed: false, priceCheckedAt: null, evidenceUrl: null,
         reviewedAt: null, reviewedByUserId: null, reviewReason: null, available: true, missingSourceAt: null,
       };
       if (existing) {
+        const legacySource = JSON.stringify({ service: existing.externalId, name: existing.name, category: existing.category, rate: existing.pricePerThousandUsd, min: existing.minOrder, max: existing.maxOrder, legacyPlatform: existing.platform, legacyRefillMode: existing.refillMode, legacyRefillDays: existing.refillDays, legacyCountry: existing.countryCode });
         await tx.update(serviceRecords).set({ ...values, revision: existing.revision + 1,
+          originalSourceData: sql`coalesce(${serviceRecords.originalSourceData}, cast(${legacySource} as json))`,
           status: existing.status === "active" ? "draft" : existing.status,
           ...(priceChanged ? { lastPriceChangeAt: now } : {}),
         }).where(eq(serviceRecords.id, existing.id));
@@ -368,7 +376,7 @@ export async function syncProviderServicesNow(input: { providerId: number; baseU
         } });
       } else {
         const slug = `${provider.slug}-${createHash("sha256").update(item.externalId).digest("hex").slice(0, 24)}`;
-        inserts.push({ ...values, providerId: provider.id, slug, status: "draft" });
+        inserts.push({ ...values, originalSourceData: item.sourceData, providerId: provider.id, slug, status: "draft" });
       }
       reviewCount++;
     }
