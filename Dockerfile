@@ -18,10 +18,7 @@ RUN corepack enable
 
 COPY package.json pnpm-lock.yaml ./
 COPY patches ./patches
-# The bundled server imports the shared Vite bridge module at startup, so its
-# toolchain remains available in the runtime image even though production serves
-# only the pre-built static bundle.
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --prod --frozen-lockfile
 
 COPY --from=build /app/dist ./dist
 
