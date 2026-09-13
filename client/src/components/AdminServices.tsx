@@ -22,11 +22,12 @@ export default function AdminServices() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<AdminServicesInput>({ limit: 25, q: "" });
   const [cursors, setCursors] = useState<(number | undefined)[]>([undefined]);
-  const [editing, setEditing] = useState<{ id: number; name: string; status: NonNullable<AdminServicesInput["status"]>; price: string } | null>(null);
+  const [editing, setEditing] = useState<{ id: number; name: string; status: NonNullable<AdminServicesInput["status"]>; price: string; originalPrice: string; originalStatus: NonNullable<AdminServicesInput["status"]> } | null>(null);
   useEffect(() => {
+    if (search.trim() === filters.q) return;
     const timer = setTimeout(() => { setFilters(current => ({ ...current, q: search.trim() })); setCursors([undefined]); }, 300);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [search, filters.q]);
   const query = trpc.admin.services.list.useQuery({ ...filters, cursor: cursors.at(-1) }, {
     enabled: Boolean(access.data?.permissions.includes("services.read")), retry: false,
     staleTime: 30_000, gcTime: 120_000, placeholderData: keepPreviousData,
@@ -63,15 +64,15 @@ export default function AdminServices() {
           <td className="px-4 py-4 font-semibold"><bdi dir="ltr">${Number(service.pricePerThousandUsd).toFixed(4)}</bdi></td>
           <td className="px-4 py-4 text-sm">{localizeData(locale, service.quality[0].toUpperCase() + service.quality.slice(1))}</td>
           <td className="px-4 py-4"><Badge variant="outline">{text(service.status)}</Badge>{service.status === "active" && service.providerStatus !== "active" && <p className="mt-1 text-xs text-amber-700">{text("providerNotPublished")}</p>}</td>
-          <td className="px-4 py-4">{canWrite && <Button variant="outline" size="sm" disabled={busy} onClick={() => setEditing({ id: service.id, name: service.name, status: service.status, price: service.pricePerThousandUsd })}><Pencil className="size-3"/>{text("edit")}</Button>}</td>
+          <td className="px-4 py-4">{canWrite && <Button variant="outline" size="sm" disabled={busy} onClick={() => setEditing({ id: service.id, name: service.name, status: service.status, price: service.pricePerThousandUsd, originalPrice: service.pricePerThousandUsd, originalStatus: service.status })}><Pencil className="size-3"/>{text("edit")}</Button>}</td>
         </tr>)}</tbody></table></div>
       <nav className="flex flex-wrap items-center justify-between gap-3 border-t p-4" aria-label={text("pagination")}><p className="text-sm text-slate-500">{text("page")} {number(cursors.length)} · {number(rows.length)} {text("services")}</p><div className="flex gap-2"><Button variant="outline" disabled={cursors.length === 1 || busy} onClick={() => setCursors(current => current.slice(0, -1))}>{text("previous")}</Button><Button variant="outline" disabled={query.isError || !query.data?.nextCursor || busy} onClick={() => setCursors(current => [...current, query.data!.nextCursor!])}>{text("next")}</Button></div></nav>
     </div>
     <Dialog open={Boolean(editing)} onOpenChange={open => { if (!open && !mutation.isPending) setEditing(null); }}>
-      <DialogContent dir={dir}><DialogTitle>{text("editService")}</DialogTitle><DialogDescription dir="auto">{editing?.name}</DialogDescription>{editing && <form className="grid gap-4" onSubmit={event => { event.preventDefault(); const price = Number(editing.price); if (Number.isFinite(price) && price > 0 && price <= 100000) mutation.mutate({ id: editing.id, status: editing.status, pricePerThousandUsd: price }); }}>
+      <DialogContent dir={dir}><DialogTitle>{text("editService")}</DialogTitle><DialogDescription dir="auto">{editing?.name}</DialogDescription>{editing && <form className="grid gap-4" onSubmit={event => { event.preventDefault(); const price = Number(editing.price); if (Number.isFinite(price) && price > 0 && price <= 100000 && (editing.status !== editing.originalStatus || price !== Number(editing.originalPrice))) mutation.mutate({ id: editing.id, status: editing.status !== editing.originalStatus ? editing.status : undefined, pricePerThousandUsd: price !== Number(editing.originalPrice) ? price : undefined }); }}>
         <label className="grid gap-2 text-sm">{text("price")}<Input required dir="ltr" type="number" min="0.0001" max="100000" step="0.0001" value={editing.price} onChange={event => setEditing({ ...editing, price: event.target.value })}/></label>
         <label className="grid gap-2 text-sm">{text("status")}<select className={selectClass} value={editing.status} onChange={event => setEditing({ ...editing, status: event.target.value as typeof editing.status })}>{(["draft", "active", "paused", "archived"] as const).map(status => <option value={status} key={status}>{text(status)}</option>)}</select></label>
-        <div className="flex justify-end gap-2"><Button type="button" variant="outline" disabled={mutation.isPending} onClick={() => setEditing(null)}>{text("cancelEdit")}</Button><Button disabled={mutation.isPending}>{mutation.isPending && <Loader2 className="size-4 animate-spin"/>}{text("saveChanges")}</Button></div>
+        <div className="flex justify-end gap-2"><Button type="button" variant="outline" disabled={mutation.isPending} onClick={() => setEditing(null)}>{text("cancelEdit")}</Button><Button disabled={mutation.isPending || (editing.status === editing.originalStatus && Number(editing.price) === Number(editing.originalPrice))}>{mutation.isPending && <Loader2 className="size-4 animate-spin"/>}{text("saveChanges")}</Button></div>
       </form>}</DialogContent>
     </Dialog>
   </section>;
