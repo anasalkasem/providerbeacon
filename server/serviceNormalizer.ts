@@ -176,12 +176,11 @@ export function classifyService(source: Record<string, unknown>) {
   };
 }
 
-export function normalizeApiService(raw: unknown, index: number) {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw))
-    throw new Error(
-      `Invalid service at row ${index + 1}; no changes were applied`
-    );
-  const row = raw as Record<string, unknown>;
+export function inspectApiService(raw: unknown) {
+  const row =
+    raw && typeof raw === "object" && !Array.isArray(raw)
+      ? (raw as Record<string, unknown>)
+      : {};
   const id = row.service ?? row.id;
   const externalId =
     typeof id === "string" || (typeof id === "number" && Number.isFinite(id))
@@ -194,27 +193,42 @@ export function normalizeApiService(raw: unknown, index: number) {
       ? Number(value)
       : NaN;
   const price = numeric(row.rate ?? row.price);
-  const minOrder = numeric(row.min);
-  const maxOrder = numeric(row.max);
-  if (
-    !externalId ||
-    externalId.length > 160 ||
-    !name ||
-    name.length > 300 ||
-    !Number.isFinite(price) ||
-    price < 0.0001 ||
-    price > 100000 ||
-    !Number.isInteger(minOrder) ||
-    !Number.isInteger(maxOrder) ||
-    minOrder < 1 ||
+  const minOrder = numeric(row.min),
+    maxOrder = numeric(row.max);
+  const problems = [
+    ...(!externalId || externalId.length > 160 ? ["invalid_id"] : []),
+    ...(!name || name.length > 300 ? ["invalid_name"] : []),
+    ...(!Number.isFinite(price) || price < 0.0001 || price > 100000
+      ? ["invalid_price"]
+      : []),
+    ...(!Number.isInteger(minOrder) || minOrder < 1 || minOrder > 2147483647
+      ? ["invalid_minimum"]
+      : []),
+    ...(!Number.isInteger(maxOrder) ||
+    maxOrder < 1 ||
     maxOrder < minOrder ||
     maxOrder > 2147483647
-  ) {
+      ? ["invalid_maximum"]
+      : []),
+  ];
+  return {
+    externalId,
+    name,
+    price,
+    minOrder,
+    maxOrder,
+    problems,
+    sourceData: catalogueSource(row),
+  };
+}
+
+export function normalizeApiService(raw: unknown, index: number) {
+  const { externalId, name, price, minOrder, maxOrder, problems, sourceData } =
+    inspectApiService(raw);
+  if (problems.length)
     throw new Error(
       `Invalid ID, name, price or quantities at row ${index + 1}; no changes were applied`
     );
-  }
-  const sourceData = catalogueSource(row);
   const classification = classifyService(sourceData);
   const sourceHash = createHash("sha256")
     .update(JSON.stringify(sourceData))

@@ -10,7 +10,7 @@ vi.mock("./db", () => ({ getDb: async () => state.db }));
 vi.mock("node:dns/promises", () => ({ lookup: async () => [{ address: "93.184.216.34", family: 4 }] }));
 import { getMarketplaceSnapshot, updateProviderStatus, updateServiceRecord } from "./marketplaceDb";
 import { deleteProviderIntegration, listProviderIntegrations, runDueProviderSyncs, saveProviderIntegration, setProviderIntegrationEnabled, syncStoredIntegration } from "./vaultDb";
-import { cleanupProviderSyncSnapshots, runProviderSyncStep } from "./providerSync";
+import { cleanupProviderSyncSnapshots, listProviderSyncIssues, runProviderSyncStep } from "./providerSync";
 import { getAdminOverview, listAdminServices, listSyncAlerts } from "./adminCatalogueDb";
 import { rolePermissions } from "./authorization";
 import { encryptValue } from "./security";
@@ -62,7 +62,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     for (let step = 0; step < 1200; step++) {
       const [job] = await state.db.select().from(providerSyncJobs).where(eq(providerSyncJobs.id, jobId));
       if (job.status === "failed") throw new Error(job.lastError);
-      if (job.status === "completed") return { ...job, importedCount: job.processedCount };
+      if (job.status === "completed" || job.status === "completed_with_issues") return { ...job, importedCount: job.processedCount - job.invalidCount };
       await runProviderSyncStep();
     }
     throw new Error("Test job did not complete");
@@ -226,9 +226,9 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect((await getServiceReview(first.id)).service).toMatchObject({ available: true, reviewStatus: "pending", pricingConfirmed: false });
     expect(await state.db.select().from(priceSnapshots)).toHaveLength(2);
   });
-  it("does not partially import invalid catalogues or treat empty responses as removals", async () => {
+  it("preserves the catalogue for empty responses or invalid service identities", async () => {
     await sync(); const [row] = await state.db.select().from(serviceRecords);
-    for (const data of [[], [payload[0], { ...payload[0], service: 200, min: null }]]) {
+    for (const data of [[], [payload[0], { ...payload[0], service: null }]]) {
       vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(data)))); await expect(sync()).rejects.toThrow();
       expect((await getServiceReview(row.id)).service).toMatchObject({ available: true, revision: 1 });
       expect(await state.db.select().from(serviceRecords)).toHaveLength(1);
@@ -326,6 +326,46 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     await expect(finishJob(queued.jobId!)).rejects.toThrow("service list");
     expect(JSON.stringify(await listProviderIntegrations())).not.toContain("sensitive-upstream-value");
     expect(await state.db.select().from(serviceRecords)).toHaveLength(0);
+  });
+  it("quarantines invalid source values, imports valid records and retains inspectable rejection evidence", async () => {
+    await sync(); const [old] = await state.db.select().from(serviceRecords); await prepareAndPublish(old.id);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([
+      { ...payload[0], min: "0", secret: "never-retain-this-key" },
+      { ...payload[0], service: 200, rate: "0" },
+      { ...payload[0], service: 300 },
+    ]))));
+    const result = await sync();
+    expect(result).toMatchObject({ status: "completed_with_issues", totalCount: 3, processedCount: 3, invalidCount: 2, importedCount: 1, missingCount: 0 });
+    const previous = (await getServiceReview(old.id)).service;
+    expect(previous).toMatchObject({ minOrder: 100, pricePerThousandUsd: "1.0000", status: "draft", reviewStatus: "changes_requested", pricingConfirmed: false, incomplete: true, available: true });
+    expect((await listAdminServices()).total).toBe(2);
+    expect((await getMarketplaceSnapshot()).services).toHaveLength(0);
+    await cleanupProviderSyncSnapshots(); await cleanupProviderSyncSnapshots();
+    const issues = await listProviderSyncIssues({ jobId: result.id });
+    expect(issues.items).toHaveLength(2);
+    expect(issues.items[0]).toMatchObject({ externalId: "100", min: "0", problems: ["invalid_minimum"] });
+    expect(issues.items[1]).toMatchObject({ externalId: "200", rate: "0", problems: ["invalid_price"] });
+    const retained = await state.db.select().from(providerSyncRows).where(eq(providerSyncRows.jobId, result.id));
+    expect(retained).toHaveLength(2); expect(JSON.stringify(retained)).not.toContain("never-retain-this-key");
+    expect(await state.db.select().from(priceSnapshots)).toHaveLength(2);
+  });
+  it("rejects an entirely invalid catalogue without replacing stored values", async () => {
+    await sync(); const [old] = await state.db.select().from(serviceRecords);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([{ ...payload[0], rate: "0" }]))));
+    await expect(sync()).rejects.toThrow("All 1 source services");
+    expect((await getServiceReview(old.id)).service).toMatchObject({ pricePerThousandUsd: "1.0000", revision: 1, available: true });
+  });
+  it("paginates source issues and handles a batch containing only invalid rows", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([
+      ...Array.from({ length: 101 }, (_, i) => ({ ...payload[0], service: i + 1, max: "0" })),
+      { ...payload[0], service: 500 },
+    ]))));
+    const result = await sync(); expect(result).toMatchObject({ importedCount: 1, invalidCount: 101, processedCount: 102 });
+    const first = await listProviderSyncIssues({ jobId: result.id });
+    const next = await listProviderSyncIssues({ jobId: result.id, cursor: first.nextCursor! });
+    expect(first.items).toHaveLength(25); expect(next.items).toHaveLength(25);
+    expect(next.items[0].ordinal).toBeGreaterThan(first.items.at(-1)!.ordinal);
+    expect(Buffer.byteLength(JSON.stringify(first))).toBeLessThan(32_000);
   });
   it("keeps payloads bounded across a 50,000-service catalogue and excludes unpublished providers", async () => {
     const size = 50_000;

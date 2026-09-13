@@ -43,6 +43,13 @@
       "when": 1789324874004,
       "tag": "0005_background_catalogue_sync",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1789325832723,
+      "tag": "0006_quarantine_source_values",
+      "breakpoints": true
     }
   ]
 }

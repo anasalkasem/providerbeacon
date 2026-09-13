@@ -23,21 +23,38 @@ function formatInterval(minutes: number, text: ReturnType<typeof useAdminText>) 
   return `${minutes} min`;
 }
 
-const jobLabels = { queued: "syncQueued", preparing: "syncPreparing", importing: "syncImporting", reconciling: "syncReconciling", completed: "syncCompleted", failed: "syncFailed" } as const;
-const jobActive = (job: { status: string } | null | undefined) => Boolean(job && job.status !== "completed" && job.status !== "failed");
+const jobLabels = { queued: "syncQueued", preparing: "syncPreparing", importing: "syncImporting", reconciling: "syncReconciling", completed: "syncCompleted", completed_with_issues: "syncWithIssues", failed: "syncFailed" } as const;
+const jobActive = (job: { status: string } | null | undefined) => Boolean(job && job.status !== "completed" && job.status !== "completed_with_issues" && job.status !== "failed");
 
-function SyncProgress({ job, providerName }: { job: { id: number; status: keyof typeof jobLabels; totalCount: number; processedCount: number; reviewCount: number; priceChangeCount: number; missingCount: number; lastError: string | null }; providerName: string }) {
+const issueLabels = { invalid_id: "syncIssueIdentity", invalid_name: "syncIssueName", invalid_price: "syncIssuePrice", invalid_minimum: "syncIssueMinimum", invalid_maximum: "syncIssueMaximum" } as const;
+function SourceIssues({ jobId }: { jobId: number }) {
+  const text = useAdminText();
+  const [cursors, setCursors] = useState<number[]>([0]);
+  const issues = trpc.admin.integrations.issues.useQuery({ jobId, cursor: cursors.at(-1) }, { retry: false });
+  return <div className="mt-4 space-y-3"><p className="text-xs leading-5 text-slate-600">{text("syncIssuesBody")}</p>
+    {issues.isLoading ? <p>{text("loading")}</p> : issues.error ? <p role="alert">{text("loadError")} <Button size="sm" variant="outline" onClick={() => void issues.refetch()}>{text("retry")}</Button></p> : issues.data?.items.map(item => <div key={item.ordinal} className="rounded-xl border border-amber-200 bg-white p-4">
+      <p className="text-xs font-bold text-slate-500">{text("syncIssueId")}: <bdi>{item.externalId}</bdi></p><p className="mt-1 break-words text-sm font-semibold text-slate-900">{item.name ?? "—"}</p>
+      <dl className="mt-3 grid grid-cols-3 gap-3 text-xs">{([["syncIssueRate", item.rate], ["syncIssueMin", item.min], ["syncIssueMax", item.max]] as const).map(([key, value]) => <div key={key}><dt className="text-slate-500">{text(key)}</dt><dd className="mt-1 font-bold"><bdi>{value ?? "—"}</bdi></dd></div>)}</dl>
+      <ul className="mt-3 space-y-1 text-xs text-amber-800">{item.problems.map(problem => <li key={problem}>{text(issueLabels[problem as keyof typeof issueLabels] ?? "syncDetails")}</li>)}</ul>
+    </div>)}
+    <div className="flex gap-2"><Button size="sm" variant="outline" disabled={cursors.length === 1 || issues.isFetching} onClick={() => setCursors(values => values.slice(0, -1))}>{text("previous")}</Button><Button size="sm" variant="outline" disabled={!issues.data?.nextCursor || issues.isFetching} onClick={() => setCursors(values => [...values, issues.data!.nextCursor!])}>{text("next")}</Button></div>
+  </div>;
+}
+
+function SyncProgress({ job, providerName }: { job: { id: number; status: keyof typeof jobLabels; totalCount: number; processedCount: number; invalidCount: number; reviewCount: number; priceChangeCount: number; missingCount: number; lastError: string | null }; providerName: string }) {
   const text = useAdminText();
   const { locale } = useLocale();
+  const [showIssues, setShowIssues] = useState(false);
   const number = (value: number) => value.toLocaleString(locale);
   const active = jobActive(job);
-  const percent = job.status === "completed" ? 100 : job.totalCount ? Math.min(99, Math.floor(job.processedCount / job.totalCount * 100)) : 0;
+  const percent = (job.status === "completed" || job.status === "completed_with_issues") ? 100 : job.totalCount ? Math.min(99, Math.floor(job.processedCount / job.totalCount * 100)) : 0;
   return <article className={`rounded-2xl border p-4 sm:p-5 ${job.status === "failed" ? "border-red-200 bg-red-50/50" : "border-cyan-200 bg-cyan-50/50"}`}>
     <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-extrabold text-slate-950">{providerName}</h3><p role="status" className="flex items-center gap-2 text-sm font-bold text-slate-700">{active && <Loader2 aria-hidden="true" className="size-4 animate-spin"/>}{text(jobLabels[job.status])}</p></div>
-    <div className="mt-4 flex flex-wrap justify-between gap-2 text-sm text-slate-600"><span>{text("syncProcessed")}: <strong className="text-slate-950">{number(job.processedCount)}</strong>{job.totalCount > 0 && <> / {number(job.totalCount)}</>}</span><span>{job.totalCount ? `${number(percent)}%` : text("syncWaiting")}</span></div>
+    <div className="mt-4 flex flex-wrap justify-between gap-2 text-sm text-slate-600"><span>{text("syncProcessed")}: <strong className="text-slate-950">{number(job.processedCount)}</strong>{job.totalCount > 0 && <> / {number(job.totalCount)}</>}</span><span>{job.totalCount ? `${number(percent)}%` : text(job.status === "failed" ? "syncFailed" : "syncWaiting")}</span></div>
     <div role="progressbar" aria-label={text("syncProgress")} aria-valuenow={job.totalCount ? percent : undefined} aria-valuemin={0} aria-valuemax={100} className="mt-2 h-2 overflow-hidden rounded-full bg-slate-200"><div className={`h-full rounded-full ${job.status === "failed" ? "bg-red-500" : "bg-cyan-600"}`} style={{ width: `${percent}%` }}/></div>
-    {job.totalCount > 0 && <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">{([["syncTotal", job.totalCount], ["syncReviewCount", job.reviewCount], ["syncPriceChanges", job.priceChangeCount], ["syncMissing", job.missingCount]] as const).map(([key, value]) => <div key={key}><dt className="text-xs text-slate-500">{text(key)}</dt><dd className="mt-1 font-extrabold text-slate-950">{number(value)}</dd></div>)}</dl>}
-    <p className="mt-4 text-xs leading-5 text-slate-600">{active ? text("syncBackground") : text("syncReviewNotice")}</p>
+    {job.totalCount > 0 && <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3 lg:grid-cols-5">{([["syncTotal", job.totalCount], ["syncQuarantined", job.invalidCount], ["syncReviewCount", job.reviewCount], ["syncPriceChanges", job.priceChangeCount], ["syncMissing", job.missingCount]] as const).map(([key, value]) => <div key={key}><dt className="text-xs text-slate-500">{text(key)}</dt><dd className="mt-1 font-extrabold text-slate-950">{number(value)}</dd></div>)}</dl>}
+    <p className="mt-4 text-xs leading-5 text-slate-600">{active ? text("syncBackground") : job.status === "failed" ? text(job.processedCount ? "syncPartial" : "syncNoneApplied") : text("syncReviewNotice")}</p>
+    {job.invalidCount > 0 && <div className="mt-4"><Button variant="outline" size="sm" aria-expanded={showIssues} onClick={() => setShowIssues(value => !value)}>{text("syncViewIssues")} ({number(job.invalidCount)})</Button>{showIssues && <SourceIssues jobId={job.id}/>}</div>}
     {job.lastError && <details className="mt-3 text-xs text-red-700"><summary className="cursor-pointer font-bold">{text("syncDetails")}</summary><p dir="ltr" className="mt-2 break-words text-start">{job.lastError}</p></details>}
   </article>;
 }
@@ -75,7 +92,8 @@ export default function ProviderIntegrationVault() {
       const previous = seenJobs.current.get(job.id);
       seenJobs.current.set(job.id, job.status);
       if (previous && previous !== job.status && !jobActive(job)) {
-        if (job.status === "completed") toast.success(`${text("syncCompleted")}: ${job.processedCount}`);
+        if (job.status === "completed_with_issues") toast.warning(text("syncWithIssues"));
+        else if (job.status === "completed") toast.success(`${text("syncCompleted")}: ${job.processedCount}`);
         else toast.error(text("syncFailed"));
         void Promise.all([utils.admin.overview.invalidate(), utils.admin.services.list.invalidate(), utils.admin.integrations.alerts.invalidate(), utils.admin.audit.list.invalidate(), utils.marketplace.snapshot.invalidate()]);
       }
