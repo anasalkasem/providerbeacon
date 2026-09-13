@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { catalogueViews } from "./serviceReview";
 
 // Limits are enforced at the API boundary; the browser cannot request the full catalogue.
 export const adminServicesInput = z.object({
@@ -6,6 +7,8 @@ export const adminServicesInput = z.object({
   cursor: z.number().int().positive().optional(),
   q: z.string().trim().max(100).default(""),
   providerId: z.number().int().positive().optional(),
+  view: z.enum(catalogueViews).optional(),
+  countryCode: z.string().regex(/^[A-Z]{2}$/).optional(),
   status: z.enum(["draft", "active", "paused", "archived"]).optional(),
   platform: z.string().trim().max(80).optional(),
 }).default({ limit: 25, q: "" });

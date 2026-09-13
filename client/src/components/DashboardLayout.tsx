@@ -24,7 +24,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import { useLocale, localeNames, type Locale } from "@/contexts/LocaleContext";
 import { useAdminText, type AdminTextKey } from "@/i18n/admin";
-import { BadgeCheck, KeyRound, Languages, Layers3, LayoutDashboard, LockKeyhole, LogOut, PanelLeft, ScrollText, Users } from "lucide-react";
+import { Bell, ClipboardCheck, BadgeCheck, KeyRound, Languages, Layers3, LayoutDashboard, LockKeyhole, LogOut, PanelLeft, ScrollText, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -34,6 +34,8 @@ const menuItems = [
   { icon: LayoutDashboard, label: "overview" as AdminTextKey, path: "/admin", permission: null },
   { icon: BadgeCheck, label: "providers" as AdminTextKey, path: "/admin/providers", permission: "providers.read" },
   { icon: Layers3, label: "services" as AdminTextKey, path: "/admin/services", permission: "services.read" },
+  { icon: ClipboardCheck, label: "reviewQueue" as AdminTextKey, path: "/admin/review", permission: "services.read" },
+  { icon: Bell, label: "alertsTitle" as AdminTextKey, path: "/admin/alerts", permission: "integrations.read" },
   { icon: KeyRound, label: "integrations" as AdminTextKey, path: "/admin/integrations", permission: "integrations.read" },
   { icon: Users, label: "team" as AdminTextKey, path: "/admin/team", permission: "team.read" },
   { icon: Languages, label: "translations" as AdminTextKey, path: "/admin/translations", permission: "translations.read" },

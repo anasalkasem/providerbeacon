@@ -157,9 +157,9 @@ export async function syncStoredIntegration(input: { id: number; actorUserId?: n
   const [integration] = await db.select().from(providerIntegrations).where(eq(providerIntegrations.id, input.id)).limit(1);
   if (!integration) throw new Error("Integration not found");
   if (input.scheduled && integration.status !== "active") return { skipped: true, reason: "disabled" as const };
-  const apiKey = encryptedCredential(integration);
   const nextSyncAt = new Date(Date.now() + integration.syncIntervalMinutes * 60_000);
   try {
+    const apiKey = encryptedCredential(integration);
     const result = await syncProviderServicesNow({ providerId: integration.providerId, baseUrl: integration.baseUrl, apiKey, actorUserId: input.actorUserId });
     await db.update(providerIntegrations).set({
       lastSyncedAt: new Date(),

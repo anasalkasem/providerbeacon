@@ -5,7 +5,7 @@ import type { TeamRole } from "../drizzle/schema";
 const state = vi.hoisted(() => ({ role: "catalogue_editor" as TeamRole | null,
   list: vi.fn(async () => ({ items: [], total: 0, nextCursor: null })), overview: vi.fn(async () => ({})) }));
 vi.mock("./authorization", async original => ({ ...await original<any>(), resolveTeamRole: async () => state.role }));
-vi.mock("./adminCatalogueDb", () => ({ listAdminServices: state.list, getAdminOverview: state.overview, getProviderForAnalysis: vi.fn() }));
+vi.mock("./adminCatalogueDb", () => ({ listAdminServices: state.list, getAdminOverview: state.overview, getProviderForAnalysis: vi.fn(), listSyncAlerts: vi.fn() }));
 import { adminRouter } from "./routers/admin";
 import { catalogueInput } from "../shared/catalogueQuery";
 
@@ -36,5 +36,21 @@ describe("bounded administrative queries", () => {
   it("caps public pages and explicit comparisons independently", () => {
     expect(catalogueInput.safeParse({ limit: 51 }).success).toBe(false);
     expect(catalogueInput.safeParse({ scope: "compare", ids: [1, 2, 3, 4, 5] }).success).toBe(false);
+  });
+});
+
+
+describe("review permissions at the API boundary", () => {
+  const batch = { items: [{ id: 1, revision: 1 }], reason: "Checked the source" };
+  it("does not let editors approve or publish, or auditors request changes", async () => {
+    await expect(caller().services.approve(batch)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller().services.publish(batch)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    state.role = "auditor";
+    await expect(caller().services.requestChanges(batch)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    state.role = "provider_reviewer";
+    await expect(caller().services.publish(batch)).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
+  it("requires a session for every review mutation", async () => {
+    for (const action of ["approve", "requestChanges", "publish"] as const) await expect(caller(false).services[action](batch)).rejects.toMatchObject({ code: "UNAUTHORIZED" });
   });
 });
