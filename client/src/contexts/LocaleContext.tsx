@@ -12,6 +12,11 @@ const supported: Locale[] = ["en", "es", "ar", "hi", "zh"];
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 function detectLocale(): Locale {
+  const requested = new URLSearchParams(window.location.search).get("lang") as Locale | null;
+  if (requested && supported.includes(requested)) {
+    window.localStorage.setItem("providerbeacon-locale", requested);
+    return requested;
+  }
   const saved = window.localStorage.getItem("providerbeacon-locale") as Locale | null;
   if (saved && supported.includes(saved)) return saved;
   const language = navigator.language.toLowerCase();
