@@ -1,42 +1,34 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/NotFound";
+import { lazy, Suspense } from "react";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { LocaleProvider } from "./contexts/LocaleContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
+
+const Home = lazy(() => import("@/pages/Home"));
+const Services = lazy(() => import("@/pages/Services"));
+const Compare = lazy(() => import("@/pages/Compare"));
+const Providers = lazy(() => import("@/pages/Providers"));
+const Provider = lazy(() => import("@/pages/Provider"));
+const Admin = lazy(() => import("@/pages/Admin"));
+const AdminModule = lazy(() => import("@/pages/AdminModule"));
+const NotFound = lazy(() => import("@/pages/NotFound"));
 
 function Router() {
-  // make sure to consider if you need authentication for certain routes
-  return (
-    <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/404"} component={NotFound} />
-      {/* Final fallback route */}
-      <Route component={NotFound} />
-    </Switch>
-  );
+  return <Suspense fallback={<div className="grid min-h-screen place-items-center bg-[#F6F8FC]"><div className="size-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-500" aria-label="Loading page"/></div>}><Switch>
+    <Route path="/" component={Home} />
+    <Route path="/services" component={Services} />
+    <Route path="/compare" component={Compare} />
+    <Route path="/providers" component={Providers} />
+    <Route path="/providers/:slug" component={Provider} />
+    <Route path="/admin" component={Admin} />
+    <Route path="/admin/:module" component={AdminModule} />
+    <Route path="/404" component={NotFound} />
+    <Route component={NotFound} />
+  </Switch></Suspense>;
 }
 
-// NOTE: About Theme
-// - First choose a default theme according to your design style (dark or light bg), than change color palette in index.css
-//   to keep consistent foreground/background color across components
-// - If you want to make theme switchable, pass `switchable` ThemeProvider and use `useTheme` hook
-
-function App() {
-  return (
-    <ErrorBoundary>
-      <ThemeProvider
-        defaultTheme="light"
-        // switchable
-      >
-        <TooltipProvider>
-          <Toaster />
-          <Router />
-        </TooltipProvider>
-      </ThemeProvider>
-    </ErrorBoundary>
-  );
+export default function App() {
+  return <ErrorBoundary><ThemeProvider defaultTheme="light"><LocaleProvider><TooltipProvider><Toaster richColors /><Router /></TooltipProvider></LocaleProvider></ThemeProvider></ErrorBoundary>;
 }
-
-export default App;

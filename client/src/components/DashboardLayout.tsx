@@ -21,15 +21,19 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { BadgeCheck, Languages, Layers3, LayoutDashboard, LogOut, PanelLeft, ScrollText, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+  { icon: LayoutDashboard, label: "Overview", path: "/admin" },
+  { icon: BadgeCheck, label: "Providers", path: "/admin/providers" },
+  { icon: Layers3, label: "Services", path: "/admin/services" },
+  { icon: Users, label: "Team & access", path: "/admin/team" },
+  { icon: Languages, label: "Translations", path: "/admin/translations" },
+  { icon: ScrollText, label: "Audit log", path: "/admin/audit" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -75,6 +79,19 @@ export default function DashboardLayout({
           >
             Sign in
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (user.role !== "admin") {
+    return (
+      <div className="grid min-h-screen place-items-center bg-slate-50 p-6">
+        <div className="max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-200/50">
+          <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-red-50 text-red-600"><PanelLeft /></div>
+          <h1 className="mt-5 text-2xl font-extrabold text-slate-950">Access restricted</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-500">Your account does not have permission to open Beacon Control Center. Contact an authorized administrator if your role has changed.</p>
+          <Button className="mt-6 w-full" onClick={() => window.location.assign("/")}>Return to ProviderBeacon</Button>
         </div>
       </div>
     );
@@ -169,7 +186,7 @@ function DashboardLayoutContent({
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-semibold tracking-tight truncate">
-                    Navigation
+                    Beacon Control Center
                   </span>
                 </div>
               ) : null}
