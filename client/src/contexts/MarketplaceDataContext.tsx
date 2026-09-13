@@ -1,39 +1,27 @@
-import { providerBySlug as fallbackProviderBySlug, providerFor as fallbackProviderFor, providers as fallbackProviders, services as fallbackServices, type Provider, type Service } from "@/data/marketplace";
 import { trpc } from "@/lib/trpc";
+import { catalogueIndex } from "@/lib/catalogue";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 
-type MarketplaceData = {
-  providers: Provider[];
-  services: Service[];
-  source: "database" | "seed" | "fallback";
-  providerFor: (service: Service) => Provider;
-  providerBySlug: (slug: string) => Provider | undefined;
-  serviceFor: (id: string) => Service | undefined;
+type MarketplaceData = ReturnType<typeof catalogueIndex> & {
+  source: "database" | "seed" | "unavailable";
   isLoading: boolean;
+  retry: () => void;
 };
-
-const fallback: MarketplaceData = { providers: fallbackProviders, services: fallbackServices, source: "fallback", providerFor: fallbackProviderFor, providerBySlug: fallbackProviderBySlug, serviceFor: id => fallbackServices.find(service => service.id === id), isLoading: false };
-const runtimeFallbackProviders = import.meta.env.PROD ? [] : fallbackProviders;
-const runtimeFallbackServices = import.meta.env.PROD ? [] : fallbackServices;
-const MarketplaceDataContext = createContext<MarketplaceData>(fallback);
+const MarketplaceDataContext = createContext<MarketplaceData | null>(null);
 
 export function MarketplaceDataProvider({ children }: { children: ReactNode }) {
-  const query = trpc.marketplace.snapshot.useQuery(undefined, { staleTime: 5 * 60 * 1000, retry: 1 });
-  const value = useMemo<MarketplaceData>(() => {
-    const providers = (query.data?.providers ?? runtimeFallbackProviders) as Provider[];
-    const services = (query.data?.services ?? runtimeFallbackServices) as Service[];
-    const providersById = new Map(providers.map(provider => [provider.id, provider]));
-    return {
-      providers,
-      services,
-      source: query.data?.source ?? "fallback",
-      providerFor: service => providersById.get(service.providerId) ?? fallbackProviderFor(service),
-      providerBySlug: slug => providers.find(provider => provider.slug === slug),
-      serviceFor: id => services.find(service => service.id === id),
-      isLoading: query.isLoading,
-    };
-  }, [query.data, query.isLoading]);
+  const query = trpc.marketplace.snapshot.useQuery(undefined, { staleTime: 60_000, retry: 1 });
+  const value = useMemo<MarketplaceData>(() => ({
+    ...catalogueIndex(query.data?.providers ?? [], query.data?.services ?? []),
+    source: query.isError ? "unavailable" : query.data?.source ?? "unavailable",
+    isLoading: query.isLoading,
+    retry: () => { void query.refetch(); },
+  }), [query.data, query.isError, query.isLoading, query.refetch]);
   return <MarketplaceDataContext.Provider value={value}>{children}</MarketplaceDataContext.Provider>;
 }
 
-export function useMarketplaceData() { return useContext(MarketplaceDataContext); }
+export function useMarketplaceData() {
+  const value = useContext(MarketplaceDataContext);
+  if (!value) throw new Error("MarketplaceDataProvider is required");
+  return value;
+}

@@ -1,3 +1,6 @@
+import { CatalogueState } from "@/components/CatalogueState";
+import { catalogueCopy, percentLabel } from "@/i18n/catalogue";
+import { comparisonSelection } from "@/lib/catalogue";
 import { ProviderAvatar, ScoreRing, VerifiedBadge } from "@/components/Marketplace";
 import { PublicLayout } from "@/components/SiteChrome";
 import { Button } from "@/components/ui/button";
@@ -11,18 +14,17 @@ import { Link } from "wouter";
 export default function Compare() {
   const { locale } = useLocale();
   const t = pageCopy[locale];
-  const { providerFor, serviceFor, services } = useMarketplaceData();
-  const ids = new URLSearchParams(window.location.search).get("services")?.split(",").filter(Boolean) ?? ["s1", "s2", "s3"];
-  const selected = ids.map(serviceFor).filter(Boolean).slice(0, 4) as Service[];
-  const compared = selected.length >= 2 ? selected : services.slice(0, 3);
+  const { providerFor, serviceFor } = useMarketplaceData();
+  const { selected: compared, missing } = comparisonSelection(new URLSearchParams(window.location.search).get("services"), serviceFor);
+  if (missing || compared.length < 2) return <PublicLayout><CatalogueState kind={missing ? "comparisonMissing" : "comparisonEmpty"} /></PublicLayout>;
   const lowest = Math.min(...compared.map(service => service.pricePerThousand));
-  const bestScore = Math.max(...compared.map(service => providerFor(service).score));
+  const bestScore = Math.max(...compared.flatMap(service => { const score = providerFor(service).score; return score == null ? [] : [score]; }));
   const rows: [string, React.ReactNode, (service: Service) => React.ReactNode][] = [
-    [t.beaconScore, <ShieldCheck/>, service => <div className="flex items-center gap-3"><ScoreRing score={providerFor(service).score}/><div><p className="font-bold text-slate-900">{t.excellent}</p><p className="text-xs text-slate-400">{t.explainableScore}</p></div></div>],
+    [t.beaconScore, <ShieldCheck/>, service => <div className="flex items-center gap-3"><ScoreRing score={providerFor(service).score}/><div><p className="font-bold text-slate-900">{providerFor(service).score == null ? catalogueCopy[locale].insufficient : t.explainableScore}</p><p className="text-xs text-slate-400">{providerFor(service).score == null ? catalogueCopy[locale].noScore : t.explainableScore}</p></div></div>],
     [t.pricePerThousand, <DollarSign/>, service => <div><bdi dir="ltr" className="text-2xl font-extrabold text-slate-950">${service.pricePerThousand.toFixed(2)}</bdi>{service.pricePerThousand === lowest && <p className="mt-1 text-xs font-bold text-emerald-600">{t.lowestPrice}</p>}</div>],
     [t.startDelivery, <Clock3/>, service => <div><bdi dir="ltr" className="font-bold text-slate-900">{localizeDuration(locale, service.startTime)}</bdi><p className="text-xs text-slate-400">{t.delivery}: <bdi dir="ltr">{localizeDuration(locale, service.delivery)}</bdi></p></div>],
     [t.refillProtection, <RefreshCw/>, service => <div><p className="font-bold text-slate-900">{localizeData(locale, service.refill)}</p><p className="text-xs text-slate-400">{t.providerPolicy}</p></div>],
-    [t.retention, <CheckCircle2/>, service => <div><bdi dir="ltr" className="font-bold text-slate-900">{formatNumber(locale, service.retention)}%</bdi><div className="mt-2 h-1.5 w-32 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-teal-400" style={{width:`${service.retention}%`}}/></div></div>],
+    [t.retention, <CheckCircle2/>, service => <div><bdi dir="ltr" className="font-bold text-slate-900">{percentLabel(service.retention)}</bdi><div className="mt-2 h-1.5 w-32 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-gradient-to-r from-blue-600 to-teal-400" style={{width:`${service.retention ?? 0}%`}}/></div></div>],
     [t.orderRange, <Sparkles/>, service => <bdi dir="ltr" className="font-bold text-slate-900">{formatNumber(locale, service.min)}–{formatNumber(locale, service.max)}</bdi>],
   ];
 

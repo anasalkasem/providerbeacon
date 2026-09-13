@@ -130,7 +130,8 @@ export function localizeData(locale: Locale, value: string) {
   return exactData[locale]?.[value] ?? value;
 }
 
-export function formatNumber(locale: Locale, value: number) {
+export function formatNumber(locale: Locale, value: number | null) {
+  if (value == null) return "—";
   return new Intl.NumberFormat(locale === "zh" ? "zh-CN" : locale).format(value);
 }
 

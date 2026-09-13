@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull, lte, or } from "drizzle-orm";
+import { and, asc, eq, isNull, lte, or, sql } from "drizzle-orm";
 import { providerIntegrations, providerRecords } from "../drizzle/schema";
 import { getDb } from "./db";
 import { assertPublicHttpsUrl, syncProviderServicesNow, writeAudit } from "./marketplaceDb";
@@ -162,9 +162,8 @@ export async function syncStoredIntegration(input: { id: number; actorUserId?: n
   try {
     const result = await syncProviderServicesNow({ providerId: integration.providerId, baseUrl: integration.baseUrl, apiKey, actorUserId: input.actorUserId });
     await db.update(providerIntegrations).set({
-      status: "active",
       lastSyncedAt: new Date(),
-      nextSyncAt,
+      nextSyncAt: sql`CASE WHEN ${providerIntegrations.status} = 'active' THEN ${nextSyncAt.toISOString().slice(0, 19).replace("T", " ")} ELSE NULL END`,
       syncLockUntil: null,
       consecutiveFailures: 0,
       lastError: null,
@@ -175,7 +174,7 @@ export async function syncStoredIntegration(input: { id: number; actorUserId?: n
     const message = error instanceof Error ? error.message.slice(0, 1500) : "Provider synchronization failed";
     const failures = integration.consecutiveFailures + 1;
     await db.update(providerIntegrations).set({
-      nextSyncAt: new Date(Date.now() + Math.min(integration.syncIntervalMinutes * Math.max(1, failures), 24 * 60) * 60_000),
+      nextSyncAt: sql`CASE WHEN ${providerIntegrations.status} = 'active' THEN ${new Date(Date.now() + Math.min(integration.syncIntervalMinutes * Math.max(1, failures), 24 * 60) * 60_000).toISOString().slice(0, 19).replace("T", " ")} ELSE NULL END`,
       syncLockUntil: null,
       consecutiveFailures: failures,
       lastError: message,
@@ -196,10 +195,13 @@ export async function runDueProviderSyncs(limit = 10) {
   )).orderBy(asc(providerIntegrations.nextSyncAt)).limit(Math.max(1, Math.min(limit, 25)));
   const results: Array<{ id: number; ok: boolean; importedCount?: number; error?: string }> = [];
   for (const integration of due) {
-    await db.update(providerIntegrations).set({ syncLockUntil: new Date(Date.now() + LOCK_MINUTES * 60_000) }).where(and(
+    const [claim] = await db.update(providerIntegrations).set({ syncLockUntil: new Date(Date.now() + LOCK_MINUTES * 60_000) }).where(and(
       eq(providerIntegrations.id, integration.id),
+      eq(providerIntegrations.status, "active"),
+      lte(providerIntegrations.nextSyncAt, now),
       or(isNull(providerIntegrations.syncLockUntil), lte(providerIntegrations.syncLockUntil, now)),
     ));
+    if (claim.affectedRows !== 1) continue;
     try {
       const result = await syncStoredIntegration({ id: integration.id, scheduled: true });
       results.push({ id: integration.id, ok: true, importedCount: "importedCount" in result ? result.importedCount : 0 });
