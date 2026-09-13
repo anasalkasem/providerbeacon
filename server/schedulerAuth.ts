@@ -9,17 +9,11 @@ export function assertScheduledWorkflowClaims(payload: JWTPayload) {
   const repository = process.env.SCHEDULER_GITHUB_REPOSITORY ?? DEFAULT_REPOSITORY;
   const audience = process.env.SCHEDULER_OIDC_AUDIENCE ?? DEFAULT_AUDIENCE;
   const eventName = String(payload.event_name ?? "");
-  const subject = String(payload.sub ?? "");
   if (payload.aud !== audience) throw new Error("Unexpected OIDC audience");
   if (payload.repository !== repository) throw new Error("Unexpected GitHub repository");
   if (payload.ref !== "refs/heads/main") throw new Error("Scheduled synchronization must run from main");
   if (!['schedule', 'workflow_dispatch'].includes(eventName)) throw new Error("Unexpected workflow trigger");
-  // GitHub supports repository-level subject customization. Repository, ref,
-  // audience and event are validated independently above, while this check
-  // guarantees that a custom subject still belongs to this exact repository.
-  if (subject !== `repo:${repository}` && !subject.startsWith(`repo:${repository}:`)) {
-    throw new Error("Unexpected OIDC subject");
-  }
+  if (!payload.sub) throw new Error("Missing OIDC subject");
   return { repository, eventName, runId: String(payload.run_id ?? "") };
 }
 

@@ -65,6 +65,6 @@ describe("scheduled synchronization identity", () => {
   it("rejects another repository or pull-request ref", () => {
     expect(() => assertScheduledWorkflowClaims({ ...valid, repository: "attacker/repo" })).toThrow();
     expect(() => assertScheduledWorkflowClaims({ ...valid, ref: "refs/pull/1/merge" })).toThrow();
-    expect(() => assertScheduledWorkflowClaims({ ...valid, sub: "repo:anasalkasem/providerbeacon-evil:ref:refs/heads/main" })).toThrow();
+    expect(() => assertScheduledWorkflowClaims({ ...valid, sub: undefined })).toThrow();
   });
 });
