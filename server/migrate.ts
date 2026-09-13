@@ -13,8 +13,9 @@ export async function runMigrations() {
   }
   const db = drizzle(process.env.DATABASE_URL);
   await migrate(db, { migrationsFolder: path.resolve(process.cwd(), "drizzle") });
-  const { seedMarketplaceIfEmpty } = await import("./marketplaceDb");
+  const { ensureCanonicalProviderDrafts, seedMarketplaceIfEmpty } = await import("./marketplaceDb");
   const seed = await seedMarketplaceIfEmpty();
-  console.log("[Database] Migrations are up to date; seed status:", seed.reason ?? "seeded");
-  return { applied: true as const, seed };
+  const canonicalProviders = await ensureCanonicalProviderDrafts();
+  console.log("[Database] Migrations are up to date; seed status:", seed.reason ?? "seeded", "canonical provider drafts:", canonicalProviders.created);
+  return { applied: true as const, seed, canonicalProviders };
 }

@@ -18,7 +18,8 @@ describe("mutation audit contract", () => {
   it.each([
     ["seedMarketplaceIfEmpty", "listTeamMembers", "marketplace.seed"],
     ["setTeamMemberStatus", "listAdminProviders", "team.member."],
-    ["createProviderDraft", "updateProviderStatus", "provider.draft.create"],
+    ["createProviderDraft", "ensureCanonicalProviderDrafts", "provider.draft.create"],
+    ["ensureCanonicalProviderDrafts", "updateProviderStatus", "provider.draft.bootstrap"],
     ["updateProviderStatus", "listAdminServices", "provider.status.update"],
     ["updateServiceRecord", "createTeamInvite", "service.update"],
     ["createTeamInvite", "acceptTeamInvite", "team.invite"],

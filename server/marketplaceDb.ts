@@ -150,6 +150,23 @@ export async function createProviderDraft(input: { name: string; websiteUrl: str
   await writeAudit({ actorUserId: input.actorUserId, action: "provider.draft.create", entityType: "provider", entityId: String(provider.id), summary: `Created or refreshed provider draft ${name}`, metadata: { websiteHost: endpoint.host } });
   return provider;
 }
+export async function ensureCanonicalProviderDrafts() {
+  const db = await getDb(); if (!db) return { created: 0 };
+  const [existing] = await db.select({ id: providerRecords.id }).from(providerRecords).where(eq(providerRecords.slug, "justanotherpanel")).limit(1);
+  if (existing) return { created: 0 };
+  const inserted = await db.insert(providerRecords).values({
+    slug: "justanotherpanel",
+    name: "JustAnotherPanel",
+    initials: "JAP",
+    status: "draft",
+    tier: "specialized_partner",
+    websiteUrl: "https://justanotherpanel.com",
+    description: "Real provider draft awaiting API catalogue validation and editorial review.",
+    verified: false,
+  }).$returningId();
+  await writeAudit({ action: "provider.draft.bootstrap", entityType: "provider", entityId: String(inserted[0]!.id), summary: "Created the initial real provider draft for API onboarding", metadata: { websiteHost: "justanotherpanel.com" } });
+  return { created: 1 };
+}
 export async function updateProviderStatus(input: { id: number; status: "draft" | "pending_review" | "active" | "suspended"; actorUserId: number }) {
   const db = await getDb(); if (!db) throw new Error("Database unavailable");
   await db.update(providerRecords).set({ status: input.status, verified: input.status === "active" }).where(eq(providerRecords.id, input.id));
