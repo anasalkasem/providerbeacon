@@ -12,6 +12,7 @@ import {
   getBootstrapStatus,
   getSecuritySummary,
   loginWithPassword,
+  recoverBootstrapOwner,
   registerInvitedAccount,
   revokeOtherSessions,
   verifyMfaSession,
@@ -45,6 +46,13 @@ export const authRouter = router({
   bootstrapOwner: publicProcedure.input(registration.extend({ token: z.string().min(20).max(300) })).mutation(async ({ ctx, input }) => {
     try {
       const result = await bootstrapOwner({ ...input, req: ctx.req });
+      setStaffCookie(ctx, result.token, true);
+      return { success: true };
+    } catch (error) { throw authError(error); }
+  }),
+  recoverOwner: publicProcedure.input(credentials.extend({ token: z.string().min(20).max(300) })).mutation(async ({ ctx, input }) => {
+    try {
+      const result = await recoverBootstrapOwner({ ...input, req: ctx.req });
       setStaffCookie(ctx, result.token, true);
       return { success: true };
     } catch (error) { throw authError(error); }

@@ -30,7 +30,8 @@ describe("mutation audit contract", () => {
   });
 
   it.each([
-    ["bootstrapOwner", "registerInvitedAccount", "auth.owner.bootstrap"],
+    ["bootstrapOwner", "recoverBootstrapOwner", "auth.owner.bootstrap"],
+    ["recoverBootstrapOwner", "registerInvitedAccount", "auth.owner.recover"],
     ["registerInvitedAccount", "loginWithPassword", "auth.invite.register"],
     ["changePassword", "beginMfaSetup", "auth.password.change"],
     ["confirmMfaSetup", "revokeOtherSessions", "auth.mfa.enable"],

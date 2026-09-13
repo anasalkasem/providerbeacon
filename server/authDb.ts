@@ -116,6 +116,42 @@ export async function bootstrapOwner(input: { token: string; email: string; name
   return { ...session, userId: identity.userId, email: identity.email };
 }
 
+export async function recoverBootstrapOwner(input: { token: string; email: string; password: string; req: { headers: Record<string, unknown>; ip?: string } }) {
+  const expected = process.env.AUTH_BOOTSTRAP_TOKEN ?? "";
+  if (!expected || !constantTimeTokenMatch(input.token, expected)) throw new Error("Invalid setup token");
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const [owner] = await db.select({ user: users, account: staffAccounts })
+    .from(teamMembers)
+    .innerJoin(users, eq(teamMembers.userId, users.id))
+    .innerJoin(staffAccounts, eq(staffAccounts.userId, users.id))
+    .where(and(eq(teamMembers.role, "owner"), eq(teamMembers.status, "active")))
+    .limit(1);
+  if (!owner) throw new Error("Owner account not found");
+  const email = normalizeEmail(input.email);
+  const passwordHash = await hashPassword(input.password);
+  await db.transaction(async tx => {
+    await tx.update(users).set({ email, name: owner.user.name || "ProviderBeacon Owner" }).where(eq(users.id, owner.user.id));
+    await tx.update(staffAccounts).set({
+      email,
+      passwordHash,
+      passwordChangedAt: new Date(),
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+      mfaEnabled: false,
+      mfaSecretCiphertext: null,
+      mfaSecretIv: null,
+      mfaSecretTag: null,
+      recoveryCodeHashes: null,
+    }).where(eq(staffAccounts.id, owner.account.id));
+    await tx.update(teamMembers).set({ email }).where(eq(teamMembers.userId, owner.user.id));
+    await tx.delete(staffSessions).where(eq(staffSessions.userId, owner.user.id));
+  });
+  await writeAuthAudit({ actorUserId: owner.user.id, action: "auth.owner.recover", summary: "Recovered the independent owner account with the bootstrap token", req: input.req });
+  const session = await createSession({ userId: owner.user.id, mfaVerified: true, req: input.req });
+  return { ...session, userId: owner.user.id, email };
+}
+
 export async function registerInvitedAccount(input: { token: string; email: string; name: string; password: string; req: { headers: Record<string, unknown>; ip?: string } }) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");
