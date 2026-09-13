@@ -5,6 +5,7 @@ import { permissionProcedure, protectedProcedure, router } from "../_core/trpc";
 import { resolveTeamRole, rolePermissions } from "../authorization";
 import {
   acceptTeamInvite,
+  createProviderDraft,
   createTeamInvite,
   listAdminProviders,
   listAdminServices,
@@ -31,6 +32,7 @@ export const adminRouter = router({
   seedMarketplace: permissionProcedure("providers.write").mutation(({ ctx }) => seedMarketplaceIfEmpty(ctx.user!.id)),
   providers: router({
     list: permissionProcedure("providers.read").query(() => listAdminProviders()),
+    createDraft: permissionProcedure("providers.write").input(z.object({ name: z.string().trim().min(2).max(200), websiteUrl: z.string().url().max(500) })).mutation(({ ctx, input }) => createProviderDraft({ ...input, actorUserId: ctx.user!.id })),
     setStatus: permissionProcedure("providers.review").input(z.object({ id: z.number().int().positive(), status: z.enum(["draft", "pending_review", "active", "suspended"]) })).mutation(({ ctx, input }) => updateProviderStatus({ ...input, actorUserId: ctx.user!.id })),
   }),
   services: router({

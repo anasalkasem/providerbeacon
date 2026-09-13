@@ -128,6 +128,28 @@ export async function setTeamMemberStatus(input: { id: number; status: "active" 
   return { success: true };
 }
 export async function listAdminProviders() { const db = await getDb(); return db ? db.select().from(providerRecords).orderBy(desc(providerRecords.updatedAt)) : []; }
+export async function createProviderDraft(input: { name: string; websiteUrl: string; actorUserId: number }) {
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const name = input.name.trim().slice(0, 200);
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 160);
+  if (!name || !slug) throw new Error("Provider name is invalid");
+  const endpoint = await assertPublicHttpsUrl(input.websiteUrl);
+  const initials = name.split(/\s+/).map(part => part[0]).join("").slice(0, 4).toUpperCase();
+  await db.insert(providerRecords).values({
+    slug,
+    name,
+    initials,
+    status: "draft",
+    tier: "specialized_partner",
+    websiteUrl: endpoint.origin,
+    description: "Real provider draft awaiting API catalogue validation and editorial review.",
+    verified: false,
+  }).onDuplicateKeyUpdate({ set: { name, websiteUrl: endpoint.origin } });
+  const [provider] = await db.select().from(providerRecords).where(eq(providerRecords.slug, slug)).limit(1);
+  if (!provider) throw new Error("Provider draft could not be created");
+  await writeAudit({ actorUserId: input.actorUserId, action: "provider.draft.create", entityType: "provider", entityId: String(provider.id), summary: `Created or refreshed provider draft ${name}`, metadata: { websiteHost: endpoint.host } });
+  return provider;
+}
 export async function updateProviderStatus(input: { id: number; status: "draft" | "pending_review" | "active" | "suspended"; actorUserId: number }) {
   const db = await getDb(); if (!db) throw new Error("Database unavailable");
   await db.update(providerRecords).set({ status: input.status, verified: input.status === "active" }).where(eq(providerRecords.id, input.id));
