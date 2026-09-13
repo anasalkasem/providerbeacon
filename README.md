@@ -20,7 +20,8 @@ The first product preview includes a production-quality public experience and a 
 - Database-backed provider and service publishing controls with safe seed fallback.
 - Human-reviewed localization workflow for five supported locales.
 - On-demand `gpt-5-mini` provider risk explanations that never change status automatically.
-- One-time SMM API service import with HTTPS/SSRF controls and price snapshots.
+- AES-256-GCM provider credential vault with manual and scheduled SMM API imports.
+- Independent staff authentication with scrypt password hashing, secure server sessions and TOTP MFA.
 - Lazy-loaded routes and accessible keyboard/focus behavior.
 
 All provider names, prices and metrics in this version are demonstration data.
@@ -34,7 +35,7 @@ All provider names, prices and metrics in this version are demonstration data.
 | Routing | Wouter |
 | API | Express and tRPC |
 | Database | MySQL/TiDB with Drizzle ORM |
-| Authentication | Manus OAuth |
+| Authentication | First-party email/password sessions with TOTP MFA; Manus OAuth retained as a migration fallback |
 | Testing | Vitest |
 
 ## Local development
@@ -64,22 +65,26 @@ pnpm build
 | `/admin` | Protected operations overview |
 | `/admin/providers` | Provider operations |
 | `/admin/services` | Catalogue operations |
+| `/admin/integrations` | Encrypted provider credential vault and sync schedules |
 | `/admin/team` | Role and access management |
+| `/admin/security` | Password, MFA and session controls |
 | `/admin/translations` | Localization workflow |
 | `/admin/audit` | Administrative audit log |
-| `/team/accept` | Authenticated team invitation acceptance |
+| `/login` | Independent staff sign-in and MFA verification |
+| `/setup` | One-time initial owner setup |
+| `/team/accept` | Invitation-based staff registration and acceptance |
 
 ## Security model
 
-The public marketplace and protected administration area are intentionally separated. Every protected tRPC operation resolves the authenticated user's team membership and checks a granular permission on the server. Navigation visibility is only a usability aid, never authorization. Provider/service changes, invitations, translation edits, AI analysis, API imports and authenticated logout events write audit entries.
+The public marketplace and protected administration area are intentionally separated. Every protected tRPC operation resolves the authenticated user's team membership and checks a granular permission on the server. Navigation visibility is only a usability aid, never authorization. Passwords are scrypt-hashed, opaque sessions are stored server-side, and TOTP MFA can be enabled per staff account. Provider/service changes, invitations, translation edits, AI analysis, credential rotation, scheduled imports and authenticated logout events write audit entries.
 
-Provider API keys are accepted only for a single manual HTTPS sync and are never persisted. The importer rejects private-network targets, disables redirects, caps responses at 5,000 records per run and records price history separately.
+Provider API keys are encrypted with AES-256-GCM before persistence and never returned to the browser. The importer rejects private-network targets, disables redirects, caps responses at 5,000 records per run and records price history separately. The hourly schedule authenticates with a short-lived GitHub Actions OIDC token instead of a stored scheduler secret.
 
 Never commit `.env` files, credentials, provider API keys or production exports.
 
 ## Product roadmap
 
-The operational foundation now includes a dedicated Railway MySQL database, automatic migrations and seed data, healthchecked deployments, and custom-domain DNS. The next launch stages are selecting a provider-independent staff-authentication system and adding encrypted connector-secret storage before enabling scheduled provider refreshes.
+The operational foundation includes a dedicated Railway MySQL database, automatic migrations and seed data, healthchecked deployments, custom-domain DNS, independent staff authentication, encrypted connector secrets and scheduled provider refreshes. The next launch stages are provider onboarding, real-data quality review and public beta operations.
 
 ## License
 

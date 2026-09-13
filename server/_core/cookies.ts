@@ -46,3 +46,14 @@ export function getSessionCookieOptions(
     secure: isSecureRequest(req),
   };
 }
+
+export function getStaffSessionCookieOptions(
+  req: Request
+): Pick<CookieOptions, "httpOnly" | "path" | "sameSite" | "secure"> {
+  return {
+    httpOnly: true,
+    path: "/",
+    sameSite: "lax",
+    secure: isSecureRequest(req),
+  };
+}

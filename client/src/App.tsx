@@ -15,6 +15,9 @@ const Provider = lazy(() => import("@/pages/Provider"));
 const Admin = lazy(() => import("@/pages/Admin"));
 const AdminModule = lazy(() => import("@/pages/AdminModule"));
 const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
+const Login = lazy(() => import("@/pages/Login"));
+const Setup = lazy(() => import("@/pages/Setup"));
+const Security = lazy(() => import("@/pages/Security"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 function Router() {
@@ -24,7 +27,10 @@ function Router() {
     <Route path="/compare" component={Compare} />
     <Route path="/providers" component={Providers} />
     <Route path="/providers/:slug" component={Provider} />
+    <Route path="/login" component={Login} />
+    <Route path="/setup" component={Setup} />
     <Route path="/admin" component={Admin} />
+    <Route path="/admin/security" component={Security} />
     <Route path="/admin/:module" component={AdminModule} />
     <Route path="/team/accept" component={AcceptInvite} />
     <Route path="/404" component={NotFound} />
