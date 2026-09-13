@@ -8,7 +8,7 @@ export async function runMigrations() {
     return { applied: false as const, reason: "disabled" as const };
   }
   if (!process.env.DATABASE_URL) {
-    console.warn("[Database] DATABASE_URL is not configured; starting with marketplace fallback data");
+    console.warn("[Database] DATABASE_URL is not configured; public catalogue will be unavailable");
     return { applied: false as const, reason: "database_unavailable" as const };
   }
   const db = drizzle(process.env.DATABASE_URL);

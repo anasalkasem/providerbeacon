@@ -1,3 +1,4 @@
+import { CatalogueNotice } from "@/components/CatalogueState";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -80,5 +81,5 @@ function FooterColumn({ title, links }: { title: string; links: [string, string]
 }
 
 export function PublicLayout({ children }: { children: ReactNode }) {
-  return <div className="min-h-screen bg-[#F6F8FC] text-slate-950"><SiteHeader /><main id="main-content">{children}</main><SiteFooter /></div>;
+  return <div className="min-h-screen bg-[#F6F8FC] text-slate-950"><SiteHeader /><main id="main-content"><CatalogueNotice />{children}</main><SiteFooter /></div>;
 }

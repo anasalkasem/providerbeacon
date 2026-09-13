@@ -27,7 +27,7 @@ export default function Services() {
   const filtered = useMemo(() => {
     const needle = query.toLowerCase();
     const result = services.filter(service => (platform === "all" || service.platform === platform) && (quality === "all" || service.quality === quality) && (!refillOnly || service.refill !== "No refill") && `${service.platform} ${service.category} ${service.name} ${localizeData(locale, service.category)} ${localizeData(locale, service.name)} ${providerFor(service).name}`.toLowerCase().includes(needle));
-    return [...result].sort((a, b) => sort === "price" ? a.pricePerThousand - b.pricePerThousand : sort === "retention" ? b.retention - a.retention : Number(b.featured) - Number(a.featured));
+    return [...result].sort((a, b) => sort === "price" ? a.pricePerThousand - b.pricePerThousand : sort === "retention" ? (b.retention ?? -1) - (a.retention ?? -1) : Number(b.featured) - Number(a.featured));
   }, [locale, platform, providerFor, query, quality, refillOnly, services, sort]);
   const toggle = (service: Service) => setSelected(current => current.some(item => item.id === service.id) ? current.filter(item => item.id !== service.id) : current.length < 4 ? [...current, service] : current);
   const compare = () => navigate(`/compare?services=${selected.map(service => service.id).join(",")}`);

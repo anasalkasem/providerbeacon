@@ -16,15 +16,15 @@ export type Provider = {
   location: string;
   verified: boolean;
   tier: ProviderTier;
-  score: number;
-  rating: number;
+  score: number | null;
+  rating: number | null;
   reviews: number;
   responseTime: string;
   apiLatency: string;
   apiUptime: string;
-  apiStatus: "online" | "optimal" | "monitoring";
-  successRate: number;
-  updatedMinutes: number;
+  apiStatus: "online" | "optimal" | "monitoring" | "unknown";
+  successRate: number | null;
+  updatedMinutes: number | null;
   since: number;
   minDeposit: string;
   refillPolicy: string;
@@ -35,13 +35,13 @@ export type Provider = {
   specialties: string[];
   description: string;
   strengths: string[];
-  auditSignals: AuditSignals;
+  auditSignals: AuditSignals | null;
 };
 
 export type Service = {
   id: string;
   providerId: string;
-  platform: "Instagram" | "TikTok" | "YouTube" | "Facebook" | "Telegram" | "Twitter/X" | "Spotify";
+  platform: string;
   category: string;
   name: string;
   pricePerThousand: number;
@@ -51,7 +51,7 @@ export type Service = {
   delivery: string;
   refill: string;
   quality: "Standard" | "Premium" | "Elite";
-  retention: number;
+  retention: number | null;
   featured?: boolean;
 };
 
