@@ -21,7 +21,7 @@ import {
 } from "../marketplaceDb";
 import { deleteProviderIntegration, listProviderIntegrations, saveProviderIntegration, setProviderIntegrationEnabled, syncStoredIntegration } from "../vaultDb";
 
-import { getAdminOverview, getProviderForAnalysis, listAdminServices, listSyncAlerts } from "../adminCatalogueDb";
+import { getAdminOverview, getProviderForAnalysis, getServiceReviewSummary, listAdminServices, listSyncAlerts } from "../adminCatalogueDb";
 import { adminServicesInput } from "../../shared/catalogueQuery";
 import { reviewBatchInput, reviewEditInput } from "../../shared/serviceReview";
 import { applyServiceReview, editServiceReview, getServiceReview } from "../serviceReviewDb";
@@ -46,6 +46,7 @@ export const adminRouter = router({
     setStatus: permissionProcedure("providers.review").input(z.object({ id: z.number().int().positive(), status: z.enum(["draft", "pending_review", "active", "suspended"]) })).mutation(({ ctx, input }) => updateProviderStatus({ ...input, actorUserId: ctx.user!.id })),
   }),
   services: router({
+    reviewSummary: permissionProcedure("services.read").input(adminServicesInput).query(({ input }) => getServiceReviewSummary(input)),
     detail: permissionProcedure("services.read").input(z.object({ id: z.number().int().positive() })).query(({ input }) => getServiceReview(input.id)),
     editReview: permissionProcedure("services.write").input(reviewEditInput).mutation(({ ctx, input }) => editServiceReview({ ...input, actorUserId: ctx.user!.id, ipAddress: ctx.req.ip })),
     approve: permissionProcedure("services.review").input(reviewBatchInput).mutation(({ ctx, input }) => applyServiceReview({ ...input, action: "approve", actorUserId: ctx.user!.id, ipAddress: ctx.req.ip })),

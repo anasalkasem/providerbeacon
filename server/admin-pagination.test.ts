@@ -3,9 +3,9 @@ import type { TrpcContext } from "./_core/context";
 import type { TeamRole } from "../drizzle/schema";
 
 const state = vi.hoisted(() => ({ role: "catalogue_editor" as TeamRole | null,
-  list: vi.fn(async () => ({ items: [], total: 0, nextCursor: null })), overview: vi.fn(async () => ({})) }));
+  list: vi.fn(async () => ({ items: [], total: 0, nextCursor: null })), overview: vi.fn(async () => ({})), reviewSummary: vi.fn(async () => ({ total: 0 })) }));
 vi.mock("./authorization", async original => ({ ...await original<any>(), resolveTeamRole: async () => state.role }));
-vi.mock("./adminCatalogueDb", () => ({ listAdminServices: state.list, getAdminOverview: state.overview, getProviderForAnalysis: vi.fn(), listSyncAlerts: vi.fn() }));
+vi.mock("./adminCatalogueDb", () => ({ listAdminServices: state.list, getAdminOverview: state.overview, getServiceReviewSummary: state.reviewSummary, getProviderForAnalysis: vi.fn(), listSyncAlerts: vi.fn() }));
 import { adminRouter } from "./routers/admin";
 import { catalogueInput } from "../shared/catalogueQuery";
 
@@ -36,6 +36,22 @@ describe("bounded administrative queries", () => {
   it("caps public pages and explicit comparisons independently", () => {
     expect(catalogueInput.safeParse({ limit: 51 }).success).toBe(false);
     expect(catalogueInput.safeParse({ scope: "compare", ids: [1, 2, 3, 4, 5] }).success).toBe(false);
+  });
+  it("validates review needs and summary filters before running database queries", async () => {
+    await caller().services.list({ need: "pricing_unconfirmed" });
+    expect(state.list).toHaveBeenCalledWith({ limit: 25, q: "", need: "pricing_unconfirmed" });
+    await expect(caller().services.list({ need: "invented" } as never)).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    await expect(caller().services.reviewSummary({ q: "x".repeat(101) })).rejects.toMatchObject({ code: "BAD_REQUEST" });
+    expect(state.reviewSummary).not.toHaveBeenCalled();
+  });
+  it("requires service-read permission for review summary counts", async () => {
+    await expect(caller(false).services.reviewSummary()).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    state.role = null;
+    await expect(caller().services.reviewSummary()).rejects.toMatchObject({ code: "FORBIDDEN" });
+    expect(state.reviewSummary).not.toHaveBeenCalled();
+    state.role = "catalogue_editor";
+    await caller().services.reviewSummary({ q: "Website", view: "changes_requested" });
+    expect(state.reviewSummary).toHaveBeenCalledWith({ limit: 25, q: "Website", view: "changes_requested" });
   });
 });
 

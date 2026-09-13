@@ -1,15 +1,14 @@
-import { and, count, desc, eq, gt, like, lt, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, like, lt, or, sql, type SQL } from "drizzle-orm";
 import { auditEntries, providerRecords, providerIntegrations, providerSyncJobs, serviceRecords, teamMembers } from "../drizzle/schema";
 import { adminServicesInput, searchPattern, type AdminServicesInput } from "../shared/catalogueQuery";
 import { getDb } from "./db";
 import type { Permission } from "./authorization";
-import { catalogueViewFilter } from "./catalogueRules";
+import { catalogueViewFilter, reviewNeedFilter } from "./catalogueRules";
+import { reviewNeeds, type ReviewNeed } from "../shared/serviceReview";
+import { isStale, reviewBlockers } from "./serviceNormalizer";
 
-export async function listAdminServices(raw?: Partial<AdminServicesInput>) {
-  const input = adminServicesInput.parse(raw);
-  const db = await getDb();
-  if (!db) throw new Error("Database unavailable");
-  const filter = and(
+function adminServiceFilter(input: AdminServicesInput) {
+  return and(
     catalogueViewFilter(input.view),
     input.countryCode ? eq(serviceRecords.countryCode, input.countryCode) : undefined,
     input.providerId ? eq(serviceRecords.providerId, input.providerId) : undefined,
@@ -18,6 +17,30 @@ export async function listAdminServices(raw?: Partial<AdminServicesInput>) {
     input.q ? or(like(serviceRecords.name, searchPattern(input.q)), like(serviceRecords.externalId, searchPattern(input.q)),
       like(providerRecords.name, searchPattern(input.q)), like(serviceRecords.category, searchPattern(input.q))) : undefined,
   );
+}
+
+export async function getServiceReviewSummary(raw?: Partial<AdminServicesInput>) {
+  const input = adminServicesInput.parse(raw);
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const now = Date.now();
+  const counters = Object.fromEntries(reviewNeeds.map(need => [
+    need, sql<number>`coalesce(sum(${reviewNeedFilter(need, now)}), 0)`.mapWith(Number),
+  ])) as Record<ReviewNeed, SQL<number>>;
+  // Counts reflect search/platform/country/status/view filters, never the
+  // selected need or current page. Categories overlap and remain navigable.
+  const [summary] = await db.select({ total: count(), ...counters }).from(serviceRecords)
+    .innerJoin(providerRecords, eq(serviceRecords.providerId, providerRecords.id))
+    .where(adminServiceFilter(input));
+  return summary;
+}
+
+export async function listAdminServices(raw?: Partial<AdminServicesInput>) {
+  const input = adminServicesInput.parse(raw);
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const now = Date.now();
+  const filter = and(adminServiceFilter(input), reviewNeedFilter(input.need, now));
   const [rows, totals] = await Promise.all([
     db.select({
       id: serviceRecords.id, providerId: serviceRecords.providerId, providerName: providerRecords.name,
@@ -28,12 +51,23 @@ export async function listAdminServices(raw?: Partial<AdminServicesInput>) {
       revision: serviceRecords.revision, incomplete: serviceRecords.incomplete, available: serviceRecords.available,
       sourceUpdatedAt: serviceRecords.sourceUpdatedAt, priceCheckedAt: serviceRecords.priceCheckedAt,
       lastPriceChangeAt: serviceRecords.lastPriceChangeAt, pricingConfirmed: serviceRecords.pricingConfirmed,
+      reviewFields: {
+        minOrder: serviceRecords.minOrder, maxOrder: serviceRecords.maxOrder,
+        policyReviewed: serviceRecords.policyReviewed, normalizationVersion: serviceRecords.normalizationVersion,
+        hasEvidence: sql<number>`(${serviceRecords.evidenceUrl} is not null and char_length(${serviceRecords.evidenceUrl}) > 0)`.mapWith(Number),
+      },
     }).from(serviceRecords).innerJoin(providerRecords, eq(serviceRecords.providerId, providerRecords.id))
       .where(and(filter, input.cursor ? lt(serviceRecords.id, input.cursor) : undefined))
       .orderBy(desc(serviceRecords.id)).limit(input.limit + 1),
     db.select({ total: count() }).from(serviceRecords).innerJoin(providerRecords, eq(serviceRecords.providerId, providerRecords.id)).where(filter),
   ]);
-  const items = rows.slice(0, input.limit);
+  const items = rows.slice(0, input.limit).map(({ reviewFields, ...row }) => {
+    const blockers = reviewBlockers({ ...row, ...reviewFields, evidenceUrl: reviewFields.hasEvidence ? "retained" : null });
+    const stale = isStale(row, now);
+    const canApprove = blockers.length === 0 && !stale;
+    const canPublish = canApprove && row.reviewStatus === "approved" && row.providerStatus === "active" && !["paused", "archived"].includes(row.status);
+    return { ...row, blockers, stale, canApprove, canPublish };
+  });
   return { items, total: totals[0]?.total ?? 0, nextCursor: rows.length > input.limit ? items.at(-1)!.id : null };
 }
 

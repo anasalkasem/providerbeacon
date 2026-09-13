@@ -11,7 +11,8 @@ vi.mock("node:dns/promises", () => ({ lookup: async () => [{ address: "93.184.21
 import { getMarketplaceSnapshot, updateProviderStatus, updateServiceRecord } from "./marketplaceDb";
 import { deleteProviderIntegration, listProviderIntegrations, runDueProviderSyncs, saveProviderIntegration, setProviderIntegrationEnabled, syncStoredIntegration } from "./vaultDb";
 import { cleanupProviderSyncSnapshots, listProviderSyncIssues, runProviderSyncStep } from "./providerSync";
-import { getAdminOverview, listAdminServices, listSyncAlerts } from "./adminCatalogueDb";
+import { getAdminOverview, getServiceReviewSummary, listAdminServices, listSyncAlerts } from "./adminCatalogueDb";
+import { reviewNeeds, type ReviewNeed } from "../shared/serviceReview";
 import { rolePermissions } from "./authorization";
 import { encryptValue } from "./security";
 import { applyServiceReview, editServiceReview, getServiceReview, normalizeLegacyBatch } from "./serviceReviewDb";
@@ -425,6 +426,87 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(next.items[0].ordinal).toBeGreaterThan(first.items.at(-1)!.ordinal);
     expect(Buffer.byteLength(JSON.stringify(first))).toBeLessThan(32_000);
   });
+  it("matches review-need counts and lists to the actual missing evidence and classification", async () => {
+    const oldDate = new Date(Date.now() - 45 * 86400000);
+    const fixtures: { key: string; patch: Partial<typeof serviceRecords.$inferInsert>; needs: ReviewNeed[] }[] = [
+      { key: "ready", patch: {}, needs: ["ready"] },
+      { key: "pricing", patch: { pricingConfirmed: false }, needs: ["pricing_unconfirmed"] },
+      { key: "policy", patch: { policyReviewed: false }, needs: ["policy_check"] },
+      { key: "no-evidence", patch: { evidenceUrl: null }, needs: ["evidence_missing"] },
+      { key: "empty-evidence", patch: { evidenceUrl: "" }, needs: ["evidence_missing"] },
+      { key: "platform", patch: { platform: "Unknown" }, needs: ["classification"] },
+      { key: "platform-case", patch: { platform: "tiktok" }, needs: ["classification"] },
+      { key: "category", patch: { category: "Other" }, needs: ["classification"] },
+      { key: "category-case", patch: { category: "views" }, needs: ["classification"] },
+      { key: "legacy", patch: { normalizationVersion: 0 }, needs: ["classification"] },
+      { key: "price", patch: { pricePerThousandUsd: "0.0000" }, needs: ["invalid_values"] },
+      { key: "minimum", patch: { minOrder: 0 }, needs: ["invalid_values"] },
+      { key: "maximum", patch: { maxOrder: 50 }, needs: ["invalid_values"] },
+      { key: "unavailable", patch: { available: false }, needs: ["source_missing"] },
+      { key: "old", patch: { sourceUpdatedAt: oldDate }, needs: ["stale"] },
+      { key: "no-date", patch: { sourceUpdatedAt: null, priceCheckedAt: null }, needs: ["stale"] },
+      { key: "fresh-price", patch: { sourceUpdatedAt: oldDate, priceCheckedAt: new Date() }, needs: ["ready"] },
+      { key: "approved", patch: { reviewStatus: "approved" }, needs: [] },
+      { key: "combined", patch: { pricingConfirmed: false, policyReviewed: false, evidenceUrl: null }, needs: ["pricing_unconfirmed", "policy_check", "evidence_missing"] },
+    ];
+    await state.db.insert(serviceRecords).values(fixtures.map(fixture => ({
+      providerId, slug: `needs-${fixture.key}`, externalId: fixture.key, name: `Review fixture ${fixture.key}`,
+      platform: "TikTok", category: "Views", pricePerThousandUsd: "1.0000", minOrder: 100, maxOrder: 1000,
+      status: "draft", reviewStatus: "pending", normalizationVersion: 1, incomplete: false,
+      pricingConfirmed: true, policyReviewed: true, evidenceUrl: "https://provider.example/services", sourceUpdatedAt: new Date(),
+      ...fixture.patch,
+    })));
+    const summary = await getServiceReviewSummary();
+    expect(summary.total).toBe(fixtures.length);
+    for (const need of reviewNeeds) {
+      const expected = fixtures.filter(fixture => fixture.needs.includes(need)).map(fixture => fixture.key).sort();
+      const list = await listAdminServices({ need, limit: 100 });
+      expect(list.items.map(item => item.externalId).sort(), need).toEqual(expected);
+      expect(list.total, need).toBe(expected.length);
+      expect(summary[need], need).toBe(expected.length);
+    }
+    const list = await listAdminServices({ limit: 100 });
+    for (const row of list.items) {
+      const detail = await getServiceReview(row.id);
+      expect(row.blockers).toEqual(detail.blockers);
+      expect(row.stale).toBe(detail.stale);
+      expect(row.canApprove).toBe(detail.blockers.length === 0 && !detail.stale);
+    }
+    expect(JSON.stringify(list)).not.toMatch(/sourceData|originalSourceData|reviewFields|evidenceUrl|provider.example\/services/);
+  });
+  it("keeps review counts scoped to search and status while need filters and pages change", async () => {
+    await state.db.insert(serviceRecords).values(Array.from({ length: 32 }, (_, i) => ({
+      providerId, slug: `needs-page-${i}`, externalId: String(1000 + i), name: i < 30 ? "Website review set" : "Other set",
+      platform: "Website", category: "Website traffic", pricePerThousandUsd: "1.0000", minOrder: 1, maxOrder: 1000,
+      countryCode: "US", status: "draft", reviewStatus: i < 30 ? "changes_requested" : "pending",
+      normalizationVersion: 1, pricingConfirmed: false, policyReviewed: false, evidenceUrl: null,
+    })));
+    const filters = { q: "Website review set", providerId, countryCode: "US", platform: "Website", status: "draft" as const, view: "changes_requested" as const, need: "pricing_unconfirmed" as const };
+    const first = await listAdminServices(filters);
+    const next = await listAdminServices({ ...filters, cursor: first.nextCursor! });
+    expect(first.total).toBe(30); expect(first.items).toHaveLength(25); expect(next.items).toHaveLength(5);
+    expect(new Set([...first.items, ...next.items].map(item => item.id)).size).toBe(30);
+    const summary = await getServiceReviewSummary({ ...filters, cursor: first.nextCursor!, need: "ready", limit: 1 });
+    expect(summary).toMatchObject({ total: 30, pricing_unconfirmed: 30, policy_check: 30, evidence_missing: 30, ready: 0 });
+    expect((await getServiceReviewSummary({ ...filters, q: "%" })).total).toBe(0);
+    expect((await getServiceReviewSummary({ ...filters, countryCode: "KE" })).total).toBe(0);
+  });
+  it("keeps readiness buttons consistent with approval and provider publication gates", async () => {
+    const id = await addService("draft");
+    await state.db.update(serviceRecords).set({ reviewStatus: "pending" }).where(eq(serviceRecords.id, id));
+    let [row] = (await listAdminServices({ need: "ready" })).items;
+    expect(row).toMatchObject({ id, canApprove: true, canPublish: false, stale: false, blockers: [] });
+    await applyServiceReview({ items: [{ id, revision: row.revision }], action: "approve", reason: "Confirmed fixture evidence", actorUserId: actorId });
+    expect((await listAdminServices({ need: "ready" })).total).toBe(0);
+    [row] = (await listAdminServices()).items;
+    expect(row.canPublish).toBe(true);
+    await state.db.update(providerRecords).set({ status: "draft" }).where(eq(providerRecords.id, providerId));
+    expect((await listAdminServices()).items[0].canPublish).toBe(false);
+    await state.db.update(serviceRecords).set({ sourceUpdatedAt: new Date("2020-01-01"), priceCheckedAt: null }).where(eq(serviceRecords.id, id));
+    [row] = (await listAdminServices()).items;
+    expect(row).toMatchObject({ canApprove: false, canPublish: false, stale: true });
+    await expect(applyServiceReview({ items: [{ id, revision: row.revision }], action: "approve", reason: "Attempt with outdated evidence", actorUserId: actorId })).rejects.toMatchObject({ message: "review_not_ready" });
+  });
   it("keeps payloads bounded across a 50,000-service catalogue and excludes unpublished providers", async () => {
     const size = 50_000;
     for (let start = 0; start < size; start += 500) {
@@ -442,6 +524,9 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(next.items.every(item => item.id < first.items.at(-1)!.id)).toBe(true);
     const filtered = await listAdminServices({ platform: "TikTok", providerId });
     expect(filtered.total).toBe(size / 2); expect(filtered.items.every(item => item.platform === "TikTok")).toBe(true);
+    const reviewSummary = await getServiceReviewSummary({ platform: "TikTok", providerId });
+    expect(reviewSummary).toMatchObject({ total: size / 2, classification: size / 2, pricing_unconfirmed: 0, evidence_missing: 0, ready: 0 });
+    expect(Buffer.byteLength(JSON.stringify(reviewSummary))).toBeLessThan(1000);
     expect((await listAdminServices({ q: "' OR 1=1 --" })).total).toBe(0);
     expect((await listAdminServices({ q: "%" })).total).toBe(0);
     const publicPage = await getMarketplaceSnapshot({ scope: "services" });

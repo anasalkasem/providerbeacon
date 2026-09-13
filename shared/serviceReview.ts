@@ -42,6 +42,17 @@ export const catalogueViews = [
   "missing",
 ] as const;
 export const STALE_DAYS = 30;
+export const reviewNeeds = [
+  "pricing_unconfirmed",
+  "evidence_missing",
+  "policy_check",
+  "classification",
+  "invalid_values",
+  "source_missing",
+  "stale",
+  "ready",
+] as const;
+export type ReviewNeed = (typeof reviewNeeds)[number];
 export const reviewReference = z.object({
   id: z.number().int().positive(),
   revision: z.number().int().positive(),
