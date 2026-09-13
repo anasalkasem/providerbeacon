@@ -4,7 +4,7 @@ export const reviewEn = {
     "Inspect source data, correct details, then approve and publish with a recorded reason.",
   alertsTitle: "Sync alerts",
   alertsSubtitle:
-    "Failed or overdue connections, price changes and unavailable services.",
+    "Source records needing review, failed or overdue connections, price changes and unavailable services.",
   catalogueHealth: "Catalogue health",
   catalogueHealthBody:
     "Live database counts. Categories can overlap. Stale means no price evidence within 30 days.",
@@ -89,7 +89,12 @@ export const reviewEn = {
   evidence_missing: "Add a price evidence link",
   source_missing: "Service disappeared from the source",
   invalid_values: "Price or quantities are invalid",
-  noSyncAlerts: "No failed or overdue connections in the current records.",
+  noSyncAlerts:
+    "No source issues, failed connections or overdue syncs in the current records.",
+  sourceAlertBody:
+    "The last completed import contains source records that need review. This alert remains until a later completed import clears them.",
+  sourceAlertSnapshot: "Last completed import",
+  syncNoIssues: "No source issues on this page.",
   overdueSync: "Sync overdue by more than one hour",
   alertLimit: "Showing up to 50 connections needing attention.",
   recentPriceChanges: "Review changed prices",
@@ -109,7 +114,7 @@ export const reviewAr: Record<keyof typeof reviewEn, string> = {
     "افحص المصدر وصحّح التفاصيل، ثم اعتمد وانشر مع تسجيل سبب القرار.",
   alertsTitle: "تنبيهات المزامنة",
   alertsSubtitle:
-    "الاتصالات المتعثرة أو المتأخرة وتغيّر الأسعار والخدمات غير المتاحة.",
+    "سجلات المصدر التي تحتاج مراجعة، والاتصالات المتعثرة أو المتأخرة وتغيّر الأسعار والخدمات غير المتاحة.",
   catalogueHealth: "حالة دليل الخدمات",
   catalogueHealthBody:
     "أعداد فعلية من قاعدة البيانات. قد تتداخل الفئات. البيانات القديمة لم يُتحقق من سعرها خلال ٣٠ يومًا.",
@@ -192,7 +197,12 @@ export const reviewAr: Record<keyof typeof reviewEn, string> = {
   evidence_missing: "أضف رابط الدليل على السعر",
   source_missing: "الخدمة اختفت من المصدر",
   invalid_values: "السعر أو الكميات غير صالحين",
-  noSyncAlerts: "لا توجد اتصالات متعثرة أو متأخرة في السجلات الحالية.",
+  noSyncAlerts:
+    "لا توجد ملاحظات على المصدر أو اتصالات متعثرة أو مزامنة متأخرة في السجلات الحالية.",
+  sourceAlertBody:
+    "يحتوي آخر استيراد مكتمل على سجلات مصدر تحتاج إلى مراجعة. يبقى التنبيه حتى يؤكد استيراد مكتمل لاحق زوال هذه الملاحظات.",
+  sourceAlertSnapshot: "آخر استيراد مكتمل",
+  syncNoIssues: "لا توجد ملاحظات على المصدر في هذه الصفحة.",
   overdueSync: "تأخرت المزامنة أكثر من ساعة",
   alertLimit: "عرض حتى ٥٠ اتصالًا يحتاج إلى متابعة.",
   recentPriceChanges: "مراجعة الأسعار المتغيرة",

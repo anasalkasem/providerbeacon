@@ -1,5 +1,5 @@
 import { and, count, desc, eq, gt, like, lt, or, sql } from "drizzle-orm";
-import { auditEntries, providerRecords, providerIntegrations, serviceRecords, teamMembers } from "../drizzle/schema";
+import { auditEntries, providerRecords, providerIntegrations, providerSyncJobs, serviceRecords, teamMembers } from "../drizzle/schema";
 import { adminServicesInput, searchPattern, type AdminServicesInput } from "../shared/catalogueQuery";
 import { getDb } from "./db";
 import type { Permission } from "./authorization";
@@ -72,16 +72,78 @@ export async function getProviderForAnalysis(id: number) {
 }
 
 export async function listSyncAlerts() {
-  const db = await getDb(); if (!db) throw new Error("Database unavailable");
-  const filter = or(gt(providerIntegrations.consecutiveFailures, 0), eq(providerIntegrations.status, "error"),
-    and(eq(providerIntegrations.status, "active"), lt(providerIntegrations.nextSyncAt, new Date(Date.now() - 3600000))));
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  const overdueBefore = new Date(Date.now() - 3600000);
+  // A queued, incomplete or failed retry must not hide the last completed
+  // snapshot's quarantine. Match the current provider/endpoint after edits.
+  // The existing (integrationId, id) index supports this newest-first lookup.
+  const lastCompleted = eq(
+    providerSyncJobs.id,
+    sql`(
+    select recent.id from provider_sync_jobs recent
+    where recent.integrationId = ${providerIntegrations.id}
+      and recent.providerId = ${providerIntegrations.providerId}
+      and recent.sourceUrl = ${providerIntegrations.baseUrl}
+      and recent.status in ('completed', 'completed_with_issues')
+    order by recent.id desc limit 1
+  )`
+  );
+  const filter = or(
+    gt(providerIntegrations.consecutiveFailures, 0),
+    eq(providerIntegrations.status, "error"),
+    and(
+      eq(providerIntegrations.status, "active"),
+      lt(providerIntegrations.nextSyncAt, overdueBefore)
+    ),
+    gt(providerSyncJobs.invalidCount, 0)
+  );
   const [items, totals] = await Promise.all([
-    db.select({ id: providerIntegrations.id, providerId: providerIntegrations.providerId, providerName: providerRecords.name,
-      name: providerIntegrations.name, failures: providerIntegrations.consecutiveFailures, lastError: providerIntegrations.lastError,
-      lastSyncedAt: providerIntegrations.lastSyncedAt, nextSyncAt: providerIntegrations.nextSyncAt, status: providerIntegrations.status,
-    }).from(providerIntegrations).innerJoin(providerRecords, eq(providerRecords.id, providerIntegrations.providerId))
-      .where(filter).orderBy(desc(providerIntegrations.updatedAt)).limit(50),
-    db.select({ total: count() }).from(providerIntegrations).where(filter),
+    db
+      .select({
+        id: providerIntegrations.id,
+        providerId: providerIntegrations.providerId,
+        providerName: providerRecords.name,
+        name: providerIntegrations.name,
+        failures: providerIntegrations.consecutiveFailures,
+        lastError: providerIntegrations.lastError,
+        lastSyncedAt: providerIntegrations.lastSyncedAt,
+        nextSyncAt: providerIntegrations.nextSyncAt,
+        status: providerIntegrations.status,
+        sourceIssues: {
+          jobId: providerSyncJobs.id,
+          count: providerSyncJobs.invalidCount,
+          completedAt: providerSyncJobs.finishedAt,
+        },
+      })
+      .from(providerIntegrations)
+      .innerJoin(
+        providerRecords,
+        eq(providerRecords.id, providerIntegrations.providerId)
+      )
+      .leftJoin(providerSyncJobs, lastCompleted)
+      .where(filter)
+      .orderBy(
+        desc(providerIntegrations.updatedAt),
+        desc(providerIntegrations.id)
+      )
+      .limit(50),
+    db
+      .select({ total: count() })
+      .from(providerIntegrations)
+      .leftJoin(providerSyncJobs, lastCompleted)
+      .where(filter),
   ]);
-  return { items, total: totals[0]?.total ?? 0 };
+  return {
+    items: items.map(item => ({
+      ...item,
+      hasFailure: item.failures > 0 || item.status === "error",
+      isOverdue:
+        item.status === "active" &&
+        item.nextSyncAt !== null &&
+        item.nextSyncAt < overdueBefore,
+      sourceIssues: item.sourceIssues?.count ? item.sourceIssues : null,
+    })),
+    total: totals[0]?.total ?? 0,
+  };
 }

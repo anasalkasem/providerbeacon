@@ -252,6 +252,64 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(alerts.items[0]).toMatchObject({ id: connection.id, failures: 1, status: "disabled" });
     expect(JSON.stringify(alerts)).not.toContain("credentialCiphertext");
   });
+  it("keeps quarantine alerts through queued and importing retries until a clean snapshot completes", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([payload[0], { ...payload[0], service: 200, rate: "375000.00" }]))));
+    const original = await sync();
+    const [connection] = await state.db.select().from(providerIntegrations);
+    const first = await listSyncAlerts();
+    expect(first.total).toBe(1);
+    expect(first.items[0]).toMatchObject({ id: connection.id, status: "disabled", hasFailure: false, isOverdue: false,
+      sourceIssues: { jobId: original.id, count: 1 } });
+    await cleanupProviderSyncSnapshots();
+    const report = await listProviderSyncIssues({ jobId: first.items[0].sourceIssues!.jobId });
+    expect(report.items[0]).toMatchObject({ externalId: "200", rate: "375000.00", problems: ["invalid_price"] });
+    expect(JSON.stringify(first)).not.toMatch(/credential|configFingerprint|sourceData|payload|local-test-key/);
+
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([payload[0], { ...payload[0], service: 200 }]))));
+    const retry = await syncStoredIntegration({ id: connection.id, actorUserId: actorId });
+    expect((await listSyncAlerts()).items[0].sourceIssues?.jobId).toBe(original.id);
+    await runProviderSyncStep(); // The clean snapshot is staged but not yet applied.
+    expect((await listSyncAlerts()).items[0].sourceIssues?.jobId).toBe(original.id);
+    await finishJob(retry.jobId!);
+    expect(await listSyncAlerts()).toEqual({ total: 0, items: [] });
+    // Clearing a current alert does not delete its historical evidence.
+    expect((await listProviderSyncIssues({ jobId: original.id })).items).toHaveLength(1);
+  });
+  it("shows source issues and a later connection failure together without duplicating the connection", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([payload[0], { ...payload[0], service: 200, min: "invalid" }]))));
+    const original = await sync();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("upstream-private-details", { status: 503 })));
+    await expect(sync()).rejects.toThrow();
+    const alerts = await listSyncAlerts();
+    expect(alerts.total).toBe(1); expect(alerts.items).toHaveLength(1);
+    expect(alerts.items[0]).toMatchObject({ hasFailure: true, failures: 1, isOverdue: false, sourceIssues: { jobId: original.id, count: 1 } });
+    expect(JSON.stringify(alerts)).not.toContain("upstream-private-details");
+  });
+  it("does not attach an old provider or endpoint's source issues to an edited connection", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([payload[0], { ...payload[0], service: 200, rate: "0" }]))));
+    await sync();
+    const [connection] = await state.db.select().from(providerIntegrations);
+    const [other] = await state.db.insert(providerRecords).values({ slug: "new-source-owner", name: "New source owner", initials: "NS", status: "draft" }).$returningId();
+    const edit = { id: connection.id, name: "Edited connection", apiKey: "another-test-key", syncIntervalMinutes: 360, enabled: false, actorUserId: actorId };
+    await saveProviderIntegration({ ...edit, providerId: other.id, baseUrl: connection.baseUrl });
+    expect((await listSyncAlerts()).total).toBe(0);
+    await saveProviderIntegration({ ...edit, providerId, baseUrl: "https://provider.example/another-api" });
+    expect((await listSyncAlerts()).total).toBe(0);
+    await saveProviderIntegration({ ...edit, providerId, baseUrl: connection.baseUrl });
+    expect((await listSyncAlerts()).items[0].sourceIssues?.count).toBe(1);
+  });
+  it("bounds connection alerts to 50 and distinguishes an error status from overdue scheduling", async () => {
+    await state.db.insert(providerIntegrations).values(Array.from({ length: 51 }, (_, i) => ({
+      providerId, name: `Failed connection ${i}`, baseUrl: "https://provider.example/api/v2", status: "error", consecutiveFailures: 0,
+    })));
+    const overdue = await addIntegration("active");
+    await state.db.update(providerIntegrations).set({ nextSyncAt: new Date(Date.now() - 7200000), updatedAt: new Date(Date.now() + 1000) }).where(eq(providerIntegrations.id, overdue));
+    const alerts = await listSyncAlerts();
+    expect(alerts.total).toBe(52); expect(alerts.items).toHaveLength(50);
+    expect(alerts.items[0]).toMatchObject({ id: overdue, hasFailure: false, isOverdue: true, sourceIssues: null });
+    expect(alerts.items[1]).toMatchObject({ status: "error", failures: 0, hasFailure: true, isOverdue: false, sourceIssues: null });
+    expect(new Set(alerts.items.map(item => item.id)).size).toBe(50);
+  });
   it("enqueues immediately, deduplicates manual requests and blocks connection edits during a job", async () => {
     const id = await addIntegration();
     const jobs = await Promise.all([syncStoredIntegration({ id, actorUserId: actorId }), syncStoredIntegration({ id, actorUserId: actorId })]);

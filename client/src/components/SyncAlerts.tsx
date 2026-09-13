@@ -1,18 +1,22 @@
 import { Link } from "wouter";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useAdminText } from "@/i18n/admin";
 import { Button } from "./ui/button";
 import CatalogueHealth from "./CatalogueHealth";
+import ProviderSourceIssues from "./ProviderSourceIssues";
 
 export default function SyncAlerts() {
   const text = useAdminText();
   const { locale } = useLocale();
+  const [openJobId, setOpenJobId] = useState<number | null>(null);
   const access = trpc.admin.access.useQuery();
   const canRead = access.data?.permissions.includes("integrations.read");
   const query = trpc.admin.integrations.alerts.useQuery(undefined, {
     enabled: Boolean(canRead),
     staleTime: 15_000,
+    refetchInterval: 30_000,
     retry: false,
   });
   return (
@@ -57,12 +61,24 @@ export default function SyncAlerts() {
                 <h3 dir="auto" className="font-semibold">
                   {item.providerName} · {item.name}
                 </h3>
-                <p className="mt-1 text-sm text-amber-800">
-                  {item.failures
-                    ? `${text("syncError")} · ${text("failures")}: ${item.failures}`
-                    : text("overdueSync")}
-                </p>
-                {item.lastError && (
+                {item.hasFailure && (
+                  <p className="mt-1 text-sm text-red-700">
+                    {text("syncError")}
+                    {item.failures > 0 && (
+                      <>
+                        {" "}
+                        · {text("failures")}:{" "}
+                        {item.failures.toLocaleString(locale)}
+                      </>
+                    )}
+                  </p>
+                )}
+                {item.isOverdue && (
+                  <p className="mt-1 text-sm text-amber-800">
+                    {text("overdueSync")}
+                  </p>
+                )}
+                {item.hasFailure && item.lastError && (
                   <p
                     dir="auto"
                     className="mt-2 break-words text-sm text-red-700"
@@ -76,6 +92,54 @@ export default function SyncAlerts() {
                     ? new Date(item.lastSyncedAt).toLocaleString(locale)
                     : text("never")}
                 </p>
+                {item.sourceIssues && (
+                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+                    <p className="font-semibold text-amber-900">
+                      {text("syncQuarantined")}:{" "}
+                      {item.sourceIssues.count.toLocaleString(locale)}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-slate-600">
+                      {text("sourceAlertBody")}
+                    </p>
+                    <p className="mt-2 text-xs text-slate-500">
+                      {text("sourceAlertSnapshot")}:{" "}
+                      {item.sourceIssues.completedAt
+                        ? new Date(
+                            item.sourceIssues.completedAt
+                          ).toLocaleString(locale)
+                        : text("never")}
+                    </p>
+                    <Button
+                      className="mt-3"
+                      variant="outline"
+                      size="sm"
+                      aria-expanded={openJobId === item.sourceIssues.jobId}
+                      aria-controls={`source-issues-${item.sourceIssues.jobId}`}
+                      onClick={() =>
+                        setOpenJobId(value =>
+                          value === item.sourceIssues!.jobId
+                            ? null
+                            : item.sourceIssues!.jobId
+                        )
+                      }
+                    >
+                      {text("syncViewIssues")} (
+                      {item.sourceIssues.count.toLocaleString(locale)})
+                    </Button>
+                    {openJobId === item.sourceIssues.jobId && (
+                      <div
+                        id={`source-issues-${item.sourceIssues.jobId}`}
+                        role="region"
+                        aria-label={text("syncViewIssues")}
+                      >
+                        <ProviderSourceIssues
+                          key={item.sourceIssues.jobId}
+                          jobId={item.sourceIssues.jobId}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </article>
             ))}
           </div>
