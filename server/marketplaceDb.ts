@@ -1,4 +1,4 @@
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt, inArray } from "drizzle-orm";
 import { createHash, randomBytes } from "node:crypto";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
@@ -24,8 +24,8 @@ export async function getMarketplaceSnapshot() {
   if (!db) return { providers: seedProviders, services: seedServices, source: "seed" as const };
   try {
     const providerRows = await db.select().from(providerRecords).where(eq(providerRecords.status, "active")).orderBy(desc(providerRecords.score));
-    if (!providerRows.length) return { providers: seedProviders, services: seedServices, source: "seed" as const };
-    const serviceRows = await db.select().from(serviceRecords).where(eq(serviceRecords.status, "active"));
+    if (!providerRows.length) return { providers: [], services: [], source: "database" as const };
+    const serviceRows = await db.select().from(serviceRecords).where(and(eq(serviceRecords.status, "active"), inArray(serviceRecords.providerId, providerRows.map(row => row.id))));
     const externalProviderIds = new Map(providerRows.map(row => [row.id, seedProviders.find(provider => provider.slug === row.slug)?.id ?? String(row.id)]));
     const providers = providerRows.map(row => {
       const seeded = seedProviders.find(provider => provider.slug === row.slug);
@@ -56,7 +56,9 @@ export async function getMarketplaceSnapshot() {
     return { providers, services, source: "database" as const };
   } catch (error) {
     console.warn("[Marketplace] Database unavailable, using seed fallback:", error);
-    return { providers: seedProviders, services: seedServices, source: "seed" as const };
+    return process.env.NODE_ENV === "production"
+      ? { providers: [], services: [], source: "database" as const }
+      : { providers: seedProviders, services: seedServices, source: "seed" as const };
   }
 }
 
@@ -152,6 +154,7 @@ export async function createProviderDraft(input: { name: string; websiteUrl: str
 }
 export async function ensureCanonicalProviderDrafts() {
   const db = await getDb(); if (!db) return { created: 0 };
+  await db.update(providerRecords).set({ status: "draft", verified: false }).where(inArray(providerRecords.slug, seedProviders.map(provider => provider.slug)));
   const [existing] = await db.select({ id: providerRecords.id }).from(providerRecords).where(eq(providerRecords.slug, "justanotherpanel")).limit(1);
   if (existing) return { created: 0 };
   const inserted = await db.insert(providerRecords).values({
