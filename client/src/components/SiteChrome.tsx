@@ -7,12 +7,15 @@ import { ChevronDown, Globe2, Menu, ShieldCheck, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 
-const logoMarkPath = "/manus-storage/providerbeacon-mark_81edd255.png";
-
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/" className="brand-link" aria-label="ProviderBeacon home">
-      <img src={logoMarkPath} alt="" aria-hidden="true" className={compact ? "size-10" : "size-11"} />
+      <svg aria-hidden="true" viewBox="0 0 64 64" className={compact ? "size-10" : "size-11"}>
+        <defs><linearGradient id="pb-mark" x1="8" y1="8" x2="54" y2="52"><stop stopColor="#0B2A68"/><stop offset=".58" stopColor="#175AC8"/><stop offset="1" stopColor="#14B8A6"/></linearGradient></defs>
+        <path fill="url(#pb-mark)" d="M10 6h21.5C46.7 6 56 14.7 56 28.3 56 42 46.4 50 31.5 50H22v8H10V6Zm12 11v22h9.4C39 39 44 35.3 44 28.4 44 21.2 39 17 31.4 17H22Z"/>
+        <path fill="#2DE0C5" d="m28 28 17-8v16l-17-8Z"/>
+        <circle cx="22" cy="28" r="3.5" fill="#fff"/>
+      </svg>
       <span className={`${compact ? "text-[17px]" : "text-xl"} font-extrabold tracking-[-.045em] text-[#0B2A68]`}>Provider<span className="text-[#12AFA7]">Beacon</span></span>
     </Link>
   );
@@ -22,6 +25,7 @@ export function SiteHeader() {
   const { locale, setLocale } = useLocale();
   const t = copy[locale];
   const { user, isAuthenticated } = useAuth();
+  const authConfigured = Boolean(import.meta.env.VITE_OAUTH_PORTAL_URL && import.meta.env.VITE_APP_ID);
   const [open, setOpen] = useState(false);
   const [location] = useLocation();
   const links = [
@@ -50,8 +54,8 @@ export function SiteHeader() {
               {(Object.keys(localeNames) as Locale[]).map((value) => <DropdownMenuItem key={value} onClick={() => setLocale(value)}>{localeNames[value]}</DropdownMenuItem>)}
             </DropdownMenuContent>
           </DropdownMenu>
-          {user?.role === "admin" && <Button variant="ghost" asChild><Link href="/admin"><ShieldCheck className="size-4" />{t.admin}</Link></Button>}
-          <Button className="rounded-xl bg-[#0B2A68] hover:bg-[#0E347F]" onClick={() => !isAuthenticated && startLogin()}>{isAuthenticated ? user?.name ?? "Account" : t.signIn}</Button>
+          {authConfigured && user?.role === "admin" && <Button variant="ghost" asChild><Link href="/admin"><ShieldCheck className="size-4" />{t.admin}</Link></Button>}
+          {authConfigured && <Button className="rounded-xl bg-[#0B2A68] hover:bg-[#0E347F]" onClick={() => !isAuthenticated && startLogin()}>{isAuthenticated ? user?.name ?? "Account" : t.signIn}</Button>}
         </div>
         <button className="touch-target rounded-lg p-2 text-slate-700 lg:hidden" aria-label={open ? "Close menu" : "Open menu"} onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
       </div>

@@ -51,6 +51,7 @@ export default function DashboardLayout({
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
   const { loading, user } = useAuth();
+  const authConfigured = Boolean(import.meta.env.VITE_OAUTH_PORTAL_URL && import.meta.env.VITE_APP_ID);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
@@ -66,19 +67,23 @@ export default function DashboardLayout({
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-6">
             <h1 className="text-2xl font-semibold tracking-tight text-center">
-              Sign in to continue
+              {authConfigured ? "Sign in to continue" : "Admin access is not configured"}
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
-              Access to this dashboard requires authentication. Continue to launch the login flow.
+              {authConfigured
+                ? "Access to this dashboard requires authentication. Continue to launch the login flow."
+                : "The public marketplace is available, but staff authentication must be configured before Beacon Control Center can be used on this deployment."}
             </p>
           </div>
-          <Button
-            onClick={() => startLogin()}
-            size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
-          >
-            Sign in
-          </Button>
+          {authConfigured && (
+            <Button
+              onClick={() => startLogin()}
+              size="lg"
+              className="w-full shadow-lg hover:shadow-xl transition-all"
+            >
+              Sign in
+            </Button>
+          )}
         </div>
       </div>
     );
