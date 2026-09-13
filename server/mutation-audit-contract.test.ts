@@ -24,8 +24,7 @@ describe("mutation audit contract", () => {
     ["updateServiceRecord", "createTeamInvite", "service.update"],
     ["createTeamInvite", "acceptTeamInvite", "team.invite"],
     ["acceptTeamInvite", "listAuditEntries", "team.invite.accept"],
-    ["upsertLocalizedContent", "syncProviderServicesNow", "translation.upsert"],
-    ["syncProviderServicesNow", "writeAudit", "integration.services.sync"],
+    ["upsertLocalizedContent", "writeAudit", "translation.upsert"],
   ])("requires %s to write an audit entry", (name, nextName, action) => {
     const source = functionBody(marketplaceSource, name, nextName);
     expect(source).toContain("writeAudit(");

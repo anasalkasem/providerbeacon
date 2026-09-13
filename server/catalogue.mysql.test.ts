@@ -2,14 +2,15 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { createPool, type Pool } from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
 import { migrate } from "drizzle-orm/mysql2/migrator";
-import { eq } from "drizzle-orm";
-import { auditEntries, priceSnapshots, providerIntegrations, providerRecords, serviceRecords, users } from "../drizzle/schema";
+import { eq, sql } from "drizzle-orm";
+import { auditEntries, priceSnapshots, providerIntegrations, providerRecords, providerSyncJobs, providerSyncRows, serviceRecords, users } from "../drizzle/schema";
 
 const state = vi.hoisted(() => ({ db: null as any }));
 vi.mock("./db", () => ({ getDb: async () => state.db }));
 vi.mock("node:dns/promises", () => ({ lookup: async () => [{ address: "93.184.216.34", family: 4 }] }));
-import { getMarketplaceSnapshot, syncProviderServicesNow, updateProviderStatus, updateServiceRecord } from "./marketplaceDb";
-import { runDueProviderSyncs, setProviderIntegrationEnabled, syncStoredIntegration } from "./vaultDb";
+import { getMarketplaceSnapshot, updateProviderStatus, updateServiceRecord } from "./marketplaceDb";
+import { deleteProviderIntegration, listProviderIntegrations, runDueProviderSyncs, saveProviderIntegration, setProviderIntegrationEnabled, syncStoredIntegration } from "./vaultDb";
+import { cleanupProviderSyncSnapshots, runProviderSyncStep } from "./providerSync";
 import { getAdminOverview, listAdminServices, listSyncAlerts } from "./adminCatalogueDb";
 import { rolePermissions } from "./authorization";
 import { encryptValue } from "./security";
@@ -57,7 +58,22 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     await state.db.update(providerIntegrations).set({ credentialCiphertext: key.ciphertext, credentialIv: key.iv, credentialTag: key.tag, credentialVersion: key.version }).where(eq(providerIntegrations.id, id));
     return id;
   }
-  const sync = (actor = actorId) => syncProviderServicesNow({ providerId, baseUrl: "https://provider.example/api/v2", apiKey: "local-test-key-no-network", actorUserId: actor });
+  async function finishJob(jobId: number) {
+    for (let step = 0; step < 1200; step++) {
+      const [job] = await state.db.select().from(providerSyncJobs).where(eq(providerSyncJobs.id, jobId));
+      if (job.status === "failed") throw new Error(job.lastError);
+      if (job.status === "completed") return { ...job, importedCount: job.processedCount };
+      await runProviderSyncStep();
+    }
+    throw new Error("Test job did not complete");
+  }
+  async function sync(actor = actorId) {
+    const [connection] = await state.db.select({ id: providerIntegrations.id }).from(providerIntegrations).where(eq(providerIntegrations.providerId, providerId)).limit(1);
+    const id = connection?.id ?? await addIntegration();
+    const queued = await syncStoredIntegration({ id, actorUserId: actor });
+    if (!("jobId" in queued)) throw new Error("Expected a queued job");
+    return finishJob(queued.jobId);
+  }
 
   async function prepareAndPublish(id: number) {
     const detail = await getServiceReview(id);
@@ -106,7 +122,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(provider.status).toBe("active"); expect(service.pricePerThousandUsd).toBe("1.0000");
   });
   it("a disabled manual test stays disabled and imports only drafts", async () => {
-    const id = await addIntegration(); await syncStoredIntegration({ id, actorUserId: actorId });
+    const id = await addIntegration(); await sync();
     const [integration] = await state.db.select().from(providerIntegrations).where(eq(providerIntegrations.id, id));
     expect(integration.status).toBe("disabled"); expect(integration.nextSyncAt).toBeNull();
     const rows = await state.db.select().from(serviceRecords);
@@ -133,7 +149,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     const [row] = await state.db.select().from(serviceRecords).where(eq(serviceRecords.id, id));
     expect(row.status).toBe(status);
   });
-  it("rolls back an entire import when its audit cannot be written", async () => {
+  it("does not enqueue import work when its audit actor is invalid", async () => {
     await expect(sync(2147483647)).rejects.toThrow();
     expect(await state.db.select().from(serviceRecords)).toEqual([]);
   });
@@ -143,16 +159,21 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     const started = new Promise<void>(resolve => { notifyStarted = resolve; });
     const pending = new Promise<void>(resolve => { release = resolve; });
     vi.stubGlobal("fetch", vi.fn(async () => { notifyStarted(); await pending; return response(); }));
-    const job = syncStoredIntegration({ id, actorUserId: actorId });
+    const queued = await syncStoredIntegration({ id, actorUserId: actorId });
+    const preparation = runProviderSyncStep();
     await started;
     try { await setProviderIntegrationEnabled({ id, enabled: false, actorUserId: actorId }); } finally { release(); }
-    await job;
+    await preparation;
+    await finishJob(queued.jobId!);
     const [integration] = await state.db.select().from(providerIntegrations).where(eq(providerIntegrations.id, id));
     expect(integration.status).toBe("disabled"); expect(integration.nextSyncAt).toBeNull();
   });
   it("claims a due connection once across concurrent scheduler workers", async () => {
     await addIntegration("active");
     await Promise.all([runDueProviderSyncs(), runDueProviderSyncs()]);
+    expect(fetch).not.toHaveBeenCalled();
+    const jobs = await state.db.select().from(providerSyncJobs); expect(jobs).toHaveLength(1);
+    await finishJob(jobs[0].id);
     expect(fetch).toHaveBeenCalledTimes(1);
   });
   it("rejects duplicate API IDs without partially importing the catalogue", async () => {
@@ -217,10 +238,86 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   });
   it("surfaces credential failures as connection alerts without disclosing a key", async () => {
     const [connection] = await state.db.insert(providerIntegrations).values({ providerId, name: "Unconfigured connection", baseUrl: "https://provider.example/api/v2", status: "disabled" }).$returningId();
-    await expect(syncStoredIntegration({ id: connection.id, actorUserId: actorId })).rejects.toThrow("credential is not configured");
+    const queued = await syncStoredIntegration({ id: connection.id, actorUserId: actorId });
+    await expect(finishJob(queued.jobId!)).rejects.toThrow("credential is not configured");
     const alerts = await listSyncAlerts(); expect(alerts.total).toBe(1);
     expect(alerts.items[0]).toMatchObject({ id: connection.id, failures: 1, status: "disabled" });
     expect(JSON.stringify(alerts)).not.toContain("credentialCiphertext");
+  });
+  it("enqueues immediately, deduplicates manual requests and blocks connection edits during a job", async () => {
+    const id = await addIntegration();
+    const jobs = await Promise.all([syncStoredIntegration({ id, actorUserId: actorId }), syncStoredIntegration({ id, actorUserId: actorId })]);
+    expect(jobs[0].jobId).toBe(jobs[1].jobId); expect(fetch).not.toHaveBeenCalled();
+    expect(await state.db.select().from(serviceRecords)).toHaveLength(0);
+    await expect(saveProviderIntegration({ id, providerId, name: "Changed", baseUrl: "https://provider.example/api/v2", apiKey: "another-test-key", syncIntervalMinutes: 360, enabled: false, actorUserId: actorId })).rejects.toThrow("current synchronization");
+    await expect(deleteProviderIntegration({ id, actorUserId: actorId })).rejects.toThrow("current synchronization");
+    const listed = await listProviderIntegrations();
+    expect(listed[0].latestJob).toMatchObject({ id: jobs[0].jobId, status: "queued", processedCount: 0 });
+    expect(JSON.stringify(listed)).not.toMatch(/credentialCiphertext|configFingerprint|local-test-key/);
+  });
+  it("imports more than 5,000 rows in bounded resumable batches and defers removals until the complete snapshot", async () => {
+    await sync();
+    const [old] = await state.db.select().from(serviceRecords); await prepareAndPublish(old.id);
+    const [connection] = await state.db.select().from(providerIntegrations);
+    const source = Array.from({ length: 5001 }, (_, i) => ({ ...payload[0], service: 1000 + i }));
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(source))));
+    const queued = await syncStoredIntegration({ id: connection.id, actorUserId: actorId });
+    await runProviderSyncStep();
+    let [job] = await state.db.select().from(providerSyncJobs).where(eq(providerSyncJobs.id, queued.jobId!));
+    expect(job).toMatchObject({ status: "importing", totalCount: 5001, processedCount: 0 });
+    expect((await listAdminServices()).total).toBe(1);
+    await runProviderSyncStep();
+    [job] = await state.db.select().from(providerSyncJobs).where(eq(providerSyncJobs.id, queued.jobId!));
+    expect(job.processedCount).toBe(100); expect((await listAdminServices()).total).toBe(101);
+    expect((await getServiceReview(old.id)).service.available).toBe(true);
+    // Simulate a process disappearing while it held a lease. The checkpoint must not be replayed.
+    await state.db.update(providerSyncJobs).set({ leaseToken: "old-process", leaseUntil: new Date(Date.now() - 5000) }).where(eq(providerSyncJobs.id, job.id));
+    const finished = await finishJob(job.id);
+    expect(finished).toMatchObject({ processedCount: 5001, reviewCount: 5001, missingCount: 1 });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect((await listAdminServices()).total).toBe(5002);
+    expect((await getServiceReview(old.id)).service).toMatchObject({ available: false, status: "draft" });
+    const [snapshots] = await state.db.select({ n: sql<number>`count(*)` }).from(priceSnapshots); expect(Number(snapshots.n)).toBe(5002);
+    expect((await getMarketplaceSnapshot()).services).toHaveLength(0);
+    for (let i = 0; i < 8; i++) await cleanupProviderSyncSnapshots();
+    expect(await state.db.select().from(providerSyncRows)).toHaveLength(0);
+  }, 120_000);
+  it("does not allow a second worker to fetch a leased job", async () => {
+    const id = await addIntegration(); await syncStoredIntegration({ id, actorUserId: actorId });
+    let release!: () => void; let started!: () => void;
+    const ready = new Promise<void>(resolve => { started = resolve; });
+    const blocked = new Promise<void>(resolve => { release = resolve; });
+    vi.stubGlobal("fetch", vi.fn(async () => { started(); await blocked; return response(); }));
+    const first = runProviderSyncStep(); await ready;
+    try { expect(await runProviderSyncStep()).toBe(false); } finally { release(); }
+    await first; expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  it("rejects an out-of-band credential or endpoint change before sending any request", async () => {
+    const id = await addIntegration(); const queued = await syncStoredIntegration({ id, actorUserId: actorId });
+    await state.db.update(providerIntegrations).set({ baseUrl: "https://different.example/api/v2" }).where(eq(providerIntegrations.id, id));
+    await expect(finishJob(queued.jobId!)).rejects.toThrow("configuration changed");
+    expect(fetch).not.toHaveBeenCalled(); expect(await state.db.select().from(serviceRecords)).toHaveLength(0);
+  });
+  it("rolls back both a catalogue batch and its checkpoint when the audit insert fails", async () => {
+    const id = await addIntegration(); const queued = await syncStoredIntegration({ id, actorUserId: actorId });
+    await runProviderSyncStep();
+    await state.db.execute(sql.raw("CREATE TRIGGER test_reject_sync_audit BEFORE INSERT ON audit_entries FOR EACH ROW BEGIN IF NEW.action = 'integration.services.batch' THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Test audit rejection'; END IF; END"));
+    try {
+      await expect(finishJob(queued.jobId!)).rejects.toThrow("storage error");
+      expect(await state.db.select().from(serviceRecords)).toHaveLength(0);
+      expect(await state.db.select().from(priceSnapshots)).toHaveLength(0);
+      const [job] = await state.db.select().from(providerSyncJobs).where(eq(providerSyncJobs.id, queued.jobId!));
+      expect(job).toMatchObject({ status: "failed", processedCount: 0 });
+      expect(job.lastError).not.toMatch(/local-test-key|insert into|params:/i);
+    } finally { await state.db.execute(sql.raw("DROP TRIGGER IF EXISTS test_reject_sync_audit")); }
+  });
+  it("does not expose provider response bodies as failure messages", async () => {
+    const id = await addIntegration();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ error: "sensitive-upstream-value" }))));
+    const queued = await syncStoredIntegration({ id, actorUserId: actorId });
+    await expect(finishJob(queued.jobId!)).rejects.toThrow("service list");
+    expect(JSON.stringify(await listProviderIntegrations())).not.toContain("sensitive-upstream-value");
+    expect(await state.db.select().from(serviceRecords)).toHaveLength(0);
   });
   it("keeps payloads bounded across a 50,000-service catalogue and excludes unpublished providers", async () => {
     const size = 50_000;
