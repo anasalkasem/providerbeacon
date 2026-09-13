@@ -2,7 +2,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { createPool, type Pool } from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
 import { migrate } from "drizzle-orm/mysql2/migrator";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { auditEntries, priceSnapshots, providerIntegrations, providerRecords, providerSyncJobs, providerSyncRows, serviceRecords, users } from "../drizzle/schema";
 
 const state = vi.hoisted(() => ({ db: null as any }));
@@ -49,7 +49,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   afterAll(async () => { if (pool) await pool.end(); });
 
   async function addService(status: "draft" | "active" | "paused" | "archived" = "active", owner = providerId) {
-    const inserted = await state.db.insert(serviceRecords).values({ providerId: owner, externalId: "100", slug: `legacy-service-${owner}`, name: "TikTok Views", platform: "TikTok", category: "Views", pricePerThousandUsd: "1.0000", minOrder: 100, maxOrder: 1000, status, reviewStatus: "approved", incomplete: false, normalizationVersion: 1, pricingConfirmed: true, policyReviewed: true, evidenceUrl: "https://provider.example/services", sourceUpdatedAt: new Date() }).$returningId();
+    const inserted = await state.db.insert(serviceRecords).values({ providerId: owner, externalId: "100", slug: `legacy-service-${owner}`, name: "TikTok Views", platform: "TikTok", category: "Views", priceAmount: "1.0000", minOrder: 100, maxOrder: 1000, status, reviewStatus: "approved", incomplete: false, normalizationVersion: 1, pricingConfirmed: true, priceCurrency: "USD", priceUnit: "per_1000", policyReviewed: true, evidenceUrl: "https://provider.example/services", sourceUpdatedAt: new Date() }).$returningId();
     return inserted[0].id as number;
   }
   async function addIntegration(status: "active" | "disabled" = "disabled") {
@@ -79,8 +79,8 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   async function prepareAndPublish(id: number) {
     const detail = await getServiceReview(id);
     const edited = await editServiceReview({ id, revision: detail.service.revision, platform: "TikTok", category: "Views", countryCode: null,
-      price: Number(detail.service.pricePerThousandUsd), minOrder: 100, maxOrder: 1000, refillMode: "unknown", refillDays: null,
-      evidenceUrl: "https://provider.example/services", pricingConfirmed: true, policyReviewed: true, reason: "Test fixture source and eligibility checked", actorUserId: actorId });
+      price: Number(detail.service.priceAmount), minOrder: 100, maxOrder: 1000, refillMode: "unknown", refillDays: null,
+      evidenceUrl: "https://provider.example/services", pricingConfirmed: true, priceCurrency: "USD", priceUnit: "per_1000", policyReviewed: true, reason: "Test fixture source and eligibility checked", actorUserId: actorId });
     await applyServiceReview({ items: [{ id, revision: edited.revision }], action: "approve", reason: "Test fixture review complete", actorUserId: actorId });
     await applyServiceReview({ items: [{ id, revision: edited.revision + 1 }], action: "publish", reason: "Test fixture publication", actorUserId: actorId });
   }
@@ -117,10 +117,10 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     // The audit actor foreign key forces a real SQL failure inside the transaction.
     const missingActorId = 2147483647;
     await expect(updateProviderStatus({ id: providerId, status: "suspended", actorUserId: missingActorId })).rejects.toThrow();
-    await expect(updateServiceRecord({ id, pricePerThousandUsd: 2, actorUserId: missingActorId })).rejects.toThrow();
+    await expect(updateServiceRecord({ id, priceAmount: 2, actorUserId: missingActorId })).rejects.toThrow();
     const [provider] = await state.db.select().from(providerRecords).where(eq(providerRecords.id, providerId));
     const [service] = await state.db.select().from(serviceRecords).where(eq(serviceRecords.id, id));
-    expect(provider.status).toBe("active"); expect(service.pricePerThousandUsd).toBe("1.0000");
+    expect(provider.status).toBe("active"); expect(service.priceAmount).toBe("1.0000");
   });
   it("a disabled manual test stays disabled and imports only drafts", async () => {
     const id = await addIntegration(); await sync();
@@ -133,6 +133,46 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     await prepareAndPublish(rows[0].id);
     expect((await getMarketplaceSnapshot()).services).toHaveLength(1);
   });
+  it("preserves reviewed per-item pricing on unchanged source and records a source change separately", async () => {
+    await sync(); const [original] = await state.db.select().from(serviceRecords);
+    const result = await editServiceReview({ id: original.id, revision: original.revision, platform: "Website", category: "SEO", countryCode: "US",
+      price: 0.001, priceCurrency: "EUR", priceUnit: "per_item", packageDescription: null,
+      minOrder: 1, maxOrder: 1000, refillMode: "none", refillDays: null,
+      evidenceUrl: "https://provider.example/seo", pricingConfirmed: true, policyReviewed: true,
+      reason: "Fixture service-specific rate conversion evidence", actorUserId: actorId });
+    await applyServiceReview({items: [{id: original.id, revision: result.revision}], action: "approve", reason: "Fixture evidence verified", actorUserId: actorId});
+    const detail = await getServiceReview(original.id);
+    await applyServiceReview({items: [{id: original.id, revision: detail.service.revision}], action: "publish", reason: "Fixture reviewed publication", actorUserId: actorId});
+    const published = await getServiceReview(original.id);
+    await sync();
+    const unchanged = await getServiceReview(original.id);
+    expect(unchanged.service).toMatchObject({priceAmount: "0.0010", sourceRate: String(payload[0].rate), priceCurrency: "EUR", priceUnit: "per_item", status: "active", platform: "Website", category: "SEO", revision: published.service.revision});
+    expect(unchanged.prices).toHaveLength(2);
+    expect(unchanged.prices[0]).toMatchObject({kind: "review", priceCurrency: "EUR", priceUnit: "per_item", priceAmount: "0.0010"});
+    expect(unchanged.prices[1]).toMatchObject({kind: "source", priceCurrency: null, priceUnit: null, sourceRate: String(payload[0].rate)});
+    const eur = await getMarketplaceSnapshot({scope: "services", sort: "price", priceCurrency: "EUR", priceUnit: "per_item"});
+    expect(eur.services[0]).toMatchObject({priceAmount: 0.001, priceCurrency: "EUR", priceUnit: "per_item"});
+    expect((await getMarketplaceSnapshot({scope: "services", sort: "price", priceCurrency: "USD", priceUnit: "per_1000"})).services).toHaveLength(0);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([{...payload[0], rate: "2.00"}])))); await sync();
+    const changed = await getServiceReview(original.id);
+    expect(changed.service).toMatchObject({priceAmount: "2.0000", sourceRate: "2.00", priceCurrency: null, priceUnit: null, status: "draft", pricingConfirmed: false});
+    expect(changed.prices[0]).toMatchObject({kind: "source", sourceRate: "2.00", priceCurrency: null});
+    expect(changed.prices[1]).toMatchObject({kind: "review", priceCurrency: "EUR", priceUnit: "per_item"});
+  });
+  it("resumes staged rows from the previous price schema", async () => {
+    await sync();
+    const [connection] = await state.db.select().from(providerIntegrations);
+    const queued = await syncStoredIntegration({id: connection.id, actorUserId: actorId});
+    await runProviderSyncStep();
+    const staged = await state.db.select().from(providerSyncRows).where(eq(providerSyncRows.jobId, queued.jobId!));
+    for (const row of staged) {
+      const old = {...row.payload} as Record<string, unknown>;
+      old.pricePerThousandUsd = old.priceAmount; delete old.priceAmount; delete old.sourceRate;
+      await state.db.update(providerSyncRows).set({payload: old}).where(and(eq(providerSyncRows.jobId, row.jobId), eq(providerSyncRows.ordinal, row.ordinal)));
+    }
+    expect((await finishJob(queued.jobId!)).status).toBe("completed");
+    expect((await state.db.select().from(serviceRecords))[0].sourceRate).toBe(String(payload[0].rate));
+  });
   it("keeps unchanged published offers active and sends changed prices back to review", async () => {
     await sync();
     const [created] = await state.db.select().from(serviceRecords);
@@ -142,7 +182,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([{ ...payload[0], rate: "2.00" }]))));
     await sync();
     [row] = await state.db.select().from(serviceRecords).where(eq(serviceRecords.id, id));
-    expect(row.status).toBe("draft"); expect(row.pricePerThousandUsd).toBe("2.0000");
+    expect(row.status).toBe("draft"); expect(row.priceAmount).toBe("2.0000");
     expect((await getMarketplaceSnapshot()).services).toEqual([]);
   });
   it.each(["paused", "archived"] as const)("respects an existing %s status during imports", async status => {
@@ -225,7 +265,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect((await getMarketplaceSnapshot()).services).toHaveLength(0);
     vi.stubGlobal("fetch", vi.fn(async () => response())); await sync();
     expect((await getServiceReview(first.id)).service).toMatchObject({ available: true, reviewStatus: "pending", pricingConfirmed: false });
-    expect(await state.db.select().from(priceSnapshots)).toHaveLength(2);
+    expect(await state.db.select().from(priceSnapshots)).toHaveLength(3);
   });
   it("preserves the catalogue for empty responses or invalid service identities", async () => {
     await sync(); const [row] = await state.db.select().from(serviceRecords);
@@ -344,7 +384,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
     expect((await listAdminServices()).total).toBe(5002);
     expect((await getServiceReview(old.id)).service).toMatchObject({ available: false, status: "draft" });
-    const [snapshots] = await state.db.select({ n: sql<number>`count(*)` }).from(priceSnapshots); expect(Number(snapshots.n)).toBe(5002);
+    const [snapshots] = await state.db.select({ n: sql<number>`count(*)` }).from(priceSnapshots); expect(Number(snapshots.n)).toBe(5003);
     expect((await getMarketplaceSnapshot()).services).toHaveLength(0);
     for (let i = 0; i < 8; i++) await cleanupProviderSyncSnapshots();
     expect(await state.db.select().from(providerSyncRows)).toHaveLength(0);
@@ -396,7 +436,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     const result = await sync();
     expect(result).toMatchObject({ status: "completed_with_issues", totalCount: 3, processedCount: 3, invalidCount: 2, importedCount: 1, missingCount: 0 });
     const previous = (await getServiceReview(old.id)).service;
-    expect(previous).toMatchObject({ minOrder: 100, pricePerThousandUsd: "1.0000", status: "draft", reviewStatus: "changes_requested", pricingConfirmed: false, incomplete: true, available: true });
+    expect(previous).toMatchObject({ minOrder: 100, priceAmount: "1.0000", status: "draft", reviewStatus: "changes_requested", pricingConfirmed: false, incomplete: true, available: true });
     expect((await listAdminServices()).total).toBe(2);
     expect((await getMarketplaceSnapshot()).services).toHaveLength(0);
     await cleanupProviderSyncSnapshots(); await cleanupProviderSyncSnapshots();
@@ -406,13 +446,13 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(issues.items[1]).toMatchObject({ externalId: "200", rate: "0", problems: ["invalid_price"] });
     const retained = await state.db.select().from(providerSyncRows).where(eq(providerSyncRows.jobId, result.id));
     expect(retained).toHaveLength(2); expect(JSON.stringify(retained)).not.toContain("never-retain-this-key");
-    expect(await state.db.select().from(priceSnapshots)).toHaveLength(2);
+    expect(await state.db.select().from(priceSnapshots)).toHaveLength(3);
   });
   it("rejects an entirely invalid catalogue without replacing stored values", async () => {
     await sync(); const [old] = await state.db.select().from(serviceRecords);
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([{ ...payload[0], rate: "0" }]))));
     await expect(sync()).rejects.toThrow("All 1 source services");
-    expect((await getServiceReview(old.id)).service).toMatchObject({ pricePerThousandUsd: "1.0000", revision: 1, available: true });
+    expect((await getServiceReview(old.id)).service).toMatchObject({ priceAmount: "1.0000", revision: 1, available: true });
   });
   it("paginates source issues and handles a batch containing only invalid rows", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([
@@ -430,6 +470,10 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     const oldDate = new Date(Date.now() - 45 * 86400000);
     const fixtures: { key: string; patch: Partial<typeof serviceRecords.$inferInsert>; needs: ReviewNeed[] }[] = [
       { key: "ready", patch: {}, needs: ["ready"] },
+      { key: "currency", patch: { priceCurrency: null }, needs: ["pricing_unconfirmed"] },
+      { key: "invalid-currency", patch: { priceCurrency: "ZZZ" }, needs: ["pricing_unconfirmed"] },
+      { key: "unit", patch: { priceUnit: null }, needs: ["pricing_unconfirmed"] },
+      { key: "package", patch: { priceUnit: "package", packageDescription: "  " }, needs: ["pricing_unconfirmed"] },
       { key: "pricing", patch: { pricingConfirmed: false }, needs: ["pricing_unconfirmed"] },
       { key: "policy", patch: { policyReviewed: false }, needs: ["policy_check"] },
       { key: "no-evidence", patch: { evidenceUrl: null }, needs: ["evidence_missing"] },
@@ -439,7 +483,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
       { key: "category", patch: { category: "Other" }, needs: ["classification"] },
       { key: "category-case", patch: { category: "views" }, needs: ["classification"] },
       { key: "legacy", patch: { normalizationVersion: 0 }, needs: ["classification"] },
-      { key: "price", patch: { pricePerThousandUsd: "0.0000" }, needs: ["invalid_values"] },
+      { key: "price", patch: { priceAmount: "0.0000" }, needs: ["invalid_values"] },
       { key: "minimum", patch: { minOrder: 0 }, needs: ["invalid_values"] },
       { key: "maximum", patch: { maxOrder: 50 }, needs: ["invalid_values"] },
       { key: "unavailable", patch: { available: false }, needs: ["source_missing"] },
@@ -451,9 +495,9 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     ];
     await state.db.insert(serviceRecords).values(fixtures.map(fixture => ({
       providerId, slug: `needs-${fixture.key}`, externalId: fixture.key, name: `Review fixture ${fixture.key}`,
-      platform: "TikTok", category: "Views", pricePerThousandUsd: "1.0000", minOrder: 100, maxOrder: 1000,
+      platform: "TikTok", category: "Views", priceAmount: "1.0000", minOrder: 100, maxOrder: 1000,
       status: "draft", reviewStatus: "pending", normalizationVersion: 1, incomplete: false,
-      pricingConfirmed: true, policyReviewed: true, evidenceUrl: "https://provider.example/services", sourceUpdatedAt: new Date(),
+      pricingConfirmed: true, priceCurrency: "USD", priceUnit: "per_1000", policyReviewed: true, evidenceUrl: "https://provider.example/services", sourceUpdatedAt: new Date(),
       ...fixture.patch,
     })));
     const summary = await getServiceReviewSummary();
@@ -477,7 +521,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   it("keeps review counts scoped to search and status while need filters and pages change", async () => {
     await state.db.insert(serviceRecords).values(Array.from({ length: 32 }, (_, i) => ({
       providerId, slug: `needs-page-${i}`, externalId: String(1000 + i), name: i < 30 ? "Website review set" : "Other set",
-      platform: "Website", category: "Website traffic", pricePerThousandUsd: "1.0000", minOrder: 1, maxOrder: 1000,
+      platform: "Website", category: "Website traffic", priceAmount: "1.0000", minOrder: 1, maxOrder: 1000,
       countryCode: "US", status: "draft", reviewStatus: i < 30 ? "changes_requested" : "pending",
       normalizationVersion: 1, pricingConfirmed: false, policyReviewed: false, evidenceUrl: null,
     })));
@@ -513,7 +557,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
       await state.db.insert(serviceRecords).values(Array.from({ length: 500 }, (_, offset) => {
         const n = start + offset;
         return { providerId, slug: `bulk-${n}`, name: `Campaign service ${n}`, platform: n % 2 ? "TikTok" : "Instagram", category: "Campaigns",
-          pricePerThousandUsd: "1.0000", minOrder: 10, maxOrder: 1000, status: "active", reviewStatus: "approved", incomplete: false, normalizationVersion: 1, pricingConfirmed: true, policyReviewed: true, evidenceUrl: "https://provider.example/services", sourceUpdatedAt: new Date(), retentionBasisPoints: n % 2 ? null : 9500 };
+          priceAmount: "1.0000", minOrder: 10, maxOrder: 1000, status: "active", reviewStatus: "approved", incomplete: false, normalizationVersion: 1, pricingConfirmed: true, priceCurrency: "USD", priceUnit: "per_1000", policyReviewed: true, evidenceUrl: "https://provider.example/services", sourceUpdatedAt: new Date(), retentionBasisPoints: n % 2 ? null : 9500 };
       }));
     }
     const first = await listAdminServices();
@@ -537,8 +581,8 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     const profile = await getMarketplaceSnapshot({ scope: "provider", slug: "test-provider" });
     expect(profile.services).toHaveLength(25); expect(profile.pagination.nextCursor).not.toBeNull();
     for (const sort of ["recommended", "price", "retention"] as const) {
-      const page = await getMarketplaceSnapshot({ scope: "services", sort });
-      const after = await getMarketplaceSnapshot({ scope: "services", sort, cursor: page.pagination.nextCursor! });
+      const page = await getMarketplaceSnapshot({ scope: "services", sort, priceCurrency: "USD", priceUnit: "per_1000" });
+      const after = await getMarketplaceSnapshot({ scope: "services", sort, priceCurrency: "USD", priceUnit: "per_1000", cursor: page.pagination.nextCursor! });
       const ids = new Set(page.services.map(item => item.id));
       expect(after.services).toHaveLength(25); expect(after.services.some(item => ids.has(item.id))).toBe(false);
     }

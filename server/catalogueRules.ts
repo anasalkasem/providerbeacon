@@ -19,8 +19,14 @@ import {
   type catalogueViews,
   type ReviewNeed,
 } from "../shared/serviceReview";
+import { priceCurrencies, priceUnits } from "../shared/pricing";
 import { NORMALIZATION_VERSION } from "./serviceNormalizer";
 
+export const pricingBasis = sql`coalesce((${inArray(sql`binary ${serviceRecords.priceCurrency}`, priceCurrencies)} and ${inArray(serviceRecords.priceUnit, priceUnits)} and (${serviceRecords.priceUnit} <> 'package' or char_length(trim(${serviceRecords.packageDescription})) >= 8)), false)`;
+const unconfirmedPricing = or(
+  eq(serviceRecords.pricingConfirmed, false),
+  not(pricingBasis)
+)!;
 export const lastEvidenceAt = sql`greatest(coalesce(${serviceRecords.priceCheckedAt}, '1970-01-01'), coalesce(${serviceRecords.sourceUpdatedAt}, '1970-01-01'))`;
 
 // SQL counterparts of reviewBlockers/isStale. Acceptance fixtures check their
@@ -42,8 +48,8 @@ export function reviewNeedFilter(need?: ReviewNeed, now = Date.now()) {
     )
   )!;
   const invalidValues = or(
-    lt(serviceRecords.pricePerThousandUsd, "0.0001"),
-    gt(serviceRecords.pricePerThousandUsd, "100000"),
+    lt(serviceRecords.priceAmount, "0.0001"),
+    gt(serviceRecords.priceAmount, "100000"),
     lt(serviceRecords.minOrder, 1),
     lt(serviceRecords.maxOrder, serviceRecords.minOrder)
   )!;
@@ -54,7 +60,7 @@ export function reviewNeedFilter(need?: ReviewNeed, now = Date.now()) {
   const stale = lt(lastEvidenceAt, new Date(now - STALE_DAYS * 86400000));
   switch (need) {
     case "pricing_unconfirmed":
-      return eq(serviceRecords.pricingConfirmed, false);
+      return unconfirmedPricing;
     case "evidence_missing":
       return noEvidence;
     case "policy_check":
@@ -73,7 +79,7 @@ export function reviewNeedFilter(need?: ReviewNeed, now = Date.now()) {
         not(invalidValues),
         not(noEvidence),
         not(stale),
-        eq(serviceRecords.pricingConfirmed, true),
+        not(unconfirmedPricing),
         eq(serviceRecords.policyReviewed, true),
         eq(serviceRecords.available, true),
         ne(serviceRecords.reviewStatus, "approved")
@@ -87,7 +93,8 @@ export function approvedService() {
     eq(serviceRecords.status, "active"),
     eq(serviceRecords.reviewStatus, "approved"),
     eq(serviceRecords.available, true),
-    eq(serviceRecords.incomplete, false)
+    eq(serviceRecords.incomplete, false),
+    not(unconfirmedPricing)
   );
 }
 export function catalogueViewFilter(view?: (typeof catalogueViews)[number]) {

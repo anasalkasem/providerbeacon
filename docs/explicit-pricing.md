@@ -1,0 +1,15 @@
+# Explicit service pricing
+
+Service prices have an amount, supported ISO currency, sale unit (`per_1000`, `per_item`, or `package`) and package contents where applicable. These fields describe reviewed pricing; they are never inferred from a provider name, service title, balance example or generic homepage.
+
+`sourceRate` retains the exact API rate independently of the four-decimal review amount. The whitelisted source JSON also preserves the provider's currency and unit claims. Unknown claims remain unconfirmed. Confirmation requires service-specific HTTPS evidence, a supported currency/unit and package contents for packages. Eligibility review and approval/publication remain separate permissions and actions.
+
+The additive migration retains the physical decimal column named `pricePerThousandUsd` for compatibility, but application code and API responses call it `priceAmount`. Existing explicit USD/per-1,000 confirmations are preserved; unconfirmed records receive no currency or unit. Original API rates are backfilled only from retained API responses. Historical snapshots without their original pricing basis remain labeled legacy; current metadata is never applied retrospectively.
+
+An unchanged source hash preserves manual corrections, pricing and approval. A real source change returns the service to review and clears pricing confirmation and basis. Already-staged rows from the previous release are rebuilt from their retained source before import. Processing remains bounded to 100 rows per transaction. The existing outlier ceiling of 100,000 and quarantine workflow remain in force; this release does not reinterpret outliers as package prices.
+
+Public price sorting requires a single currency and a per-item or per-1,000 unit, enforced by the API and an indexed query. No exchange-rate conversion is performed. Comparison shows each offer's actual basis. A lowest-price badge requires the same currency, unit, platform, category and specified target market. Packages are displayed with their contents and receive no automatic cheapest ranking.
+
+The classifier recognizes explicit popup/iPhone-device website traffic. On synchronization, it repairs only previously unknown Website-traffic destinations still pending review, with the existing audit trail. Reviewed classifications are preserved on unchanged source records. Classification is not an eligibility determination.
+
+Validation covers currency/unit confirmation, package scope, small prices, mixed comparison rendering, database query/readiness parity, pagination across 50,000 fixtures, preservation of reviewed conversions on unchanged imports, source changes and old staged payload recovery. Production services should remain drafts until their evidence passes review; a complete-looking source catalogue alone is insufficient.

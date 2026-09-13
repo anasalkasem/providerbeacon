@@ -71,7 +71,11 @@ export async function editServiceReview(
       platform: input.platform,
       category: input.category,
       countryCode: input.countryCode,
-      pricePerThousandUsd: input.price.toFixed(4),
+      priceAmount: input.price.toFixed(4),
+      priceCurrency: input.priceCurrency,
+      priceUnit: input.priceUnit,
+      packageDescription:
+        input.priceUnit === "package" ? input.packageDescription : null,
       minOrder: input.minOrder,
       maxOrder: input.maxOrder,
       refillMode: input.refillMode,
@@ -91,7 +95,10 @@ export async function editServiceReview(
     };
     const after = { ...before, ...changes };
     const priceChanged =
-      before.pricePerThousandUsd !== changes.pricePerThousandUsd;
+      before.priceAmount !== changes.priceAmount ||
+      before.priceCurrency !== changes.priceCurrency ||
+      before.priceUnit !== changes.priceUnit ||
+      before.packageDescription !== changes.packageDescription;
     await tx
       .update(serviceRecords)
       .set({
@@ -101,12 +108,14 @@ export async function editServiceReview(
       })
       .where(eq(serviceRecords.id, input.id));
     if (priceChanged)
-      await tx
-        .insert(priceSnapshots)
-        .values({
-          serviceId: input.id,
-          pricePerThousandUsd: changes.pricePerThousandUsd,
-        });
+      await tx.insert(priceSnapshots).values({
+        serviceId: input.id,
+        priceAmount: changes.priceAmount,
+        priceCurrency: changes.priceCurrency,
+        priceUnit: changes.priceUnit,
+        packageDescription: changes.packageDescription,
+        kind: "review",
+      });
     await writeAudit(
       {
         actorUserId: raw.actorUserId,
@@ -270,7 +279,7 @@ export async function normalizeLegacyBatch(limit = 100) {
         service: row.externalId,
         name: row.name,
         category: row.category,
-        rate: row.pricePerThousandUsd,
+        rate: row.priceAmount,
         min: row.minOrder,
         max: row.maxOrder,
       });

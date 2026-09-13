@@ -1,3 +1,4 @@
+import { hasPricingBasis, type PricingMetadata } from "../shared/pricing";
 import { createHash } from "node:crypto";
 import { platforms, serviceTypes, STALE_DAYS } from "../shared/serviceReview";
 
@@ -69,7 +70,8 @@ export function classifyService(source: Record<string, unknown>) {
   const name = String(source.name ?? "");
   const category = String(source.category ?? "");
   const text = `${name} ${category}`;
-  const website = /\b(website|web\s*traffic|site\s*traffic)\b/i.test(text);
+  const website = /\b(website|web\s*traffic|site\s*traffic)\b/i.test(text) ||
+    (/\b(traffic|visitors?)\b/i.test(text) && /\b(popup ads|popunder ads|iphone devices)\b/i.test(text));
   const matches = aliases
     .filter(([, pattern]) => pattern.test(text))
     .map(([platform]) => platform);
@@ -236,7 +238,8 @@ export function normalizeApiService(raw: unknown, index: number) {
   return {
     externalId,
     name,
-    pricePerThousandUsd: price.toFixed(4),
+    priceAmount: price.toFixed(4),
+    sourceRate: String(sourceData.rate ?? sourceData.price),
     minOrder,
     maxOrder,
     sourceData,
@@ -245,14 +248,14 @@ export function normalizeApiService(raw: unknown, index: number) {
   };
 }
 
-export function reviewBlockers(row: {
+export function reviewBlockers(row: PricingMetadata & {
   platform: string;
   category: string;
   pricingConfirmed: boolean;
   policyReviewed: boolean;
   evidenceUrl: string | null;
   normalizationVersion: number;
-  pricePerThousandUsd: string;
+  priceAmount: string;
   minOrder: number;
   maxOrder: number;
   available: boolean;
@@ -269,13 +272,13 @@ export function reviewBlockers(row: {
     row.category === "Other"
       ? ["unknown_type"]
       : []),
-    ...(!row.pricingConfirmed ? ["pricing_unconfirmed"] : []),
+    ...(!row.pricingConfirmed || !hasPricingBasis(row) ? ["pricing_unconfirmed"] : []),
     ...(!row.policyReviewed ? ["policy_check"] : []),
     ...(!row.evidenceUrl ? ["evidence_missing"] : []),
     ...(!row.available ? ["source_missing"] : []),
     ...(!(
-      Number(row.pricePerThousandUsd) >= 0.0001 &&
-      Number(row.pricePerThousandUsd) <= 100000
+      Number(row.priceAmount) >= 0.0001 &&
+      Number(row.priceAmount) <= 100000
     ) ||
     row.minOrder < 1 ||
     row.maxOrder < row.minOrder

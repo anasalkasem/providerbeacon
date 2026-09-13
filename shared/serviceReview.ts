@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hasPricingBasis, pricingFields } from "./pricing";
 
 export const platforms = [
   "Instagram",
@@ -73,6 +74,7 @@ export const reviewEditInput = reviewReference
       .string()
       .regex(/^[A-Z]{2}$/)
       .nullable(),
+    ...pricingFields,
     price: z.number().finite().min(0.0001).max(100000),
     minOrder: z.number().int().min(1).max(2147483647),
     maxOrder: z.number().int().min(1).max(2147483647),
@@ -97,9 +99,15 @@ export const reviewEditInput = reviewReference
     policyReviewed: z.boolean(),
     reason: z.string().trim().min(8).max(1000),
   })
-  .refine(value => !value.pricingConfirmed || Boolean(value.evidenceUrl), {
-    message: "Price confirmation requires evidence",
-  })
+  .refine(
+    value =>
+      !value.pricingConfirmed ||
+      (Boolean(value.evidenceUrl) && hasPricingBasis(value)),
+    {
+      message:
+        "Price confirmation requires evidence, currency, unit and package scope when applicable",
+    }
+  )
   .refine(value => value.maxOrder >= value.minOrder, {
     message: "Maximum quantity must be at least the minimum",
   });

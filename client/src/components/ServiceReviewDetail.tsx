@@ -1,3 +1,10 @@
+import { pricingCopy, formatPrice, unitLabel } from "@/i18n/pricing";
+import {
+  priceCurrencies,
+  priceUnits,
+  type PriceCurrency,
+  type PriceUnit,
+} from "../../../shared/pricing";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -23,6 +30,9 @@ type Form = {
   category: (typeof serviceTypes)[number];
   countryCode: string;
   price: string;
+  priceCurrency: PriceCurrency | "";
+  priceUnit: PriceUnit | "";
+  packageDescription: string;
   minOrder: string;
   maxOrder: string;
   refillMode: "unknown" | "none" | "manual" | "automatic" | "lifetime";
@@ -45,6 +55,7 @@ export default function ServiceReviewDetail({
 }) {
   const text = useAdminText();
   const { locale, dir } = useLocale();
+  const pricing = pricingCopy[locale];
   const access = trpc.admin.access.useQuery();
   const canWrite = access.data?.permissions.includes("services.write");
   const query = trpc.admin.services.detail.useQuery(
@@ -65,7 +76,14 @@ export default function ServiceReviewDetail({
         ? (row.category as Form["category"])
         : "Other",
       countryCode: row.countryCode ?? "",
-      price: row.pricePerThousandUsd,
+      price: row.priceAmount,
+      priceCurrency: priceCurrencies.includes(
+        row.priceCurrency as PriceCurrency
+      )
+        ? (row.priceCurrency as PriceCurrency)
+        : "",
+      priceUnit: row.priceUnit ?? "",
+      packageDescription: row.packageDescription ?? "",
       minOrder: String(row.minOrder),
       maxOrder: String(row.maxOrder),
       refillMode: row.refillMode,
@@ -177,6 +195,12 @@ export default function ServiceReviewDetail({
                   countryCode: form.countryCode.trim().toUpperCase() || null,
                   evidenceUrl: form.evidenceUrl.trim() || null,
                   price: Number(form.price),
+                  priceCurrency: form.priceCurrency || null,
+                  priceUnit: form.priceUnit || null,
+                  packageDescription:
+                    form.priceUnit === "package"
+                      ? form.packageDescription.trim() || null
+                      : null,
                   minOrder: Number(form.minOrder),
                   maxOrder: Number(form.maxOrder),
                   refillDays: form.refillDays ? Number(form.refillDays) : null,
@@ -241,8 +265,78 @@ export default function ServiceReviewDetail({
                     {text("countryHint")}
                   </span>
                 </label>
+                <div className="rounded-lg bg-slate-50 p-3 text-sm sm:col-span-2">
+                  <p className="font-semibold">
+                    {pricing.sourceRate}:{" "}
+                    <bdi dir="ltr">{row.sourceRate ?? "—"}</bdi>
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {pricing.sourceHelp}
+                  </p>
+                </div>
                 <label className="grid gap-2 text-sm">
-                  {text("rawPrice")}
+                  {pricing.currency}
+                  <select
+                    className={selectClass}
+                    value={form.priceCurrency}
+                    required={form.pricingConfirmed}
+                    onChange={event =>
+                      update({
+                        priceCurrency: event.target
+                          .value as Form["priceCurrency"],
+                        pricingConfirmed: false,
+                      })
+                    }
+                  >
+                    <option value="">{pricing.unknown}</option>
+                    {priceCurrencies.map(value => (
+                      <option key={value} value={value}>
+                        {value}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="grid gap-2 text-sm">
+                  {pricing.unit}
+                  <select
+                    className={selectClass}
+                    value={form.priceUnit}
+                    required={form.pricingConfirmed}
+                    onChange={event =>
+                      update({
+                        priceUnit: event.target.value as Form["priceUnit"],
+                        pricingConfirmed: false,
+                      })
+                    }
+                  >
+                    <option value="">{pricing.unknown}</option>
+                    {priceUnits.map(value => (
+                      <option key={value} value={value}>
+                        {pricing[value]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {form.priceUnit === "package" && (
+                  <label className="grid gap-2 text-sm sm:col-span-2">
+                    {pricing.packageDescription}
+                    <Textarea
+                      dir="auto"
+                      minLength={8}
+                      maxLength={300}
+                      required={form.pricingConfirmed}
+                      value={form.packageDescription}
+                      onChange={event =>
+                        update({
+                          packageDescription: event.target.value,
+                          pricingConfirmed: false,
+                        })
+                      }
+                    />
+                  </label>
+                )}
+                <label className="grid gap-2 text-sm">
+                  {pricing.price}
                   <Input
                     required
                     dir="ltr"
@@ -251,7 +345,12 @@ export default function ServiceReviewDetail({
                     max="100000"
                     step="0.0001"
                     value={form.price}
-                    onChange={event => update({ price: event.target.value })}
+                    onChange={event =>
+                      update({
+                        price: event.target.value,
+                        pricingConfirmed: false,
+                      })
+                    }
                   />
                   <span className="text-xs text-slate-500">
                     {text(
@@ -355,7 +454,7 @@ export default function ServiceReviewDetail({
                       update({ pricingConfirmed: event.target.checked })
                     }
                   />
-                  {text("confirmPricing")}
+                  {pricing.confirm}
                 </label>
                 <label className="flex items-start gap-3 text-sm leading-6 sm:col-span-2">
                   <input
@@ -493,7 +592,22 @@ export default function ServiceReviewDetail({
                           {new Date(price.capturedAt).toLocaleString(locale)}
                         </td>
                         <td>
-                          <bdi>{price.pricePerThousandUsd}</bdi>
+                          <bdi dir="ltr">
+                            {price.kind === "source"
+                              ? (price.sourceRate ?? price.priceAmount)
+                              : formatPrice(locale, price)}
+                          </bdi>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {pricing[`history_${price.kind}`]}
+                            {price.kind === "review"
+                              ? ` · ${unitLabel(locale, price)}`
+                              : ""}
+                          </p>
+                          {price.packageDescription && (
+                            <p className="text-xs" dir="auto">
+                              {price.packageDescription}
+                            </p>
+                          )}
                         </td>
                       </tr>
                     ))}

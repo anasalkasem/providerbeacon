@@ -70,7 +70,7 @@ export const reviewEn = {
   reviewFailed: "The operation could not be completed. Refresh and try again.",
   rawPrice: "Stored rate",
   unconfirmedPrice: "Currency and unit not confirmed",
-  confirmedPrice: "USD / 1,000 confirmed",
+  confirmedPrice: "Pricing confirmed",
   minQuantity: "Minimum quantity",
   maxQuantity: "Maximum quantity",
   refill: "Refill",
@@ -84,7 +84,7 @@ export const reviewEn = {
   evidenceHelp:
     "Public HTTPS page used to check the price and terms; no query strings or credentials.",
   confirmPricing:
-    "I checked this rate is in USD per 1,000 units against the linked evidence.",
+    "I checked the amount, currency and sale unit against the linked evidence.",
   confirmPolicy:
     "I reviewed the service and confirmed it is eligible for publication under the catalogue policy.",
   saveForReview: "Save for review",
@@ -207,7 +207,7 @@ export const reviewAr: Record<keyof typeof reviewEn, string> = {
   reviewFailed: "تعذّر إكمال الإجراء. حدّث البيانات وحاول مجددًا.",
   rawPrice: "السعر المحفوظ",
   unconfirmedPrice: "العملة ووحدة السعر غير مؤكدتين",
-  confirmedPrice: "مؤكد بالدولار لكل ١٬٠٠٠",
+  confirmedPrice: "تسعير مؤكد",
   minQuantity: "الكمية الدنيا",
   maxQuantity: "الكمية القصوى",
   refill: "التعويض",
@@ -221,7 +221,7 @@ export const reviewAr: Record<keyof typeof reviewEn, string> = {
   evidenceHelp:
     "صفحة HTTPS عامة استُخدمت لفحص السعر والشروط؛ دون بيانات دخول أو معاملات في الرابط.",
   confirmPricing:
-    "تحققت من أن السعر بالدولار الأمريكي لكل ١٬٠٠٠ وحدة بالرجوع إلى الدليل المرتبط.",
+    "تحققت من المبلغ والعملة ووحدة البيع بالرجوع إلى الدليل المرتبط.",
   confirmPolicy: "راجعت الخدمة وتأكدت من أهليتها للنشر وفق سياسة دليل الخدمات.",
   saveForReview: "حفظ للمراجعة",
   reviewResetHint:

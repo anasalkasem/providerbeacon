@@ -1,3 +1,4 @@
+import { formatPrice, unitLabel } from "@/i18n/pricing";
 import { useEffect, useState } from "react";
 import { useSearch } from "wouter";
 import { keepPreviousData } from "@tanstack/react-query";
@@ -481,8 +482,7 @@ export default function AdminServices({
                       </td>
                       <td className="px-4 py-4">
                         <bdi dir="ltr" className="font-semibold">
-                          {service.pricingConfirmed ? "$" : ""}
-                          {Number(service.pricePerThousandUsd).toFixed(4)}
+                          {formatPrice(locale, service)}
                         </bdi>
                         <p
                           className={`mt-1 max-w-36 text-xs ${service.pricingConfirmed ? "text-emerald-700" : "text-amber-700"}`}
@@ -493,6 +493,7 @@ export default function AdminServices({
                               : "unconfirmedPrice"
                           )}
                         </p>
+                        <p className="mt-1 text-xs text-slate-500">{unitLabel(locale, service)}</p>
                       </td>
                       <td className="px-4 py-4">
                         <Badge
