@@ -1,3 +1,5 @@
+import { GuideGrid } from "@/components/Discovery";
+import { discoveryText } from "@/i18n/discovery";
 import { priceCurrencies, priceUnits, type PriceCurrency, type PriceUnit } from "../../../shared/pricing";
 import { platforms } from "../../../shared/serviceReview";
 import { formatPrice, unitLabel, pricingCopy } from "@/i18n/pricing";
@@ -18,6 +20,7 @@ import { useLocation } from "wouter";
 export default function Services() {
   const { locale } = useLocale();
   const t = pageCopy[locale];
+  const discovery = discoveryText(locale);
   const { services, providerFor, setFilters, pagination, isLoading } = useMarketplaceData();
   const params = new URLSearchParams(window.location.search);
   const [, navigate] = useLocation();
@@ -44,8 +47,9 @@ export default function Services() {
   const compare = () => navigate(`/compare?services=${selected.map(service => service.id).join(",")}`);
 
   return <PublicLayout>
-    <section className="border-b border-slate-200 bg-white"><div className="container py-12"><div className="eyebrow light"><Sparkles className="size-4"/>{t.servicesEyebrow}</div><h1 className="mt-5 text-4xl font-extrabold tracking-tight text-slate-950 sm:text-6xl">{t.servicesTitle}</h1><p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">{t.servicesBody}</p></div></section>
-    <section className="container py-8"><div className="filter-bar"><label className="relative flex-1"><span className="sr-only">{t.searchCatalogue}</span><Search className="absolute start-4 top-1/2 size-4 -translate-y-1/2 text-slate-400"/><Input value={query} maxLength={100} onChange={event => setQuery(event.target.value)} placeholder={t.searchServices} className="h-12 rounded-xl border-slate-200 ps-11"/></label>
+    <section className="border-b border-slate-200 bg-white"><div className="container py-12"><div className="eyebrow light"><Sparkles className="size-4"/>{discovery.guides}</div><h1 className="mt-5 text-4xl font-extrabold tracking-tight text-slate-950 sm:text-6xl">{discovery.guideTitle}</h1><p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">{discovery.guideBody}</p></div></section>
+    <section className="container py-8"><label className="relative mb-6 block max-w-2xl"><span className="sr-only">{discovery.find}</span><Search className="absolute start-4 top-4 size-5 text-slate-400"/><Input value={query} maxLength={100} onChange={e=>setQuery(e.target.value)} placeholder={discovery.find} className="h-14 rounded-xl bg-white ps-12"/></label><GuideGrid query={query}/>{query && <button className="mt-4 text-sm font-bold text-teal-700" onClick={()=>setQuery("")}>{discovery.clear}</button>}
+    <details className="mt-10 rounded-2xl border border-slate-200 bg-white p-5" open={pagination.total>0?true:undefined}><summary className="cursor-pointer text-lg font-extrabold">{discovery.offers}</summary>{!isLoading && pagination.total===0 && <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-500">{discovery.noOffers}</p>}<div className="filter-bar mt-5"><label className="relative flex-1"><span className="sr-only">{t.searchCatalogue}</span><Search className="absolute start-4 top-1/2 size-4 -translate-y-1/2 text-slate-400"/><Input value={query} maxLength={100} onChange={event => setQuery(event.target.value)} placeholder={t.searchServices} className="h-12 rounded-xl border-slate-200 ps-11"/></label>
       <Select value={platform} onValueChange={setPlatform}><SelectTrigger className="h-12 w-full rounded-xl border-slate-200 sm:w-[190px]"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="all">{t.allPlatforms}</SelectItem>{platforms.filter(value => value !== "Unknown").map(item => <SelectItem value={item} key={item}>{item}</SelectItem>)}</SelectContent></Select>
       <Select value={sort} onValueChange={setSort}><SelectTrigger className="h-12 w-full rounded-xl border-slate-200 sm:w-[190px]"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="recommended">{t.recommended}</SelectItem><SelectItem value="price" disabled={!canSortPrice}>{t.lowestPrice}</SelectItem><SelectItem value="retention">{t.bestRetention}</SelectItem></SelectContent></Select>
       <Button variant="outline" aria-expanded={advancedOpen} onClick={() => setAdvancedOpen(!advancedOpen)} className="h-12 rounded-xl"><SlidersHorizontal className="size-4"/>{t.moreFilters}</Button></div>
@@ -60,7 +64,7 @@ export default function Services() {
       <div className="mt-5 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:block"><div className="overflow-x-auto"><table className="w-full border-collapse text-start"><thead><tr className="border-b border-slate-200 bg-slate-50 text-start text-[11px] uppercase tracking-wider text-slate-500"><th className="w-12 px-4 py-3"><span className="sr-only">{t.comparison}</span></th><th className="px-4 py-3 text-start">{t.service}</th><th className="px-4 py-3 text-start">{t.provider}</th><th className="px-4 py-3 text-start">{t.price}</th><th className="px-4 py-3 text-start">{t.delivery}</th><th className="px-4 py-3 text-start">{t.protection}</th></tr></thead><tbody className="divide-y divide-slate-100">{filtered.map(service => <ServiceRow key={service.id} service={service} selected={selected.some(item => item.id === service.id)} onToggle={toggle}/>)}</tbody></table></div></div>
       {!isLoading && filtered.length === 0 && <div className="grid place-items-center px-6 py-20 text-center"><Search className="size-8 text-slate-300"/><h2 className="mt-4 font-bold text-slate-900">{t.noMatches}</h2><p className="mt-2 text-sm text-slate-500">{t.noMatchesBody}</p></div>}
       <CataloguePagination/>
-    </section>
+    </details></section>
     {selected.length > 0 && <aside className="compare-dock" aria-label={t.comparison}><div className="flex min-w-0 items-center gap-3"><div className="grid size-10 shrink-0 place-items-center rounded-xl bg-cyan-400 font-extrabold text-[#071321]">{formatNumber(locale, selected.length)}</div><div className="hidden min-w-0 sm:block"><p className="font-bold text-white">{t.readyCompare}</p><p className="truncate text-xs text-slate-400">{selected.map(item => localizeData(locale, item.name)).join(" · ")}</p></div></div><div className="flex items-center gap-2"><button className="rounded-lg p-2 text-slate-400 hover:text-white" onClick={() => setSelected([])} aria-label={t.clearComparison}><X className="size-5"/></button><Button onClick={compare} className="rounded-xl bg-cyan-400 font-bold text-[#071321] hover:bg-cyan-300">{t.comparison} {formatNumber(locale, selected.length)}<ArrowRight className="size-4 rtl:rotate-180"/></Button></div></aside>}
   </PublicLayout>;
 }

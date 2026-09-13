@@ -1,3 +1,4 @@
+import { discoveryText } from "@/i18n/discovery";
 import { CatalogueNotice } from "@/components/CatalogueState";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -68,8 +69,8 @@ export function SiteFooter() {
       <div className="container grid gap-10 py-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div><Brand compact /><p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">{p.footerTagline}</p></div>
         <FooterColumn title={p.footerPlatform} links={[[t.navServices, "/services"], [t.navCompare, "/compare"], [t.navProviders, "/providers"], [p.trustScores, "/#methodology"]]} />
-        <FooterColumn title={p.footerForProviders} links={[[p.claimProfile, "/providers#join"], [p.getVerified, "/providers#join"], [p.partnerStandards, "/#methodology"], [p.providerApi, "/providers#join"]]} />
-        <FooterColumn title={p.footerCompany} links={[[t.methodology, "/#methodology"], [p.about, "/#methodology"], [p.editorialPolicy, "/#methodology"], [p.contact, "mailto:hello@providerbeacon.com"]]} />
+        <FooterColumn title={p.footerForProviders} links={[[p.claimProfile, "/providers#join"], [p.getVerified, "/providers#join"], [p.partnerStandards, "/#methodology"], ["JustAnotherPanel API", "/directory/justanotherpanel"]]} />
+        <FooterColumn title={p.footerCompany} links={[[t.methodology, "/#methodology"], [p.about, "/#about"], [p.editorialPolicy, "/#methodology"], [discoveryText(locale).contactLabel, "/providers#join"]]} />
       </div>
       <div className="border-t border-slate-100"><div className="container flex flex-col justify-between gap-3 py-5 text-xs text-slate-500 sm:flex-row"><span>© 2026 ProviderBeacon. {p.rights}</span><span>{p.transparentRanking}</span></div></div>
     </footer>

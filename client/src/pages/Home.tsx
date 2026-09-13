@@ -1,46 +1,249 @@
-import { formatPrice, unitLabel, pricingCopy } from "@/i18n/pricing";
-import { CatalogueState } from "@/components/CatalogueState";
-import { catalogueCopy, percentLabel } from "@/i18n/catalogue";
-import { ProviderCard, ScoreRing, VerifiedBadge } from "@/components/Marketplace";
-import { PublicLayout } from "@/components/SiteChrome";
-import { Button } from "@/components/ui/button";
-import { copy, useLocale } from "@/contexts/LocaleContext";
-import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
-import { localizeData, localizeDuration, pageCopy } from "@/i18n/messages";
-import { ArrowRight, BarChart3, CheckCircle2, Clock3, Database, Search, ShieldCheck, Sparkles, TrendingDown } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-
+import {
+  ArrowRight,
+  ArrowUpRight,
+  Search,
+  Compass,
+  SlidersHorizontal,
+  FileCheck2,
+  ScanLine,
+} from "lucide-react";
+import { PublicLayout } from "@/components/SiteChrome";
+import { GuideGrid, ReferenceGrid } from "@/components/Discovery";
+import { useLocale } from "@/contexts/LocaleContext";
+import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
+import { discoveryText } from "@/i18n/discovery";
+import { discoveryGuides, directoryProfiles } from "@/data/discovery";
+import { ServiceRow } from "@/components/Marketplace";
 export default function Home() {
   const { locale } = useLocale();
-  const t = copy[locale];
-  const p = pageCopy[locale];
-  const { providers, services, providerFor } = useMarketplaceData();
+  const t = discoveryText(locale);
   const [, navigate] = useLocation();
   const [query, setQuery] = useState("");
-  const featured = services.filter(service => service.featured);
-  const best = featured[0] ?? services[0];
-  const runSearch = () => navigate(`/services${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ""}`);
-  if (!best) return <PublicLayout><CatalogueState /></PublicLayout>;
-  const bestProvider = providerFor(best);
-  const comparisonHref = (service: typeof best) => {
-    const other = services.find(item => item.id !== service.id && item.priceCurrency === service.priceCurrency && item.priceUnit === service.priceUnit && item.platform === service.platform && item.category === service.category);
-    return other ? `/compare?services=${service.id},${other.id}` : "/services";
-  };
-  const popular = locale === "ar" ? ["متابعو إنستغرام", "مشاهدات تيك توك", "مشتركو يوتيوب"] : locale === "es" ? ["Seguidores de Instagram", "Visualizaciones de TikTok", "Suscriptores de YouTube"] : locale === "hi" ? ["Instagram फ़ॉलोअर्स", "TikTok व्यूज़", "YouTube सब्सक्राइबर"] : locale === "zh" ? ["Instagram 粉丝", "TikTok 播放量", "YouTube 订阅者"] : ["Instagram followers", "TikTok views", "YouTube subscribers"];
-
-  return <PublicLayout>
-    <section className="hero-shell overflow-hidden"><div className="hero-grid" aria-hidden="true"/><div className="container relative grid items-center gap-12 py-16 lg:grid-cols-[1.04fr_.96fr] lg:py-24"><div><div className="eyebrow"><Sparkles className="size-4"/>{t.heroEyebrow}</div><h1 className="mt-6 max-w-3xl text-balance text-[clamp(2.8rem,6vw,5.8rem)] font-extrabold leading-[.96] tracking-[-.055em] text-white">{t.heroTitle}</h1><p className="mt-6 max-w-2xl text-pretty text-lg leading-8 text-slate-300">{t.heroBody}</p><div className="mt-9 max-w-2xl rounded-2xl border border-white/10 bg-white/10 p-2 shadow-2xl shadow-cyan-950/40 backdrop-blur-xl"><div className="flex flex-col gap-2 sm:flex-row"><label className="relative flex-1"><span className="sr-only">{t.navServices}</span><Search className="absolute start-4 top-1/2 size-5 -translate-y-1/2 text-slate-400"/><input value={query} onChange={event => setQuery(event.target.value)} onKeyDown={event => event.key === "Enter" && runSearch()} placeholder={t.searchPlaceholder} className="h-14 w-full rounded-xl border-0 bg-white ps-12 pe-4 text-sm text-slate-900 outline-none ring-cyan-400 transition focus:ring-2"/></label><Button onClick={runSearch} className="h-14 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 px-6 font-bold text-[#071321] hover:from-cyan-300 hover:to-teal-300"><Sparkles className="size-4"/>{t.askAi}</Button></div></div><div className="mt-5 flex flex-wrap items-center gap-3 text-xs font-medium text-slate-400"><span>{p.popular}</span>{popular.map(item => <button key={item} onClick={() => navigate(`/services?q=${encodeURIComponent(item)}`)} className="rounded-full border border-white/10 px-3 py-1.5 hover:border-cyan-400/50 hover:text-white">{item}</button>)}</div></div>
-      <div className="relative mx-auto w-full max-w-xl"><div className="hero-orbit" aria-hidden="true"/><div className="relative rounded-[2rem] border border-white/10 bg-[#0D1C32]/90 p-5 shadow-2xl shadow-black/30 backdrop-blur-xl"><div className="flex items-center justify-between border-b border-white/10 pb-4"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-cyan-300">{catalogueCopy[locale].featuredService}</p><h2 className="mt-1 text-lg font-bold text-white">{catalogueCopy[locale].featuredService}</h2></div><span className="live-pill"><span/>{catalogueCopy[locale].latestCatalogue}</span></div><div className="mt-5 rounded-2xl bg-white p-5 text-slate-950"><div className="flex items-start justify-between gap-4"><div><div className="flex flex-wrap items-center gap-2"><h3 className="text-xl font-extrabold">{bestProvider.name}</h3>{bestProvider.verified && <VerifiedBadge/>}</div><p className="mt-1 text-sm text-slate-500">{localizeData(locale, best.name)}</p></div><ScoreRing score={bestProvider.score}/></div><div className="mt-6 grid grid-cols-3 gap-2"><MiniMetric label={p.price} value={formatPrice(locale, best)} sub={unitLabel(locale, best)}/><MiniMetric label={p.start} value={localizeDuration(locale, best.startTime)} sub={p.delivery}/><MiniMetric label={p.retention} value={`${best.retention}%`} sub={p.verified}/></div><div className="mt-5 rounded-xl bg-slate-50 p-4"><p className="flex items-center gap-2 text-sm font-bold text-slate-900"><Sparkles className="size-4 text-violet-600"/>{p.whyAi}</p><ul className="mt-3 grid gap-2 text-xs text-slate-600"><Reason>{p.reasonReliable}</Reason><Reason>{p.reasonRefill}</Reason><Reason>{p.reasonFresh}</Reason></ul></div><Button asChild className="mt-5 w-full rounded-xl bg-[#0B2A68] hover:bg-[#10377F]"><Link href={comparisonHref(best)}>{t.compare}<ArrowRight className="size-4 rtl:rotate-180"/></Link></Button></div></div></div></div>
-      <div className="container relative -mb-10 grid gap-3 sm:grid-cols-3"><Stat icon={<ShieldCheck/>} value="1,284" label={t.verified}/><Stat icon={<Database/>} value="48,621" label={t.services}/><Stat icon={<Clock3/>} value="96.4%" label={t.checked}/></div>
-    </section>
-    <section className="container py-24"><div className="section-heading"><div><p className="section-kicker">{p.smartDiscovery}</p><h2>{t.bestMatches}</h2><p>{t.bestBody}</p></div><Button variant="outline" asChild className="rounded-xl"><Link href="/services">{t.viewAll}<ArrowRight className="size-4 rtl:rotate-180"/></Link></Button></div><div className="mt-9 grid gap-5 lg:grid-cols-3">{featured.map((service, index) => { const provider = providerFor(service); return <article key={service.id} className={`match-card ${index === 0 ? "best" : ""}`}><div className="flex items-start justify-between"><div><span className="platform-chip">{service.platform}</span><h3 className="mt-4 text-lg font-extrabold text-slate-950">{localizeData(locale, service.name)}</h3><p className="mt-1 text-sm text-slate-500">{p.providerBy} {provider.name}</p></div><ScoreRing score={provider.score} size="sm"/></div><div className="mt-6 flex items-end justify-between border-y border-slate-100 py-5"><div><bdi dir="ltr" className="text-3xl font-extrabold tracking-tight text-slate-950">{formatPrice(locale, service)}</bdi><span className="text-xs text-slate-400"> {unitLabel(locale, service)}</span></div><span className="text-xs font-semibold text-emerald-700"><bdi dir="ltr">{percentLabel(service.retention)}</bdi> {p.retention}</span></div><div className="mt-5 grid grid-cols-2 gap-3 text-sm"><Detail icon={<Clock3/>} label={p.start} value={localizeDuration(locale, service.startTime)}/><Detail icon={<ShieldCheck/>} label={p.refill} value={localizeData(locale, service.refill)}/></div><Button asChild className={`mt-6 w-full rounded-xl ${index === 0 ? "bg-[#0B2A68]" : "bg-slate-900"}`}><Link href={comparisonHref(service)}>{t.compare}<ArrowRight className="size-4 rtl:rotate-180"/></Link></Button></article>; })}</div></section>
-    <section className="border-y border-slate-200 bg-white py-24" id="methodology"><div className="container"><div className="grid items-end gap-8 lg:grid-cols-[1fr_.75fr]"><div><p className="section-kicker">{p.providerIntelligence}</p><h2 className="max-w-3xl text-3xl font-extrabold tracking-tight text-slate-950 sm:text-5xl">{t.trustedTitle}</h2><p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">{t.trustedBody}</p></div><div className="flex lg:justify-end"><Button variant="outline" asChild className="rounded-xl"><Link href="/#methodology">{t.methodology}<ArrowRight className="size-4 rtl:rotate-180"/></Link></Button></div></div><div className="mt-12 grid gap-5 md:grid-cols-3"><TrustPillar icon={<TrendingDown/>} title={p.verifiedPricing} body={p.verifiedPricingBody}/><TrustPillar icon={<BarChart3/>} title={p.operationalReliability} body={p.operationalReliabilityBody}/><TrustPillar icon={<ShieldCheck/>} title={p.independentRanking} body={p.independentRankingBody}/></div><div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">{providers.map(provider => <ProviderCard key={provider.id} provider={provider}/>)}</div></div></section>
-    <section className="container py-20"><div className="cta-panel"><div><p className="text-sm font-bold uppercase tracking-[.18em] text-cyan-200">{p.forProviders}</p><h2 className="mt-3 text-3xl font-extrabold text-white sm:text-4xl">{p.earnTrust}</h2><p className="mt-4 max-w-xl leading-7 text-slate-300">{p.earnTrustBody}</p></div><Button asChild className="h-12 rounded-xl bg-white px-6 font-bold text-[#0B2A68] hover:bg-cyan-50"><Link href="/providers#join">{p.claimProvider}<ArrowRight className="size-4 rtl:rotate-180"/></Link></Button></div></section>
-  </PublicLayout>;
+  const { services } = useMarketplaceData();
+  const steps = [
+    { icon: Compass, title: t.stepOne, body: t.stepOneBody },
+    { icon: SlidersHorizontal, title: t.stepTwo, body: t.stepTwoBody },
+    { icon: FileCheck2, title: t.stepThree, body: t.stepThreeBody },
+  ];
+  return (
+    <PublicLayout>
+      <div lang={locale === "ar" ? "ar" : "en"}>
+        <section className="relative overflow-hidden bg-[#081B30] text-white">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -end-36 -top-32 size-[600px] rounded-full bg-teal-500/10 blur-3xl"
+          />
+          <div className="container relative grid items-center gap-14 py-16 lg:grid-cols-[1.1fr_.9fr] lg:py-24">
+            <div>
+              <p className="inline-flex items-center gap-2 rounded-full border border-teal-300/20 bg-teal-300/5 px-3 py-1.5 text-xs font-bold tracking-wide text-teal-200">
+                <span className="size-1.5 rounded-full bg-teal-300" />
+                {t.beta}
+              </p>
+              <h1 className="mt-7 text-[clamp(2.8rem,5.8vw,5.4rem)] font-extrabold leading-[1.18] tracking-tight">
+                {t.title}
+                <br />
+                <span className="text-[#53E1C0]">{t.titleAccent}</span>
+              </h1>
+              <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">
+                {t.intro}
+              </p>
+              <form
+                className="mt-9 flex flex-col gap-2 rounded-2xl border border-white/15 bg-white/5 p-2 sm:flex-row"
+                onSubmit={e => {
+                  e.preventDefault();
+                  navigate(
+                    `/services${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ""}`
+                  );
+                }}
+              >
+                <label className="relative min-w-0 flex-1">
+                  <span className="sr-only">{t.search}</span>
+                  <Search className="absolute start-4 top-4 size-5 text-slate-400" />
+                  <input
+                    className="h-14 w-full rounded-xl bg-white ps-12 pe-4 text-sm text-slate-900 outline-none focus:ring-2 focus:ring-teal-300"
+                    value={query}
+                    maxLength={100}
+                    onChange={e => setQuery(e.target.value)}
+                    placeholder={t.searchHint}
+                  />
+                </label>
+                <button className="h-14 rounded-xl bg-[#53E1C0] px-5 text-sm font-extrabold text-[#081B30] hover:bg-teal-200">
+                  {t.explore}
+                  <ArrowRight className="ms-2 inline size-4 rtl:rotate-180" />
+                </button>
+              </form>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {["Instagram", "TikTok", "YouTube", "SEO"].map(p => (
+                  <Link
+                    key={p}
+                    href={`/services?q=${p}`}
+                    className="rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:border-teal-200 hover:text-teal-200"
+                  >
+                    {p}
+                  </Link>
+                ))}
+              </div>
+            </div>
+            <div className="relative mx-auto w-full max-w-lg">
+              <div
+                className="absolute -inset-5 rounded-[2rem] border border-white/5"
+                aria-hidden="true"
+              />
+              <div className="overflow-hidden rounded-2xl border border-white/15 bg-[#0D263F] shadow-2xl">
+                <div className="flex items-center justify-between gap-2 border-b border-white/10 p-5">
+                  <span className="flex items-center gap-2 text-xs font-bold">
+                    <ScanLine className="size-5 text-teal-300" />
+                    PROVIDERBEACON
+                  </span>
+                  <span className="rounded-md bg-teal-300/10 px-2 py-1 text-[10px] font-bold text-teal-200">
+                    {t.publicSource}
+                  </span>
+                </div>
+                <div className="space-y-3 p-5">
+                  {steps.map(({ icon: Icon, title, body }) => (
+                    <div
+                      key={title}
+                      className="flex gap-4 rounded-xl border border-white/10 bg-white/[.035] p-5"
+                    >
+                      <div className="grid size-10 shrink-0 place-items-center rounded-lg bg-teal-300/10 text-teal-200">
+                        <Icon className="size-5" />
+                      </div>
+                      <div>
+                        <h2 className="text-sm font-bold">{title}</h2>
+                        <p className="mt-2 text-xs leading-6 text-slate-400">
+                          {body}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  <Link
+                    href="/compare"
+                    className="flex items-center justify-between rounded-xl bg-white p-4 text-sm font-extrabold text-[#0B2A68]"
+                  >
+                    {t.compare}
+                    <ArrowUpRight className="size-5 rtl:-rotate-90" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="border-t border-white/10">
+            <div className="container grid grid-cols-3 divide-x divide-white/10 py-6 rtl:divide-x-reverse">
+              {[
+                { n: discoveryGuides.length, label: t.guides },
+                { n: directoryProfiles.length, label: t.profiles },
+                { n: 1, label: t.workspace },
+              ].map(({ n, label }) => (
+                <div
+                  key={label}
+                  className="px-3 text-center sm:flex sm:items-center sm:justify-center sm:gap-3"
+                >
+                  <b className="text-2xl text-white">
+                    {n.toLocaleString(locale)}
+                  </b>
+                  <span className="mt-1 block text-xs text-slate-400">
+                    {label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+        <section className="container py-16 sm:py-20">
+          <div className="mb-8">
+            <p className="section-kicker">{t.guides}</p>
+            <h2 className="mt-3 text-3xl font-extrabold leading-relaxed text-slate-950">
+              {t.guideTitle}
+            </h2>
+            <p className="mt-3 max-w-2xl leading-7 text-slate-500">
+              {t.guideBody}
+            </p>
+          </div>
+          <GuideGrid />
+        </section>
+        <section className="border-y border-slate-200 bg-white">
+          <div className="container py-16">
+            <div className="mb-8">
+              <p className="section-kicker">{t.referenceLabel}</p>
+              <h2 className="mt-3 text-3xl font-extrabold leading-relaxed text-slate-950">
+                {t.referenceTitle}
+              </h2>
+              <p className="mt-3 max-w-2xl leading-7 text-slate-500">
+                {t.referenceBody}
+              </p>
+            </div>
+            <ReferenceGrid />
+          </div>
+        </section>
+        {services.length > 0 && (
+          <section className="container py-12">
+            <h2 className="mb-5 text-2xl font-extrabold">{t.offers}</h2>
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+              <table className="w-full">
+                <tbody>
+                  {services.slice(0, 3).map(service => (
+                    <ServiceRow
+                      key={service.id}
+                      service={service}
+                      selected={false}
+                      onToggle={() =>
+                        navigate(`/compare?services=${service.id}`)
+                      }
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+        <section
+          id="methodology"
+          className="container scroll-mt-24 py-16 sm:py-20"
+        >
+          <div className="grid gap-10 lg:grid-cols-[.8fr_1.2fr]">
+            <div>
+              <p className="section-kicker">PROVIDERBEACON SCORE</p>
+              <h2 className="mt-4 text-3xl font-extrabold leading-relaxed text-slate-950">
+                {t.evidence}
+              </h2>
+              <p className="mt-4 leading-8 text-slate-500">{t.evidenceBody}</p>
+            </div>
+            <div className="space-y-6 rounded-2xl border border-slate-200 bg-white p-7">
+              <div>
+                <h3 className="font-extrabold text-slate-900">{t.method}</h3>
+                <p className="mt-3 text-sm leading-8 text-slate-600">
+                  {t.methodBody}
+                </p>
+              </div>
+              <div className="border-t border-slate-100 pt-5">
+                <h3 className="font-extrabold text-slate-900">
+                  {t.independence}
+                </h3>
+                <p className="mt-3 text-sm leading-8 text-slate-600">
+                  {t.independenceBody}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+        <section id="about" className="container pb-16">
+          <div className="rounded-3xl bg-[#0B2A48] p-8 text-white sm:p-12">
+            <h2 className="text-3xl font-extrabold">{t.about}</h2>
+            <p className="mt-5 max-w-3xl leading-8 text-slate-300">
+              {t.aboutBody}
+            </p>
+            <Link
+              href="/compare"
+              className="mt-7 inline-flex items-center gap-3 rounded-xl bg-[#53E1C0] px-6 py-3 font-extrabold text-[#081B30]"
+            >
+              {t.compare}
+              <ArrowRight className="size-4 rtl:rotate-180" />
+            </Link>
+          </div>
+        </section>
+      </div>
+    </PublicLayout>
+  );
 }
-function MiniMetric({ label, value, sub }: { label: string; value: string; sub: string }) { return <div className="rounded-xl border border-slate-100 p-3"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</p><bdi dir="ltr" className="mt-1 font-extrabold">{value}</bdi><p className="text-[10px] text-slate-400">{sub}</p></div>; }
-function Reason({ children }: { children: React.ReactNode }) { return <li className="flex items-center gap-2"><CheckCircle2 className="size-3.5 shrink-0 text-emerald-500"/>{children}</li>; }
-function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; label: string }) { return <div className="stat-card"><div className="stat-icon">{icon}</div><div><bdi dir="ltr" className="text-2xl font-extrabold text-slate-950">{value}</bdi><p className="mt-0.5 text-xs font-medium text-slate-500">{label}</p></div></div>; }
-function Detail({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) { return <div className="flex items-start gap-2"><span className="mt-0.5 text-cyan-600 [&_svg]:size-4">{icon}</span><div><p className="text-xs text-slate-400">{label}</p><bdi dir="ltr" className="font-semibold text-slate-700">{value}</bdi></div></div>; }
-function TrustPillar({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) { return <article className="trust-pillar"><span>{icon}</span><h3>{title}</h3><p>{body}</p></article>; }
