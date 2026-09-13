@@ -70,13 +70,18 @@ export async function applyCatalogueBatch(
     .limit(201)
     .for("update");
   const existingById = new Map<string, (typeof existingRows)[number]>();
+  const requestedIds = new Set(
+    normalized.map(row => row.externalId.toLowerCase())
+  );
   for (const row of existingRows) {
     if (row.externalId == null) continue;
-    if (existingById.has(row.externalId))
+    if (!requestedIds.has(row.externalId.toLowerCase()))
+      throw new Error("Ambiguous provider external IDs require manual review");
+    if (existingById.has(row.externalId.toLowerCase()))
       throw new Error(
         "Existing provider catalogue contains duplicate external IDs; manual review is required"
       );
-    existingById.set(row.externalId, row);
+    existingById.set(row.externalId.toLowerCase(), row);
   }
   let reviewCount = 0;
   let priceChangeCount = 0;
@@ -85,7 +90,7 @@ export async function applyCatalogueBatch(
   const snapshots: (typeof priceSnapshots.$inferInsert)[] = [];
   const changeAudits: (typeof auditEntries.$inferInsert)[] = [];
   for (const item of normalized) {
-    const existing = existingById.get(item.externalId);
+    const existing = existingById.get(item.externalId.toLowerCase());
     const changed =
       !existing ||
       existing.sourceHash !== item.sourceHash ||

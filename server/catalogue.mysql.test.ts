@@ -176,6 +176,14 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     await finishJob(jobs[0].id);
     expect(fetch).toHaveBeenCalledTimes(1);
   });
+  it("matches existing provider IDs consistently with case-insensitive database comparisons", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([{ ...payload[0], service: "API-SERVICE" }]))));
+    await sync();
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([{ ...payload[0], service: "api-service" }]))));
+    await sync();
+    expect(await state.db.select().from(serviceRecords)).toHaveLength(1);
+    expect(await state.db.select().from(priceSnapshots)).toHaveLength(1);
+  });
   it("rejects duplicate API IDs without partially importing the catalogue", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([payload[0], payload[0]]))));
     await expect(sync()).rejects.toThrow("duplicate service IDs");
