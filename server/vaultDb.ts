@@ -1,12 +1,12 @@
-import { and, asc, eq, isNull, lte, or, sql } from "drizzle-orm";
-import { providerIntegrations, providerRecords } from "../drizzle/schema";
+import { and, asc, eq, inArray, lte, sql } from "drizzle-orm";
+import { providerIntegrations, providerRecords, providerSyncJobs } from "../drizzle/schema";
 import { getDb } from "./db";
-import { assertPublicHttpsUrl, syncProviderServicesNow, writeAudit } from "./marketplaceDb";
-import { decryptValue, encryptValue } from "./security";
+import { assertPublicHttpsUrl, writeAudit } from "./marketplaceDb";
+import { encryptValue } from "./security";
 
 const MIN_INTERVAL_MINUTES = 60;
 const MAX_INTERVAL_MINUTES = 7 * 24 * 60;
-const LOCK_MINUTES = 20;
+import { integrationFingerprint } from "./providerSync";
 
 function credentialPurpose(integrationId: number) {
   return `provider-integration:${integrationId}`;
@@ -19,24 +19,15 @@ function safeInterval(value: number) {
   return value;
 }
 
-function encryptedCredential(row: typeof providerIntegrations.$inferSelect) {
-  if (!row.credentialCiphertext || !row.credentialIv || !row.credentialTag) throw new Error("Provider credential is not configured");
-  return decryptValue({
-    ciphertext: row.credentialCiphertext,
-    iv: row.credentialIv,
-    tag: row.credentialTag,
-    version: row.credentialVersion,
-  }, credentialPurpose(row.id));
-}
-
 export async function listProviderIntegrations() {
   const db = await getDb();
   if (!db) return [];
-  const rows = await db.select({ integration: providerIntegrations, providerName: providerRecords.name })
+  const rows = await db.select({ integration: providerIntegrations, providerName: providerRecords.name, job: { id: providerSyncJobs.id, status: providerSyncJobs.status, totalCount: providerSyncJobs.totalCount, processedCount: providerSyncJobs.processedCount, reviewCount: providerSyncJobs.reviewCount, priceChangeCount: providerSyncJobs.priceChangeCount, missingCount: providerSyncJobs.missingCount, startedAt: providerSyncJobs.startedAt, finishedAt: providerSyncJobs.finishedAt, lastError: providerSyncJobs.lastError } })
     .from(providerIntegrations)
     .innerJoin(providerRecords, eq(providerIntegrations.providerId, providerRecords.id))
+    .leftJoin(providerSyncJobs, and(eq(providerSyncJobs.integrationId, providerIntegrations.id), eq(providerSyncJobs.id, sql`(select max(recent.id) from provider_sync_jobs recent where recent.integrationId = ${providerIntegrations.id})`)))
     .orderBy(asc(providerRecords.name));
-  return rows.map(({ integration, providerName }) => ({
+  return rows.map(({ integration, providerName, job }) => ({
     id: integration.id,
     providerId: integration.providerId,
     providerName,
@@ -51,6 +42,7 @@ export async function listProviderIntegrations() {
     consecutiveFailures: integration.consecutiveFailures,
     lastError: integration.lastError,
     updatedAt: integration.updatedAt,
+    latestJob: job?.id ? job : null,
   }));
 }
 
@@ -68,56 +60,43 @@ export async function saveProviderIntegration(input: {
   if (!db) throw new Error("Database unavailable");
   const endpoint = await assertPublicHttpsUrl(input.baseUrl);
   const interval = safeInterval(input.syncIntervalMinutes);
-  const [provider] = await db.select({ id: providerRecords.id }).from(providerRecords).where(eq(providerRecords.id, input.providerId)).limit(1);
-  if (!provider) throw new Error("Provider not found");
-
-  let integrationId = input.id;
-  if (integrationId) {
-    const [existing] = await db.select().from(providerIntegrations).where(eq(providerIntegrations.id, integrationId)).limit(1);
-    if (!existing) throw new Error("Integration not found");
-    await db.update(providerIntegrations).set({
-      providerId: input.providerId,
-      name: input.name.trim().slice(0, 160),
-      baseUrl: endpoint.toString(),
-      status: input.enabled ? "active" : "disabled",
-      syncIntervalMinutes: interval,
-      nextSyncAt: input.enabled ? existing.nextSyncAt ?? new Date() : null,
-      lastError: null,
-    }).where(eq(providerIntegrations.id, integrationId));
-  } else {
-    if (!input.apiKey) throw new Error("API key is required for a new integration");
-    const inserted = await db.insert(providerIntegrations).values({
-      providerId: input.providerId,
-      name: input.name.trim().slice(0, 160),
-      baseUrl: endpoint.toString(),
-      status: input.enabled ? "active" : "disabled",
-      syncIntervalMinutes: interval,
-      nextSyncAt: input.enabled ? new Date() : null,
-      credentialReference: "vault:pending",
-    }).$returningId();
-    integrationId = inserted[0]!.id;
-  }
-
-  if (input.apiKey) {
-    const encrypted = encryptValue(input.apiKey, credentialPurpose(integrationId));
-    await db.update(providerIntegrations).set({
-      credentialCiphertext: encrypted.ciphertext,
-      credentialIv: encrypted.iv,
-      credentialTag: encrypted.tag,
-      credentialVersion: encrypted.version,
-      credentialReference: `vault:v1:${input.apiKey.slice(-4)}`,
-    }).where(eq(providerIntegrations.id, integrationId));
-  }
-
-  await writeAudit({
-    actorUserId: input.actorUserId,
-    action: input.id ? "integration.vault.update" : "integration.vault.create",
-    entityType: "provider_integration",
-    entityId: String(integrationId),
-    summary: `${input.id ? "Updated" : "Created"} encrypted provider integration`,
-    metadata: { providerId: input.providerId, host: endpoint.host, enabled: input.enabled, intervalMinutes: interval, credentialRotated: Boolean(input.apiKey) },
+  const [before] = input.id ? await db.select().from(providerIntegrations).where(eq(providerIntegrations.id, input.id)).limit(1) : [];
+  return db.transaction(async tx => {
+    const providerIds = Array.from(new Set([input.providerId, ...(before ? [before.providerId] : [])])).sort((a, b) => a - b);
+    const providers = await tx.select({ id: providerRecords.id }).from(providerRecords).where(inArray(providerRecords.id, providerIds)).orderBy(asc(providerRecords.id)).for("update");
+    if (!providers.some(row => row.id === input.providerId)) throw new Error("Provider not found");
+    let integrationId = input.id;
+    if (integrationId) {
+      const [existing] = await tx.select().from(providerIntegrations).where(eq(providerIntegrations.id, integrationId)).for("update");
+      if (!existing) throw new Error("Integration not found");
+      if (existing.providerId !== before?.providerId) throw new Error("Connection changed; reload before editing");
+      const [running] = await tx.select({ id: providerSyncJobs.id }).from(providerSyncJobs).where(eq(providerSyncJobs.activeProviderId, existing.providerId)).limit(1);
+      if (running) throw new Error("Wait for the current synchronization to finish before changing the connection");
+      await tx.update(providerIntegrations).set({
+        providerId: input.providerId, name: input.name.trim().slice(0, 160), baseUrl: endpoint.toString(),
+        status: input.enabled ? "active" : "disabled", syncIntervalMinutes: interval,
+        nextSyncAt: input.enabled ? existing.nextSyncAt ?? new Date() : null, lastError: null,
+      }).where(eq(providerIntegrations.id, integrationId));
+    } else {
+      if (!input.apiKey) throw new Error("API key is required for a new integration");
+      const [inserted] = await tx.insert(providerIntegrations).values({
+        providerId: input.providerId, name: input.name.trim().slice(0, 160), baseUrl: endpoint.toString(),
+        status: input.enabled ? "active" : "disabled", syncIntervalMinutes: interval,
+        nextSyncAt: input.enabled ? new Date() : null, credentialReference: "vault:pending",
+      }).$returningId();
+      integrationId = inserted!.id;
+    }
+    if (input.apiKey) {
+      const encrypted = encryptValue(input.apiKey, credentialPurpose(integrationId));
+      await tx.update(providerIntegrations).set({ credentialCiphertext: encrypted.ciphertext, credentialIv: encrypted.iv, credentialTag: encrypted.tag,
+        credentialVersion: encrypted.version, credentialReference: `vault:v1:${input.apiKey.slice(-4)}`,
+      }).where(eq(providerIntegrations.id, integrationId));
+    }
+    await writeAudit({ actorUserId: input.actorUserId, action: input.id ? "integration.vault.update" : "integration.vault.create", entityType: "provider_integration", entityId: String(integrationId),
+      summary: `${input.id ? "Updated" : "Created"} encrypted provider integration`, metadata: { providerId: input.providerId, host: endpoint.host, enabled: input.enabled, intervalMinutes: interval, credentialRotated: Boolean(input.apiKey) },
+    }, tx);
+    return { success: true, id: integrationId };
   });
-  return { success: true, id: integrationId };
 }
 
 export async function setProviderIntegrationEnabled(input: { id: number; enabled: boolean; actorUserId: number }) {
@@ -134,80 +113,59 @@ export async function setProviderIntegrationEnabled(input: { id: number; enabled
 }
 
 export async function deleteProviderIntegration(input: { id: number; actorUserId: number }) {
-  const db = await getDb();
-  if (!db) throw new Error("Database unavailable");
-  const [integration] = await db.select().from(providerIntegrations).where(eq(providerIntegrations.id, input.id)).limit(1);
-  if (!integration) throw new Error("Integration not found");
-  if (integration.status === "active") throw new Error("Disable scheduled synchronization before deleting this integration");
-  await db.delete(providerIntegrations).where(eq(providerIntegrations.id, input.id));
-  await writeAudit({
-    actorUserId: input.actorUserId,
-    action: "integration.vault.delete",
-    entityType: "provider_integration",
-    entityId: String(input.id),
-    summary: `Deleted disabled provider integration ${integration.name}`,
-    metadata: { providerId: integration.providerId, host: new URL(integration.baseUrl).host },
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const [before] = await db.select().from(providerIntegrations).where(eq(providerIntegrations.id, input.id)).limit(1);
+  if (!before) throw new Error("Integration not found");
+  return db.transaction(async tx => {
+    await tx.select({ id: providerRecords.id }).from(providerRecords).where(eq(providerRecords.id, before.providerId)).for("update");
+    const [integration] = await tx.select().from(providerIntegrations).where(eq(providerIntegrations.id, input.id)).for("update");
+    if (!integration) throw new Error("Integration not found");
+    if (integration.providerId !== before.providerId) throw new Error("Connection changed; reload before deleting");
+    if (integration.status === "active") throw new Error("Disable scheduled synchronization before deleting this integration");
+    const [running] = await tx.select({ id: providerSyncJobs.id }).from(providerSyncJobs).where(eq(providerSyncJobs.activeProviderId, integration.providerId)).limit(1);
+    if (running) throw new Error("Wait for the current synchronization to finish before deleting the connection");
+    await tx.delete(providerIntegrations).where(eq(providerIntegrations.id, input.id));
+    await writeAudit({ actorUserId: input.actorUserId, action: "integration.vault.delete", entityType: "provider_integration", entityId: String(input.id), summary: `Deleted disabled provider integration ${integration.name}`, metadata: { providerId: integration.providerId, host: new URL(integration.baseUrl).host } }, tx);
+    return { success: true };
   });
-  return { success: true };
 }
 
+// The HTTP request only enqueues work. The durable worker reads the vault server-side.
 export async function syncStoredIntegration(input: { id: number; actorUserId?: number; scheduled?: boolean }) {
-  const db = await getDb();
-  if (!db) throw new Error("Database unavailable");
-  const [integration] = await db.select().from(providerIntegrations).where(eq(providerIntegrations.id, input.id)).limit(1);
-  if (!integration) throw new Error("Integration not found");
-  if (input.scheduled && integration.status !== "active") return { skipped: true, reason: "disabled" as const };
-  const nextSyncAt = new Date(Date.now() + integration.syncIntervalMinutes * 60_000);
-  try {
-    const apiKey = encryptedCredential(integration);
-    const result = await syncProviderServicesNow({ providerId: integration.providerId, baseUrl: integration.baseUrl, apiKey, actorUserId: input.actorUserId });
-    await db.update(providerIntegrations).set({
-      lastSyncedAt: new Date(),
-      nextSyncAt: sql`CASE WHEN ${providerIntegrations.status} = 'active' THEN ${nextSyncAt.toISOString().slice(0, 19).replace("T", " ")} ELSE NULL END`,
-      syncLockUntil: null,
-      consecutiveFailures: 0,
-      lastError: null,
-    }).where(eq(providerIntegrations.id, integration.id));
-    await writeAudit({ actorUserId: input.actorUserId, action: input.scheduled ? "integration.schedule.success" : "integration.vault.sync", entityType: "provider_integration", entityId: String(integration.id), summary: `Imported ${result.importedCount} services using an encrypted credential`, metadata: { scheduled: Boolean(input.scheduled), importedCount: result.importedCount } });
-    return { ...result, integrationId: integration.id };
-  } catch (error) {
-    const message = error instanceof Error ? error.message.slice(0, 1500) : "Provider synchronization failed";
-    const failures = integration.consecutiveFailures + 1;
-    await db.update(providerIntegrations).set({
-      nextSyncAt: sql`CASE WHEN ${providerIntegrations.status} = 'active' THEN ${new Date(Date.now() + Math.min(integration.syncIntervalMinutes * Math.max(1, failures), 24 * 60) * 60_000).toISOString().slice(0, 19).replace("T", " ")} ELSE NULL END`,
-      syncLockUntil: null,
-      consecutiveFailures: failures,
-      lastError: message,
-    }).where(eq(providerIntegrations.id, integration.id));
-    await writeAudit({ actorUserId: input.actorUserId, action: "integration.schedule.failure", entityType: "provider_integration", entityId: String(integration.id), summary: "Provider synchronization failed", metadata: { scheduled: Boolean(input.scheduled), error: message, consecutiveFailures: failures } });
-    throw error;
-  }
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const [before] = await db.select().from(providerIntegrations).where(eq(providerIntegrations.id, input.id)).limit(1);
+  if (!before) throw new Error("Integration not found");
+  return db.transaction(async tx => {
+    const [provider] = await tx.select().from(providerRecords).where(eq(providerRecords.id, before.providerId)).for("update");
+    const [integration] = await tx.select().from(providerIntegrations).where(eq(providerIntegrations.id, input.id)).for("update");
+    if (!integration || integration.providerId !== before.providerId) throw new Error("Connection changed; reload before synchronizing");
+    if (!provider || provider.status === "suspended") throw new Error("Provider is unavailable or suspended");
+    if (input.scheduled && (integration.status !== "active" || !integration.nextSyncAt || integration.nextSyncAt.getTime() > Date.now())) return { skipped: true as const };
+    const [running] = await tx.select({ id: providerSyncJobs.id, integrationId: providerSyncJobs.integrationId }).from(providerSyncJobs).where(eq(providerSyncJobs.activeProviderId, provider.id)).limit(1);
+    if (running) {
+      if (running.integrationId !== integration.id) throw new Error("This provider is already synchronizing through another connection");
+      return { queued: true as const, jobId: running.id, alreadyQueued: true };
+    }
+    const endpoint = new URL(integration.baseUrl);
+    const [job] = await tx.insert(providerSyncJobs).values({ integrationId: integration.id, providerId: provider.id, activeProviderId: provider.id, actorUserId: input.actorUserId,
+      scheduled: Boolean(input.scheduled), configFingerprint: integrationFingerprint(integration), sourceUrl: `${endpoint.origin}${endpoint.pathname}`,
+    }).$returningId();
+    await tx.update(providerIntegrations).set({ nextSyncAt: integration.status === "active" ? new Date(Date.now() + integration.syncIntervalMinutes * 60_000) : null, syncLockUntil: null }).where(eq(providerIntegrations.id, integration.id));
+    await writeAudit({ actorUserId: input.actorUserId, action: "integration.schedule.queued", entityType: "provider_integration", entityId: String(integration.id), summary: "Queued background catalogue synchronization", metadata: { jobId: job!.id, scheduled: Boolean(input.scheduled) } }, tx);
+    return { queued: true as const, jobId: job!.id, alreadyQueued: false };
+  });
 }
 
 export async function runDueProviderSyncs(limit = 10) {
-  const db = await getDb();
-  if (!db) throw new Error("Database unavailable");
-  const now = new Date();
-  const due = await db.select().from(providerIntegrations).where(and(
-    eq(providerIntegrations.status, "active"),
-    lte(providerIntegrations.nextSyncAt, now),
-    or(isNull(providerIntegrations.syncLockUntil), lte(providerIntegrations.syncLockUntil, now)),
-  )).orderBy(asc(providerIntegrations.nextSyncAt)).limit(Math.max(1, Math.min(limit, 25)));
-  const results: Array<{ id: number; ok: boolean; importedCount?: number; error?: string }> = [];
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const due = await db.select({ id: providerIntegrations.id }).from(providerIntegrations).where(and(eq(providerIntegrations.status, "active"), lte(providerIntegrations.nextSyncAt, new Date())))
+    .orderBy(asc(providerIntegrations.nextSyncAt)).limit(Math.max(1, Math.min(limit, 25)));
+  const results: Array<{ id: number; ok: boolean; jobId?: number; skipped?: boolean }> = [];
   for (const integration of due) {
-    const [claim] = await db.update(providerIntegrations).set({ syncLockUntil: new Date(Date.now() + LOCK_MINUTES * 60_000) }).where(and(
-      eq(providerIntegrations.id, integration.id),
-      eq(providerIntegrations.status, "active"),
-      lte(providerIntegrations.nextSyncAt, now),
-      or(isNull(providerIntegrations.syncLockUntil), lte(providerIntegrations.syncLockUntil, now)),
-    ));
-    if (claim.affectedRows !== 1) continue;
     try {
       const result = await syncStoredIntegration({ id: integration.id, scheduled: true });
-      results.push({ id: integration.id, ok: true, importedCount: "importedCount" in result ? result.importedCount : 0 });
-    } catch (error) {
-      results.push({ id: integration.id, ok: false, error: error instanceof Error ? error.message : "Unknown error" });
-    }
+      results.push({ id: integration.id, ok: true, jobId: "jobId" in result ? result.jobId : undefined, skipped: "skipped" in result });
+    } catch { results.push({ id: integration.id, ok: false }); }
   }
   return { checkedAt: new Date().toISOString(), due: due.length, results };
 }

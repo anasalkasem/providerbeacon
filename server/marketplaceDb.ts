@@ -3,10 +3,9 @@ import { createHash, randomBytes } from "node:crypto";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { providers as seedProviders, services as seedServices } from "../client/src/data/marketplace";
-import { auditEntries, localizedContent, priceSnapshots, providerIntegrations, providerRecords, serviceRecords, staffSessions, teamMembers, type TeamRole } from "../drizzle/schema";
+import { auditEntries, localizedContent, priceSnapshots, providerRecords, serviceRecords, staffSessions, teamMembers, type TeamRole } from "../drizzle/schema";
 import { getDb } from "./db";
 import { approvedService } from "./catalogueRules";
-import { normalizeApiService, NORMALIZATION_VERSION } from "./serviceNormalizer";
 import { catalogueInput, searchPattern, type CatalogueInput } from "../shared/catalogueQuery";
 
 const tierToDb = {
@@ -288,119 +287,6 @@ export async function upsertLocalizedContent(input: { entityType: "provider" | "
   await db.insert(localizedContent).values(values).onDuplicateKeyUpdate({ set: { value: input.value, status: input.status, updatedByUserId: input.actorUserId } });
   await writeAudit({ actorUserId: input.actorUserId, action: "translation.upsert", entityType: input.entityType, entityId: `${input.entityId}:${input.fieldName}:${input.locale}`, summary: `Updated ${input.locale} translation with ${input.status} status` });
   return { success: true };
-}
-export async function syncProviderServicesNow(input: { providerId: number; baseUrl: string; apiKey: string; actorUserId?: number }) {
-  const db = await getDb(); if (!db) throw new Error("Database unavailable");
-  const [provider] = await db.select().from(providerRecords).where(eq(providerRecords.id, input.providerId)).limit(1);
-  if (!provider) throw new Error("Provider not found");
-  const endpoint = await assertPublicHttpsUrl(input.baseUrl);
-  const sourceUrl = `${endpoint.origin}${endpoint.pathname}`;
-  const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 20_000);
-  let payload: unknown;
-  try {
-    const response = await fetch(endpoint, { method: "POST", redirect: "error", headers: { "content-type": "application/x-www-form-urlencoded" }, body: new URLSearchParams({ key: input.apiKey, action: "services" }), signal: controller.signal });
-    if (!response.ok) throw new Error(`Provider API returned HTTP ${response.status}`);
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error("Provider API returned an empty body");
-    const chunks: Uint8Array[] = []; let bytes = 0;
-    try {
-      while (true) {
-        const { value, done } = await reader.read(); if (done) break;
-        bytes += value.byteLength;
-        if (bytes > 8 * 1024 * 1024) { await reader.cancel(); throw new Error("Provider catalogue exceeds the 8 MB response limit; no changes were applied"); }
-        chunks.push(value);
-      }
-      try { payload = JSON.parse(Buffer.concat(chunks).toString("utf8")); }
-      catch { throw new Error("Provider API did not return valid JSON"); }
-    } finally { reader.releaseLock(); }
-  } finally { clearTimeout(timeout); }
-  if (!Array.isArray(payload)) throw new Error("Provider API did not return a service list");
-  if (payload.length > 5000) throw new Error("Provider catalogue exceeds the 5000-service import limit; no changes were applied");
-  // An empty or invalid response is never interpreted as removal of the whole catalogue.
-  if (!payload.length) throw new Error("Provider returned an empty catalogue; existing services were preserved");
-  const normalized = payload.map(normalizeApiService);
-  const seen = new Set<string>();
-  for (const row of normalized) {
-    if (seen.has(row.externalId)) throw new Error("Provider response contains duplicate service IDs; no changes were applied");
-    seen.add(row.externalId);
-  }
-  return db.transaction(async tx => {
-    const [currentProvider] = await tx.select().from(providerRecords).where(eq(providerRecords.id, provider.id)).for("update");
-    if (!currentProvider || currentProvider.status === "suspended") throw new Error("Provider is unavailable or suspended");
-    // One bounded lookup replaces a SELECT for every imported row. Provider locks serialize imports.
-    const existingRows = await tx.select({
-      id: serviceRecords.id, externalId: serviceRecords.externalId, sourceHash: serviceRecords.sourceHash, sourceUrl: serviceRecords.sourceUrl,
-      sourceKind: serviceRecords.sourceKind, available: serviceRecords.available, normalizationVersion: serviceRecords.normalizationVersion,
-      revision: serviceRecords.revision, status: serviceRecords.status, reviewStatus: serviceRecords.reviewStatus,
-      name: serviceRecords.name, platform: serviceRecords.platform, category: serviceRecords.category, countryCode: serviceRecords.countryCode,
-      pricePerThousandUsd: serviceRecords.pricePerThousandUsd, minOrder: serviceRecords.minOrder, maxOrder: serviceRecords.maxOrder,
-      refillMode: serviceRecords.refillMode, refillDays: serviceRecords.refillDays,
-    }).from(serviceRecords).where(eq(serviceRecords.providerId, provider.id)).orderBy(asc(serviceRecords.id)).limit(50001).for("update");
-    if (existingRows.length > 50000) throw new Error("Provider catalogue requires a larger background import; no changes were applied");
-    const existingById = new Map<string, typeof existingRows[number]>();
-    for (const row of existingRows) {
-      if (row.externalId == null) continue;
-      if (existingById.has(row.externalId)) throw new Error("Existing provider catalogue contains duplicate external IDs; manual review is required");
-      existingById.set(row.externalId, row);
-    }
-    const now = new Date();
-    let reviewCount = 0; let priceChangeCount = 0; let missingCount = 0;
-    const unchanged: number[] = [];
-    const inserts: (typeof serviceRecords.$inferInsert)[] = [];
-    const snapshots: (typeof priceSnapshots.$inferInsert)[] = [];
-    const changeAudits: (typeof auditEntries.$inferInsert)[] = [];
-    for (const item of normalized) {
-      const existing = existingById.get(item.externalId);
-      const changed = !existing || existing.sourceHash !== item.sourceHash || existing.pricePerThousandUsd !== item.pricePerThousandUsd || !existing.available || existing.normalizationVersion < NORMALIZATION_VERSION || existing.sourceUrl !== sourceUrl;
-      if (!changed) { unchanged.push(existing!.id); continue; }
-      const priceChanged = Boolean(existing && existing.pricePerThousandUsd !== item.pricePerThousandUsd);
-      const { notes, ...data } = item;
-      const values = { ...data, refillMode: data.refillMode as typeof serviceRecords.$inferSelect.refillMode,
-        classificationNotes: notes, sourceKind: "provider_api" as const, sourceUrl, sourceUpdatedAt: now,
-        normalizationVersion: NORMALIZATION_VERSION, reviewStatus: "pending" as const, incomplete: true,
-        pricingConfirmed: false, policyReviewed: false, priceCheckedAt: null, evidenceUrl: null,
-        reviewedAt: null, reviewedByUserId: null, reviewReason: null, available: true, missingSourceAt: null,
-      };
-      if (existing) {
-        const legacySource = JSON.stringify({ service: existing.externalId, name: existing.name, category: existing.category, rate: existing.pricePerThousandUsd, min: existing.minOrder, max: existing.maxOrder, legacyPlatform: existing.platform, legacyRefillMode: existing.refillMode, legacyRefillDays: existing.refillDays, legacyCountry: existing.countryCode });
-        await tx.update(serviceRecords).set({ ...values, revision: existing.revision + 1,
-          originalSourceData: sql`coalesce(${serviceRecords.originalSourceData}, cast(${legacySource} as json))`,
-          status: existing.status === "active" ? "draft" : existing.status,
-          ...(priceChanged ? { lastPriceChangeAt: now } : {}),
-        }).where(eq(serviceRecords.id, existing.id));
-        if (priceChanged) { priceChangeCount++; snapshots.push({ serviceId: existing.id, pricePerThousandUsd: item.pricePerThousandUsd }); }
-        const keys = ["name", "platform", "category", "countryCode", "pricePerThousandUsd", "minOrder", "maxOrder", "refillMode", "refillDays", "sourceHash", "sourceUrl", "available"] as const;
-        changeAudits.push({ actorUserId: input.actorUserId, action: "service.source.changed", entityType: "service", entityId: String(existing.id), summary: "Provider source changed; service returned to review", metadata: {
-          reason: "Provider catalogue synchronization", before: { ...Object.fromEntries(keys.map(key => [key, existing[key]])), revision: existing.revision, status: existing.status, reviewStatus: existing.reviewStatus },
-          after: { ...Object.fromEntries(keys.map(key => [key, values[key]])), revision: existing.revision + 1, status: existing.status === "active" ? "draft" : existing.status, reviewStatus: "pending" },
-        } });
-      } else {
-        const slug = `${provider.slug}-${createHash("sha256").update(item.externalId).digest("hex").slice(0, 24)}`;
-        inserts.push({ ...values, originalSourceData: item.sourceData, providerId: provider.id, slug, status: "draft" });
-      }
-      reviewCount++;
-    }
-    for (let offset = 0; offset < inserts.length; offset += 100) {
-      const batch = inserts.slice(offset, offset + 100);
-      const inserted = await tx.insert(serviceRecords).values(batch).$returningId();
-      inserted.forEach((row, index) => snapshots.push({ serviceId: row.id, pricePerThousandUsd: batch[index]!.pricePerThousandUsd }));
-    }
-    for (let offset = 0; offset < unchanged.length; offset += 250) {
-      await tx.update(serviceRecords).set({ sourceUpdatedAt: now }).where(inArray(serviceRecords.id, unchanged.slice(offset, offset + 250)));
-    }
-    for (let offset = 0; offset < snapshots.length; offset += 250) await tx.insert(priceSnapshots).values(snapshots.slice(offset, offset + 250));
-    const missing = existingRows.filter(row => row.sourceKind === "provider_api" && row.sourceUrl === sourceUrl && row.externalId && !seen.has(row.externalId) && row.available);
-    for (const row of missing) {
-      await tx.update(serviceRecords).set({ available: false, missingSourceAt: now, reviewStatus: "pending", incomplete: true,
-        status: row.status === "active" ? "draft" : row.status, revision: row.revision + 1, reviewedAt: null, reviewedByUserId: null,
-      }).where(eq(serviceRecords.id, row.id));
-      changeAudits.push({ actorUserId: input.actorUserId, action: "service.source.missing", entityType: "service", entityId: String(row.id), summary: "Service no longer returned by its provider API", metadata: { reason: "Absent from complete validated API response", before: { available: true, status: row.status, revision: row.revision }, after: { available: false, status: row.status === "active" ? "draft" : row.status, revision: row.revision + 1 } } });
-      missingCount++;
-    }
-    for (let offset = 0; offset < changeAudits.length; offset += 100) await tx.insert(auditEntries).values(changeAudits.slice(offset, offset + 100));
-    await writeAudit({ actorUserId: input.actorUserId, action: "integration.services.sync", entityType: "provider", entityId: String(provider.id), summary: `Imported ${normalized.length} services; ${reviewCount} require review`, metadata: { importedCount: normalized.length, reviewCount, priceChangeCount, missingCount, unchangedCount: unchanged.length, newCount: inserts.length, host: endpoint.host } }, tx);
-    return { success: true, importedCount: normalized.length, reviewCount, priceChangeCount, missingCount, providerName: provider.name };
-  });
 }
 export async function writeAudit(input: { actorUserId?: number; action: string; entityType: string; entityId: string; summary: string; metadata?: Record<string, unknown>; ipAddress?: string }, executor?: Pick<NonNullable<Awaited<ReturnType<typeof getDb>>>, "insert">) {
   const db = executor ?? await getDb(); if (!db) throw new Error("Audit database unavailable");

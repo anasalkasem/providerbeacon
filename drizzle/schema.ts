@@ -1,4 +1,4 @@
-import { boolean, decimal, index, int, json, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+import { boolean, decimal, index, int, json, mysqlEnum, mysqlTable, primaryKey, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
@@ -177,6 +177,45 @@ export const providerIntegrations = mysqlTable("provider_integrations", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [index("integration_provider_status_idx").on(table.providerId, table.status), index("integration_due_idx").on(table.status, table.nextSyncAt)]);
+
+// Durable jobs contain references and progress only; credentials remain in the encrypted vault.
+export const providerSyncJobs = mysqlTable("provider_sync_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  integrationId: int("integrationId").notNull().references(() => providerIntegrations.id, { onDelete: "cascade" }),
+  providerId: int("providerId").notNull().references(() => providerRecords.id, { onDelete: "cascade" }),
+  activeProviderId: int("activeProviderId"),
+  actorUserId: int("actorUserId").references(() => users.id, { onDelete: "set null" }),
+  scheduled: boolean("scheduled").default(false).notNull(),
+  configFingerprint: varchar("configFingerprint", { length: 64 }).notNull(),
+  sourceUrl: varchar("sourceUrl", { length: 500 }).notNull(),
+  status: mysqlEnum("status", ["queued", "preparing", "importing", "reconciling", "completed", "failed"]).default("queued").notNull(),
+  totalCount: int("totalCount").default(0).notNull(),
+  processedCount: int("processedCount").default(0).notNull(),
+  reviewCount: int("reviewCount").default(0).notNull(),
+  priceChangeCount: int("priceChangeCount").default(0).notNull(),
+  missingCount: int("missingCount").default(0).notNull(),
+  leaseToken: varchar("leaseToken", { length: 36 }),
+  leaseUntil: timestamp("leaseUntil"),
+  snapshotAt: timestamp("snapshotAt"),
+  startedAt: timestamp("startedAt"),
+  finishedAt: timestamp("finishedAt"),
+  lastError: varchar("lastError", { length: 500 }),
+  stagingCleared: boolean("stagingCleared").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, table => [uniqueIndex("sync_active_provider_unique").on(table.activeProviderId),
+  index("sync_integration_id_idx").on(table.integrationId, table.id),
+  index("sync_claim_idx").on(table.status, table.leaseUntil, table.id),
+  index("sync_cleanup_idx").on(table.stagingCleared, table.activeProviderId, table.id)]);
+
+// Short-lived, validated snapshots enable checkpoint recovery and complete-snapshot removal checks.
+export const providerSyncRows = mysqlTable("provider_sync_rows", {
+  jobId: int("jobId").notNull().references(() => providerSyncJobs.id, { onDelete: "cascade" }),
+  ordinal: int("ordinal").notNull(),
+  externalId: varchar("externalId", { length: 160 }).notNull(),
+  payload: json("payload").notNull(),
+}, table => [primaryKey({ columns: [table.jobId, table.ordinal] }),
+  uniqueIndex("sync_row_external_unique").on(table.jobId, table.externalId)]);
 
 export const priceSnapshots = mysqlTable("price_snapshots", {
   id: int("id").autoincrement().primaryKey(),

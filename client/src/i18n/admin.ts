@@ -1,9 +1,11 @@
 import { useLocale, type Locale } from "@/contexts/LocaleContext";
 
 import { reviewEn, reviewAr } from "./review";
+import { syncEn, syncAr } from "./sync";
 
 const en = {
   ...reviewEn,
+  ...syncEn,
   searchServices: "Search services", searchServicesHint: "Service, provider, category or ID", allStatuses: "All statuses", platform: "Platform", allPlatforms: "All platforms", rowsPerPage: "Rows per page", refresh: "Refresh", matchingServices: "Matching services", publicationHint: "Public visibility requires an approved service and an active provider.", providerNotPublished: "Provider is not published", loadError: "Data could not be loaded.", retry: "Retry", loading: "Loading…", noServices: "No services match these filters.", pagination: "Pagination", page: "Page", previous: "Previous", next: "Next", editService: "Edit service", saveChanges: "Save changes",
 
   controlCenter:"Beacon Control Center", overview:"Overview", providers:"Providers", services:"Services", team:"Team & access", translations:"Translations", audit:"Audit log", integrations:"Credential vault", security:"Account security", signOut:"Sign out", menu:"Menu", toggleNavigation:"Toggle navigation",
@@ -27,6 +29,7 @@ export type AdminTextKey = keyof typeof en;
 const translations: Record<Exclude<Locale,"en">, Partial<Record<AdminTextKey,string>>> = {
   ar: {
     ...reviewAr,
+    ...syncAr,
     searchServices: "البحث في الخدمات", searchServicesHint: "اسم الخدمة أو المزود أو التصنيف أو المعرّف", allStatuses: "جميع الحالات", platform: "المنصة", allPlatforms: "جميع المنصات", rowsPerPage: "صفوف في الصفحة", refresh: "تحديث", matchingServices: "الخدمات المطابقة", publicationHint: "الظهور للزوار يتطلب خدمة معتمدة ومزودًا نشطًا.", providerNotPublished: "المزود غير منشور", loadError: "تعذّر تحميل البيانات.", retry: "إعادة المحاولة", loading: "جارٍ التحميل…", noServices: "لا توجد خدمات تطابق هذه الفلاتر.", pagination: "التنقل بين الصفحات", page: "الصفحة", previous: "السابق", next: "التالي", editService: "تعديل الخدمة", saveChanges: "حفظ التعديلات",
 
     controlCenter:"مركز تحكم Beacon", overview:"نظرة عامة", providers:"المزودون", services:"الخدمات", team:"الفريق والصلاحيات", translations:"الترجمات", audit:"سجل التدقيق", integrations:"خزنة المفاتيح", security:"أمان الحساب", signOut:"تسجيل الخروج", menu:"القائمة", toggleNavigation:"تبديل التنقل",

@@ -20,7 +20,7 @@ describe("team access lifecycle", () => {
 
   it("only deletes disabled integrations and records the deletion", () => {
     expect(vaultSource).toContain('integration.status === "active"');
-    expect(vaultSource).toContain("db.delete(providerIntegrations)");
+    expect(vaultSource).toContain("tx.delete(providerIntegrations)");
     expect(vaultSource).toContain('action: "integration.vault.delete"');
   });
 });
