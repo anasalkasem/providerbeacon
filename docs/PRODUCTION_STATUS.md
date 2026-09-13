@@ -31,3 +31,5 @@ The existing Private Email DKIM record was preserved.
 ## Release verification
 
 The release passed TypeScript checking, Vitest suites, the production Vite/esbuild build, Git diff validation, Railway `/health`, production-database source verification, and custom-domain HTTPS checks for both apex and `www`.
+
+The independent security flow was also exercised against the live domain. The test recovered the owner through the secret-manager bootstrap token, verified owner permissions, enabled TOTP MFA, signed out, required MFA on the next login, consumed one recovery code, invited and registered an auditor account, confirmed least-privilege access, created and rotated an encrypted provider credential, and verified the corresponding audit events. The production startup after the independent-auth change contains the database migration and server-ready messages without the previous OAuth configuration error.

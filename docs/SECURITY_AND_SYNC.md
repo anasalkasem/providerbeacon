@@ -46,4 +46,6 @@ Review `auth.*`, `integration.vault.*`, and `integration.schedule.*` events in t
 
 ## Production verification
 
-On 13 September 2026, the production deployment completed the database migration and started successfully on Railway. GitHub Actions run [`34753695298`](https://github.com/anasalkasem/providerbeacon/actions/runs/34753695298) then obtained a short-lived OIDC token and received a successful response from `https://providerbeacon.com/api/internal/provider-sync`. The response reported `ok: true`, trigger `workflow_dispatch`, and zero integrations due because no provider credentials had been added yet.
+On 13 September 2026, the production deployment completed the database migration and started successfully on Railway. GitHub Actions run [`34753695298`](https://github.com/anasalkasem/providerbeacon/actions/runs/34753695298) then obtained a short-lived OIDC token and received a successful response from `https://providerbeacon.com/api/internal/provider-sync`. The response reported `ok: true`, trigger `workflow_dispatch`, and zero integrations due at that moment.
+
+The live authentication and vault verification then completed six checks: owner recovery and RBAC, MFA enrollment, MFA login using a one-time recovery code, invitation registration with auditor least privilege, encrypted credential creation and rotation, and audit-trail validation. The disabled verification integration remains available in the vault as a harmless operational example and is not eligible for scheduled synchronization.

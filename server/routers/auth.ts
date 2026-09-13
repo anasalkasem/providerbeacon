@@ -82,8 +82,8 @@ export const authRouter = router({
   logout: publicProcedure.mutation(async ({ ctx }) => {
     const staffCookie = getStaffSessionCookieOptions(ctx.req);
     const oauthCookie = getSessionCookieOptions(ctx.req);
-    ctx.res.clearCookie(STAFF_SESSION_COOKIE, { ...staffCookie, maxAge: -1 });
-    ctx.res.clearCookie(COOKIE_NAME, { ...oauthCookie, maxAge: -1 });
+    ctx.res.clearCookie(STAFF_SESSION_COOKIE, staffCookie);
+    ctx.res.clearCookie(COOKIE_NAME, oauthCookie);
     if (ctx.authMode === "staff") await destroyStaffSession(ctx.staffSessionToken, ctx.user?.id);
     else if (ctx.user) {
       try {

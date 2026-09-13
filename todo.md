@@ -33,7 +33,7 @@ Build a production-ready aggregator for Social Media Marketing providers. Users 
 - [x] Granular integration permissions and complete audit logging
 - [x] Admin UI for credential rotation, scheduling and manual synchronization
 - [x] Hourly GitHub Actions schedule authenticated with short-lived OIDC
-- [ ] Production migration, deployment and end-to-end verification
+- [x] Production migration, deployment and end-to-end verification
 
 ## Role model
 
