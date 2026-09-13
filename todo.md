@@ -11,14 +11,14 @@ Build a production-ready aggregator for Social Media Marketing providers. Users 
 - [x] Responsive public UI and protected admin shell
 - [x] GitHub repository and Railway production deployment
 - [x] Railway health endpoint and deployment healthcheck
-- [ ] Persistent provider, service, team-role and audit-log schema
-- [ ] Public marketplace tRPC API with database-first and seed-data fallback
-- [ ] Granular role/permission enforcement for every admin operation
-- [ ] Functional provider and service management UI
-- [ ] Team access management and invitation workflow
-- [ ] Translation review workflow and locale quality controls
-- [ ] Provider API ingestion and price-refresh jobs
-- [ ] AI-assisted search/ranking explanations
+- [x] Persistent provider, service, team-role and audit-log schema
+- [x] Public marketplace tRPC API with database-first and seed-data fallback
+- [x] Granular role/permission enforcement for every admin operation
+- [x] Functional provider and service management UI
+- [x] Team access management and secure invitation workflow
+- [x] Translation review workflow and locale quality controls
+- [x] Provider API ingestion with manual refresh and price snapshots
+- [x] On-demand AI provider risk explanations with human decision control
 - [ ] Production database provisioned on Railway
 - [ ] Custom domain DNS and SSL activation for providerbeacon.com
 
@@ -34,9 +34,9 @@ Build a production-ready aggregator for Social Media Marketing providers. Users 
 
 ## Quality gates
 
-- [ ] No unauthenticated admin mutations
-- [ ] No client-only authorization for protected actions
-- [ ] Every mutation writes an audit entry
-- [ ] Public pages retain meaningful fallback content if the database is unavailable
-- [ ] TypeScript, unit tests and production build pass
-- [ ] Railway `/health` and homepage return HTTP 200 after deployment
+- [x] No unauthenticated admin mutations
+- [x] No client-only authorization for protected actions
+- [x] Every mutation writes an audit entry
+- [x] Public pages retain meaningful fallback content if the database is unavailable
+- [x] TypeScript, unit tests and production build pass
+- [x] Railway `/health` and homepage return HTTP 200 after deployment

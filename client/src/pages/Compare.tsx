@@ -2,7 +2,8 @@ import { ProviderAvatar, ScoreRing, VerifiedBadge } from "@/components/Marketpla
 import { PublicLayout } from "@/components/SiteChrome";
 import { Button } from "@/components/ui/button";
 import { useLocale } from "@/contexts/LocaleContext";
-import { providerFor, serviceFor, services, type Service } from "@/data/marketplace";
+import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
+import { type Service } from "@/data/marketplace";
 import { formatNumber, localizeData, localizeDuration, pageCopy } from "@/i18n/messages";
 import { ArrowLeft, CheckCircle2, Clock3, DollarSign, RefreshCw, ShieldCheck, Sparkles } from "lucide-react";
 import { Link } from "wouter";
@@ -10,6 +11,7 @@ import { Link } from "wouter";
 export default function Compare() {
   const { locale } = useLocale();
   const t = pageCopy[locale];
+  const { providerFor, serviceFor, services } = useMarketplaceData();
   const ids = new URLSearchParams(window.location.search).get("services")?.split(",").filter(Boolean) ?? ["s1", "s2", "s3"];
   const selected = ids.map(serviceFor).filter(Boolean).slice(0, 4) as Service[];
   const compared = selected.length >= 2 ? selected : services.slice(0, 3);

@@ -4,6 +4,7 @@ import { lazy, Suspense } from "react";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { LocaleProvider } from "./contexts/LocaleContext";
+import { MarketplaceDataProvider } from "./contexts/MarketplaceDataContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
 const Home = lazy(() => import("@/pages/Home"));
@@ -13,6 +14,7 @@ const Providers = lazy(() => import("@/pages/Providers"));
 const Provider = lazy(() => import("@/pages/Provider"));
 const Admin = lazy(() => import("@/pages/Admin"));
 const AdminModule = lazy(() => import("@/pages/AdminModule"));
+const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 
 function Router() {
@@ -24,11 +26,12 @@ function Router() {
     <Route path="/providers/:slug" component={Provider} />
     <Route path="/admin" component={Admin} />
     <Route path="/admin/:module" component={AdminModule} />
+    <Route path="/team/accept" component={AcceptInvite} />
     <Route path="/404" component={NotFound} />
     <Route component={NotFound} />
   </Switch></Suspense>;
 }
 
 export default function App() {
-  return <ErrorBoundary><ThemeProvider defaultTheme="light"><LocaleProvider><TooltipProvider><Toaster richColors /><Router /></TooltipProvider></LocaleProvider></ThemeProvider></ErrorBoundary>;
+  return <ErrorBoundary><ThemeProvider defaultTheme="light"><LocaleProvider><MarketplaceDataProvider><TooltipProvider><Toaster richColors /><Router /></TooltipProvider></MarketplaceDataProvider></LocaleProvider></ThemeProvider></ErrorBoundary>;
 }

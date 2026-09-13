@@ -2,7 +2,7 @@ import { ProviderCard, ScoreRing, VerifiedBadge } from "@/components/Marketplace
 import { PublicLayout } from "@/components/SiteChrome";
 import { Button } from "@/components/ui/button";
 import { copy, useLocale } from "@/contexts/LocaleContext";
-import { providerFor, providers, services } from "@/data/marketplace";
+import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
 import { localizeData, localizeDuration, pageCopy } from "@/i18n/messages";
 import { ArrowRight, BarChart3, CheckCircle2, Clock3, Database, Search, ShieldCheck, Sparkles, TrendingDown } from "lucide-react";
 import { useState } from "react";
@@ -12,6 +12,7 @@ export default function Home() {
   const { locale } = useLocale();
   const t = copy[locale];
   const p = pageCopy[locale];
+  const { providers, services, providerFor } = useMarketplaceData();
   const [, navigate] = useLocation();
   const [query, setQuery] = useState("");
   const featured = services.filter(service => service.featured);

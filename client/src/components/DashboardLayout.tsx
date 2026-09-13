@@ -21,6 +21,8 @@ import {
 } from "@/components/ui/sidebar";
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
+import { trpc } from "@/lib/trpc";
+import { useAdminText, type AdminTextKey } from "@/i18n/admin";
 import { BadgeCheck, Languages, Layers3, LayoutDashboard, LogOut, PanelLeft, ScrollText, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
@@ -28,12 +30,12 @@ import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Overview", path: "/admin" },
-  { icon: BadgeCheck, label: "Providers", path: "/admin/providers" },
-  { icon: Layers3, label: "Services", path: "/admin/services" },
-  { icon: Users, label: "Team & access", path: "/admin/team" },
-  { icon: Languages, label: "Translations", path: "/admin/translations" },
-  { icon: ScrollText, label: "Audit log", path: "/admin/audit" },
+  { icon: LayoutDashboard, label: "overview" as AdminTextKey, path: "/admin", permission: null },
+  { icon: BadgeCheck, label: "providers" as AdminTextKey, path: "/admin/providers", permission: "providers.read" },
+  { icon: Layers3, label: "services" as AdminTextKey, path: "/admin/services", permission: "services.read" },
+  { icon: Users, label: "team" as AdminTextKey, path: "/admin/team", permission: "team.read" },
+  { icon: Languages, label: "translations" as AdminTextKey, path: "/admin/translations", permission: "translations.read" },
+  { icon: ScrollText, label: "audit" as AdminTextKey, path: "/admin/audit", permission: "audit.read" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -51,13 +53,15 @@ export default function DashboardLayout({
     return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
   });
   const { loading, user } = useAuth();
+  const text = useAdminText();
+  const access = trpc.admin.access.useQuery(undefined, { enabled: Boolean(user), retry: false });
   const authConfigured = Boolean(import.meta.env.VITE_OAUTH_PORTAL_URL && import.meta.env.VITE_APP_ID);
 
   useEffect(() => {
     localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
   }, [sidebarWidth]);
 
-  if (loading) {
+  if (loading || (user && access.isLoading)) {
     return <DashboardLayoutSkeleton />
   }
 
@@ -67,12 +71,11 @@ export default function DashboardLayout({
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <div className="flex flex-col items-center gap-6">
             <h1 className="text-2xl font-semibold tracking-tight text-center">
-              {authConfigured ? "Sign in to continue" : "Admin access is not configured"}
+              {authConfigured ? text("signInContinue") : text("adminNotConfigured")}
             </h1>
             <p className="text-sm text-muted-foreground text-center max-w-sm">
               {authConfigured
-                ? "Access to this dashboard requires authentication. Continue to launch the login flow."
-                : "The public marketplace is available, but staff authentication must be configured before Beacon Control Center can be used on this deployment."}
+                ? text("authRequired") : text("authSetup")}
             </p>
           </div>
           {authConfigured && (
@@ -81,7 +84,7 @@ export default function DashboardLayout({
               size="lg"
               className="w-full shadow-lg hover:shadow-xl transition-all"
             >
-              Sign in
+              {text("signIn")}
             </Button>
           )}
         </div>
@@ -89,14 +92,14 @@ export default function DashboardLayout({
     );
   }
 
-  if (user.role !== "admin") {
+  if (access.isError || !access.data?.role) {
     return (
       <div className="grid min-h-screen place-items-center bg-slate-50 p-6">
         <div className="max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-200/50">
           <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-red-50 text-red-600"><PanelLeft /></div>
-          <h1 className="mt-5 text-2xl font-extrabold text-slate-950">Access restricted</h1>
-          <p className="mt-3 text-sm leading-6 text-slate-500">Your account does not have permission to open Beacon Control Center. Contact an authorized administrator if your role has changed.</p>
-          <Button className="mt-6 w-full" onClick={() => window.location.assign("/")}>Return to ProviderBeacon</Button>
+          <h1 className="mt-5 text-2xl font-extrabold text-slate-950">{text("accessRestricted")}</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-500">{text("accessBody")}</p>
+          <Button className="mt-6 w-full" onClick={() => window.location.assign("/")}>{text("returnHome")}</Button>
         </div>
       </div>
     );
@@ -110,7 +113,7 @@ export default function DashboardLayout({
         } as CSSProperties
       }
     >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
+      <DashboardLayoutContent setSidebarWidth={setSidebarWidth} permissions={access.data.permissions}>
         {children}
       </DashboardLayoutContent>
     </SidebarProvider>
@@ -120,13 +123,16 @@ export default function DashboardLayout({
 type DashboardLayoutContentProps = {
   children: React.ReactNode;
   setSidebarWidth: (width: number) => void;
+  permissions: string[];
 };
 
 function DashboardLayoutContent({
   children,
   setSidebarWidth,
+  permissions,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
+  const text = useAdminText();
   const [location, setLocation] = useLocation();
   const { state, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed";
@@ -184,14 +190,14 @@ function DashboardLayoutContent({
               <button
                 onClick={toggleSidebar}
                 className="h-8 w-8 flex items-center justify-center hover:bg-accent rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
-                aria-label="Toggle navigation"
+                aria-label={text("toggleNavigation")}
               >
                 <PanelLeft className="h-4 w-4 text-muted-foreground" />
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="font-semibold tracking-tight truncate">
-                    Beacon Control Center
+                    {text("controlCenter")}
                   </span>
                 </div>
               ) : null}
@@ -200,20 +206,20 @@ function DashboardLayoutContent({
 
           <SidebarContent className="gap-0">
             <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
+              {menuItems.filter(item => !item.permission || permissions.includes(item.permission)).map(item => {
                 const isActive = location === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       isActive={isActive}
                       onClick={() => setLocation(item.path)}
-                      tooltip={item.label}
+                      tooltip={text(item.label)}
                       className={`h-10 transition-all font-normal`}
                     >
                       <item.icon
                         className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
                       />
-                      <span>{item.label}</span>
+                      <span>{text(item.label)}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -246,7 +252,7 @@ function DashboardLayoutContent({
                   className="cursor-pointer text-destructive focus:text-destructive"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Sign out</span>
+                  <span>{text("signOut")}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -270,7 +276,7 @@ function DashboardLayoutContent({
               <div className="flex items-center gap-3">
                 <div className="flex flex-col gap-1">
                   <span className="tracking-tight text-foreground">
-                    {activeMenuItem?.label ?? "Menu"}
+                    {activeMenuItem ? text(activeMenuItem.label) : text("menu")}
                   </span>
                 </div>
               </div>

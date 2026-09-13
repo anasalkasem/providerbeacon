@@ -2,13 +2,14 @@ import { ProviderAvatar, ScoreRing, VerifiedBadge } from "@/components/Marketpla
 import { PublicLayout } from "@/components/SiteChrome";
 import { Button } from "@/components/ui/button";
 import { copy, useLocale } from "@/contexts/LocaleContext";
-import { providerBySlug, services } from "@/data/marketplace";
+import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
 import { formatNumber, localizeData, localizeDuration, pageCopy } from "@/i18n/messages";
 import { ArrowLeft, CheckCircle2, Clock3, ExternalLink, Flag, Gauge, MapPin, MessageSquareText, RefreshCw, ShieldCheck, Star } from "lucide-react";
 import { Link, useRoute } from "wouter";
 
 export default function Provider() {
   const { locale } = useLocale();
+  const { providerBySlug, services } = useMarketplaceData();
   const t = pageCopy[locale];
   const common = copy[locale];
   const [, params] = useRoute("/providers/:slug");

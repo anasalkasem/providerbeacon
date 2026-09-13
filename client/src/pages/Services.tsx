@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useLocale } from "@/contexts/LocaleContext";
-import { providerFor, services, type Service } from "@/data/marketplace";
+import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
+import { type Service } from "@/data/marketplace";
 import { formatNumber, localizeData, localizeDuration, pageCopy } from "@/i18n/messages";
 import { ArrowRight, Check, Clock3, ListFilter, Search, ShieldCheck, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -13,6 +14,7 @@ import { useLocation } from "wouter";
 export default function Services() {
   const { locale } = useLocale();
   const t = pageCopy[locale];
+  const { services, providerFor } = useMarketplaceData();
   const params = new URLSearchParams(window.location.search);
   const [, navigate] = useLocation();
   const [query, setQuery] = useState(params.get("q") ?? "");
@@ -26,7 +28,7 @@ export default function Services() {
     const needle = query.toLowerCase();
     const result = services.filter(service => (platform === "all" || service.platform === platform) && (quality === "all" || service.quality === quality) && (!refillOnly || service.refill !== "No refill") && `${service.platform} ${service.category} ${service.name} ${localizeData(locale, service.category)} ${localizeData(locale, service.name)} ${providerFor(service).name}`.toLowerCase().includes(needle));
     return [...result].sort((a, b) => sort === "price" ? a.pricePerThousand - b.pricePerThousand : sort === "retention" ? b.retention - a.retention : Number(b.featured) - Number(a.featured));
-  }, [locale, platform, query, quality, refillOnly, sort]);
+  }, [locale, platform, providerFor, query, quality, refillOnly, services, sort]);
   const toggle = (service: Service) => setSelected(current => current.some(item => item.id === service.id) ? current.filter(item => item.id !== service.id) : current.length < 4 ? [...current, service] : current);
   const compare = () => navigate(`/compare?services=${selected.map(service => service.id).join(",")}`);
 

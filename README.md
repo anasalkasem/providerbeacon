@@ -16,7 +16,11 @@ The first product preview includes a production-quality public experience and a 
 - Browser-language detection with English, Spanish, Arabic, Hindi and Simplified Chinese UI foundations.
 - Full RTL direction support for Arabic.
 - Protected Beacon Control Center for authorized administrators.
-- Team roles, translation status and audit-log interfaces.
+- Server-enforced team roles, secure invitation links and immutable audit events.
+- Database-backed provider and service publishing controls with safe seed fallback.
+- Human-reviewed localization workflow for five supported locales.
+- On-demand `gpt-5-mini` provider risk explanations that never change status automatically.
+- One-time SMM API service import with HTTPS/SSRF controls and price snapshots.
 - Lazy-loaded routes and accessible keyboard/focus behavior.
 
 All provider names, prices and metrics in this version are demonstration data.
@@ -63,16 +67,19 @@ pnpm build
 | `/admin/team` | Role and access management |
 | `/admin/translations` | Localization workflow |
 | `/admin/audit` | Administrative audit log |
+| `/team/accept` | Authenticated team invitation acceptance |
 
 ## Security model
 
-The public marketplace and protected administration area are intentionally separated. The Control Center requires an authenticated user with the `admin` role; hiding navigation alone is not treated as authorization. Production RBAC will extend this foundation with granular permissions such as `provider.verify`, `service.publish`, `translation.review` and `audit.view` at the API layer.
+The public marketplace and protected administration area are intentionally separated. Every protected tRPC operation resolves the authenticated user's team membership and checks a granular permission on the server. Navigation visibility is only a usability aid, never authorization. Provider/service changes, invitations, translation edits, AI analysis, API imports and authenticated logout events write audit entries.
+
+Provider API keys are accepted only for a single manual HTTPS sync and are never persisted. The importer rejects private-network targets, disables redirects, caps responses at 5,000 records per run and records price history separately.
 
 Never commit `.env` files, credentials, provider API keys or production exports.
 
 ## Product roadmap
 
-The next implementation stages are real provider onboarding and database persistence, granular RBAC, data ingestion and freshness monitoring, explainable Beacon Score computation, AI natural-language search and translation review workflows.
+The next launch stages are provisioning the production Railway database, selecting a portable staff-authentication provider, enabling scheduled refresh credentials in a secret manager, and completing custom-domain DNS/TLS verification.
 
 ## License
 
