@@ -40,9 +40,9 @@ Build a production-ready aggregator for Social Media Marketing providers. Users 
 - [x] Prevent suspended team members from authenticating and revoke their sessions
 - [x] Add owner controls to suspend/reactivate staff accounts
 - [x] Add audited deletion for obsolete provider integrations
-- [ ] Remove or deactivate production verification data without touching the owner account
+- [x] Deactivate production verification accounts and remove the test integration; refresh and revalidate owner access when the stored temporary password proved stale
 - [x] Improve the vault form for first-provider onboarding and validation
-- [ ] Deploy and verify the clean production state
+- [x] Deploy and verify the clean production state
 
 ## Role model
 

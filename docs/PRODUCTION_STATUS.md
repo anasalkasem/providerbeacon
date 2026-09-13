@@ -33,3 +33,9 @@ The existing Private Email DKIM record was preserved.
 The release passed TypeScript checking, Vitest suites, the production Vite/esbuild build, Git diff validation, Railway `/health`, production-database source verification, and custom-domain HTTPS checks for both apex and `www`.
 
 The independent security flow was also exercised against the live domain. The test recovered the owner through the secret-manager bootstrap token, verified owner permissions, enabled TOTP MFA, signed out, required MFA on the next login, consumed one recovery code, invited and registered an auditor account, confirmed least-privilege access, created and rotated an encrypted provider credential, and verified the corresponding audit events. The production startup after the independent-auth change contains the database migration and server-ready messages without the previous OAuth configuration error.
+
+## Verification-data cleanup
+
+After the security tests, three non-owner verification accounts were suspended and their active sessions were revoked. The disabled `Production vault verification` integration and its encrypted test credential were deleted. No marketplace provider or service records were removed.
+
+The first cleanup login found that the locally retained temporary owner password was stale, so the documented bootstrap recovery path was used once. This rotated the temporary owner password and TOTP setup and refreshed the owner handoff files. A subsequent idempotent cleanup run authenticated with the refreshed owner credentials, found zero remaining verification records to change, and confirmed by checksum that the owner access file and MFA QR were not modified again.
