@@ -3,7 +3,6 @@ import { parse } from "cookie";
 import type { User } from "../../drizzle/schema";
 import { authenticateStaffSession } from "../authDb";
 import { STAFF_SESSION_COOKIE } from "../security";
-import { sdk } from "./sdk";
 
 export type TrpcContext = {
   req: CreateExpressContextOptions["req"];
@@ -30,8 +29,9 @@ export async function createContext(
     }
   }
 
-  if (!user) {
+  if (!user && process.env.OAUTH_SERVER_URL) {
     try {
+      const { sdk } = await import("./sdk");
       user = await sdk.authenticateRequest(opts.req);
       if (user) authMode = "oauth";
     } catch {

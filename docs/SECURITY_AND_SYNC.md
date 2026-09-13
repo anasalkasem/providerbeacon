@@ -22,7 +22,7 @@ Provider API keys are encrypted with **AES-256-GCM** before they reach the datab
 
 ## Scheduled synchronization
 
-The repository contains `.github/workflows/provider-sync.yml`, which runs hourly and can also be started manually. The workflow does not use a stored application secret. Instead, GitHub issues a short-lived OIDC identity token for each run. The application verifies the issuer, audience, repository, branch, subject and trigger before processing due integrations.
+The repository contains `.github/workflows/provider-sync.yml`, which runs hourly and can also be started manually. The workflow does not use a stored application secret. Instead, GitHub issues a short-lived OIDC identity token for each run. The application verifies the signed issuer, audience, exact repository, `main` branch, non-empty subject and allowed trigger before processing due integrations. The subject value itself is not parsed because GitHub allows repository-level subject customization.
 
 Provider endpoints are restricted to public HTTPS hosts. DNS is resolved before every call and private, loopback, link-local and metadata-network addresses are rejected. Redirects are disabled. Each integration has an interval, next-run timestamp, lock window, failure count and retry backoff. Imports preserve price history and write success or failure events to the audit log.
 
@@ -43,3 +43,7 @@ Provider endpoints are restricted to public HTTPS hosts. DNS is resolved before 
 After creating the owner account, enable MFA immediately and store recovery codes offline. Rotate a provider API key by editing its integration and entering only the new key; leaving the field blank preserves the existing encrypted value. Disable an integration before changing its endpoint or when a provider is under review.
 
 Review `auth.*`, `integration.vault.*`, and `integration.schedule.*` events in the audit log. Repeated synchronization failures trigger progressive retry delays but do not expose provider error bodies or credentials to public pages.
+
+## Production verification
+
+On 13 September 2026, the production deployment completed the database migration and started successfully on Railway. GitHub Actions run [`34753695298`](https://github.com/anasalkasem/providerbeacon/actions/runs/34753695298) then obtained a short-lived OIDC token and received a successful response from `https://providerbeacon.com/api/internal/provider-sync`. The response reported `ok: true`, trigger `workflow_dispatch`, and zero integrations due because no provider credentials had been added yet.
