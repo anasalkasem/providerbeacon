@@ -31,6 +31,9 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(() => detectLocale());
   const setLocale = (value: Locale) => {
     window.localStorage.setItem("providerbeacon-locale", value);
+    const url = new URL(window.location.href);
+    url.searchParams.set("lang", value);
+    window.history.replaceState(window.history.state, "", url);
     setLocaleState(value);
   };
   const dir: "ltr" | "rtl" = locale === "ar" ? "rtl" : "ltr";

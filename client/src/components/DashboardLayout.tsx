@@ -22,6 +22,7 @@ import {
 import { startLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
+import { useLocale, localeNames, type Locale } from "@/contexts/LocaleContext";
 import { useAdminText, type AdminTextKey } from "@/i18n/admin";
 import { BadgeCheck, KeyRound, Languages, Layers3, LayoutDashboard, LockKeyhole, LogOut, PanelLeft, ScrollText, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
@@ -52,7 +53,8 @@ export default function DashboardLayout({
 }) {
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
-    return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
+    const width = Number(saved);
+    return saved && Number.isFinite(width) ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, width)) : DEFAULT_WIDTH;
   });
   const { loading, user } = useAuth();
   const text = useAdminText();
@@ -130,9 +132,10 @@ function DashboardLayoutContent({
   permissions,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
+  const { locale, dir, setLocale } = useLocale();
   const text = useAdminText();
   const [location, setLocation] = useLocation();
-  const { state, toggleSidebar } = useSidebar();
+  const { state, toggleSidebar, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -149,8 +152,9 @@ function DashboardLayoutContent({
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizing) return;
 
-      const sidebarLeft = sidebarRef.current?.getBoundingClientRect().left ?? 0;
-      const newWidth = e.clientX - sidebarLeft;
+      const bounds = sidebarRef.current?.getBoundingClientRect();
+      if (!bounds) return;
+      const newWidth = dir === "rtl" ? bounds.right - e.clientX : e.clientX - bounds.left;
       if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
         setSidebarWidth(newWidth);
       }
@@ -173,14 +177,15 @@ function DashboardLayoutContent({
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
     };
-  }, [isResizing, setSidebarWidth]);
+  }, [isResizing, setSidebarWidth, dir]);
 
   return (
     <>
       <div className="relative" ref={sidebarRef}>
         <Sidebar
           collapsible="icon"
-          className="border-r-0"
+          side={dir === "rtl" ? "right" : "left"}
+          className="border-e border-slate-200"
           disableTransition={isResizing}
         >
           <SidebarHeader className="h-16 justify-center">
@@ -210,7 +215,7 @@ function DashboardLayoutContent({
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       isActive={isActive}
-                      onClick={() => setLocation(item.path)}
+                      onClick={() => { setLocation(item.path); if (isMobile) setOpenMobile(false); }}
                       tooltip={text(item.label)}
                       className={`h-10 transition-all font-normal`}
                     >
@@ -226,9 +231,9 @@ function DashboardLayoutContent({
           </SidebarContent>
 
           <SidebarFooter className="p-3">
-            <DropdownMenu>
+            <DropdownMenu dir={dir}>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-left group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-start group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   <Avatar className="h-9 w-9 border shrink-0">
                     <AvatarFallback className="text-xs font-medium">
                       {user?.name?.charAt(0).toUpperCase()}
@@ -246,14 +251,14 @@ function DashboardLayoutContent({
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={() => setLocation("/admin/security")} className="cursor-pointer">
-                  <LockKeyhole className="mr-2 h-4 w-4" />
+                  <LockKeyhole className="me-2 h-4 w-4" />
                   <span>{text("security")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={logout}
                   className="cursor-pointer text-destructive focus:text-destructive"
                 >
-                  <LogOut className="mr-2 h-4 w-4" />
+                  <LogOut className="me-2 h-4 w-4" />
                   <span>{text("signOut")}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -261,7 +266,7 @@ function DashboardLayoutContent({
           </SidebarFooter>
         </Sidebar>
         <div
-          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
+          className={`absolute top-0 end-0 w-1 h-full cursor-col-resize hover:bg-primary/20 transition-colors ${isCollapsed ? "hidden" : ""}`}
           onMouseDown={() => {
             if (isCollapsed) return;
             setIsResizing(true);
@@ -270,7 +275,11 @@ function DashboardLayoutContent({
         />
       </div>
 
-      <SidebarInset>
+      <SidebarInset className="min-w-0 bg-slate-50">
+        <div className="flex min-h-14 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4">
+          <span className="text-sm font-semibold text-slate-600">{text("controlCenter")}</span>
+          <label className="flex items-center gap-2 text-sm text-slate-600"><Languages className="size-4"/><span className="sr-only">{text("language")}</span><select aria-label={text("language")} className="h-9 rounded-lg border border-slate-200 bg-white px-2" value={locale} onChange={event => setLocale(event.target.value as Locale)}>{(Object.keys(localeNames) as Locale[]).map(value => <option key={value} value={value}>{localeNames[value]}</option>)}</select></label>
+        </div>
         {isMobile && (
           <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">
             <div className="flex items-center gap-2">
@@ -285,7 +294,7 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
-        <main className="flex-1 p-4">{children}</main>
+        <main className="min-w-0 flex-1 p-4">{children}</main>
       </SidebarInset>
     </>
   );

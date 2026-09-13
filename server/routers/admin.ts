@@ -8,7 +8,6 @@ import {
   createProviderDraft,
   createTeamInvite,
   listAdminProviders,
-  listAdminServices,
   listAuditEntries,
   listLocalizedContent,
   listTeamMembers,
@@ -21,12 +20,20 @@ import {
 } from "../marketplaceDb";
 import { deleteProviderIntegration, listProviderIntegrations, saveProviderIntegration, setProviderIntegrationEnabled, syncStoredIntegration } from "../vaultDb";
 
+import { getAdminOverview, getProviderForAnalysis, listAdminServices } from "../adminCatalogueDb";
+import { adminServicesInput } from "../../shared/catalogueQuery";
+
 const teamRole = z.enum(["owner", "administrator", "operations_manager", "provider_reviewer", "catalogue_editor", "translation_manager", "auditor"]);
 
 export const adminRouter = router({
   access: protectedProcedure.query(async ({ ctx }) => {
     const role = await resolveTeamRole(ctx.user!);
     return { role, permissions: role ? rolePermissions[role] : [], authMode: ctx.authMode ?? null };
+  }),
+  overview: protectedProcedure.query(async ({ ctx }) => {
+    const role = await resolveTeamRole(ctx.user!);
+    if (!role) throw new TRPCError({ code: "FORBIDDEN" });
+    return getAdminOverview(rolePermissions[role]);
   }),
   acceptInvite: protectedProcedure.input(z.object({ token: z.string().min(20).max(200) })).mutation(({ ctx, input }) => acceptTeamInvite({ token: input.token, userId: ctx.user!.id, email: ctx.user!.email })),
   seedMarketplace: permissionProcedure("providers.write").mutation(({ ctx }) => seedMarketplaceIfEmpty(ctx.user!.id)),
@@ -36,7 +43,7 @@ export const adminRouter = router({
     setStatus: permissionProcedure("providers.review").input(z.object({ id: z.number().int().positive(), status: z.enum(["draft", "pending_review", "active", "suspended"]) })).mutation(({ ctx, input }) => updateProviderStatus({ ...input, actorUserId: ctx.user!.id })),
   }),
   services: router({
-    list: permissionProcedure("services.read").query(() => listAdminServices()),
+    list: permissionProcedure("services.read").input(adminServicesInput).query(({ input }) => listAdminServices(input)),
     update: permissionProcedure("services.write").input(z.object({ id: z.number().int().positive(), status: z.enum(["draft", "active", "paused", "archived"]).optional(), pricePerThousandUsd: z.number().positive().max(100000).optional() }).refine(value => value.status != null || value.pricePerThousandUsd != null)).mutation(({ ctx, input }) => updateServiceRecord({ ...input, actorUserId: ctx.user!.id })),
   }),
   integrations: router({
@@ -61,12 +68,12 @@ export const adminRouter = router({
   }),
   ai: router({
     analyzeProvider: permissionProcedure("providers.review").input(z.object({ providerId: z.number().int().positive(), locale: z.enum(["en", "es", "ar", "hi", "zh"]).default("en") })).mutation(async ({ ctx, input }) => {
-      const provider = (await listAdminProviders()).find(item => item.id === input.providerId);
+      const provider = await getProviderForAnalysis(input.providerId);
       if (!provider) throw new TRPCError({ code: "NOT_FOUND", message: "Provider not found" });
-      const services = (await listAdminServices()).filter(item => item.providerId === provider.id);
+      const page = await listAdminServices({ providerId: provider.id, limit: 25 });
       const response = await invokeLLM({ model: "gpt-5-mini", messages: [
-        { role: "system", content: "You are a cautious marketplace risk analyst. Analyze only the supplied operational data. Do not invent external facts. Return a concise evidence-based assessment in the requested language. AI output is advisory and must not automatically change provider status." },
-        { role: "user", content: JSON.stringify({ requestedLocale: input.locale, provider, services }) },
+        { role: "system", content: "You are a cautious marketplace risk analyst. Analyze only the supplied operational data. Do not invent external facts. Return a concise evidence-based assessment in the requested language. The service list is a bounded sample, not the full catalogue; explicitly state this limitation. AI output is advisory and must not automatically change provider status." },
+        { role: "user", content: JSON.stringify({ requestedLocale: input.locale, provider, catalogueTotal: page.total, sampledServices: page.items }) },
       ], response_format: { type: "json_schema", json_schema: { name: "provider_risk_assessment", strict: true, schema: { type: "object", properties: { riskLevel: { type: "string", enum: ["low", "medium", "high"] }, confidence: { type: "integer", minimum: 0, maximum: 100 }, summary: { type: "string" }, signals: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 5 }, recommendedAction: { type: "string", enum: ["keep_active", "manual_review", "consider_suspension"] } }, required: ["riskLevel", "confidence", "summary", "signals", "recommendedAction"], additionalProperties: false } } } });
       const content = response.choices[0]?.message.content;
       if (typeof content !== "string") throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "AI analysis returned an unexpected response" });
