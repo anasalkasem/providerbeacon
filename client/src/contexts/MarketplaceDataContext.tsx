@@ -13,13 +13,15 @@ type MarketplaceData = {
 };
 
 const fallback: MarketplaceData = { providers: fallbackProviders, services: fallbackServices, source: "fallback", providerFor: fallbackProviderFor, providerBySlug: fallbackProviderBySlug, serviceFor: id => fallbackServices.find(service => service.id === id), isLoading: false };
+const runtimeFallbackProviders = import.meta.env.PROD ? [] : fallbackProviders;
+const runtimeFallbackServices = import.meta.env.PROD ? [] : fallbackServices;
 const MarketplaceDataContext = createContext<MarketplaceData>(fallback);
 
 export function MarketplaceDataProvider({ children }: { children: ReactNode }) {
   const query = trpc.marketplace.snapshot.useQuery(undefined, { staleTime: 5 * 60 * 1000, retry: 1 });
   const value = useMemo<MarketplaceData>(() => {
-    const providers = (query.data?.providers ?? fallbackProviders) as Provider[];
-    const services = (query.data?.services ?? fallbackServices) as Service[];
+    const providers = (query.data?.providers ?? runtimeFallbackProviders) as Provider[];
+    const services = (query.data?.services ?? runtimeFallbackServices) as Service[];
     const providersById = new Map(providers.map(provider => [provider.id, provider]));
     return {
       providers,

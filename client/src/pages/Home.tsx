@@ -17,8 +17,13 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const featured = services.filter(service => service.featured);
   const best = featured[0];
-  const bestProvider = providerFor(best);
   const runSearch = () => navigate(`/services${query.trim() ? `?q=${encodeURIComponent(query.trim())}` : ""}`);
+  if (!best) {
+    const emptyTitle = locale === "ar" ? "نُجهّز أول دليل مزودين موثّق" : locale === "es" ? "Estamos preparando el primer catálogo verificado" : locale === "hi" ? "पहली सत्यापित प्रदाता सूची तैयार हो रही है" : locale === "zh" ? "首批已验证服务商目录正在准备中" : "The first verified provider catalogue is being prepared";
+    const emptyBody = locale === "ar" ? "أزلنا بيانات العرض من الإنتاج. ستظهر الخدمات هنا فقط بعد ربط API حقيقي ومراجعة الأسعار والجودة." : locale === "es" ? "Los datos de demostración se eliminaron de producción. Los servicios aparecerán solo después de validar una API real." : locale === "hi" ? "डेमो डेटा उत्पादन से हटा दिया गया है। वास्तविक API सत्यापन के बाद ही सेवाएँ दिखाई देंगी।" : locale === "zh" ? "演示数据已从生产环境移除。仅在真实 API 验证后展示服务。" : "Demo data has been removed from production. Services will appear only after a real provider API is connected and reviewed.";
+    return <PublicLayout><section className="hero-shell min-h-[72vh]"><div className="hero-grid" aria-hidden="true"/><div className="container relative flex min-h-[72vh] items-center py-20"><div className="max-w-3xl"><div className="eyebrow"><ShieldCheck className="size-4"/>{p.liveData}</div><h1 className="mt-6 text-balance text-4xl font-extrabold leading-tight text-white sm:text-6xl">{emptyTitle}</h1><p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">{emptyBody}</p><div className="mt-9 flex flex-wrap gap-3"><Button asChild className="rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 font-bold text-[#071321]"><Link href="/providers">{t.navProviders}<ArrowRight className="size-4 rtl:rotate-180"/></Link></Button><Button asChild variant="outline" className="rounded-xl border-white/20 bg-white/10 text-white hover:bg-white/20"><Link href="/admin/integrations">{locale === "ar" ? "ربط مزود حقيقي" : "Connect a real provider"}</Link></Button></div></div></div></section></PublicLayout>;
+  }
+  const bestProvider = providerFor(best);
   const popular = locale === "ar" ? ["متابعو إنستغرام", "مشاهدات تيك توك", "مشتركو يوتيوب"] : locale === "es" ? ["Seguidores de Instagram", "Visualizaciones de TikTok", "Suscriptores de YouTube"] : locale === "hi" ? ["Instagram फ़ॉलोअर्स", "TikTok व्यूज़", "YouTube सब्सक्राइबर"] : locale === "zh" ? ["Instagram 粉丝", "TikTok 播放量", "YouTube 订阅者"] : ["Instagram followers", "TikTok views", "YouTube subscribers"];
 
   return <PublicLayout>
