@@ -5,6 +5,7 @@ import OfferEvidence, {
 } from "@/components/OfferEvidence";
 import QuoteWorkbench from "./QuoteWorkbench";
 import QuoteCost from "@/components/QuoteCost";
+import OfferPrice, { PriceLegend } from "@/components/OfferPrice";
 import Services from "./Services";
 import { useState } from "react";
 import {
@@ -12,7 +13,7 @@ import {
   compareQuoteAmounts,
   quantityQuoteExact,
 } from "../../../shared/pricing";
-import { formatPrice, unitLabel, pricingCopy } from "@/i18n/pricing";
+import { unitLabel, pricingCopy } from "@/i18n/pricing";
 import { CatalogueState } from "@/components/CatalogueState";
 import { catalogueCopy, percentLabel } from "@/i18n/catalogue";
 import { comparisonSelection } from "@/lib/catalogue";
@@ -87,6 +88,9 @@ export default function Compare() {
         null
       )
     : null;
+  const isLowest = (service: Service) =>
+    comparable &&
+    compareQuoteAmounts(quantityQuoteExact(service, quantity)!, lowest!) === 0;
   const bestScore = Math.max(
     ...compared.flatMap(service => {
       const score = providerFor(service).score;
@@ -124,9 +128,7 @@ export default function Compare() {
       <DollarSign />,
       service => (
         <div>
-          <bdi dir="ltr" className="text-2xl font-extrabold text-slate-950">
-            {formatPrice(locale, service)}
-          </bdi>
+          <OfferPrice service={service} lowest={isLowest(service)} />
           <p className="mt-1 text-xs text-slate-500">
             {unitLabel(locale, service)}
           </p>
@@ -135,15 +137,6 @@ export default function Compare() {
               {serviceScope(locale, service)}
             </p>
           )}
-          {comparable &&
-            compareQuoteAmounts(
-              quantityQuoteExact(service, quantity)!,
-              lowest!
-            ) === 0 && (
-              <p className="mt-1 text-xs font-bold text-emerald-600">
-                {t.lowestPrice}
-              </p>
-            )}
         </div>
       ),
     ],
@@ -228,7 +221,13 @@ export default function Compare() {
     rows.splice(1, 0, [
       ar ? "تكلفة الكمية المحددة" : "Cost for selected quantity",
       <DollarSign />,
-      service => <QuoteCost service={service} quantity={quantity} />,
+      service => (
+        <QuoteCost
+          service={service}
+          quantity={quantity}
+          lowest={isLowest(service)}
+        />
+      ),
     ]);
     rows.push(
       [
@@ -315,6 +314,7 @@ export default function Compare() {
             {pricingCopy[locale].mixed}
           </p>
         )}
+        <PriceLegend />
         <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full min-w-[960px]">
             <thead>
