@@ -25,7 +25,7 @@ export function sourceCatalogueService() {
     gte(serviceRecords.normalizationVersion, NORMALIZATION_VERSION),
     gte(serviceRecords.priceAmount, "0.0001"), lte(serviceRecords.priceAmount, "100000"),
     gte(serviceRecords.minOrder, 1), gte(serviceRecords.maxOrder, serviceRecords.minOrder),
-    sql`${serviceRecords.sourceRate} regexp '^[0-9]+([.][0-9]+)?$'`,
+    sql`${serviceRecords.sourceRate} regexp ${"^[0-9]+([.][0-9]+)?$"}`,
     sql`cast(${serviceRecords.sourceRate} as decimal(20,10)) between 0.0001 and 100000`
   );
 }
