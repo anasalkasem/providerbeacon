@@ -10,11 +10,11 @@ import {
   ScanLine,
 } from "lucide-react";
 import { PublicLayout } from "@/components/SiteChrome";
-import { GuideGrid, ReferenceGrid } from "@/components/Discovery";
+import { GuideGrid } from "@/components/Discovery";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
 import { discoveryText } from "@/i18n/discovery";
-import { discoveryGuides, directoryProfiles } from "@/data/discovery";
+import { ProviderCard } from "@/components/Marketplace";
 import SmmOfferTable from "@/components/SmmOfferTable";
 import type { Service } from "@/data/marketplace";
 export default function Home() {
@@ -22,7 +22,7 @@ export default function Home() {
   const t = discoveryText(locale);
   const [, navigate] = useLocation();
   const [query, setQuery] = useState("");
-  const { services } = useMarketplaceData();
+  const { services, providers } = useMarketplaceData();
   const [selected, setSelected] = useState<Service[]>([]);
   const ar = locale === "ar";
   const toggle = (service: Service) =>
@@ -113,7 +113,7 @@ export default function Home() {
                     PROVIDERBEACON
                   </span>
                   <span className="rounded-md bg-teal-300/10 px-2 py-1 text-[10px] font-bold text-teal-200">
-                    {t.publicSource}
+                    {ar ? "بيانات من اتصالات المزودين" : "Data from provider connections"}
                   </span>
                 </div>
                 <div className="space-y-3 p-5">
@@ -142,27 +142,6 @@ export default function Home() {
                   </Link>
                 </div>
               </div>
-            </div>
-          </div>
-          <div className="border-t border-white/10">
-            <div className="container grid grid-cols-3 divide-x divide-white/10 py-6 rtl:divide-x-reverse">
-              {[
-                { n: discoveryGuides.length, label: t.guides },
-                { n: directoryProfiles.length, label: t.profiles },
-                { n: 1, label: t.workspace },
-              ].map(({ n, label }) => (
-                <div
-                  key={label}
-                  className="px-3 text-center sm:flex sm:items-center sm:justify-center sm:gap-3"
-                >
-                  <b className="text-2xl text-white">
-                    {n.toLocaleString(locale)}
-                  </b>
-                  <span className="mt-1 block text-xs text-slate-400">
-                    {label}
-                  </span>
-                </div>
-              ))}
             </div>
           </div>
         </section>
@@ -217,20 +196,12 @@ export default function Home() {
           </div>
           <GuideGrid />
         </section>
-        <section className="border-y border-slate-200 bg-white">
-          <div className="container py-16">
-            <div className="mb-8">
-              <p className="section-kicker">{t.referenceLabel}</p>
-              <h2 className="mt-3 text-3xl font-extrabold leading-relaxed text-slate-950">
-                {t.referenceTitle}
-              </h2>
-              <p className="mt-3 max-w-2xl leading-7 text-slate-500">
-                {t.referenceBody}
-              </p>
-            </div>
-            <ReferenceGrid />
+        {providers.length > 0 && <section className="border-y border-slate-200 bg-white">
+          <div className="container py-12">
+            <h2 className="mb-6 text-2xl font-extrabold">{ar ? "مزودو الخدمات المعروضة" : "Providers behind these services"}</h2>
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{providers.map(provider => <ProviderCard key={provider.id} provider={provider}/>)}</div>
           </div>
-        </section>
+        </section>}
         <section
           id="methodology"
           className="container scroll-mt-24 py-16 sm:py-20"

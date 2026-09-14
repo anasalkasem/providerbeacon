@@ -9,6 +9,7 @@ export type AuditSignals = {
 };
 
 export type Provider = {
+  apiConnected?: boolean;
   id: string;
   slug: string;
   name: string;
@@ -39,6 +40,8 @@ export type Provider = {
 };
 
 export type Service = {
+  catalogueListing?: "api_source" | "reviewed";
+  sourceRate?: string | null;
   id: string;
   providerId: string;
   platform: string;

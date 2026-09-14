@@ -5,7 +5,7 @@ import { type Service } from "@/data/marketplace";
 import { formatPrice, unitLabel } from "@/i18n/pricing";
 import { localizeData, localizeDuration, formatNumber } from "@/i18n/messages";
 import OfferEvidence, { serviceName, serviceScope } from "./OfferEvidence";
-import { quantityQuote } from "../../../shared/pricing";
+import { hasPricingBasis, quantityQuote } from "../../../shared/pricing";
 
 export default function SmmOfferTable({
   services,
@@ -89,7 +89,7 @@ export default function SmmOfferTable({
                     <p className="mt-2 max-w-xs">
                       {serviceScope(locale, service)}
                     </p>
-                  ) : (
+                  ) : hasPricingBasis(service) ? (
                     <p className="mt-3 text-xs leading-6">
                       {ar ? "تكلفة الكمية المحددة: " : "Selected quantity: "}
                       {total == null ? (
@@ -105,7 +105,7 @@ export default function SmmOfferTable({
                         </bdi>
                       )}
                     </p>
-                  )}
+                  ) : null}
                 </td>
                 <td className="p-4 align-top">
                   <bdi className="whitespace-nowrap">

@@ -50,6 +50,9 @@ export async function applyCatalogueBatch(
       revision: serviceRecords.revision,
       status: serviceRecords.status,
       reviewStatus: serviceRecords.reviewStatus,
+      reviewReason: serviceRecords.reviewReason,
+      reviewedAt: serviceRecords.reviewedAt,
+      reviewedByUserId: serviceRecords.reviewedByUserId,
       name: serviceRecords.name,
       platform: serviceRecords.platform,
       category: serviceRecords.category,
@@ -119,6 +122,8 @@ export async function applyCatalogueBatch(
           Number(item.sourceRate)
     );
     const { notes, ...data } = item;
+    // A later price sync must not undo an operator's withdrawal from a public API catalogue.
+    const preserveWithdrawal = provider.apiCataloguePublished && existing?.reviewStatus === "changes_requested";
     const values = {
       ...data,
       refillMode:
@@ -128,7 +133,7 @@ export async function applyCatalogueBatch(
       sourceUrl,
       sourceUpdatedAt: now,
       normalizationVersion: NORMALIZATION_VERSION,
-      reviewStatus: "pending" as const,
+      reviewStatus: preserveWithdrawal ? "changes_requested" as const : "pending" as const,
       incomplete: true,
       pricingConfirmed: false,
       priceCurrency: null,
@@ -137,9 +142,9 @@ export async function applyCatalogueBatch(
       policyReviewed: false,
       priceCheckedAt: null,
       evidenceUrl: null,
-      reviewedAt: null,
-      reviewedByUserId: null,
-      reviewReason: null,
+      reviewedAt: preserveWithdrawal ? existing.reviewedAt : null,
+      reviewedByUserId: preserveWithdrawal ? existing.reviewedByUserId : null,
+      reviewReason: preserveWithdrawal ? existing.reviewReason : null,
       available: true,
       missingSourceAt: null,
     };
@@ -211,7 +216,7 @@ export async function applyCatalogueBatch(
             ...Object.fromEntries(keys.map(key => [key, values[key]])),
             revision: existing.revision + 1,
             status: existing.status === "active" ? "draft" : existing.status,
-            reviewStatus: "pending",
+            reviewStatus: values.reviewStatus,
           },
         },
       });

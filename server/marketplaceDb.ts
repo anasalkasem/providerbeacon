@@ -8,6 +8,7 @@ import { retiredDemoSlugs, assertRealProviderSlug } from "./retiredDemoProviders
 import { auditEntries, localizedContent, priceSnapshots, providerRecords, serviceRecords, staffSessions, teamMembers, type TeamRole } from "../drizzle/schema";
 import { getDb } from "./db";
 import { approvedService } from "./catalogueRules";
+import { connectedApiCatalogue, visibleCatalogueProvider, visibleCatalogueService } from "./apiCatalogue";
 import { adminProvidersInput, type AdminProvidersInput, catalogueInput, searchPattern, type CatalogueInput } from "../shared/catalogueQuery";
 
 const tierFromDb = {
@@ -19,6 +20,9 @@ const tierFromDb = {
 
 const publicServiceColumns = {
   id: serviceRecords.id, providerId: serviceRecords.providerId, platform: serviceRecords.platform,
+  externalId: serviceRecords.externalId, sourceRate: serviceRecords.sourceRate, reviewStatus: serviceRecords.reviewStatus,
+  sourceUrl: serviceRecords.sourceUrl, providerWebsite: providerRecords.websiteUrl,
+  apiListing: sql<boolean>`${serviceRecords.reviewStatus} = 'pending'`.mapWith(Boolean),
   category: serviceRecords.category, name: serviceRecords.name, priceAmount: serviceRecords.priceAmount,
   priceCurrency: serviceRecords.priceCurrency, priceUnit: serviceRecords.priceUnit,
   packageDescription: serviceRecords.packageDescription, countryCode: serviceRecords.countryCode,
@@ -53,21 +57,21 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
   const db = await getDb();
   if (!db) return empty("unavailable");
   try {
-    const eligible = and(eq(providerRecords.status, "active"),
-      notInArray(providerRecords.slug, [...retiredDemoSlugs]));
+    const eligible = visibleCatalogueProvider();
     const providerScope = input.scope === "providers" || input.scope === "provider";
-    const marketFilter = input.market === "smm" ? and(inArray(serviceRecords.priceUnit, ["per_1000", "per_item"]),
-      inArray(serviceRecords.category, ["Followers", "Views", "Likes", "Comments", "Shares", "Subscribers"]))
+    const marketFilter = input.market === "smm" ? or(eq(serviceRecords.sourceKind, "provider_api"), and(inArray(serviceRecords.priceUnit, ["per_1000", "per_item"]),
+      inArray(serviceRecords.category, ["Followers", "Views", "Likes", "Comments", "Shares", "Subscribers"])))
       : input.market === "packages" ? eq(serviceRecords.priceUnit, "package") : undefined;
     const providerFilter = and(eligible,
-      input.scope === "providers" && marketFilter ? sql`exists (select 1 from ${serviceRecords} where ${serviceRecords.providerId} = ${providerRecords.id} and ${approvedService()} and ${marketFilter})` : undefined,
+      input.scope === "providers" && marketFilter ? sql`exists (select 1 from ${serviceRecords} where ${serviceRecords.providerId} = ${providerRecords.id} and ${visibleCatalogueService()} and ${marketFilter})` : undefined,
       input.scope === "provider" ? eq(providerRecords.slug, input.slug ?? "") : undefined,
       input.scope === "providers" && input.q ? or(like(providerRecords.name, searchPattern(input.q)), like(providerRecords.location, searchPattern(input.q))) : undefined);
     const providerPage = providerScope ? await db.select().from(providerRecords)
       .where(and(providerFilter, input.scope === "providers" && input.cursor ? lt(providerRecords.id, input.cursor.id) : undefined))
       .orderBy(desc(providerRecords.id)).limit(input.scope === "provider" ? 1 : input.limit + 1) : [];
     if (input.scope === "provider" && !providerPage.length) return empty("database");
-    const serviceFilter = and(eligible, approvedService(),
+    const serviceFilter = and(eligible, visibleCatalogueService(),
+      input.priceCurrency || input.priceUnit || input.sort === "price" ? approvedService() : undefined,
       marketFilter,
       input.category ? eq(serviceRecords.category, input.category) : undefined,
       input.scope === "provider" ? eq(serviceRecords.providerId, providerPage[0]!.id) : undefined,
@@ -95,14 +99,17 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       .orderBy(providerRecords.name).limit(serviceProviderIds.length) : [];
     const providerIds = providerRows.map(row => row.id);
     const counts = providerIds.length ? await db.select({ providerId: serviceRecords.providerId, total: count() }).from(serviceRecords)
-      .where(and(approvedService(), inArray(serviceRecords.providerId, providerIds))).groupBy(serviceRecords.providerId) : [];
+      .innerJoin(providerRecords, eq(providerRecords.id, serviceRecords.providerId)).where(and(visibleCatalogueService(), inArray(serviceRecords.providerId, providerIds))).groupBy(serviceRecords.providerId) : [];
     const serviceCounts = new Map(counts.map(row => [row.providerId, row.total]));
     const totals = input.scope === "providers" ? await db.select({ total: count() }).from(providerRecords).where(providerFilter)
       : await db.select({ total: count() }).from(serviceRecords).innerJoin(providerRecords, eq(serviceRecords.providerId, providerRecords.id)).where(serviceFilter);
     const last = servicePage[Math.min(limit, servicePage.length) - 1];
     const nextCursor = input.scope === "providers" ? (providerPage.length > input.limit ? { id: providerRows.at(-1)!.id, rank: 0 } : null)
       : input.scope !== "home" && input.scope !== "compare" && servicePage.length > limit ? { id: last!.service.id, rank: Number(last!.rank) } : null;
+    const connectedRows = providerIds.length ? await db.select({id: providerRecords.id}).from(providerRecords).where(and(inArray(providerRecords.id, providerIds), connectedApiCatalogue())) : [];
+    const connectedIds = new Set(connectedRows.map(row => row.id));
     const providers = providerRows.map(row => ({
+      apiConnected: connectedIds.has(row.id),
       id: `provider-${row.id}`, slug: row.slug, name: row.name, initials: row.initials, location: row.location ?? "",
       verified: row.verified, tier: tierFromDb[row.tier],
       // Public scores remain unavailable until the evidence-backed scoring pipeline exists.
@@ -122,9 +129,13 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
     const services = serviceRows.map(row => ({
       // Provider API IDs are only unique within that provider. The database ID is global.
       ...publicOfferMetadata(row),
+      sourceRate: row.apiListing ? row.sourceRate : null,
+      catalogueListing: row.apiListing ? "api_source" as const : "reviewed" as const,
+      sourceServiceId: row.sourceKind === "provider_api" ? row.externalId : publicOfferMetadata(row).sourceServiceId,
+      sourceUrl: row.apiListing ? safeSourceWebsite(row.providerWebsite, row.sourceUrl) : publicOfferMetadata(row).sourceUrl,
       id: `service-${row.id}`, providerId: `provider-${row.providerId}`, platform: row.platform, category: row.category,
-      name: row.name, priceAmount: Number(row.priceAmount), priceCurrency: row.priceCurrency,
-      priceUnit: row.priceUnit, packageDescription: row.packageDescription, countryCode: row.countryCode, min: row.minOrder, max: row.maxOrder,
+      name: row.name, priceAmount: Number(row.apiListing ? row.sourceRate : row.priceAmount), priceCurrency: row.apiListing ? null : row.priceCurrency,
+      priceUnit: row.apiListing ? null : row.priceUnit, packageDescription: row.packageDescription, countryCode: row.countryCode, min: row.minOrder, max: row.maxOrder,
       startTime: durationLabel(row.startMinutesMin, row.startMinutesMax),
       delivery: durationLabel(row.deliveryMinutesMin, row.deliveryMinutesMax),
       refill: row.refillMode === "unknown" ? "—" : row.refillMode === "lifetime" ? "Lifetime guarantee" : row.refillMode === "none" ? "No refill" : row.refillDays == null ? "Refill available; duration unspecified" : `${row.refillDays}-day ${row.refillMode === "automatic" ? "auto " : ""}refill`,
@@ -132,10 +143,19 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       retention: row.retentionBasisPoints == null ? null : row.retentionBasisPoints / 100, featured: row.featured,
     }));
     return { providers, services, source: "database" as const, pagination: { total: totals[0]?.total ?? 0, nextCursor } };
-  } catch {
-    console.warn("[Marketplace] Catalogue query failed; no substitute data will be shown");
+  } catch (error) {
+    const failure = (error as {cause?: Error & {code?: string}})?.cause ?? error as Error & {code?: string};
+    console.warn("[Marketplace] Catalogue query failed; no substitute data will be shown", failure?.code ?? "query_error");
+    if (process.env.VITEST && process.env.TEST_DATABASE_URL) console.warn("[Catalogue test diagnostic]", failure?.message);
     return empty("unavailable");
   }
+}
+
+function safeSourceWebsite(website: string | null, endpoint: string | null) {
+  try {
+    const url = new URL(website ?? endpoint ?? "");
+    return url.protocol === "https:" && !url.username && !url.password ? url.origin : null;
+  } catch { return null; }
 }
 
 function durationLabel(min: number | null, max: number | null) {

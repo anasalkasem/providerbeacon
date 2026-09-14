@@ -53,6 +53,7 @@ export const providerRecords = mysqlTable("provider_records", {
   location: varchar("location", { length: 160 }),
   description: text("description"),
   websiteUrl: varchar("websiteUrl", { length: 500 }),
+  apiCataloguePublished: boolean("apiCataloguePublished").default(false).notNull(),
   verified: boolean("verified").default(false).notNull(),
   score: int("score").default(0).notNull(),
   ratingBasisPoints: int("ratingBasisPoints").default(0).notNull(),

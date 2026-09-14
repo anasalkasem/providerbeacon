@@ -5,8 +5,12 @@ import { adminServicesInput, searchPattern, type AdminServicesInput } from "../s
 import { getDb } from "./db";
 import type { Permission } from "./authorization";
 import { catalogueViewFilter, reviewNeedFilter } from "./catalogueRules";
+import { visibleCatalogueProvider, visibleCatalogueService } from "./apiCatalogue";
 import { reviewNeeds, type ReviewNeed } from "../shared/serviceReview";
 import { isStale, reviewBlockers } from "./serviceNormalizer";
+
+const publicViewFilter = (view: Parameters<typeof catalogueViewFilter>[0]) => view === "published"
+  ? and(visibleCatalogueProvider(), visibleCatalogueService()) : catalogueViewFilter(view);
 
 const summaryCache = new AsyncResultCache<Awaited<ReturnType<typeof getServiceReviewSummary>>>(10_000, 64);
 const overviewCache = new AsyncResultCache<Awaited<ReturnType<typeof getAdminOverview>>>(10_000, 16);
@@ -21,7 +25,7 @@ export function getCachedAdminOverview(permissions: readonly Permission[]) {
 
 function adminServiceFilter(input: AdminServicesInput) {
   return and(
-    catalogueViewFilter(input.view),
+    publicViewFilter(input.view),
     input.countryCode ? eq(serviceRecords.countryCode, input.countryCode) : undefined,
     input.providerId ? eq(serviceRecords.providerId, input.providerId) : undefined,
     input.status ? eq(serviceRecords.status, input.status) : undefined,
@@ -94,7 +98,7 @@ export async function getAdminOverview(permissions: readonly Permission[]) {
     permissions.includes("services.read") ? db.select({ total: count() }).from(serviceRecords) : [],
     permissions.includes("services.read") ? db.select({ total: count() }).from(serviceRecords)
       .innerJoin(providerRecords, eq(providerRecords.id, serviceRecords.providerId))
-      .where(catalogueViewFilter("published")) : [],
+      .where(publicViewFilter("published")) : [],
     permissions.includes("team.read") ? db.select({ total: count() }).from(teamMembers) : [],
     permissions.includes("audit.read") ? db.select({ total: count() }).from(auditEntries) : [],
     permissions.includes("services.read") ? db.select({
