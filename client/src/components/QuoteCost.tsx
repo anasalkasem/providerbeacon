@@ -52,7 +52,7 @@ export default function QuoteCost({
                   : "Unable to calculate this rate";
   return (
     <div
-      className={`mt-3 rounded-lg px-3 py-2 text-xs leading-6 ${lowest && amount != null ? "bg-emerald-50" : service.featured && amount != null ? "bg-violet-50" : "bg-slate-50"}`}
+      className={`mt-3 rounded-lg px-3 py-2 text-xs leading-6 ${amount == null ? "bg-amber-50" : lowest ? "bg-emerald-100" : service.featured ? "bg-violet-100" : "bg-slate-50"}`}
     >
       <p className="text-slate-600">
         {ar ? "تكلفة الكمية المحددة" : "Cost for selected quantity"}
