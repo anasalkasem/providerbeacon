@@ -1,3 +1,4 @@
+import { publicOfferMetadata } from "../shared/sourcedOffers";
 import { and, asc, count, desc, eq, gt, inArray, like, lt, ne, notInArray, or, sql } from "drizzle-orm";
 import { createHash, randomBytes } from "node:crypto";
 import { lookup } from "node:dns/promises";
@@ -57,7 +58,8 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       input.quality ? eq(serviceRecords.quality, input.quality) : undefined,
       input.refillOnly ? inArray(serviceRecords.refillMode, ["manual", "automatic", "lifetime"]) : undefined,
       input.q && !providerScope ? or(like(serviceRecords.name, searchPattern(input.q)), like(serviceRecords.category, searchPattern(input.q)),
-        like(serviceRecords.platform, searchPattern(input.q)), like(providerRecords.name, searchPattern(input.q))) : undefined);
+        like(serviceRecords.platform, searchPattern(input.q)), like(providerRecords.name, searchPattern(input.q)),
+        and(eq(serviceRecords.sourceKind, "public_web"), sql`json_unquote(json_extract(${serviceRecords.sourceData}, '$.nameAr')) like ${searchPattern(input.q)}`)) : undefined);
     const rank = input.sort === "price" ? sql<number>`${serviceRecords.priceAmount}` : input.sort === "retention" ? sql<number>`coalesce(${serviceRecords.retentionBasisPoints}, -1)` : sql<number>`${serviceRecords.featured}`;
     const after = input.cursor ? or(
       input.sort === "price" ? gt(rank, input.cursor.rank) : lt(rank, input.cursor.rank),
@@ -99,6 +101,7 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
     }));
     const services = serviceRows.map(row => ({
       // Provider API IDs are only unique within that provider. The database ID is global.
+      ...publicOfferMetadata(row),
       id: `service-${row.id}`, providerId: `provider-${row.providerId}`, platform: row.platform, category: row.category,
       name: row.name, priceAmount: Number(row.priceAmount), priceCurrency: row.priceCurrency,
       priceUnit: row.priceUnit, packageDescription: row.packageDescription, countryCode: row.countryCode, min: row.minOrder, max: row.maxOrder,
@@ -199,7 +202,7 @@ export async function createProviderDraft(input: { name: string; websiteUrl: str
     status: "draft",
     tier: "specialized_partner",
     websiteUrl: endpoint.origin,
-    description: "Real provider draft awaiting API catalogue validation and editorial review.",
+    description: "Provider details are listed from public sources. Service delivery and quality have not been independently verified.",
     verified: false,
   }).onDuplicateKeyUpdate({ set: { name, websiteUrl: endpoint.origin } });
   const [provider] = await db.select().from(providerRecords).where(eq(providerRecords.slug, slug)).limit(1);
@@ -219,7 +222,7 @@ export async function ensureCanonicalProviderDrafts() {
     status: "draft",
     tier: "specialized_partner",
     websiteUrl: "https://justanotherpanel.com",
-    description: "Real provider draft awaiting API catalogue validation and editorial review.",
+    description: "Provider details are listed from public sources. Service delivery and quality have not been independently verified.",
     verified: false,
   }).$returningId();
   await writeAudit({ action: "provider.draft.bootstrap", entityType: "provider", entityId: String(inserted[0]!.id), summary: "Created the initial real provider draft for API onboarding", metadata: { websiteHost: "justanotherpanel.com" } });

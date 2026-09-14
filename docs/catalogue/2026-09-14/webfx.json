@@ -1,0 +1,17 @@
+[
+  {
+    "slug": "custom-social-management",
+    "name": "Custom social management",
+    "nameAr": "إدارة حسابات مخصصة",
+    "platform": "Instagram",
+    "category": "Content creation",
+    "price": 3000,
+    "currency": "USD",
+    "scope": "Monthly custom plan: consultation, audit and reporting.",
+    "scopeAr": "باقة شهرية مخصصة: استشارة وتدقيق وتقارير.",
+    "terms": "Starting fee; networks, creative work and ad allocation require a custom quote.",
+    "termsAr": "سعر ابتدائي؛ المنصات والمواد وتوزيع الإنفاق تحتاج عرضًا مخصصًا.",
+    "sourceUrl": "https://www.webfx.com/social-media/services/",
+    "priceType": "from"
+  }
+]

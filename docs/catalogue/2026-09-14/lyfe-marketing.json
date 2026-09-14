@@ -1,0 +1,47 @@
+[
+  {
+    "slug": "social-good",
+    "name": "Good · Social management",
+    "nameAr": "Good · إدارة الحسابات",
+    "platform": "Instagram",
+    "category": "Content creation",
+    "price": 750,
+    "currency": "USD",
+    "scope": "12 monthly image posts; Facebook and Instagram.",
+    "scopeAr": "12 منشور صور شهريًا؛ Facebook وInstagram.",
+    "terms": "USD 300 setup; advertising budget separate. Confirm final scope.",
+    "termsAr": "تأسيس 300 USD؛ ميزانية الإعلان منفصلة. أكّد النطاق النهائي.",
+    "sourceUrl": "https://www.lyfemarketing.com/social-media-management-pricing/",
+    "priceType": "listed"
+  },
+  {
+    "slug": "social-better",
+    "name": "Better · Social management",
+    "nameAr": "Better · إدارة الحسابات",
+    "platform": "Instagram",
+    "category": "Content creation",
+    "price": 1350,
+    "currency": "USD",
+    "scope": "12 monthly posts with vertical videos; Instagram and TikTok.",
+    "scopeAr": "12 منشورًا شهريًا بفيديوهات عمودية؛ Instagram وTikTok.",
+    "terms": "USD 300 setup; advertising budget separate. Confirm final scope.",
+    "termsAr": "تأسيس 300 USD؛ ميزانية الإعلان منفصلة. أكّد النطاق النهائي.",
+    "sourceUrl": "https://www.lyfemarketing.com/social-media-management-pricing/",
+    "priceType": "listed"
+  },
+  {
+    "slug": "social-best",
+    "name": "Best · Social management",
+    "nameAr": "Best · إدارة الحسابات",
+    "platform": "Instagram",
+    "category": "Content creation",
+    "price": 1550,
+    "currency": "USD",
+    "scope": "20 monthly posts with vertical videos; Instagram and TikTok.",
+    "scopeAr": "20 منشورًا شهريًا بفيديوهات عمودية؛ Instagram وTikTok.",
+    "terms": "USD 300 setup; advertising budget separate. Confirm final scope.",
+    "termsAr": "تأسيس 300 USD؛ ميزانية الإعلان منفصلة. أكّد النطاق النهائي.",
+    "sourceUrl": "https://www.lyfemarketing.com/social-media-management-pricing/",
+    "priceType": "listed"
+  }
+]

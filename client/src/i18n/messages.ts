@@ -127,6 +127,7 @@ const marketplaceTranslations: Record<Exclude<Locale, "en">, Record<string, stri
 for (const locale of Object.keys(marketplaceTranslations) as Exclude<Locale, "en">[]) Object.assign(exactData[locale]!, marketplaceTranslations[locale]);
 
 export function localizeData(locale: Locale, value: string) {
+  if (locale === "ar" && value === "Provider details are listed from public sources. Service delivery and quality have not been independently verified.") return "معلومات المزود من مصادر عامة. لم نتحقق بشكل مستقل من جودة الخدمة أو تنفيذها.";
   return exactData[locale]?.[value] ?? value;
 }
 

@@ -1,3 +1,4 @@
+import SourcedOfferImport from "./SourcedOfferImport";
 import { formatPrice, unitLabel } from "@/i18n/pricing";
 import { useEffect, useState } from "react";
 import { useSearch } from "wouter";
@@ -159,6 +160,7 @@ export default function AdminServices({
         : "requestChanges";
   return (
     <section className="space-y-4" aria-label={text("serviceCatalogue")}>
+      <SourcedOfferImport/>
       <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4">
         <label className="min-w-52 flex-1 text-xs font-semibold text-slate-600">
           {text("searchServices")}

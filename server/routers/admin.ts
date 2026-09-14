@@ -1,3 +1,5 @@
+import { createSourcedDrafts } from "../sourcedOffersDb";
+import { sourcedBatchInput } from "../../shared/sourcedOffers";
 import { listProviderSyncIssues } from "../providerSync";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
@@ -46,6 +48,7 @@ export const adminRouter = router({
     setStatus: permissionProcedure("providers.review").input(z.object({ id: z.number().int().positive(), status: z.enum(["draft", "pending_review", "active", "suspended"]) })).mutation(({ ctx, input }) => updateProviderStatus({ ...input, actorUserId: ctx.user!.id })),
   }),
   services: router({
+    createSourcedDrafts: permissionProcedure("services.write").input(sourcedBatchInput).mutation(({ ctx, input }) => createSourcedDrafts({ ...input, actorUserId: ctx.user!.id, ipAddress: ctx.req.ip })),
     reviewSummary: permissionProcedure("services.read").input(adminServicesInput).query(({ input }) => getServiceReviewSummary(input)),
     detail: permissionProcedure("services.read").input(z.object({ id: z.number().int().positive() })).query(({ input }) => getServiceReview(input.id)),
     editReview: permissionProcedure("services.write").input(reviewEditInput).mutation(({ ctx, input }) => editServiceReview({ ...input, actorUserId: ctx.user!.id, ipAddress: ctx.req.ip })),

@@ -61,6 +61,17 @@ describe("public catalogue rendering", () => {
     expect(html).toContain("No lowest-price ranking"); expect(html).not.toContain(">Lowest price<");
     expect(render(ServiceRow, {service: a, selected: false, onToggle: () => {}})).toContain("per item");
   });
+  it("compares sourced monthly packages with scope, terms and source links", () => {
+    const provider = state.data.providers[0];
+    const a = {...state.data.services[0], priceCurrency: "USD", priceUnit: "package", billingCycle: "monthly", packageDescription: "10 posts per month", terms: "One channel. Extra channels cost USD 10.", sourceUrl: "https://example.com/pricing", checkedAt: new Date().toISOString()};
+    const b = {...a, id: "service-41", priceAmount: 3000, priceType: "from"};
+    state.data = {...state.data, ...catalogueIndex([provider], [a,b])};
+    vi.stubGlobal("window", {location: {search: "?services=service-40,service-41"}});
+    const html = render(Compare);
+    expect(html).toContain("From USD 3,000.00"); expect(html).toContain("per month");
+    expect(html).toContain("https://example.com/pricing"); expect(html).toContain("One channel. Extra channels cost USD 10.");
+    expect(html).not.toContain(">Lowest price<");
+  });
   it("marks absent scores as insufficient evidence without a positive grade", () => {
     const html = render(ScoreRing, { score: null, showLabel: true });
     expect(html).toContain("Insufficient evidence"); expect(html).not.toContain("Good"); expect(html).not.toContain("/100");

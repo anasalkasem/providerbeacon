@@ -56,6 +56,14 @@ export type Service = {
   refill: string;
   quality: "Standard" | "Premium" | "Elite";
   retention: number | null;
+  sourceUrl?: string | null;
+  checkedAt?: string | null;
+  billingCycle?: "monthly" | null;
+  priceType?: "listed" | "from";
+  nameAr?: string | null;
+  packageDescriptionAr?: string | null;
+  terms?: string | null;
+  termsAr?: string | null;
   featured?: boolean;
 };
 
