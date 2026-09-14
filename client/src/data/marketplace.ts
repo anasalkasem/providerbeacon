@@ -57,6 +57,7 @@ export type Service = {
   quality: "Standard" | "Premium" | "Elite";
   retention: number | null;
   sourceUrl?: string | null;
+  sourceServiceId?: string | null;
   checkedAt?: string | null;
   billingCycle?: "monthly" | null;
   priceType?: "listed" | "from";

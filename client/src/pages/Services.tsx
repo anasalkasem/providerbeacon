@@ -1,76 +1,325 @@
-import OfferEvidence, { serviceName, serviceScope } from "@/components/OfferEvidence";
-import { GuideGrid } from "@/components/Discovery";
-import { discoveryText } from "@/i18n/discovery";
-import { priceCurrencies, priceUnits, type PriceCurrency, type PriceUnit } from "../../../shared/pricing";
-import { platforms } from "../../../shared/serviceReview";
-import { formatPrice, unitLabel, pricingCopy } from "@/i18n/pricing";
-import { CataloguePagination } from "@/components/CataloguePagination";
-import { ProviderAvatar, ServiceRow } from "@/components/Marketplace";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "wouter";
 import { PublicLayout } from "@/components/SiteChrome";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CataloguePagination } from "@/components/CataloguePagination";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
 import { type Service } from "@/data/marketplace";
-import { formatNumber, localizeData, localizeDuration, pageCopy } from "@/i18n/messages";
-import { ArrowRight, Check, Clock3, ListFilter, Search, ShieldCheck, SlidersHorizontal, Sparkles, X } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { platforms, serviceTypes } from "../../../shared/serviceReview";
+import { priceCurrencies, type PriceCurrency } from "../../../shared/pricing";
+import { localizeData } from "@/i18n/messages";
+import { GuideGrid } from "@/components/Discovery";
+import SmmOfferTable from "@/components/SmmOfferTable";
 
 export default function Services() {
   const { locale } = useLocale();
-  const t = pageCopy[locale];
-  const discovery = discoveryText(locale);
-  const { services, providerFor, setFilters, pagination, isLoading } = useMarketplaceData();
+  const ar = locale === "ar";
   const params = new URLSearchParams(window.location.search);
+  const { services, setFilters, pagination, isLoading, source } =
+    useMarketplaceData();
   const [, navigate] = useLocation();
+  const [market, setMarket] = useState<"smm" | "packages">(
+    params.get("market") === "packages" ? "packages" : "smm"
+  );
   const [query, setQuery] = useState(params.get("q") ?? "");
-  const [platform, setPlatform] = useState("all");
-  const [sort, setSort] = useState("recommended");
-  const [priceCurrency, setPriceCurrency] = useState<PriceCurrency | "">("");
-  const [priceUnit, setPriceUnit] = useState<PriceUnit | "">("");
-  const canSortPrice = !!priceCurrency && !!priceUnit && priceUnit !== "package";
-  const pricing = pricingCopy[locale];
-  const [quality, setQuality] = useState("all");
+  const [platform, setPlatform] = useState(
+    platforms.includes(params.get("platform") as any)
+      ? params.get("platform")!
+      : "all"
+  );
+  const [category, setCategory] = useState(
+    serviceTypes.includes(params.get("category") as any)
+      ? params.get("category")!
+      : "all"
+  );
+  const [currency, setCurrency] = useState<PriceCurrency | "">("USD");
+  const [sort, setSort] = useState<"recommended" | "price">("recommended");
   const [refillOnly, setRefillOnly] = useState(false);
-  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [quantity, setQuantity] = useState(1000);
   const [selected, setSelected] = useState<Service[]>([]);
+  const field =
+    "h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm";
   useEffect(() => {
-    const timer = setTimeout(() => setFilters({ q: query.trim(), platform: platform === "all" ? undefined : platform,
-      quality: quality === "all" ? undefined : quality.toLowerCase() as "standard" | "premium" | "elite", refillOnly,
-      priceCurrency: priceCurrency || undefined, priceUnit: priceUnit || undefined,
-      sort: (sort === "price" && !canSortPrice ? "recommended" : sort) as "recommended" | "price" | "retention" }), 300);
+    const timer = setTimeout(
+      () =>
+        setFilters({
+          q: query.trim(),
+          market,
+          platform: platform === "all" ? undefined : platform,
+          category:
+            category === "all"
+              ? undefined
+              : (category as (typeof serviceTypes)[number]),
+          priceCurrency: currency || undefined,
+          priceUnit: market === "smm" ? "per_1000" : "package",
+          refillOnly: market === "smm" && refillOnly,
+          sort: market === "smm" && currency ? sort : "recommended",
+        }),
+      250
+    );
     return () => clearTimeout(timer);
-  }, [query, platform, quality, refillOnly, sort, priceCurrency, priceUnit, canSortPrice, setFilters]);
-  const filtered = services;
-  const toggle = (service: Service) => setSelected(current => current.some(item => item.id === service.id) ? current.filter(item => item.id !== service.id) : current.length < 4 ? [...current, service] : current);
-  const compare = () => navigate(`/compare?services=${selected.map(service => service.id).join(",")}`);
-
-  return <PublicLayout>
-    <section className="border-b border-slate-200 bg-white"><div className="container py-12"><div className="eyebrow light"><Sparkles className="size-4"/>{discovery.guides}</div><h1 className="mt-5 text-4xl font-extrabold tracking-tight text-slate-950 sm:text-6xl">{pagination.total > 0 ? (locale === "ar" ? "خدمات وأسعار من مصادرها." : "Services and prices, with sources.") : discovery.guideTitle}</h1><p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">{discovery.guideBody}</p></div></section>
-    <section className="container py-8"><div className="mb-6 flex max-w-3xl flex-wrap items-center gap-3"><label className="relative block min-w-0 flex-1"><span className="sr-only">{discovery.find}</span><Search className="absolute start-4 top-4 size-5 text-slate-400"/><Input value={query} maxLength={100} onChange={e=>setQuery(e.target.value)} placeholder={discovery.find} className="h-14 rounded-xl bg-white ps-12"/></label>{query && <button type="button" className="h-12 shrink-0 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-teal-700" onClick={()=>setQuery("")}>{discovery.clear}</button>}</div><details className="mb-6 rounded-xl border border-slate-200 bg-white p-4" open={pagination.total === 0 ? true : undefined}><summary className="cursor-pointer text-sm font-bold">{discovery.guides}</summary><div className="mt-4"><GuideGrid query={query}/></div></details>
-    <details className="mt-10 rounded-2xl border border-slate-200 bg-white p-5" open={pagination.total>0?true:undefined}><summary className="cursor-pointer text-lg font-extrabold">{discovery.offers}</summary>{pagination.total > 0 && <p className="mt-4 text-sm leading-7 text-slate-500">{locale === "ar" ? "راجعنا الأسعار المعلنة ونطاق الباقات. اعتماد بيانات العرض لا يعني توثيق جودة التنفيذ؛ أكّد السعر والشروط مع المزود قبل التعاقد." : "We reviewed advertised prices and package scope. Listing review does not verify delivery quality; confirm the price and terms with the provider before engaging."}</p>}{!isLoading && pagination.total===0 && <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-500">{discovery.noOffers}</p>}<div className="filter-bar mt-5">
-      <Select value={platform} onValueChange={setPlatform}><SelectTrigger className="h-12 w-full rounded-xl border-slate-200 sm:w-[190px]"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="all">{t.allPlatforms}</SelectItem>{platforms.filter(value => value !== "Unknown").map(item => <SelectItem value={item} key={item}>{item}</SelectItem>)}</SelectContent></Select>
-      <Select value={sort} onValueChange={setSort}><SelectTrigger className="h-12 w-full rounded-xl border-slate-200 sm:w-[190px]"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="recommended">{t.recommended}</SelectItem><SelectItem value="price" disabled={!canSortPrice}>{t.lowestPrice}</SelectItem><SelectItem value="retention">{t.bestRetention}</SelectItem></SelectContent></Select>
-      <Button variant="outline" aria-expanded={advancedOpen} onClick={() => setAdvancedOpen(!advancedOpen)} className="h-12 rounded-xl"><SlidersHorizontal className="size-4"/>{t.moreFilters}</Button></div>
-      <div className="mt-3 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-2">
-        <label className="grid gap-1 text-sm font-semibold">{pricing.currency}<select aria-label={pricing.currency} className="h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3" value={priceCurrency} onChange={event => {setPriceCurrency(event.target.value as PriceCurrency | ""); setSort("recommended");}}><option value="">{pricing.allCurrencies}</option>{priceCurrencies.map(value => <option key={value} value={value}>{value}</option>)}</select></label>
-        <label className="grid gap-1 text-sm font-semibold">{pricing.unit}<select aria-label={pricing.unit} className="h-11 min-w-0 rounded-xl border border-slate-200 bg-white px-3" value={priceUnit} onChange={event => {setPriceUnit(event.target.value as PriceUnit | ""); setSort("recommended");}}><option value="">{pricing.allUnits}</option>{priceUnits.map(value => <option key={value} value={value}>{pricing[value]}</option>)}</select></label>
-        {!canSortPrice && <p className="text-xs text-slate-500 sm:col-span-2">{pricing.sortHint}</p>}
-      </div>
-      {advancedOpen && <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center"><Select value={quality} onValueChange={setQuality}><SelectTrigger className="h-11 w-full rounded-xl sm:w-[220px]"><SelectValue/></SelectTrigger><SelectContent><SelectItem value="all">{t.allQuality}</SelectItem>{["Standard","Premium","Elite"].map(item => <SelectItem value={item} key={item}>{localizeData(locale, item)}</SelectItem>)}</SelectContent></Select><label className="flex h-11 items-center gap-3 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700"><input type="checkbox" checked={refillOnly} onChange={event => setRefillOnly(event.target.checked)} className="size-4 accent-cyan-600"/>{t.refillOnly}</label><button onClick={() => { setQuality("all"); setRefillOnly(false); }} className="h-11 px-3 text-sm font-semibold text-slate-500 hover:text-slate-900">{t.resetFilters}</button></div>}
-      <div className="mt-6 flex items-center justify-between gap-4"><p className="text-sm text-slate-500"><strong className="text-slate-900">{formatNumber(locale, pagination.total)}</strong> {t.servicesFound}</p><div className="flex items-center gap-2 text-xs text-slate-500"><ListFilter className="size-4"/>{t.updatedContinuously}</div></div>
-      <div className="mt-5 grid gap-3 md:hidden">{filtered.map(service => { const provider = providerFor(service); const checked = selected.some(item => item.id === service.id); return <article key={service.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex items-start justify-between gap-3"><div className="flex min-w-0 gap-3"><ProviderAvatar provider={provider}/><div className="min-w-0"><p className="text-xs font-semibold text-slate-500">{provider.name}</p><h2 className="mt-1 text-sm font-extrabold text-slate-900">{serviceName(locale, service)}</h2></div></div><button onClick={() => toggle(service)} aria-label={`${checked ? t.removeFromComparison : t.addToComparison}: ${serviceName(locale, service)}`} className={`grid size-8 shrink-0 place-items-center rounded-lg border ${checked ? "border-cyan-500 bg-cyan-500 text-white" : "border-slate-200"}`}>{checked ? <Check className="size-4"/> : <span className="text-lg leading-none">+</span>}</button></div>
-        <div className="mt-4 rounded-xl bg-slate-50 p-3"><p className="text-xs text-slate-500">{unitLabel(locale, service)}</p><bdi dir="ltr" className="mt-1 block text-xl font-extrabold">{formatPrice(locale, service)}</bdi>{service.packageDescription && <p className="mt-2 text-sm text-slate-600">{serviceScope(locale,service)}</p>}
-        {!service.billingCycle && <p className="mt-2 text-xs text-slate-500">{t.start}: {localizeDuration(locale,service.startTime)} · {t.refill}: {localizeData(locale,service.refill)}</p>}
-        <OfferEvidence service={service} showTerms/>
-        </div></article>; })}</div>
-      <div className="mt-5 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:block"><div className="overflow-x-auto"><table className="w-full border-collapse text-start"><thead><tr className="border-b border-slate-200 bg-slate-50 text-start text-[11px] uppercase tracking-wider text-slate-500"><th className="w-12 px-4 py-3"><span className="sr-only">{t.comparison}</span></th><th className="px-4 py-3 text-start">{t.service}</th><th className="px-4 py-3 text-start">{t.provider}</th><th className="px-4 py-3 text-start">{t.price}</th><th className="px-4 py-3 text-start">{t.delivery}</th><th className="px-4 py-3 text-start">{t.protection}</th></tr></thead><tbody className="divide-y divide-slate-100">{filtered.map(service => <ServiceRow key={service.id} service={service} selected={selected.some(item => item.id === service.id)} onToggle={toggle}/>)}</tbody></table></div></div>
-      {!isLoading && filtered.length === 0 && <div className="grid place-items-center px-6 py-20 text-center"><Search className="size-8 text-slate-300"/><h2 className="mt-4 font-bold text-slate-900">{t.noMatches}</h2><p className="mt-2 text-sm text-slate-500">{t.noMatchesBody}</p></div>}
-      <CataloguePagination/>
-    </details></section>
-    {selected.length > 0 && <aside className="compare-dock" aria-label={t.comparison}><div className="flex min-w-0 items-center gap-3"><div className="grid size-10 shrink-0 place-items-center rounded-xl bg-cyan-400 font-extrabold text-[#071321]">{formatNumber(locale, selected.length)}</div><div className="hidden min-w-0 sm:block"><p className="font-bold text-white">{t.readyCompare}</p><p className="truncate text-xs text-slate-400">{selected.map(item => serviceName(locale, item)).join(" · ")}</p></div></div><div className="flex items-center gap-2"><button className="rounded-lg p-2 text-slate-400 hover:text-white" onClick={() => setSelected([])} aria-label={t.clearComparison}><X className="size-5"/></button><Button onClick={compare} className="rounded-xl bg-cyan-400 font-bold text-[#071321] hover:bg-cyan-300">{t.comparison} {formatNumber(locale, selected.length)}<ArrowRight className="size-4 rtl:rotate-180"/></Button></div></aside>}
-  </PublicLayout>;
+  }, [
+    query,
+    market,
+    platform,
+    category,
+    currency,
+    refillOnly,
+    sort,
+    setFilters,
+  ]);
+  const toggle = (service: Service) =>
+    setSelected(current =>
+      current.some(item => item.id === service.id)
+        ? current.filter(item => item.id !== service.id)
+        : current.length < 4
+          ? [...current, service]
+          : current
+    );
+  return (
+    <PublicLayout>
+      <section className="container py-8 sm:py-12">
+        <p className="section-kicker">PROVIDERBEACON MARKETPLACE</p>
+        <h1 className="mt-3 text-3xl font-extrabold text-slate-950 sm:text-4xl">
+          {ar
+            ? "عروض SMM. قارن قبل أن تختار."
+            : "SMM offers. Compare before you choose."}
+        </h1>
+        <p className="mt-3 max-w-3xl leading-7 text-slate-600">
+          {ar
+            ? "متابعون، مشاهدات وإعجابات من مزودين مختلفين. قارن سعر الألف والكمية والتعويض مع رابط المصدر لكل عرض."
+            : "Followers, views and likes from different providers. Compare unit prices, quantities and refill terms, with a source for every offer."}
+        </p>
+        <div
+          className="my-6 flex flex-wrap gap-2"
+          role="group"
+          aria-label={ar ? "نوع السوق" : "Marketplace type"}
+        >
+          {(["smm", "packages"] as const).map(value => (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={market === value}
+              onClick={() => {
+                setMarket(value);
+                setCategory("all");
+                setRefillOnly(false);
+                setSelected([]);
+                setSort("recommended");
+              }}
+              className={`rounded-xl border px-5 py-3 text-sm font-bold ${market === value ? "border-[#0B2A48] bg-[#0B2A48] text-white" : "border-slate-200 bg-white text-slate-600"}`}
+            >
+              {value === "smm"
+                ? ar
+                  ? "خدمات SMM بالجملة"
+                  : "Wholesale SMM"
+                : ar
+                  ? "باقات وكالات التسويق"
+                  : "Agency packages"}
+            </button>
+          ))}
+        </div>
+        <div className="mb-6 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="grid gap-2 text-sm font-bold sm:col-span-2">
+            {ar ? "ابحث عن خدمة أو مزود" : "Find a service or provider"}
+            <input
+              className={field}
+              value={query}
+              maxLength={100}
+              placeholder={
+                ar ? "مثال: متابعين إنستغرام" : "e.g. Instagram followers"
+              }
+              onChange={e => setQuery(e.target.value)}
+            />
+          </label>
+          <label className="grid gap-2 text-sm font-bold">
+            {ar ? "المنصة" : "Platform"}
+            <select
+              className={field}
+              value={platform}
+              onChange={e => setPlatform(e.target.value)}
+            >
+              <option value="all">
+                {ar ? "جميع المنصات" : "All platforms"}
+              </option>
+              {platforms
+                .filter(p => p !== "Unknown")
+                .map(p => (
+                  <option key={p}>{p}</option>
+                ))}
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm font-bold">
+            {ar ? "نوع الخدمة" : "Service type"}
+            <select
+              className={field}
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+            >
+              <option value="all">{ar ? "جميع الأنواع" : "All types"}</option>
+              {serviceTypes
+                .filter(
+                  c =>
+                    c !== "Other" &&
+                    (market === "packages" ||
+                      [
+                        "Followers",
+                        "Views",
+                        "Likes",
+                        "Comments",
+                        "Shares",
+                        "Subscribers",
+                      ].includes(c))
+                )
+                .map(c => (
+                  <option key={c} value={c}>
+                    {localizeData(locale, c)}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm font-bold">
+            {ar ? "العملة" : "Currency"}
+            <select
+              className={field}
+              value={currency}
+              onChange={e => setCurrency(e.target.value as PriceCurrency | "")}
+            >
+              <option value="">{ar ? "جميع العملات" : "All currencies"}</option>
+              {priceCurrencies.map(c => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-2 text-sm font-bold">
+            {ar ? "الترتيب" : "Sort"}
+            <select
+              className={field}
+              value={sort}
+              onChange={e => setSort(e.target.value as typeof sort)}
+            >
+              <option value="recommended">
+                {ar ? "ترتيب الدليل" : "Directory order"}
+              </option>
+              <option
+                value="price"
+                disabled={!currency || market === "packages"}
+              >
+                {ar ? "سعر الألف: من الأقل" : "Price per 1,000: low to high"}
+              </option>
+            </select>
+          </label>
+          {market === "smm" && (
+            <>
+              <label className="grid gap-2 text-sm font-bold">
+                {ar ? "كمية المقارنة" : "Comparison quantity"}
+                <input
+                  type="number"
+                  min={1}
+                  max={2147483647}
+                  step={1}
+                  className={field}
+                  value={Number.isFinite(quantity) ? quantity : ""}
+                  onChange={e => setQuantity(e.target.valueAsNumber)}
+                />
+              </label>
+              <label className="flex items-center gap-3 text-sm font-bold">
+                <input
+                  type="checkbox"
+                  checked={refillOnly}
+                  onChange={e => setRefillOnly(e.target.checked)}
+                  className="size-5 accent-teal-700"
+                />
+                {ar ? "عروض مع تعويض فقط" : "Refill available only"}
+              </label>
+            </>
+          )}
+        </div>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="font-bold text-slate-700">
+            {pagination.total.toLocaleString(locale)} {ar ? "عرض" : "offers"}
+          </p>
+          <button
+            type="button"
+            className="text-sm font-bold text-teal-700"
+            onClick={() => {
+              setQuery("");
+              setPlatform("all");
+              setCategory("all");
+              setCurrency("USD");
+              setRefillOnly(false);
+              setSort("recommended");
+            }}
+          >
+            {ar ? "مسح الفلاتر" : "Clear filters"}
+          </button>
+        </div>
+        <SmmOfferTable
+          services={services}
+          selected={selected}
+          toggle={toggle}
+          quantity={quantity}
+        />
+        {isLoading && (
+          <p className="p-8 text-center" role="status">
+            {ar ? "جارٍ تحميل العروض…" : "Loading offers…"}
+          </p>
+        )}
+        {!isLoading && services.length === 0 && source !== "unavailable" && (
+          <p className="rounded-xl bg-slate-50 p-8 text-center">
+            {ar
+              ? "لا توجد عروض منشورة تطابق هذه الفلاتر حاليًا."
+              : "No published offers match these filters yet."}
+          </p>
+        )}
+        <CataloguePagination />
+        <p className="mt-5 text-sm leading-7 text-slate-500">
+          {ar
+            ? "الأسعار وشروط التنفيذ معلنة من المزودين؛ فحص المصدر لا يعني اختبار جودة التنفيذ. ترتيب السعر لا يساوي ترتيب الجودة."
+            : "Prices and delivery terms are provider claims. Checking a source does not test delivery quality. Price order is not a quality ranking."}
+        </p>
+        <details className="mt-8 rounded-xl border border-slate-200 p-4">
+          <summary className="cursor-pointer font-bold">
+            {ar ? "أدلة اختيار الخدمات" : "Service buying guides"}
+          </summary>
+          <div className="mt-4">
+            <GuideGrid query={query} />
+            <Link
+              href="/compare?manual=1"
+              className="mt-5 inline-block font-bold text-teal-700"
+            >
+              {ar
+                ? "مقارنة عروض أسعار مخصصة يدويًا"
+                : "Compare custom quotes manually"}
+            </Link>
+          </div>
+        </details>
+        {selected.length > 0 && (
+          <div className="sticky bottom-4 z-20 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#0B2A48] p-4 text-white shadow-xl">
+            <p>
+              {ar
+                ? `اخترت ${selected.length} من ٤ عروض`
+                : `${selected.length} of 4 offers selected`}
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setSelected([])} className="px-3 text-sm">
+                {ar ? "إلغاء الاختيار" : "Clear selection"}
+              </button>
+              <button
+                disabled={selected.length < 2}
+                onClick={() =>
+                  navigate(
+                    `/compare?services=${selected.map(s => s.id).join(",")}&quantity=${Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1000}`
+                  )
+                }
+                className="rounded-xl bg-teal-300 px-5 py-3 font-bold text-slate-950 disabled:opacity-40"
+              >
+                {ar ? "افتح المقارنة" : "Open comparison"}
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+    </PublicLayout>
+  );
 }

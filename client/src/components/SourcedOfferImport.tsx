@@ -24,7 +24,7 @@ export default function SourcedOfferImport() {
   if (!allowed || !access.data?.permissions.includes("services.write")) return null;
   return <details className="rounded-2xl border border-slate-200 bg-white p-5">
     <summary className="cursor-pointer font-bold">{ar ? "إضافة عروض من مصادر عامة" : "Add offers from public sources"}</summary>
-    <p className="mt-3 text-sm leading-6 text-slate-500">{ar ? "استورد حتى ٢٠ باقة شهرية من موقع المزود الرسمي. تُحفظ كمسودات وتتطلب تأكيد السعر وفحص الأهلية والاعتماد قبل النشر." : "Import up to 20 monthly packages from the provider's official website. Drafts still require price confirmation, eligibility review and approval before publication."}</p>
+    <p className="mt-3 text-sm leading-6 text-slate-500">{ar ? "استورد حتى ٢٠ عرض SMM أو باقة شهرية من موقع المزود الرسمي. تُحفظ كمسودات وتتطلب تأكيد السعر وفحص الأهلية والاعتماد قبل النشر." : "Import up to 20 SMM offers or monthly packages from the provider's official website. Drafts still require price confirmation, eligibility review and approval before publication."}</p>
     <form className="mt-4 space-y-4" onSubmit={async event => {
       event.preventDefault();
       try {
