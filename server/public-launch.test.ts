@@ -40,7 +40,8 @@ describe("public release without approved prices", () => {
       state.locale = locale;
       const html = render(Home);
       expect(html).toContain("/services/instagram-content");
-      expect(html).toContain("/directory/fiverr");
+      expect(html).not.toContain("/directory/fiverr");
+      expect(html).not.toContain("/directory/upwork");
       expect(html).toContain('id="methodology"');
       expect(html).not.toContain("No published services yet");
       expect(html).not.toContain("Ask Beacon AI");

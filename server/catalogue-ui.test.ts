@@ -29,6 +29,20 @@ afterEach(() => vi.unstubAllGlobals());
 const render = (component: React.ComponentType<any>, props = {}) => renderToStaticMarkup(React.createElement(component, props));
 
 describe("public catalogue rendering", () => {
+  it("renders connected API rates without rounding them into a currency or inventing a quantity total", () => {
+    const provider = {...state.data.providers[0], apiConnected: true, activeServicesCount: 2};
+    const a = {...state.data.services[0], catalogueListing: "api_source", sourceRate: "1.0123456", priceAmount: 1.0123456, priceCurrency: null, priceUnit: null, sourceUrl: "https://provider.example"};
+    const b = {...a, id:"service-41", sourceRate:"0.12555", priceAmount:0.12555};
+    state.data = {...state.data, ...catalogueIndex([provider], [a,b])};
+    const home=render(Home);
+    expect(home).toContain("1.0123456"); expect(home).toContain("API connected");
+    expect(home).toContain("currency and unit awaiting confirmation"); expect(home).not.toContain("Outside order limits");
+    expect(home).not.toContain("/directory/fiverr");
+    vi.stubGlobal("window",{location:{search:"?services=service-40,service-41"}});
+    const comparison=render(Compare);
+    expect(comparison).toContain("Total requires confirmed currency and sale unit");
+    expect(comparison).not.toContain(">Lowest price<");
+  });
   it("uses the live provider in the actual service table row", () => {
     const html = render(ServiceRow, { service: state.data.services[0], selected: false, onToggle: () => {} });
     expect(html).toContain("Independent provider"); expect(html).not.toContain("Northstar");

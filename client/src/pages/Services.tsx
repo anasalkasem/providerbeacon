@@ -32,7 +32,7 @@ export default function Services() {
       ? params.get("category")!
       : "all"
   );
-  const [currency, setCurrency] = useState<PriceCurrency | "">("USD");
+  const [currency, setCurrency] = useState<PriceCurrency | "">("");
   const [sort, setSort] = useState<"recommended" | "price">("recommended");
   const [refillOnly, setRefillOnly] = useState(false);
   const [quantity, setQuantity] = useState(1000);
@@ -51,7 +51,7 @@ export default function Services() {
               ? undefined
               : (category as (typeof serviceTypes)[number]),
           priceCurrency: currency || undefined,
-          priceUnit: market === "smm" ? "per_1000" : "package",
+          priceUnit: market === "packages" ? "package" : sort === "price" && currency ? "per_1000" : undefined,
           refillOnly: market === "smm" && refillOnly,
           sort: market === "smm" && currency ? sort : "recommended",
         }),
@@ -87,8 +87,8 @@ export default function Services() {
         </h1>
         <p className="mt-3 max-w-3xl leading-7 text-slate-600">
           {ar
-            ? "متابعون، مشاهدات وإعجابات من مزودين مختلفين. قارن سعر الألف والكمية والتعويض مع رابط المصدر لكل عرض."
-            : "Followers, views and likes from different providers. Compare unit prices, quantities and refill terms, with a source for every offer."}
+            ? "استكشف الخدمات التي جلبها اتصال المزود، وابحث حسب المنصة والنوع وحدود الطلب. الأسعار الأصلية تظهر كما وردت؛ حساب تكلفة الكمية يتاح بعد تأكيد العملة ووحدة السعر."
+            : "Explore services imported through the provider connection. Search by platform, type and order limits. Original rates are preserved; quantity quotes require confirmed currency and sale units."}
         </p>
         <div
           className="my-6 flex flex-wrap gap-2"

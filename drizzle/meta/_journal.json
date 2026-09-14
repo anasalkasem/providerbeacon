@@ -78,6 +78,13 @@
       "when": 1789392002000,
       "tag": "0010_catalogue_scale_indexes",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1789392003000,
+      "tag": "0011_connected_api_catalogue",
+      "breakpoints": true
     }
   ]
 }

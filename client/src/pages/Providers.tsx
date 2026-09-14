@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { PublicLayout } from "@/components/SiteChrome";
-import { ReferenceGrid } from "@/components/Discovery";
 import { ProviderCard } from "@/components/Marketplace";
 import { CataloguePagination } from "@/components/CataloguePagination";
 import { useLocale } from "@/contexts/LocaleContext";
@@ -68,6 +67,7 @@ export default function Providers() {
             </button>
           ))}
         </div>
+        {providers.length === 0 && <p className="mt-8 rounded-xl border p-6 text-slate-500">{ar ? "لا يوجد مزود منشور في هذه الفئة." : "No published providers in this category."}</p>}
         {providers.length > 0 && (
           <section className="mt-12">
             <h2 className="mb-6 text-2xl font-extrabold">{t.liveProfiles}</h2>
@@ -79,14 +79,6 @@ export default function Providers() {
             <CataloguePagination />
           </section>
         )}
-        <details className="mt-10 rounded-xl border p-4">
-          <summary className="cursor-pointer font-bold">
-            {ar ? "دليل مرجعي إضافي" : "Additional reference directory"}
-          </summary>
-          <div className="mt-5">
-            <ReferenceGrid query={query} />
-          </div>
-        </details>
         <section
           id="join"
           className="mt-14 scroll-mt-24 rounded-2xl bg-[#0B2A48] p-8 text-white"

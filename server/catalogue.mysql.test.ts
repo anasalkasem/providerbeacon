@@ -96,6 +96,53 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     await state.db.update(providerRecords).set({ websiteUrl: "https://provider.example" }).where(eq(providerRecords.id, providerId));
     return createSourcedDrafts({ providerId, offers: [webOffer], reason: "Test public-source extraction", actorUserId: actorId });
   }
+
+
+  it("removes manually researched listings but preserves connections and activates only the existing JAP API", async () => {
+    const [manual] = await state.db.insert(providerRecords).values({slug:"smm-africa",name:"SMM Africa",initials:"SA"}).$returningId();
+    const serviceId = await addService("active", manual.id);
+    await state.db.update(serviceRecords).set({sourceKind:"public_web"}).where(eq(serviceRecords.id, serviceId));
+    const [jap] = await state.db.insert(providerRecords).values({slug:"justanotherpanel",name:"JustAnotherPanel",initials:"JAP"}).$returningId();
+    await state.db.insert(providerIntegrations).values({providerId:jap.id,name:"Existing JAP connection",baseUrl:"https://justanotherpanel.com/api/v2",status:"active",lastSyncedAt:new Date(),credentialCiphertext:"test-encrypted-placeholder"});
+    const [connected] = await state.db.insert(providerRecords).values({slug:"follow-sale",name:"Follow.sale",initials:"FS"}).$returningId();
+    await state.db.insert(providerIntegrations).values({providerId:connected.id,name:"Retain owner connection",baseUrl:"https://follow.example/api"});
+    const statements=readFileSync("drizzle/0011_connected_api_catalogue.sql","utf8").split("--> statement-breakpoint").slice(1).map(v=>v.trim()).filter(Boolean);
+    for(let attempt=0;attempt<2;attempt++) await state.db.transaction(async(tx:any)=>{for(const statement of statements) await tx.execute(sql.raw(statement));});
+    expect(await state.db.select().from(providerRecords).where(eq(providerRecords.id,manual.id))).toHaveLength(0);
+    expect(await state.db.select().from(serviceRecords).where(eq(serviceRecords.id,serviceId))).toHaveLength(0);
+    const [published]=await state.db.select().from(providerRecords).where(eq(providerRecords.id,jap.id));
+    expect(published).toMatchObject({status:"active",apiCataloguePublished:true,verified:false});
+    expect(await state.db.select().from(providerIntegrations)).toHaveLength(2);
+    expect(await state.db.select().from(auditEntries).where(eq(auditEntries.action,"marketplace.manual.remove"))).toHaveLength(1);
+    expect(await state.db.select().from(auditEntries).where(eq(auditEntries.action,"provider.api_catalogue.publish"))).toHaveLength(1);
+  });
+  it("lists an opted-in API catalogue without inventing approval, currency, units or quality", async () => {
+    await state.db.update(providerRecords).set({apiCataloguePublished: true}).where(eq(providerRecords.id, providerId));
+    const integration = await addIntegration("active");
+    await sync();
+    const [stored] = await state.db.select().from(serviceRecords).where(eq(serviceRecords.providerId, providerId));
+    expect(stored).toMatchObject({status: "draft", reviewStatus: "pending", policyReviewed: false, pricingConfirmed: false});
+    await state.db.update(serviceRecords).set({sourceRate: "1.0123456"}).where(eq(serviceRecords.id, stored.id));
+    const result = await getMarketplaceSnapshot({scope: "services", market: "smm"});
+    expect(result.pagination.total).toBe(1);
+    expect(result.providers[0]).toMatchObject({apiConnected: true, score: null, verified: false, activeServicesCount: 1});
+    expect(result.services[0]).toMatchObject({sourceServiceId: "100", catalogueListing: "api_source", sourceRate: "1.0123456", priceAmount: 1.0123456, priceCurrency: null, priceUnit: null});
+    expect(result.services[0]).not.toHaveProperty("sourceData");
+    expect((await getMarketplaceSnapshot({scope: "providers", market: "smm"})).providers).toHaveLength(1);
+    expect((await getMarketplaceSnapshot({scope: "provider", slug: "test-provider"})).services).toHaveLength(1);
+    expect((await getMarketplaceSnapshot({scope: "services", sort: "price", priceCurrency: "USD", priceUnit: "per_1000"})).services).toHaveLength(0);
+    await setProviderIntegrationEnabled({id: integration, enabled: false, actorUserId: actorId});
+    expect((await getMarketplaceSnapshot({scope: "providers", market: "smm"})).providers).toHaveLength(0);
+  });
+  it("keeps rejected, quarantined, paused and missing API rows out of the source catalogue", async () => {
+    await state.db.update(providerRecords).set({apiCataloguePublished: true}).where(eq(providerRecords.id, providerId));
+    await addIntegration("active"); await sync();
+    const [stored] = await state.db.select().from(serviceRecords);
+    for (const blocked of [{reviewStatus:"changes_requested"}, {available:false}, {status:"paused"}, {status:"archived"}, {sourceRate:"invalid"}, {sourceRate:"0"}, {sourceKind:"legacy"}, {sourceUpdatedAt:null}, {minOrder:0}]) {
+      await state.db.update(serviceRecords).set({reviewStatus:"pending",available:true,status:"draft",sourceRate:"1.00",sourceKind:"provider_api",sourceUpdatedAt:new Date(),minOrder:100,...blocked}).where(eq(serviceRecords.id, stored.id));
+      expect((await getMarketplaceSnapshot({scope:"services",market:"smm"})).services).toHaveLength(0);
+    }
+  });
   it("removes only original demo records, cascades their offers and retains an audit", async () => {
     const [demo] = await state.db.insert(providerRecords).values({slug: "northstar-social", name: "Northstar Social", initials: "NS"}).$returningId();
     await addService("draft", demo.id);

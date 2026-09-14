@@ -6,7 +6,7 @@ import OfferEvidence, {
 import QuoteWorkbench from "./QuoteWorkbench";
 import Services from "./Services";
 import { useState } from "react";
-import { comparablePrices, quantityQuote } from "../../../shared/pricing";
+import { comparablePrices, hasPricingBasis, quantityQuote } from "../../../shared/pricing";
 import { formatPrice, unitLabel, pricingCopy } from "@/i18n/pricing";
 import { CatalogueState } from "@/components/CatalogueState";
 import { catalogueCopy, percentLabel } from "@/i18n/catalogue";
@@ -215,8 +215,8 @@ export default function Compare() {
         return amount == null ? (
           <p className="text-sm text-amber-700">
             {ar
-              ? "الكمية خارج حدود العرض أو وحدة البيع غير مناسبة"
-              : "Quantity outside this offer’s limits or unit not eligible"}
+              ? !hasPricingBasis(service) ? "حساب الإجمالي ينتظر تأكيد العملة ووحدة السعر" : "الكمية خارج حدود العرض أو وحدة البيع غير مناسبة"
+              : !hasPricingBasis(service) ? "Total requires confirmed currency and sale unit" : "Quantity outside this offer’s limits or unit not eligible"}
           </p>
         ) : (
           <bdi dir="ltr" className="text-xl font-extrabold text-teal-700">

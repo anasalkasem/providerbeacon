@@ -12,6 +12,7 @@ export default function OfferEvidence({ service, showTerms = false }: { service:
   if (!service.sourceUrl) return null;
   const stale = !service.checkedAt || Date.now() - new Date(service.checkedAt).getTime() > 30 * 86400000;
   return <div className="mt-3 max-w-sm space-y-2 text-xs leading-5 text-slate-500">
+    {service.catalogueListing === "api_source" && <p className="font-bold text-teal-700">{ar ? "مستورد من اتصال API الفعلي" : "Imported through the connected API"}</p>}
     {showTerms && serviceTerms(locale, service) && <p>{serviceTerms(locale, service)}</p>}
     <a className="inline-block font-bold text-teal-700 underline underline-offset-4" href={service.sourceUrl} target="_blank" rel="noopener noreferrer">{ar ? "راجع السعر لدى المزود" : "Check price at source"}</a>
     <p className={stale ? "font-bold text-amber-700" : ""}>{stale ? (ar ? "المصدر يحتاج إلى تحديث" : "Source needs an update") : (ar ? "آخر فحص" : "Last checked")}{service.checkedAt && <> · <time dateTime={service.checkedAt}>{new Date(service.checkedAt).toLocaleDateString(locale)}</time></>}</p>
