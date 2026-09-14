@@ -6,9 +6,11 @@ import { hasPricingBasis } from "../../../shared/pricing";
 export default function QuoteCost({
   service,
   quantity,
+  lowest = false,
 }: {
   service: Service;
   quantity: number;
+  lowest?: boolean;
 }) {
   const { locale } = useLocale();
   const ar = locale === "ar";
@@ -42,7 +44,9 @@ export default function QuoteCost({
                 ? "تعذر حساب المبلغ من السعر المتاح"
                 : "Unable to calculate this rate";
   return (
-    <div className="mt-3 rounded-lg bg-teal-50/70 px-3 py-2 text-xs leading-6">
+    <div
+      className={`mt-3 rounded-lg px-3 py-2 text-xs leading-6 ${lowest && amount != null ? "bg-emerald-50" : service.featured && amount != null ? "bg-violet-50" : "bg-slate-50"}`}
+    >
       <p className="text-slate-600">
         {ar ? "تكلفة الكمية المحددة" : "Cost for selected quantity"}
       </p>
@@ -51,7 +55,7 @@ export default function QuoteCost({
       ) : (
         <bdi
           dir="ltr"
-          className="break-all text-base font-extrabold text-teal-800"
+          className={`break-all text-base font-extrabold ${lowest ? "text-emerald-800" : service.featured ? "text-violet-800" : "text-slate-800"}`}
         >
           {amount}
         </bdi>

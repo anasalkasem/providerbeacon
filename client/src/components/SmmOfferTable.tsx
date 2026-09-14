@@ -2,10 +2,12 @@ import { Link } from "wouter";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
 import { type Service } from "@/data/marketplace";
-import { formatPrice, unitLabel } from "@/i18n/pricing";
+import { unitLabel } from "@/i18n/pricing";
+import { lowestVisiblePriceIds } from "@/lib/priceHighlights";
 import { localizeData, localizeDuration, formatNumber } from "@/i18n/messages";
 import OfferEvidence, { serviceName, serviceScope } from "./OfferEvidence";
 import QuoteCost from "./QuoteCost";
+import OfferPrice, { PriceLegend } from "./OfferPrice";
 
 export default function SmmOfferTable({
   services,
@@ -21,118 +23,127 @@ export default function SmmOfferTable({
   const { locale } = useLocale();
   const ar = locale === "ar";
   const { providerFor } = useMarketplaceData();
+  const lowest = lowestVisiblePriceIds(services, quantity);
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-      <table className="w-full min-w-[900px] text-start text-sm">
-        <thead className="bg-slate-50 text-slate-600">
-          <tr>
-            {[
-              ar ? "الخدمة والمزود" : "Service and provider",
-              ar ? "السعر" : "Price",
-              ar ? "حدود الطلب" : "Order limits",
-              ar ? "البدء والتعويض" : "Start and refill",
-              ar ? "المقارنة" : "Compare",
-            ].map(label => (
-              <th className="p-4 text-start font-bold" key={label}>
-                {label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {services.map(service => {
-            const provider = providerFor(service);
-            const chosen = selected.some(item => item.id === service.id);
-            return (
-              <tr
-                key={service.id}
-                className={
-                  chosen
-                    ? "border-t border-teal-100 bg-teal-50/50"
-                    : "border-t border-slate-100"
-                }
-              >
-                <td className="max-w-sm p-4 align-top">
-                  <Link
-                    href={`/providers/${provider.slug}`}
-                    className="font-bold text-teal-700 hover:underline"
-                  >
-                    {provider.name}
-                  </Link>
-                  <p className="mt-1 font-semibold text-slate-950">
-                    {serviceName(locale, service)}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {service.platform} ·{" "}
-                    {localizeData(locale, service.category)}
-                    {service.sourceServiceId && (
-                      <>
-                        {" "}
-                        · ID <bdi>{service.sourceServiceId}</bdi>
-                      </>
-                    )}
-                  </p>
-                  <OfferEvidence service={service} />
-                </td>
-                <td className="p-4 align-top">
-                  <bdi
-                    dir="ltr"
-                    className="whitespace-nowrap text-xl font-extrabold text-[#0B2A48]"
-                  >
-                    {formatPrice(locale, service)}
-                  </bdi>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {unitLabel(locale, service)}
-                  </p>
-                  {service.priceUnit === "package" ? (
-                    <p className="mt-2 max-w-xs">
-                      {serviceScope(locale, service)}
+    <>
+      {services.length > 0 && <PriceLegend />}
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+        <table className="w-full min-w-[900px] text-start text-sm">
+          <thead className="bg-slate-50 text-slate-600">
+            <tr>
+              {[
+                ar ? "الخدمة والمزود" : "Service and provider",
+                ar ? "السعر" : "Price",
+                ar ? "حدود الطلب" : "Order limits",
+                ar ? "البدء والتعويض" : "Start and refill",
+                ar ? "المقارنة" : "Compare",
+              ].map(label => (
+                <th className="p-4 text-start font-bold" key={label}>
+                  {label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {services.map(service => {
+              const provider = providerFor(service);
+              const chosen = selected.some(item => item.id === service.id);
+              return (
+                <tr
+                  key={service.id}
+                  className={
+                    chosen
+                      ? "border-t border-teal-100 bg-teal-50/50"
+                      : "border-t border-slate-100"
+                  }
+                >
+                  <td className="max-w-sm p-4 align-top">
+                    <Link
+                      href={`/providers/${provider.slug}`}
+                      className="font-bold text-teal-700 hover:underline"
+                    >
+                      {provider.name}
+                    </Link>
+                    <p className="mt-1 font-semibold text-slate-950">
+                      {serviceName(locale, service)}
                     </p>
-                  ) : <QuoteCost service={service} quantity={quantity} />}
-                </td>
-                <td className="p-4 align-top">
-                  <bdi className="whitespace-nowrap">
-                    {formatNumber(locale, service.min)} –{" "}
-                    {formatNumber(locale, service.max)}
-                  </bdi>
-                  <p className="mt-2 text-xs text-slate-500">
-                    {service.countryCode === "WW"
-                      ? ar
-                        ? "عالمي"
-                        : "Worldwide"
-                      : (service.countryCode ??
-                        (ar ? "السوق غير محدد" : "Market unspecified"))}
-                  </p>
-                </td>
-                <td className="p-4 align-top">
-                  <p>{localizeDuration(locale, service.startTime)}</p>
-                  <p className="mt-2 text-teal-700">
-                    {localizeData(locale, service.refill)}
-                  </p>
-                </td>
-                <td className="p-4 align-top">
-                  <button
-                    type="button"
-                    aria-pressed={chosen}
-                    aria-label={`${ar ? "قارن" : "Compare"} ${provider.name}: ${serviceName(locale, service)}`}
-                    disabled={!chosen && selected.length >= 4}
-                    onClick={() => toggle(service)}
-                    className="rounded-xl border border-[#0B2A48] px-4 py-2 font-bold text-[#0B2A48] hover:bg-slate-100 disabled:opacity-40"
-                  >
-                    {chosen
-                      ? ar
-                        ? "تم الاختيار ✓"
-                        : "Selected ✓"
-                      : ar
-                        ? "قارن +"
-                        : "Compare +"}
-                  </button>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {service.platform} ·{" "}
+                      {localizeData(locale, service.category)}
+                      {service.sourceServiceId && (
+                        <>
+                          {" "}
+                          · ID <bdi>{service.sourceServiceId}</bdi>
+                        </>
+                      )}
+                    </p>
+                    <OfferEvidence service={service} />
+                  </td>
+                  <td className="p-4 align-top">
+                    <OfferPrice
+                      service={service}
+                      lowest={lowest.has(service.id)}
+                      scope="visible"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">
+                      {unitLabel(locale, service)}
+                    </p>
+                    {service.priceUnit === "package" ? (
+                      <p className="mt-2 max-w-xs">
+                        {serviceScope(locale, service)}
+                      </p>
+                    ) : (
+                      <QuoteCost
+                        service={service}
+                        quantity={quantity}
+                        lowest={lowest.has(service.id)}
+                      />
+                    )}
+                  </td>
+                  <td className="p-4 align-top">
+                    <bdi className="whitespace-nowrap">
+                      {formatNumber(locale, service.min)} –{" "}
+                      {formatNumber(locale, service.max)}
+                    </bdi>
+                    <p className="mt-2 text-xs text-slate-500">
+                      {service.countryCode === "WW"
+                        ? ar
+                          ? "عالمي"
+                          : "Worldwide"
+                        : (service.countryCode ??
+                          (ar ? "السوق غير محدد" : "Market unspecified"))}
+                    </p>
+                  </td>
+                  <td className="p-4 align-top">
+                    <p>{localizeDuration(locale, service.startTime)}</p>
+                    <p className="mt-2 text-teal-700">
+                      {localizeData(locale, service.refill)}
+                    </p>
+                  </td>
+                  <td className="p-4 align-top">
+                    <button
+                      type="button"
+                      aria-pressed={chosen}
+                      aria-label={`${ar ? "قارن" : "Compare"} ${provider.name}: ${serviceName(locale, service)}`}
+                      disabled={!chosen && selected.length >= 4}
+                      onClick={() => toggle(service)}
+                      className="rounded-xl border border-[#0B2A48] px-4 py-2 font-bold text-[#0B2A48] hover:bg-slate-100 disabled:opacity-40"
+                    >
+                      {chosen
+                        ? ar
+                          ? "تم الاختيار ✓"
+                          : "Selected ✓"
+                        : ar
+                          ? "قارن +"
+                          : "Compare +"}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
