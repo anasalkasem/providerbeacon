@@ -23,6 +23,7 @@ type Filters = Partial<
     | "refillOnly"
     | "priceCurrency"
     | "priceUnit"
+    | "quantity"
   >
 >;
 type Cursor = CatalogueInput["cursor"];

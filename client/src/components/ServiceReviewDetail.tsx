@@ -22,6 +22,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Badge } from "./ui/badge";
+import SourcePricingEditor from "./SourcePricingEditor";
 
 const selectClass =
   "h-10 min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm";
@@ -185,6 +186,41 @@ export default function ServiceReviewDetail({
                 </p>
               )}
             </section>
+            {row.sourceKind === "provider_api" && (
+              <div className="space-y-2 rounded-xl border border-teal-200 bg-teal-50/50 p-4">
+                <p className="text-sm font-semibold">
+                  {locale === "ar" ? "وحدة سعر المصدر: " : "Source rate unit: "}
+                  {unitLabel(locale, {
+                    priceCurrency: row.sourceCurrency,
+                    priceUnit: row.sourcePriceUnit,
+                    packageDescription: row.sourcePackageDescription,
+                    catalogueListing: "api_source",
+                  })}
+                </p>
+                {row.sourcePricingEvidenceUrl && (
+                  <a
+                    href={row.sourcePricingEvidenceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-teal-700 underline"
+                  >
+                    {locale === "ar"
+                      ? "دليل وحدة التسعير"
+                      : "Pricing-unit evidence"}
+                  </a>
+                )}
+                {access.data?.permissions.includes("services.review") && (
+                  <SourcePricingEditor
+                    items={[{ id: row.id, revision: row.revision }]}
+                    disabled={busy}
+                    onSaved={async () => {
+                      await onSaved();
+                      await query.refetch();
+                    }}
+                  />
+                )}
+              </div>
+            )}
             <form
               className="space-y-4"
               onSubmit={event => {
@@ -268,7 +304,10 @@ export default function ServiceReviewDetail({
                 <div className="rounded-lg bg-slate-50 p-3 text-sm sm:col-span-2">
                   <p className="font-semibold">
                     {pricing.sourceRate}:{" "}
-                    <bdi dir="ltr">{row.sourceCurrency ? `${row.sourceCurrency} ` : ""}{row.sourceRate ?? "—"}</bdi>
+                    <bdi dir="ltr">
+                      {row.sourceCurrency ? `${row.sourceCurrency} ` : ""}
+                      {row.sourceRate ?? "—"}
+                    </bdi>
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
                     {pricing.sourceHelp}
@@ -494,7 +533,13 @@ export default function ServiceReviewDetail({
             <section className="rounded-xl border border-slate-200 p-4">
               <h3 className="font-semibold">{text("sourceDetails")}</h3>
               <p className="mt-2 text-sm text-slate-500">
-                {row.sourceKind === "public_web" ? (locale === "ar" ? "عرض معلن في موقع المزود" : "Offer listed on the provider website") : text(row.sourceKind === "legacy" ? "legacySource" : "apiSource")}
+                {row.sourceKind === "public_web"
+                  ? locale === "ar"
+                    ? "عرض معلن في موقع المزود"
+                    : "Offer listed on the provider website"
+                  : text(
+                      row.sourceKind === "legacy" ? "legacySource" : "apiSource"
+                    )}
               </p>
               <p className="mt-1 text-xs text-slate-500">
                 {text("sourceClaim")}
@@ -592,11 +637,21 @@ export default function ServiceReviewDetail({
                         <td>
                           <bdi dir="ltr">
                             {price.kind === "source"
-                              ? formatPrice(locale, { ...price, catalogueListing: "api_source", sourceRate: price.sourceRate ?? price.priceAmount })
+                              ? formatPrice(locale, {
+                                  ...price,
+                                  catalogueListing: "api_source",
+                                  sourceRate:
+                                    price.sourceRate ?? price.priceAmount,
+                                })
                               : formatPrice(locale, price)}
                           </bdi>
                           <p className="mt-1 text-xs text-slate-500">
-                            {price.kind === "source" ? unitLabel(locale, { ...price, catalogueListing: "api_source" }) : pricing[`history_${price.kind}`]}
+                            {price.kind === "source"
+                              ? unitLabel(locale, {
+                                  ...price,
+                                  catalogueListing: "api_source",
+                                })
+                              : pricing[`history_${price.kind}`]}
                             {price.kind === "review"
                               ? ` · ${unitLabel(locale, price)}`
                               : ""}

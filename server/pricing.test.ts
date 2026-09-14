@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { catalogueInput } from "../shared/catalogueQuery";
-import { comparablePrices, quantityQuote } from "../shared/pricing";
+import { comparablePrices, compareQuoteAmounts, quantityQuote, quantityQuoteExact } from "../shared/pricing";
 import { reviewEditInput } from "../shared/serviceReview";
-import { formatPrice, unitLabel } from "../client/src/i18n/pricing";
+import { formatPrice, formatQuotePrice, unitLabel } from "../client/src/i18n/pricing";
 import { classifyService, normalizeApiService } from "./serviceNormalizer";
 
 const pricing = {
@@ -27,6 +27,28 @@ const edit = {
   reason: "Service-specific evidence checked",
 };
 describe("explicit pricing", () => {
+  it("calculates exact original API totals instead of redisplaying the unit rate", () => {
+    const row = { ...pricing, catalogueListing: "api_source", sourceRate: "0.01234567", priceAmount: 0.0123, min: 1, max: 2147483647 };
+    expect(quantityQuoteExact(row, 5000)).toBe("0.06172835");
+    expect(formatQuotePrice("ar", row, 5000)).toBe("USD 0.06172835");
+    expect(quantityQuoteExact({...row, sourceRate: "0.0000001"}, 1)).toBe("0.0000000001");
+    expect(quantityQuoteExact({...row, sourceRate: "99999.99999999999999", priceUnit: "per_item"}, 2147483647)).toBe("214748364699999.99997852516353");
+    expect(unitLabel("ar", row)).toBe("لكل ١٬٠٠٠ وحدة");
+    expect(compareQuoteAmounts("1.000000000000000001", "1.000000000000000002")).toBe(-1);
+    expect(compareQuoteAmounts("10.00", "2.9")).toBe(1);
+    expect(compareQuoteAmounts("1.000", "1.00")).toBe(0);
+  });
+  it("does not calculate unknown units, packages or invalid order quantities", () => {
+    const row = { ...pricing, catalogueListing: "api_source", sourceRate: "1.23", priceAmount: 1.23, min: 100, max: 1000 };
+    for (const quantity of [0, -1, 1.5, NaN, Infinity, 99, 1001]) expect(quantityQuoteExact(row, quantity)).toBeNull();
+    expect(quantityQuoteExact(row, 100)).toBe("0.123");
+    expect(quantityQuoteExact({...row, priceUnit: null}, 100)).toBeNull();
+    expect(quantityQuoteExact({...row, priceCurrency: null}, 100)).toBeNull();
+    expect(quantityQuoteExact({...row, priceUnit: "package", packageDescription: "One fixed package"}, 100)).toBeNull();
+    expect(quantityQuoteExact({...row, sourceRate: "invalid"}, 100)).toBeNull();
+    for (const quantity of [0, -1, 0.5, 2147483648]) expect(catalogueInput.safeParse({quantity}).success).toBe(false);
+    expect(catalogueInput.safeParse({quantity: 1000}).success).toBe(true);
+  });
   it("shows confirmed API dollars at original precision without implying a sale unit or quote", () => {
     const row = { catalogueListing: "api_source", sourceRate: "0.01234567", priceAmount: 0.01234567, priceCurrency: "USD", priceUnit: null, min: 10, max: 10000 };
     expect(formatPrice("ar", row)).toBe("USD 0.01234567");

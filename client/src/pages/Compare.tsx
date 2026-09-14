@@ -4,9 +4,14 @@ import OfferEvidence, {
   serviceTerms,
 } from "@/components/OfferEvidence";
 import QuoteWorkbench from "./QuoteWorkbench";
+import QuoteCost from "@/components/QuoteCost";
 import Services from "./Services";
 import { useState } from "react";
-import { comparablePrices, hasPricingBasis, quantityQuote } from "../../../shared/pricing";
+import {
+  comparablePrices,
+  compareQuoteAmounts,
+  quantityQuoteExact,
+} from "../../../shared/pricing";
 import { formatPrice, unitLabel, pricingCopy } from "@/i18n/pricing";
 import { CatalogueState } from "@/components/CatalogueState";
 import { catalogueCopy, percentLabel } from "@/i18n/catalogue";
@@ -71,8 +76,17 @@ export default function Compare() {
     );
   const comparable =
     comparablePrices(compared) &&
-    compared.every(service => quantityQuote(service, quantity) != null);
-  const lowest = Math.min(...compared.map(service => service.priceAmount));
+    compared.every(service => quantityQuoteExact(service, quantity) != null);
+  const quotes = compared.map(service => quantityQuoteExact(service, quantity));
+  const lowest = comparable
+    ? quotes.reduce<string | null>(
+        (best, amount) =>
+          best == null || compareQuoteAmounts(amount!, best) < 0
+            ? amount
+            : best,
+        null
+      )
+    : null;
   const bestScore = Math.max(
     ...compared.flatMap(service => {
       const score = providerFor(service).score;
@@ -121,11 +135,15 @@ export default function Compare() {
               {serviceScope(locale, service)}
             </p>
           )}
-          {comparable && service.priceAmount === lowest && (
-            <p className="mt-1 text-xs font-bold text-emerald-600">
-              {t.lowestPrice}
-            </p>
-          )}
+          {comparable &&
+            compareQuoteAmounts(
+              quantityQuoteExact(service, quantity)!,
+              lowest!
+            ) === 0 && (
+              <p className="mt-1 text-xs font-bold text-emerald-600">
+                {t.lowestPrice}
+              </p>
+            )}
         </div>
       ),
     ],
@@ -210,20 +228,7 @@ export default function Compare() {
     rows.splice(1, 0, [
       ar ? "تكلفة الكمية المحددة" : "Cost for selected quantity",
       <DollarSign />,
-      service => {
-        const amount = quantityQuote(service, quantity);
-        return amount == null ? (
-          <p className="text-sm text-amber-700">
-            {ar
-              ? !hasPricingBasis(service) ? "حساب الإجمالي ينتظر تأكيد العملة ووحدة السعر" : "الكمية خارج حدود العرض أو وحدة البيع غير مناسبة"
-              : !hasPricingBasis(service) ? "Total requires confirmed currency and sale unit" : "Quantity outside this offer’s limits or unit not eligible"}
-          </p>
-        ) : (
-          <bdi dir="ltr" className="text-xl font-extrabold text-teal-700">
-            {formatPrice(locale, { ...service, priceAmount: amount })}
-          </bdi>
-        );
-      },
+      service => <QuoteCost service={service} quantity={quantity} />,
     ]);
     rows.push(
       [

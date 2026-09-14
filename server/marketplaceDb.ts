@@ -8,7 +8,7 @@ import { retiredDemoSlugs, assertRealProviderSlug } from "./retiredDemoProviders
 import { auditEntries, localizedContent, priceSnapshots, providerRecords, serviceRecords, staffSessions, teamMembers, type TeamRole } from "../drizzle/schema";
 import { getDb } from "./db";
 import { approvedService } from "./catalogueRules";
-import { connectedApiCatalogue, visibleCatalogueProvider, visibleCatalogueService } from "./apiCatalogue";
+import { cataloguePriceAmount, cataloguePriceUnit, confirmedSourcePricing, connectedApiCatalogue, visibleCatalogueProvider, visibleCatalogueService } from "./apiCatalogue";
 import { adminProvidersInput, type AdminProvidersInput, catalogueInput, searchPattern, type CatalogueInput } from "../shared/catalogueQuery";
 
 const tierFromDb = {
@@ -22,6 +22,7 @@ const publicServiceColumns = {
   id: serviceRecords.id, providerId: serviceRecords.providerId, platform: serviceRecords.platform,
   externalId: serviceRecords.externalId, sourceRate: serviceRecords.sourceRate, reviewStatus: serviceRecords.reviewStatus,
   sourceCurrency: serviceRecords.sourceCurrency,
+  catalogueUnit: cataloguePriceUnit(), sourcePackageDescription: serviceRecords.sourcePackageDescription,
   sourceUrl: serviceRecords.sourceUrl, providerWebsite: providerRecords.websiteUrl,
   apiListing: sql<boolean>`${serviceRecords.reviewStatus} = 'pending'`.mapWith(Boolean),
   category: serviceRecords.category, name: serviceRecords.name, priceAmount: serviceRecords.priceAmount,
@@ -72,7 +73,7 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       .orderBy(desc(providerRecords.id)).limit(input.scope === "provider" ? 1 : input.limit + 1) : [];
     if (input.scope === "provider" && !providerPage.length) return empty("database");
     const serviceFilter = and(eligible, visibleCatalogueService(),
-      input.priceUnit || input.sort === "price" ? approvedService() : undefined,
+      input.priceUnit || input.sort === "price" ? or(approvedService(), confirmedSourcePricing()) : undefined,
       marketFilter,
       input.category ? eq(serviceRecords.category, input.category) : undefined,
       input.scope === "provider" ? eq(serviceRecords.providerId, providerPage[0]!.id) : undefined,
@@ -81,16 +82,18 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       input.priceCurrency ? or(
         and(eq(serviceRecords.reviewStatus, "pending"), eq(serviceRecords.sourceCurrency, input.priceCurrency)),
         and(eq(serviceRecords.reviewStatus, "approved"), eq(serviceRecords.priceCurrency, input.priceCurrency))) : undefined,
-      input.priceUnit ? eq(serviceRecords.priceUnit, input.priceUnit) : undefined,
+      input.priceUnit ? eq(cataloguePriceUnit(), input.priceUnit) : undefined,
+      input.quantity ? and(sql`${serviceRecords.minOrder} <= ${input.quantity}`, sql`${serviceRecords.maxOrder} >= ${input.quantity}`) : undefined,
       input.quality ? eq(serviceRecords.quality, input.quality) : undefined,
       input.refillOnly ? inArray(serviceRecords.refillMode, ["manual", "automatic", "lifetime"]) : undefined,
       input.q && !providerScope ? or(like(serviceRecords.name, searchPattern(input.q)), like(serviceRecords.category, searchPattern(input.q)),
         like(serviceRecords.platform, searchPattern(input.q)), like(providerRecords.name, searchPattern(input.q)),
         and(eq(serviceRecords.sourceKind, "public_web"), sql`json_unquote(json_extract(${serviceRecords.sourceData}, '$.nameAr')) like ${searchPattern(input.q)}`)) : undefined);
-    const rank = input.sort === "price" ? sql<number>`${serviceRecords.priceAmount}` : input.sort === "retention" ? sql<number>`coalesce(${serviceRecords.retentionBasisPoints}, -1)` : sql<number>`${serviceRecords.featured}`;
+    const rank = input.sort === "price" ? cataloguePriceAmount() : input.sort === "retention" ? sql<number>`coalesce(${serviceRecords.retentionBasisPoints}, -1)` : sql<number>`${serviceRecords.featured}`;
+    const cursorRank = input.sort === "price" ? sql`cast(${input.cursor?.rank ?? 0} as decimal(65,30))` : input.cursor?.rank;
     const after = input.cursor ? or(
-      input.sort === "price" ? gt(rank, input.cursor.rank) : lt(rank, input.cursor.rank),
-      and(eq(rank, input.cursor.rank), lt(serviceRecords.id, input.cursor.id))) : undefined;
+      input.sort === "price" ? gt(rank, cursorRank) : lt(rank, cursorRank),
+      and(eq(rank, cursorRank), lt(serviceRecords.id, input.cursor.id))) : undefined;
     const limit = input.scope === "home" ? 8 : input.scope === "compare" ? 4 : input.limit;
     const servicePage = input.scope === "providers" ? [] : await db.select({ service: publicServiceColumns, rank }).from(serviceRecords)
       .innerJoin(providerRecords, eq(providerRecords.id, serviceRecords.providerId)).where(and(serviceFilter, after))
@@ -108,7 +111,7 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       : await db.select({ total: count() }).from(serviceRecords).innerJoin(providerRecords, eq(serviceRecords.providerId, providerRecords.id)).where(serviceFilter);
     const last = servicePage[Math.min(limit, servicePage.length) - 1];
     const nextCursor = input.scope === "providers" ? (providerPage.length > input.limit ? { id: providerRows.at(-1)!.id, rank: 0 } : null)
-      : input.scope !== "home" && input.scope !== "compare" && servicePage.length > limit ? { id: last!.service.id, rank: Number(last!.rank) } : null;
+      : input.scope !== "home" && input.scope !== "compare" && servicePage.length > limit ? { id: last!.service.id, rank: input.sort === "price" ? String(last!.rank) : Number(last!.rank) } : null;
     const connectedRows = providerIds.length ? await db.select({id: providerRecords.id}).from(providerRecords).where(and(inArray(providerRecords.id, providerIds), connectedApiCatalogue())) : [];
     const connectedIds = new Set(connectedRows.map(row => row.id));
     const providers = providerRows.map(row => ({
@@ -138,7 +141,7 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       sourceUrl: row.apiListing ? safeSourceWebsite(row.providerWebsite, row.sourceUrl) : publicOfferMetadata(row).sourceUrl,
       id: `service-${row.id}`, providerId: `provider-${row.providerId}`, platform: row.platform, category: row.category,
       name: row.name, priceAmount: Number(row.apiListing ? row.sourceRate : row.priceAmount), priceCurrency: row.apiListing ? row.sourceCurrency : row.priceCurrency,
-      priceUnit: row.apiListing ? null : row.priceUnit, packageDescription: row.packageDescription, countryCode: row.countryCode, min: row.minOrder, max: row.maxOrder,
+      priceUnit: row.catalogueUnit, packageDescription: row.apiListing ? row.sourcePackageDescription : row.packageDescription, countryCode: row.countryCode, min: row.minOrder, max: row.maxOrder,
       startTime: durationLabel(row.startMinutesMin, row.startMinutesMax),
       delivery: durationLabel(row.deliveryMinutesMin, row.deliveryMinutesMax),
       refill: row.refillMode === "unknown" ? "—" : row.refillMode === "lifetime" ? "Lifetime guarantee" : row.refillMode === "none" ? "No refill" : row.refillDays == null ? "Refill available; duration unspecified" : `${row.refillDays}-day ${row.refillMode === "automatic" ? "auto " : ""}refill`,

@@ -7,8 +7,9 @@ import {
   serviceRecords,
 } from "../drizzle/schema";
 import { getDb } from "./db";
-import { priceCurrencies, type PriceCurrency } from "../shared/pricing";
+import { compareQuoteAmounts, priceCurrencies, type PriceCurrency } from "../shared/pricing";
 import { writeAudit } from "./marketplaceDb";
+import { sourcePricingIdentity } from "./sourcePricing";
 import {
   normalizeApiService,
   NORMALIZATION_VERSION,
@@ -63,6 +64,11 @@ export async function applyCatalogueBatch(
       priceAmount: serviceRecords.priceAmount,
       sourceRate: serviceRecords.sourceRate,
       sourceCurrency: serviceRecords.sourceCurrency,
+      sourcePriceUnit: serviceRecords.sourcePriceUnit,
+      sourcePackageDescription: serviceRecords.sourcePackageDescription,
+      sourcePricingEvidenceUrl: serviceRecords.sourcePricingEvidenceUrl,
+      sourcePricingConfirmedAt: serviceRecords.sourcePricingConfirmedAt,
+      sourcePricingIdentity: serviceRecords.sourcePricingIdentity,
       priceCurrency: serviceRecords.priceCurrency,
       priceUnit: serviceRecords.priceUnit,
       packageDescription: serviceRecords.packageDescription,
@@ -121,12 +127,13 @@ export async function applyCatalogueBatch(
       unchanged.push(existing!.id);
       continue;
     }
-    const priceChanged = Boolean(
-      existing &&
-        Number(existing.sourceRate ?? existing.priceAmount) !==
-          Number(item.sourceRate)
-    );
+    const previousRate = existing?.sourceRate ?? existing?.priceAmount ?? "";
+    const decimalRates = /^\d+(\.\d+)?$/.test(previousRate) && /^\d+(\.\d+)?$/.test(item.sourceRate);
+    const priceChanged = Boolean(existing && (
+      decimalRates ? compareQuoteAmounts(previousRate, item.sourceRate) !== 0 : Number(previousRate) !== Number(item.sourceRate)
+    ));
     const { notes, ...data } = item;
+    const keepSourcePricing = existing?.sourcePricingIdentity === sourcePricingIdentity(item.sourceData, sourceCurrency, sourceUrl, existing?.sourcePriceUnit);
     // A later price sync must not undo an operator's withdrawal from a public API catalogue.
     const preserveWithdrawal = provider.apiCataloguePublished && existing?.reviewStatus === "changes_requested";
     const values = {
@@ -142,6 +149,11 @@ export async function applyCatalogueBatch(
       incomplete: true,
       pricingConfirmed: false,
       sourceCurrency,
+      sourcePriceUnit: keepSourcePricing ? existing!.sourcePriceUnit : null,
+      sourcePackageDescription: keepSourcePricing ? existing!.sourcePackageDescription : null,
+      sourcePricingEvidenceUrl: keepSourcePricing ? existing!.sourcePricingEvidenceUrl : null,
+      sourcePricingConfirmedAt: keepSourcePricing ? existing!.sourcePricingConfirmedAt : null,
+      sourcePricingIdentity: keepSourcePricing ? existing!.sourcePricingIdentity : null,
       priceCurrency: sourceCurrency,
       priceUnit: null,
       packageDescription: null,
@@ -184,6 +196,8 @@ export async function applyCatalogueBatch(
           priceAmount: item.priceAmount,
           sourceRate: item.sourceRate,
           priceCurrency: sourceCurrency,
+          priceUnit: values.sourcePriceUnit,
+          packageDescription: values.sourcePackageDescription,
           kind: "source",
         });
       }
@@ -195,6 +209,11 @@ export async function applyCatalogueBatch(
         "priceAmount",
         "sourceRate",
         "sourceCurrency",
+        "sourcePriceUnit",
+        "sourcePackageDescription",
+        "sourcePricingEvidenceUrl",
+        "sourcePricingConfirmedAt",
+        "sourcePricingIdentity",
         "priceCurrency",
         "priceUnit",
         "packageDescription",

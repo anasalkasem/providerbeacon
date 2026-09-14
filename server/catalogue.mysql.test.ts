@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import { performance } from "node:perf_hooks";
 import { invalidateCatalogueCaches } from "./catalogueCache";
 import { appRouter } from "./routers";
+import { confirmSourcePricing } from "./sourcePricing";
+import { quantityQuoteExact } from "../shared/pricing";
 import { createSourcedDrafts } from "./sourcedOffersDb";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPool, type Pool } from "mysql2/promise";
@@ -183,6 +185,88 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(changed.service).toMatchObject({sourceCurrency: "USD", priceCurrency: "USD", sourceRate: "2.0123456", priceUnit: null, pricingConfirmed: false, reviewStatus: "pending"});
     expect(changed.prices[0]).toMatchObject({kind: "source", priceCurrency: "USD", sourceRate: "2.0123456", priceUnit: null});
     expect((await getMarketplaceSnapshot({scope: "services", sort: "price", priceCurrency: "USD", priceUnit: "per_1000"})).services).toHaveLength(0);
+  });
+  async function importUsdSource(rows = payload) {
+    await state.db.update(providerRecords).set({apiCataloguePublished:true}).where(eq(providerRecords.id,providerId));
+    const integrationId = await addIntegration("active");
+    await state.db.update(providerIntegrations).set({sourceCurrency:"USD"}).where(eq(providerIntegrations.id,integrationId));
+    vi.stubGlobal("fetch",vi.fn(async()=>new Response(JSON.stringify(rows),{status:200})));
+    await sync();
+    return state.db.select().from(serviceRecords);
+  }
+  const unitEvidence = {unit:"per_1000" as const, evidenceUrl:"https://provider.example/services", confirmed:true as const, reason:"Each selected API rate is per 1000, checked in the source"};
+  it("confirms source units with permission and audit, invalidates cache and leaves quality approval untouched", async () => {
+    const [source] = await importUsdSource();
+    expect(source.sourcePriceUnit).toBeNull();
+    const filter = {scope:"services" as const,priceCurrency:"USD" as const,priceUnit:"per_1000" as const,sort:"price" as const};
+    expect((await getCachedMarketplaceSnapshot(filter)).services).toHaveLength(0);
+    const caller = appRouter.createCaller({user:{id:actorId,openId:"catalogue-test-owner",role:"admin",email:null},req:{headers:{},ip:"127.0.0.1"},res:{}} as any);
+    await caller.admin.services.confirmSourcePricing({...unitEvidence,items:[{id:source.id,revision:source.revision}]});
+    const detail = await getServiceReview(source.id);
+    expect(detail.service).toMatchObject({sourcePriceUnit:"per_1000",sourceCurrency:"USD",sourceRate:"1.00",priceUnit:null,pricingConfirmed:false,policyReviewed:false,reviewStatus:"pending",status:"draft",revision:source.revision+1});
+    const page = await getCachedMarketplaceSnapshot(filter);
+    expect(page.services).toHaveLength(1);
+    expect(quantityQuoteExact(page.services[0]!,500)).toBe("0.50");
+    const audit = await state.db.select().from(auditEntries).where(eq(auditEntries.action,"service.source_pricing.confirm"));
+    expect(audit).toHaveLength(1);
+    expect(audit[0]).toMatchObject({actorUserId:actorId,entityId:String(source.id)});
+    expect(audit[0].metadata).toMatchObject({reason:unitEvidence.reason,before:{sourcePriceUnit:null},after:{sourcePriceUnit:"per_1000"}});
+    await caller.admin.services.confirmSourcePricing({...unitEvidence,unit:null,evidenceUrl:null,items:[{id:source.id,revision:detail.service.revision}]});
+    expect((await getCachedMarketplaceSnapshot(filter)).services).toHaveLength(0);
+    expect((await getMarketplaceSnapshot({scope:"services"})).services[0]).toMatchObject({sourceRate:"1.00",priceCurrency:"USD",priceUnit:null});
+  });
+  it("rejects unauthorized confirmations, unknown currencies, and stale mixed batches atomically", async () => {
+    const rows = await importUsdSource([payload[0],{...payload[0],service:101}]);
+    const items = rows.map((row:any)=>({id:row.id,revision:row.revision}));
+    const caller = appRouter.createCaller({user:{id:actorId,openId:"catalogue-test-owner",role:"user",email:null},req:{headers:{}},res:{}} as any);
+    await expect(caller.admin.services.confirmSourcePricing({...unitEvidence,items})).rejects.toMatchObject({code:"FORBIDDEN"});
+    await expect(confirmSourcePricing({...unitEvidence,items:[items[0],{...items[1],revision:999}],actorUserId:actorId})).rejects.toMatchObject({code:"CONFLICT"});
+    expect((await getServiceReview(rows[0].id)).service.sourcePriceUnit).toBeNull();
+    await state.db.update(serviceRecords).set({sourceCurrency:null}).where(eq(serviceRecords.id,rows[1].id));
+    await expect(confirmSourcePricing({...unitEvidence,items,actorUserId:actorId})).rejects.toMatchObject({message:"review_not_ready"});
+    expect((await getServiceReview(rows[0].id)).service.sourcePriceUnit).toBeNull();
+    expect(await state.db.select().from(auditEntries).where(eq(auditEntries.action,"service.source_pricing.confirm"))).toHaveLength(0);
+  });
+  it("retains checked source units and exact snapshots on price changes, but revokes them on service redefinition", async () => {
+    const [source] = await importUsdSource();
+    await confirmSourcePricing({...unitEvidence,items:[{id:source.id,revision:source.revision}],actorUserId:actorId});
+    vi.stubGlobal("fetch",vi.fn(async()=>new Response(JSON.stringify([{...payload[0],rate:"2.0123456",max:"10000"}]),{status:200})));
+    await sync();
+    let detail = await getServiceReview(source.id);
+    expect(detail.service).toMatchObject({sourcePriceUnit:"per_1000",sourceCurrency:"USD",sourceRate:"2.0123456",pricingConfirmed:false});
+    expect(detail.prices[0]).toMatchObject({kind:"source",sourceRate:"2.0123456",priceCurrency:"USD",priceUnit:"per_1000"});
+    expect(quantityQuoteExact((await getMarketplaceSnapshot({scope:"services"})).services[0]!,5000)).toBe("10.061728");
+    vi.stubGlobal("fetch",vi.fn(async()=>new Response(JSON.stringify([{...payload[0],rate:"2.012345600000000001",max:"10000"}]),{status:200})));
+    await sync();
+    expect((await getServiceReview(source.id)).prices[0]).toMatchObject({sourceRate:"2.012345600000000001",priceUnit:"per_1000"});
+    vi.stubGlobal("fetch",vi.fn(async()=>new Response(JSON.stringify([{...payload[0],name:"TikTok custom package",rate:"2.0123456"}]),{status:200})));
+    await sync();
+    detail = await getServiceReview(source.id);
+    expect(detail.service).toMatchObject({sourcePriceUnit:null,sourcePricingIdentity:null,sourcePricingConfirmedAt:null});
+    expect(quantityQuoteExact((await getMarketplaceSnapshot({scope:"services"})).services[0]!,500)).toBeNull();
+  });
+  it("sorts and paginates original rates beyond floating-point precision and filters actual order limits", async () => {
+    const rows = await importUsdSource([
+      {...payload[0],service:100,rate:"1.000000000000000002",min:"100",max:"1000"},
+      {...payload[0],service:101,rate:"1.000000000000000001",min:"10",max:"10000"},
+      {...payload[0],service:102,rate:"1.000000000000000003",min:"500",max:"1000"},
+    ]);
+    await confirmSourcePricing({...unitEvidence,items:rows.map((row:any)=>({id:row.id,revision:row.revision})),actorUserId:actorId});
+    const filter={scope:"services" as const,sort:"price" as const,priceCurrency:"USD" as const,priceUnit:"per_1000" as const,limit:1};
+    const first = await getMarketplaceSnapshot(filter);
+    expect(first.services[0]?.sourceServiceId).toBe("101");
+    expect(typeof first.pagination.nextCursor?.rank).toBe("string");
+    const second=await getMarketplaceSnapshot({...filter,cursor:first.pagination.nextCursor!});
+    expect(second.services[0]?.sourceServiceId).toBe("100");
+    const third=await getMarketplaceSnapshot({...filter,cursor:second.pagination.nextCursor!});
+    expect(third.services[0]?.sourceServiceId).toBe("102");
+    expect(third.pagination.nextCursor).toBeNull();
+    const matching=await getMarketplaceSnapshot({...filter,limit:25,quantity:5000});
+    expect(matching.pagination.total).toBe(1);
+    expect(matching.services[0]?.sourceServiceId).toBe("101");
+    expect((await getMarketplaceSnapshot({...filter,quantity:5})).pagination.total).toBe(0);
+    expect((await getMarketplaceSnapshot({...filter,priceCurrency:"EUR"})).pagination.total).toBe(0);
+    expect((await getMarketplaceSnapshot({...filter,priceUnit:"per_item"})).pagination.total).toBe(0);
   });
   it("keeps rejected, quarantined, paused and missing API rows out of the source catalogue", async () => {
     await state.db.update(providerRecords).set({apiCataloguePublished: true}).where(eq(providerRecords.id, providerId));
@@ -807,6 +891,13 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(timings.api_catalogue_page_ms).toBeLessThan(2500); expect(timings.api_catalogue_100_readers_ms).toBeLessThan(2500);
     expect(Buffer.byteLength(JSON.stringify(apiPage))).toBeLessThan(40000);
     console.log("API_CATALOGUE_SCALE_RESULT",JSON.stringify({services:size,simultaneousReaders:100,publicBytes:Buffer.byteLength(JSON.stringify(apiPage)),api_page_ms:timings.api_catalogue_page_ms,api_100_readers_ms:timings.api_catalogue_100_readers_ms}));
+    // Evidence is synthetic only inside this isolated performance fixture.
+    await state.db.update(serviceRecords).set({sourceCurrency:"USD",sourcePriceUnit:"per_1000",sourcePricingEvidenceUrl:"https://provider.example/services",sourcePricingConfirmedAt:new Date(),sourcePricingIdentity:"fixture"}).where(eq(serviceRecords.providerId,providerId));
+    const pricePage=await measure("api_price_quantity_page_ms",()=>getMarketplaceSnapshot({scope:"services",market:"smm",priceCurrency:"USD",priceUnit:"per_1000",sort:"price",quantity:500}));
+    expect(pricePage.pagination.total).toBe(size); expect(pricePage.services).toHaveLength(25);
+    expect(quantityQuoteExact(pricePage.services[0]!,500)).toBe("0.5061728");
+    expect(timings.api_price_quantity_page_ms).toBeLessThan(2500);
+    console.log("API_PRICE_SCALE_RESULT",JSON.stringify({services:size,pageSize:25,quantity:500,pricePageMs:timings.api_price_quantity_page_ms}));
     await state.db.update(providerRecords).set({ status: "draft" }).where(eq(providerRecords.id, providerId));
     const stats = await getAdminOverview(rolePermissions.catalogue_editor);
     expect(stats).toMatchObject({ totalServices: size, publishedServices: 0, teamMembers: null, recordedActions: null });
