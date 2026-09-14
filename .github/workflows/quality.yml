@@ -43,3 +43,5 @@ jobs:
       - run: pnpm check
       - run: pnpm test
       - run: pnpm build
+      - name: Check production HTML budget
+        run: node -e 'const fs=require("node:fs"); const html=fs.readFileSync("dist/public/index.html","utf8"); const bytes=Buffer.byteLength(html); if(bytes>16000 || html.includes("id=\"manus-runtime\"")) process.exit(1); console.log("Production HTML bytes:",bytes)'

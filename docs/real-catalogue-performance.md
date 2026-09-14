@@ -17,6 +17,7 @@ Runtime fixture arrays, fallback lookup helpers, the old seeded-provider compone
 - Public snapshots and expensive review/overview aggregates share identical concurrent reads and use a 10-second process cache. Cache entries are bounded in count and at 128 KB each; database failures and oversized results are not retained. Permission-filtered overview keys cannot cross roles.
 - Successful authorized mutations invalidate caches after completion. Background import/reconciliation steps invalidate after writes. Across application replicas, expiry bounds remaining staleness to ten seconds. No distributed invalidation is claimed.
 - The application database pool has 12 connections, at most 96 waiting operations, a ten-second connection timeout, and bounded idle connections. Migration connections close after use.
+- Preview runtime, JSX location tagging and debug collection run only in the Vite development server. Production HTML has a 16 KB CI size budget.
 - Migration 0010 adds indexes for public eligibility, category/price queries and provider status/ID.
 
 ## Validation

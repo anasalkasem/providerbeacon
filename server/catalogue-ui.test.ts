@@ -76,8 +76,8 @@ describe("public catalogue rendering", () => {
     const html = render(ScoreRing, { score: null, showLabel: true });
     expect(html).toContain("Insufficient evidence"); expect(html).not.toContain("Good"); expect(html).not.toContain("/100");
   });
-  it("clearly discloses demonstration data and unavailable catalogue responses", () => {
-    state.data.source = "seed"; expect(render(CatalogueNotice)).toContain("fictional providers");
+  it("treats retired demo responses as unavailable and offers a retry on database failure", () => {
+    state.data.source = "seed"; expect(render(CatalogueNotice)).toContain("temporarily unavailable");
     state.data.source = "unavailable"; expect(render(CatalogueNotice)).toContain("temporarily unavailable");
   });
 });
