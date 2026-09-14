@@ -1,4 +1,4 @@
-import type { PricingMetadata } from "../../../shared/pricing";
+import { hasPricingBasis, quantityQuoteExact, type PricingMetadata } from "../../../shared/pricing";
 
 const en = {
   price: "Price",
@@ -118,7 +118,7 @@ export const pricingCopy: Record<string, typeof en> = {
 };
 export function unitLabel(locale: string, row: PricingMetadata & { billingCycle?: "monthly" | null; catalogueListing?: string }) {
   const text = pricingCopy[locale] ?? en;
-  if (row.catalogueListing === "api_source") return row.priceCurrency
+  if (row.catalogueListing === "api_source" && !hasPricingBasis(row)) return row.priceCurrency
     ? locale === "ar" ? "قيمة API · وحدة السعر قيد التحقق" : "API rate · sale unit awaiting confirmation"
     : locale === "ar" ? "قيمة API · العملة ووحدة السعر قيد التحقق" : "API rate · currency and unit awaiting confirmation";
   if (row.billingCycle === "monthly") return locale === "ar" ? "شهريًا · باقة محددة" : "per month · defined package";
@@ -126,6 +126,10 @@ export function unitLabel(locale: string, row: PricingMetadata & { billingCycle?
     ["per_1000", "per_item", "package"].includes(row.priceUnit)
     ? text[row.priceUnit as "per_1000" | "per_item" | "package"]
     : text.unknown;
+}
+export function formatQuotePrice(locale: string, row: Parameters<typeof quantityQuoteExact>[0], quantity: number) {
+  const amount = quantityQuoteExact(row, quantity);
+  return amount == null ? null : `${row.priceCurrency} ${amount}`;
 }
 export function formatPrice(
   locale: string,

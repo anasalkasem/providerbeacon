@@ -99,6 +99,7 @@ export function quantityQuote(
     !hasPricingBasis(row) ||
     row.priceUnit === "package" ||
     !Number.isSafeInteger(quantity) ||
+    quantity < 1 ||
     quantity < row.min ||
     quantity > row.max ||
     !Number.isFinite(row.priceAmount) ||
@@ -108,4 +109,43 @@ export function quantityQuote(
   return (
     (row.priceAmount * quantity) / (row.priceUnit === "per_1000" ? 1000 : 1)
   );
+}
+
+// Decimal-string arithmetic keeps tiny rates and large quantities exact.
+export function quantityQuoteExact(
+  row: PricingMetadata & {
+    priceAmount: number;
+    min: number;
+    max: number;
+    catalogueListing?: string;
+    sourceRate?: string | null;
+  },
+  quantity: number
+) {
+  if (quantityQuote(row, quantity) == null) return null;
+  const rate =
+    row.catalogueListing === "api_source"
+      ? row.sourceRate
+      : String(row.priceAmount);
+  if (!rate || !/^\d+(\.\d+)?$/.test(rate)) return null;
+  const [whole, fraction = ""] = rate.split(".");
+  const scale = fraction.length + (row.priceUnit === "per_1000" ? 3 : 0);
+  const digits = (BigInt(whole + fraction) * BigInt(quantity))
+    .toString()
+    .padStart(scale + 1, "0");
+  const integer = scale ? digits.slice(0, -scale) : digits;
+  const decimals = (scale ? digits.slice(-scale) : "")
+    .replace(/0+$/, "")
+    .padEnd(2, "0");
+  return `${integer}.${decimals}`;
+}
+
+// Inputs are the validated non-negative decimal strings returned by quantityQuoteExact.
+export function compareQuoteAmounts(left: string, right: string) {
+  const [li, lf = ""] = left.split(".");
+  const [ri, rf = ""] = right.split(".");
+  const scale = Math.max(lf.length, rf.length);
+  const a = BigInt(li + lf.padEnd(scale, "0"));
+  const b = BigInt(ri + rf.padEnd(scale, "0"));
+  return a < b ? -1 : a > b ? 1 : 0;
 }

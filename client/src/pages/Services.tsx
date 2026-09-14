@@ -6,7 +6,12 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
 import { type Service } from "@/data/marketplace";
 import { platforms, serviceTypes } from "../../../shared/serviceReview";
-import { priceCurrencies, type PriceCurrency } from "../../../shared/pricing";
+import {
+  priceCurrencies,
+  priceUnits,
+  type PriceCurrency,
+  type PriceUnit,
+} from "../../../shared/pricing";
 import { localizeData } from "@/i18n/messages";
 import { GuideGrid } from "@/components/Discovery";
 import SmmOfferTable from "@/components/SmmOfferTable";
@@ -33,9 +38,15 @@ export default function Services() {
       : "all"
   );
   const [currency, setCurrency] = useState<PriceCurrency | "">("");
+  const [unit, setUnit] = useState<PriceUnit | "">("");
+  const [onlyMatching, setOnlyMatching] = useState(false);
   const [sort, setSort] = useState<"recommended" | "price">("recommended");
   const [refillOnly, setRefillOnly] = useState(false);
   const [quantity, setQuantity] = useState(1000);
+  const validQuantity =
+    Number.isSafeInteger(quantity) && quantity > 0 && quantity <= 2147483647;
+  const filterQuantity =
+    market === "smm" && onlyMatching && validQuantity ? quantity : undefined;
   const [selected, setSelected] = useState<Service[]>([]);
   const field =
     "h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm";
@@ -51,9 +62,13 @@ export default function Services() {
               ? undefined
               : (category as (typeof serviceTypes)[number]),
           priceCurrency: currency || undefined,
-          priceUnit: market === "packages" ? "package" : sort === "price" && currency ? "per_1000" : undefined,
+          priceUnit: market === "packages" ? "package" : unit || undefined,
+          quantity: filterQuantity,
           refillOnly: market === "smm" && refillOnly,
-          sort: market === "smm" && currency ? sort : "recommended",
+          sort:
+            market === "smm" && currency && unit && unit !== "package"
+              ? sort
+              : "recommended",
         }),
       250
     );
@@ -64,6 +79,8 @@ export default function Services() {
     platform,
     category,
     currency,
+    unit,
+    filterQuantity,
     refillOnly,
     sort,
     setFilters,
@@ -103,6 +120,8 @@ export default function Services() {
               onClick={() => {
                 setMarket(value);
                 setCategory("all");
+                setUnit("");
+                setOnlyMatching(false);
                 setRefillOnly(false);
                 setSelected([]);
                 setSort("recommended");
@@ -119,6 +138,69 @@ export default function Services() {
             </button>
           ))}
         </div>
+        {market === "smm" && (
+          <section
+            aria-label={ar ? "حاسبة تكلفة الخدمات" : "Service cost calculator"}
+            className="mb-6 rounded-2xl border border-teal-200 bg-teal-50/50 p-5"
+          >
+            <h2 className="text-lg font-extrabold text-slate-950">
+              {ar
+                ? "كم ستكلفك الكمية التي تحتاجها؟"
+                : "What will your quantity cost?"}
+            </h2>
+            <p className="mt-2 text-sm text-slate-600">
+              {ar
+                ? "أدخل الكمية لتظهر تكلفة كل عرض مؤكد التسعير ضمن حدود الطلب."
+                : "Enter a quantity to calculate each offer with confirmed pricing and valid order limits."}
+            </p>
+            <div className="mt-4 flex flex-wrap items-end gap-4">
+              <label className="grid w-full gap-2 text-sm font-bold sm:w-56">
+                {ar ? "الكمية المطلوبة" : "Required quantity"}
+                <input
+                  type="number"
+                  min={1}
+                  max={2147483647}
+                  step={1}
+                  className={field}
+                  value={Number.isFinite(quantity) ? quantity : ""}
+                  onChange={e => setQuantity(e.target.valueAsNumber)}
+                  aria-invalid={!validQuantity}
+                />
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[1000, 5000, 10000].map(q => (
+                  <button
+                    key={q}
+                    type="button"
+                    aria-pressed={quantity === q}
+                    onClick={() => setQuantity(q)}
+                    className={`rounded-lg border px-4 py-3 text-sm font-bold ${quantity === q ? "border-teal-700 bg-teal-700 text-white" : "border-teal-200 bg-white text-teal-900"}`}
+                  >
+                    {q.toLocaleString(locale)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {!validQuantity && (
+              <p role="alert" className="mt-3 text-sm text-red-700">
+                {ar
+                  ? "أدخل عددًا صحيحًا من 1 إلى 2,147,483,647."
+                  : "Enter a whole number from 1 to 2,147,483,647."}
+              </p>
+            )}
+            <label className="mt-4 flex items-center gap-2 text-sm font-semibold">
+              <input
+                type="checkbox"
+                checked={onlyMatching}
+                onChange={e => setOnlyMatching(e.target.checked)}
+                className="size-4 accent-teal-700"
+              />
+              {ar
+                ? "اعرض فقط العروض التي تقبل هذه الكمية"
+                : "Only show offers that accept this quantity"}
+            </label>
+          </section>
+        )}
         <div className="mb-6 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-4">
           <label className="grid gap-2 text-sm font-bold sm:col-span-2">
             {ar ? "ابحث عن خدمة أو مزود" : "Find a service or provider"}
@@ -183,7 +265,10 @@ export default function Services() {
             <select
               className={field}
               value={currency}
-              onChange={e => setCurrency(e.target.value as PriceCurrency | "")}
+              onChange={e => {
+                setCurrency(e.target.value as PriceCurrency | "");
+                if (!e.target.value) setSort("recommended");
+              }}
             >
               <option value="">{ar ? "جميع العملات" : "All currencies"}</option>
               {priceCurrencies.map(c => (
@@ -191,6 +276,37 @@ export default function Services() {
               ))}
             </select>
           </label>
+          {market === "smm" && (
+            <label className="grid gap-2 text-sm font-bold">
+              {ar ? "وحدة السعر" : "Sale unit"}
+              <select
+                className={field}
+                value={unit}
+                onChange={e => {
+                  setUnit(e.target.value as PriceUnit | "");
+                  if (!e.target.value || e.target.value === "package")
+                    setSort("recommended");
+                }}
+              >
+                <option value="">{ar ? "جميع الوحدات" : "All units"}</option>
+                {priceUnits.map(u => (
+                  <option key={u} value={u}>
+                    {u === "per_1000"
+                      ? ar
+                        ? "لكل 1,000"
+                        : "Per 1,000"
+                      : u === "per_item"
+                        ? ar
+                          ? "للوحدة الواحدة"
+                          : "Per item"
+                        : ar
+                          ? "للباقة"
+                          : "Per package"}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <label className="grid gap-2 text-sm font-bold">
             {ar ? "الترتيب" : "Sort"}
             <select
@@ -203,26 +319,26 @@ export default function Services() {
               </option>
               <option
                 value="price"
-                disabled={!currency || market === "packages"}
+                disabled={
+                  !currency ||
+                  !unit ||
+                  unit === "package" ||
+                  market === "packages"
+                }
               >
-                {ar ? "سعر الألف: من الأقل" : "Price per 1,000: low to high"}
+                {ar ? "السعر: من الأقل للأعلى" : "Price: low to high"}
               </option>
             </select>
+            {market === "smm" && (!currency || !unit) && (
+              <span className="text-xs font-normal text-slate-500">
+                {ar
+                  ? "اختر العملة ووحدة السعر لتفعيل الترتيب."
+                  : "Select a currency and sale unit to enable price sorting."}
+              </span>
+            )}
           </label>
           {market === "smm" && (
             <>
-              <label className="grid gap-2 text-sm font-bold">
-                {ar ? "كمية المقارنة" : "Comparison quantity"}
-                <input
-                  type="number"
-                  min={1}
-                  max={2147483647}
-                  step={1}
-                  className={field}
-                  value={Number.isFinite(quantity) ? quantity : ""}
-                  onChange={e => setQuantity(e.target.valueAsNumber)}
-                />
-              </label>
               <label className="flex items-center gap-3 text-sm font-bold">
                 <input
                   type="checkbox"
@@ -247,6 +363,8 @@ export default function Services() {
               setPlatform("all");
               setCategory("all");
               setCurrency("");
+              setUnit("");
+              setOnlyMatching(false);
               setRefillOnly(false);
               setSort("recommended");
             }}

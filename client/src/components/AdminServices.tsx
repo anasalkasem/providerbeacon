@@ -1,4 +1,5 @@
 import SourcedOfferImport from "./SourcedOfferImport";
+import SourcePricingEditor from "./SourcePricingEditor";
 import { formatPrice, unitLabel } from "@/i18n/pricing";
 import { useEffect, useState } from "react";
 import { useSearch } from "wouter";
@@ -341,6 +342,7 @@ export default function AdminServices({
                 {text("publishSelected")}
               </Button>
             )}
+            <SourcePricingEditor items={selected} disabled={busy || submitting} onSaved={refresh} />
           </div>
         </div>
       )}

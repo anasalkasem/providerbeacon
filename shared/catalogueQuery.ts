@@ -38,12 +38,13 @@ export const catalogueInput = z
     category: z.enum(serviceTypes).optional(),
     limit: z.number().int().min(1).max(50).default(25),
     cursor: z
-      .object({ id: z.number().int().positive(), rank: z.number().finite() })
+      .object({ id: z.number().int().positive(), rank: z.union([z.number().finite(), z.string().max(67).regex(/^-?\d+(\.\d+)?$/)]) })
       .optional(),
     q: z.string().trim().max(100).default(""),
     platform: z.string().trim().max(80).optional(),
     priceCurrency: z.enum(priceCurrencies).optional(),
     priceUnit: z.enum(priceUnits).optional(),
+    quantity: z.number().int().min(1).max(2147483647).optional(),
     quality: z.enum(["standard", "premium", "elite"]).optional(),
     refillOnly: z.boolean().default(false),
     sort: z.enum(["recommended", "price", "retention"]).default("recommended"),

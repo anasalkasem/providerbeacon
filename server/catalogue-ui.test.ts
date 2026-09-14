@@ -16,6 +16,8 @@ import { ScoreRing, ServiceRow } from "../client/src/components/Marketplace";
 import Home from "../client/src/pages/Home";
 import Provider from "../client/src/pages/Provider";
 import Compare from "../client/src/pages/Compare";
+import Services from "../client/src/pages/Services";
+import QuoteCost from "../client/src/components/QuoteCost";
 import { CatalogueNotice } from "../client/src/components/CatalogueState";
 
 beforeEach(() => {
@@ -29,6 +31,26 @@ afterEach(() => vi.unstubAllGlobals());
 const render = (component: React.ComponentType<any>, props = {}) => renderToStaticMarkup(React.createElement(component, props));
 
 describe("public catalogue rendering", () => {
+  it("shows a visible quantity calculator and sale-unit filter in the explorer", () => {
+    state.data = {...state.data, setFilters:()=>{}, pagination:{total:1,page:1,hasNext:false,next:()=>{},previous:()=>{}}};
+    const html=render(Services);
+    expect(html).toContain("Service cost calculator");
+    expect(html).toContain("Required quantity");
+    expect(html).toContain("Only show offers that accept this quantity");
+    expect(html).toContain("Sale unit");
+  });
+  it("uses exact totals and only marks the truly cheapest comparable source rate", () => {
+    const a = {...state.data.services[0], catalogueListing:"api_source", sourceRate:"1.000000000000000001", priceAmount:1,priceCurrency:"USD",priceUnit:"per_1000",countryCode:"US",refill:"No refill",min:1,max:10000};
+    const b = {...a,id:"service-41",sourceRate:"1.000000000000000002"};
+    state.data = {...state.data,...catalogueIndex(state.data.providers,[a,b])};
+    vi.stubGlobal("window",{location:{search:"?services=service-40,service-41&quantity=5000"}});
+    const html = render(Compare);
+    expect(html).toContain("USD 5.000000000000000005");
+    expect(html).toContain("USD 5.00000000000000001");
+    expect(html.split(">Lowest price<").length - 1).toBe(1);
+    expect(render(QuoteCost,{service:a,quantity:10001})).toContain("Above maximum: 10,000");
+    expect(render(QuoteCost,{service:{...a,priceUnit:null},quantity:1000})).toContain("Awaiting confirmation of the sale unit");
+  });
   it("renders connected API rates without rounding them into a currency or inventing a quantity total", () => {
     const provider = {...state.data.providers[0], apiConnected: true, activeServicesCount: 2};
     const a = {...state.data.services[0], catalogueListing: "api_source", sourceRate: "1.0123456", priceAmount: 1.0123456, priceCurrency: null, priceUnit: null, sourceUrl: "https://provider.example"};

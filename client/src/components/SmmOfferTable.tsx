@@ -5,7 +5,7 @@ import { type Service } from "@/data/marketplace";
 import { formatPrice, unitLabel } from "@/i18n/pricing";
 import { localizeData, localizeDuration, formatNumber } from "@/i18n/messages";
 import OfferEvidence, { serviceName, serviceScope } from "./OfferEvidence";
-import { hasPricingBasis, quantityQuote } from "../../../shared/pricing";
+import QuoteCost from "./QuoteCost";
 
 export default function SmmOfferTable({
   services,
@@ -43,7 +43,6 @@ export default function SmmOfferTable({
           {services.map(service => {
             const provider = providerFor(service);
             const chosen = selected.some(item => item.id === service.id);
-            const total = quantityQuote(service, quantity);
             return (
               <tr
                 key={service.id}
@@ -89,23 +88,7 @@ export default function SmmOfferTable({
                     <p className="mt-2 max-w-xs">
                       {serviceScope(locale, service)}
                     </p>
-                  ) : hasPricingBasis(service) ? (
-                    <p className="mt-3 text-xs leading-6">
-                      {ar ? "تكلفة الكمية المحددة: " : "Selected quantity: "}
-                      {total == null ? (
-                        <span className="text-amber-700">
-                          {ar ? "خارج حدود الطلب" : "Outside order limits"}
-                        </span>
-                      ) : (
-                        <bdi dir="ltr" className="font-bold">
-                          {formatPrice(locale, {
-                            ...service,
-                            priceAmount: total,
-                          })}
-                        </bdi>
-                      )}
-                    </p>
-                  ) : null}
+                  ) : <QuoteCost service={service} quantity={quantity} />}
                 </td>
                 <td className="p-4 align-top">
                   <bdi className="whitespace-nowrap">
