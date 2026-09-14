@@ -7,6 +7,7 @@ import {
   serviceRecords,
 } from "../drizzle/schema";
 import { getDb } from "./db";
+import { priceCurrencies, type PriceCurrency } from "../shared/pricing";
 import { writeAudit } from "./marketplaceDb";
 import {
   normalizeApiService,
@@ -25,12 +26,14 @@ export async function applyCatalogueBatch(
     provider: typeof providerRecords.$inferSelect;
     rows: NormalizedService[];
     sourceUrl: string;
+    sourceCurrency?: string | null;
     now: Date;
     actorUserId?: number;
     jobId: number;
   }
 ) {
   const { provider, sourceUrl, now, actorUserId } = input;
+  const sourceCurrency = priceCurrencies.includes(input.sourceCurrency as PriceCurrency) ? input.sourceCurrency! : null;
   // Rebuild from retained source so pre-deployment staged payloads remain resumable.
   const normalized = input.rows.map((row, index) =>
     normalizeApiService(row.sourceData, index)
@@ -59,6 +62,7 @@ export async function applyCatalogueBatch(
       countryCode: serviceRecords.countryCode,
       priceAmount: serviceRecords.priceAmount,
       sourceRate: serviceRecords.sourceRate,
+      sourceCurrency: serviceRecords.sourceCurrency,
       priceCurrency: serviceRecords.priceCurrency,
       priceUnit: serviceRecords.priceUnit,
       packageDescription: serviceRecords.packageDescription,
@@ -105,6 +109,7 @@ export async function applyCatalogueBatch(
     const changed =
       !existing ||
       existing.sourceHash !== item.sourceHash ||
+      existing.sourceCurrency !== sourceCurrency ||
       (existing.platform === "Unknown" &&
         existing.category === "Website traffic" &&
         existing.reviewStatus === "pending" &&
@@ -136,7 +141,8 @@ export async function applyCatalogueBatch(
       reviewStatus: preserveWithdrawal ? "changes_requested" as const : "pending" as const,
       incomplete: true,
       pricingConfirmed: false,
-      priceCurrency: null,
+      sourceCurrency,
+      priceCurrency: sourceCurrency,
       priceUnit: null,
       packageDescription: null,
       policyReviewed: false,
@@ -177,6 +183,7 @@ export async function applyCatalogueBatch(
           serviceId: existing.id,
           priceAmount: item.priceAmount,
           sourceRate: item.sourceRate,
+          priceCurrency: sourceCurrency,
           kind: "source",
         });
       }
@@ -187,6 +194,7 @@ export async function applyCatalogueBatch(
         "countryCode",
         "priceAmount",
         "sourceRate",
+        "sourceCurrency",
         "priceCurrency",
         "priceUnit",
         "packageDescription",
@@ -243,6 +251,7 @@ export async function applyCatalogueBatch(
         serviceId: row.id,
         priceAmount: batch[index]!.priceAmount,
         sourceRate: batch[index]!.sourceRate,
+        priceCurrency: sourceCurrency,
         kind: "source",
       })
     );

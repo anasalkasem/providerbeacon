@@ -85,6 +85,13 @@
       "when": 1789392003000,
       "tag": "0011_connected_api_catalogue",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1789392004000,
+      "tag": "0012_jap_confirmed_usd",
+      "breakpoints": true
     }
   ]
 }

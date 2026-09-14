@@ -309,7 +309,7 @@ async function prepareSnapshot(claim: Job) {
 }
 
 async function importSnapshotBatch(claim: Job) {
-  await withJob(claim, async (tx, job, provider) => {
+  await withJob(claim, async (tx, job, provider, integration) => {
     const staged = await tx
       .select({
         payload: providerSyncRows.payload,
@@ -341,6 +341,7 @@ async function importSnapshotBatch(claim: Job) {
           provider,
           rows: valid.map(row => row.payload as NormalizedService),
           sourceUrl: job.sourceUrl,
+          sourceCurrency: integration.sourceCurrency,
           now: job.snapshotAt,
           actorUserId: job.actorUserId ?? undefined,
           jobId: job.id,

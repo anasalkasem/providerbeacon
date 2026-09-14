@@ -136,6 +136,54 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     await setProviderIntegrationEnabled({id: integration, enabled: false, actorUserId: actorId});
     expect((await getMarketplaceSnapshot({scope: "providers", market: "smm"})).providers).toHaveLength(0);
   });
+  it("applies the owner's USD confirmation only to the matching JAP connection and source records", async () => {
+    await state.db.update(providerRecords).set({slug: "justanotherpanel", apiCataloguePublished: true}).where(eq(providerRecords.id, providerId));
+    const integrationId = await addIntegration("active");
+    await state.db.update(providerIntegrations).set({baseUrl: "https://justanotherpanel.com/api/v2"}).where(eq(providerIntegrations.id, integrationId));
+    await sync();
+    const [source] = await state.db.select().from(serviceRecords);
+    // A separately edited display currency must not relabel the original API rate.
+    await state.db.update(serviceRecords).set({priceCurrency: "EUR"}).where(eq(serviceRecords.id, source.id));
+    const manualId = await addService("draft");
+    const [other] = await state.db.insert(providerRecords).values({slug: "other-provider", name: "Other", initials: "O"}).$returningId();
+    const [otherIntegration] = await state.db.insert(providerIntegrations).values({providerId: other.id, name: "Other connection", baseUrl: "https://justanotherpanel.com/api/v2", lastSyncedAt: new Date(), credentialCiphertext: "test-placeholder"}).$returningId();
+    const otherId = await addService("draft", other.id);
+    await state.db.update(serviceRecords).set({sourceKind: "provider_api", sourceUrl: "https://justanotherpanel.com/api/v2"}).where(eq(serviceRecords.id, otherId));
+    const statements = readFileSync("drizzle/0012_jap_confirmed_usd.sql", "utf8").split("--> statement-breakpoint").slice(2).map(v => v.trim()).filter(Boolean);
+    for (let attempt = 0; attempt < 2; attempt++) await state.db.transaction(async (tx: any) => { for (const statement of statements) await tx.execute(sql.raw(statement)); });
+    const detail = await getServiceReview(source.id);
+    expect(detail.service).toMatchObject({sourceCurrency: "USD", priceCurrency: "EUR", sourceRate: "1.00", priceUnit: null, pricingConfirmed: false, reviewStatus: "pending", revision: source.revision + 1});
+    expect(detail.prices[0]).toMatchObject({kind: "source", priceCurrency: null});
+    expect((await getServiceReview(manualId)).service.sourceCurrency).toBeNull();
+    expect((await getServiceReview(otherId)).service.sourceCurrency).toBeNull();
+    const [unrelated] = await state.db.select().from(providerIntegrations).where(eq(providerIntegrations.id, otherIntegration.id));
+    expect(unrelated.sourceCurrency).toBeNull();
+    const audits = await state.db.select().from(auditEntries).where(eq(auditEntries.action, "integration.source_currency.confirm"));
+    expect(audits).toHaveLength(1);
+    expect(audits[0].metadata).toMatchObject({after: "USD", basis: "owner_confirmation", saleUnitConfirmed: false});
+    const result = await getMarketplaceSnapshot({scope: "services", market: "smm", priceCurrency: "USD"});
+    expect(result.services).toHaveLength(1);
+    expect(result.services[0]).toMatchObject({priceCurrency: "USD", priceUnit: null, sourceRate: "1.00"});
+  });
+  it("retains account currency through imports and source price changes without enabling unit-price ranking", async () => {
+    await state.db.update(providerRecords).set({apiCataloguePublished: true}).where(eq(providerRecords.id, providerId));
+    const integrationId = await addIntegration("active");
+    await state.db.update(providerIntegrations).set({sourceCurrency: "USD"}).where(eq(providerIntegrations.id, integrationId));
+    await sync();
+    const [source] = await state.db.select().from(serviceRecords);
+    expect(source).toMatchObject({sourceCurrency: "USD", priceCurrency: "USD", priceUnit: null, pricingConfirmed: false});
+    await state.db.update(serviceRecords).set({priceCurrency: "EUR"}).where(eq(serviceRecords.id, source.id));
+    await sync();
+    expect((await getServiceReview(source.id)).service).toMatchObject({sourceCurrency: "USD", priceCurrency: "EUR", revision: source.revision});
+    expect((await getMarketplaceSnapshot({scope: "services", priceCurrency: "USD"})).pagination.total).toBe(1);
+    expect((await getMarketplaceSnapshot({scope: "services", priceCurrency: "EUR"})).services).toHaveLength(0);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([{...payload[0], rate: "2.0123456"}]), {status: 200})));
+    await sync();
+    const changed = await getServiceReview(source.id);
+    expect(changed.service).toMatchObject({sourceCurrency: "USD", priceCurrency: "USD", sourceRate: "2.0123456", priceUnit: null, pricingConfirmed: false, reviewStatus: "pending"});
+    expect(changed.prices[0]).toMatchObject({kind: "source", priceCurrency: "USD", sourceRate: "2.0123456", priceUnit: null});
+    expect((await getMarketplaceSnapshot({scope: "services", sort: "price", priceCurrency: "USD", priceUnit: "per_1000"})).services).toHaveLength(0);
+  });
   it("keeps rejected, quarantined, paused and missing API rows out of the source catalogue", async () => {
     await state.db.update(providerRecords).set({apiCataloguePublished: true}).where(eq(providerRecords.id, providerId));
     await addIntegration("active"); await sync();

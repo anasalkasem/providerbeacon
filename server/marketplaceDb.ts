@@ -21,6 +21,7 @@ const tierFromDb = {
 const publicServiceColumns = {
   id: serviceRecords.id, providerId: serviceRecords.providerId, platform: serviceRecords.platform,
   externalId: serviceRecords.externalId, sourceRate: serviceRecords.sourceRate, reviewStatus: serviceRecords.reviewStatus,
+  sourceCurrency: serviceRecords.sourceCurrency,
   sourceUrl: serviceRecords.sourceUrl, providerWebsite: providerRecords.websiteUrl,
   apiListing: sql<boolean>`${serviceRecords.reviewStatus} = 'pending'`.mapWith(Boolean),
   category: serviceRecords.category, name: serviceRecords.name, priceAmount: serviceRecords.priceAmount,
@@ -71,13 +72,15 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       .orderBy(desc(providerRecords.id)).limit(input.scope === "provider" ? 1 : input.limit + 1) : [];
     if (input.scope === "provider" && !providerPage.length) return empty("database");
     const serviceFilter = and(eligible, visibleCatalogueService(),
-      input.priceCurrency || input.priceUnit || input.sort === "price" ? approvedService() : undefined,
+      input.priceUnit || input.sort === "price" ? approvedService() : undefined,
       marketFilter,
       input.category ? eq(serviceRecords.category, input.category) : undefined,
       input.scope === "provider" ? eq(serviceRecords.providerId, providerPage[0]!.id) : undefined,
       input.scope === "compare" ? (input.ids.length ? inArray(serviceRecords.id, input.ids) : sql`false`) : undefined,
       input.platform ? eq(serviceRecords.platform, input.platform) : undefined,
-      input.priceCurrency ? eq(serviceRecords.priceCurrency, input.priceCurrency) : undefined,
+      input.priceCurrency ? or(
+        and(eq(serviceRecords.reviewStatus, "pending"), eq(serviceRecords.sourceCurrency, input.priceCurrency)),
+        and(eq(serviceRecords.reviewStatus, "approved"), eq(serviceRecords.priceCurrency, input.priceCurrency))) : undefined,
       input.priceUnit ? eq(serviceRecords.priceUnit, input.priceUnit) : undefined,
       input.quality ? eq(serviceRecords.quality, input.quality) : undefined,
       input.refillOnly ? inArray(serviceRecords.refillMode, ["manual", "automatic", "lifetime"]) : undefined,
@@ -134,7 +137,7 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       sourceServiceId: row.sourceKind === "provider_api" ? row.externalId : publicOfferMetadata(row).sourceServiceId,
       sourceUrl: row.apiListing ? safeSourceWebsite(row.providerWebsite, row.sourceUrl) : publicOfferMetadata(row).sourceUrl,
       id: `service-${row.id}`, providerId: `provider-${row.providerId}`, platform: row.platform, category: row.category,
-      name: row.name, priceAmount: Number(row.apiListing ? row.sourceRate : row.priceAmount), priceCurrency: row.apiListing ? null : row.priceCurrency,
+      name: row.name, priceAmount: Number(row.apiListing ? row.sourceRate : row.priceAmount), priceCurrency: row.apiListing ? row.sourceCurrency : row.priceCurrency,
       priceUnit: row.apiListing ? null : row.priceUnit, packageDescription: row.packageDescription, countryCode: row.countryCode, min: row.minOrder, max: row.maxOrder,
       startTime: durationLabel(row.startMinutesMin, row.startMinutesMax),
       delivery: durationLabel(row.deliveryMinutesMin, row.deliveryMinutesMax),
