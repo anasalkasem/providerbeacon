@@ -15,13 +15,24 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
 import { discoveryText } from "@/i18n/discovery";
 import { discoveryGuides, directoryProfiles } from "@/data/discovery";
-import { ServiceRow } from "@/components/Marketplace";
+import SmmOfferTable from "@/components/SmmOfferTable";
+import type { Service } from "@/data/marketplace";
 export default function Home() {
   const { locale } = useLocale();
   const t = discoveryText(locale);
   const [, navigate] = useLocation();
   const [query, setQuery] = useState("");
   const { services } = useMarketplaceData();
+  const [selected, setSelected] = useState<Service[]>([]);
+  const ar = locale === "ar";
+  const toggle = (service: Service) =>
+    setSelected(current =>
+      current.some(item => item.id === service.id)
+        ? current.filter(item => item.id !== service.id)
+        : current.length < 4
+          ? [...current, service]
+          : current
+    );
   const steps = [
     { icon: Compass, title: t.stepOne, body: t.stepOneBody },
     { icon: SlidersHorizontal, title: t.stepTwo, body: t.stepTwoBody },
@@ -42,12 +53,16 @@ export default function Home() {
                 {t.beta}
               </p>
               <h1 className="mt-7 text-[clamp(2.8rem,5.8vw,5.4rem)] font-extrabold leading-[1.18] tracking-tight">
-                {t.title}
+                {ar ? "ابحث عن مزودي SMM." : "Find SMM providers."}
                 <br />
-                <span className="text-[#53E1C0]">{t.titleAccent}</span>
+                <span className="text-[#53E1C0]">
+                  {ar ? "قارن العروض بثقة." : "Compare their offers."}
+                </span>
               </h1>
               <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">
-                {t.intro}
+                {ar
+                  ? "أسعار المتابعين والمشاهدات والإعجابات في مكان واحد. قارن سعر الألف وحدود الطلب والتعويض بين المزودين."
+                  : "Followers, views and likes in one place. Compare prices per 1,000, order limits and refill terms across providers."}
               </p>
               <form
                 className="mt-9 flex flex-col gap-2 rounded-2xl border border-white/15 bg-white/5 p-2 sm:flex-row"
@@ -75,7 +90,7 @@ export default function Home() {
                 </button>
               </form>
               <div className="mt-5 flex flex-wrap gap-2">
-                {["Instagram", "TikTok", "YouTube", "SEO"].map(p => (
+                {["Instagram", "TikTok", "YouTube", "Telegram"].map(p => (
                   <Link
                     key={p}
                     href={`/services?q=${p}`}
@@ -119,7 +134,7 @@ export default function Home() {
                     </div>
                   ))}
                   <Link
-                    href="/compare"
+                    href="/services?platform=Instagram&category=Followers"
                     className="flex items-center justify-between rounded-xl bg-white p-4 text-sm font-extrabold text-[#0B2A68]"
                   >
                     {t.compare}
@@ -151,6 +166,45 @@ export default function Home() {
             </div>
           </div>
         </section>
+        <section className="container py-10">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-2xl font-extrabold">
+              {ar
+                ? "قارن عروض متابعي Instagram"
+                : "Compare Instagram follower offers"}
+            </h2>
+            <Link href="/services" className="font-bold text-teal-700">
+              {ar ? "جميع عروض SMM ←" : "All SMM offers →"}
+            </Link>
+          </div>
+          <SmmOfferTable
+            services={services}
+            selected={selected}
+            toggle={toggle}
+          />
+          {services.length === 0 && (
+            <p className="p-6 text-center text-slate-500">
+              {ar
+                ? "تظهر هنا عروض SMM بعد نشرها."
+                : "Published SMM offers will appear here."}
+            </p>
+          )}
+          {selected.length > 0 && (
+            <button
+              disabled={selected.length < 2}
+              onClick={() =>
+                navigate(
+                  `/compare?services=${selected.map(service => service.id).join(",")}`
+                )
+              }
+              className="mt-4 rounded-xl bg-[#0B2A48] px-6 py-3 font-bold text-white disabled:opacity-40"
+            >
+              {ar
+                ? `قارن العروض المختارة (${selected.length})`
+                : `Compare selected offers (${selected.length})`}
+            </button>
+          )}
+        </section>
         <section className="container py-16 sm:py-20">
           <div className="mb-8">
             <p className="section-kicker">{t.guides}</p>
@@ -177,27 +231,6 @@ export default function Home() {
             <ReferenceGrid />
           </div>
         </section>
-        {services.length > 0 && (
-          <section className="container py-12">
-            <h2 className="mb-5 text-2xl font-extrabold">{t.offers}</h2>
-            <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
-              <table className="w-full">
-                <tbody>
-                  {services.slice(0, 3).map(service => (
-                    <ServiceRow
-                      key={service.id}
-                      service={service}
-                      selected={false}
-                      onToggle={() =>
-                        navigate(`/compare?services=${service.id}`)
-                      }
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        )}
         <section
           id="methodology"
           className="container scroll-mt-24 py-16 sm:py-20"
@@ -235,7 +268,7 @@ export default function Home() {
               {t.aboutBody}
             </p>
             <Link
-              href="/compare"
+              href="/services?platform=Instagram&category=Followers"
               className="mt-7 inline-flex items-center gap-3 rounded-xl bg-[#53E1C0] px-6 py-3 font-extrabold text-[#081B30]"
             >
               {t.compare}

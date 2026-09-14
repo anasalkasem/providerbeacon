@@ -18,7 +18,7 @@ const en = {
   sortHint:
     "To sort by price, select one currency and a per-item or per-1,000 unit.",
   mixed:
-    "Prices have different units, currencies, service types or target markets, or include packages. No lowest-price ranking is applied.",
+    "Units, currencies, service types, markets or refill terms differ or are unconfirmed, packages are included, or quantity limits are exceeded. No lowest-price ranking is applied.",
   confirm:
     "I checked the amount, currency and sale unit against the linked evidence.",
   sourceHelp:
@@ -43,7 +43,7 @@ export const pricingCopy: Record<string, typeof en> = {
     history_review: "سجل مراجعة",
     sortHint: "للترتيب بالسعر، اختر عملة واحدة ووحدة بيع: للوحدة أو لكل ١٬٠٠٠.",
     mixed:
-      "تختلف العملات أو وحدات البيع أو أنواع الخدمات أو الأسواق المستهدفة، أو تتضمن المقارنة باقات. لا نطبق ترتيبًا للأرخص.",
+      "تختلف بعض الشروط أو الأسواق أو وحدات البيع، أو لم تُحدد؛ وقد تكون الكمية خارج حدود عرض. لا نضع علامة الأرخص عند غياب أساس مقارنة موحد.",
     confirm: "تحققت من المبلغ والعملة ووحدة البيع بالرجوع إلى الدليل المرتبط.",
     sourceHelp:
       "نحتفظ بقيمة API كما وردت. أكّد المبلغ المعروض وأساس التسعير بدليل يخص هذه الخدمة.",

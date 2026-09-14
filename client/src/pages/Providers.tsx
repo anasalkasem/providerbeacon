@@ -10,21 +10,36 @@ import { discoveryText } from "@/i18n/discovery";
 export default function Providers() {
   const { locale } = useLocale();
   const t = discoveryText(locale);
+  const ar = locale === "ar";
+  const [market, setMarket] = useState<"smm" | "packages">("smm");
   const [query, setQuery] = useState("");
   const { providers, setFilters } = useMarketplaceData();
   useEffect(() => {
-    const timer = setTimeout(() => setFilters({ q: query.trim() }), 300);
+    const timer = setTimeout(
+      () => setFilters({ q: query.trim(), market }),
+      300
+    );
     return () => clearTimeout(timer);
-  }, [query, setFilters]);
+  }, [query, market, setFilters]);
   return (
     <PublicLayout>
       <div className="container py-12" lang={locale === "ar" ? "ar" : "en"}>
-        <p className="section-kicker">{t.referenceLabel}</p>
+        <p className="section-kicker">
+          {ar ? "دليل مزودي الخدمات" : "Service provider directory"}
+        </p>
         <h1 className="mt-4 max-w-4xl text-4xl font-extrabold leading-relaxed text-slate-950 sm:text-5xl">
-          {t.providersTitle}
+          {market === "smm"
+            ? ar
+              ? "مزودو SMM وأسعارهم"
+              : "SMM providers and their offers"
+            : ar
+              ? "وكالات التسويق"
+              : "Marketing agencies"}
         </h1>
         <p className="mt-5 max-w-3xl leading-8 text-slate-500">
-          {t.referenceBody}
+          {ar
+            ? "اختر مزودًا لعرض خدماته المنشورة، أو قارن خدمات عدة مزودين من مستكشف العروض."
+            : "Open a provider to see published services, or compare providers in the offer explorer."}
         </p>
         <label className="relative my-8 block max-w-xl">
           <span className="sr-only">{t.providerSearch}</span>
@@ -37,7 +52,22 @@ export default function Providers() {
             onChange={e => setQuery(e.target.value)}
           />
         </label>
-        <ReferenceGrid query={query} />
+        <div className="flex gap-3">
+          {(["smm", "packages"] as const).map(value => (
+            <button
+              key={value}
+              aria-pressed={value === market}
+              className={`rounded-xl border px-4 py-3 font-bold ${market === value ? "bg-[#0B2A48] text-white" : "bg-white"}`}
+              onClick={() => setMarket(value)}
+            >
+              {value === "smm"
+                ? "SMM"
+                : ar
+                  ? "باقات الوكالات"
+                  : "Agency packages"}
+            </button>
+          ))}
+        </div>
         {providers.length > 0 && (
           <section className="mt-12">
             <h2 className="mb-6 text-2xl font-extrabold">{t.liveProfiles}</h2>
@@ -49,6 +79,14 @@ export default function Providers() {
             <CataloguePagination />
           </section>
         )}
+        <details className="mt-10 rounded-xl border p-4">
+          <summary className="cursor-pointer font-bold">
+            {ar ? "دليل مرجعي إضافي" : "Additional reference directory"}
+          </summary>
+          <div className="mt-5">
+            <ReferenceGrid query={query} />
+          </div>
+        </details>
         <section
           id="join"
           className="mt-14 scroll-mt-24 rounded-2xl bg-[#0B2A48] p-8 text-white"

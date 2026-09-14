@@ -113,6 +113,22 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     await expect(createSourcedDrafts({ providerId, offers: [webOffer], reason: "Invalid fixture evidence host", actorUserId: actorId })).rejects.toThrow("official website");
     expect(await state.db.select().from(serviceRecords)).toHaveLength(0);
   });
+  it("keeps SMM source units and terms, requires review, and separates published markets in service and provider queries", async () => {
+    await state.db.update(providerRecords).set({ websiteUrl: "https://provider.example" }).where(eq(providerRecords.id, providerId));
+    const offer = { ...webOffer, slug: "smm-followers", name: "Instagram Followers", category: "Followers" as const, unit: "per_1000" as const, price: .044, minOrder: 50, maxOrder: 200000, refillMode: "manual" as const, refillDays: 30, sourceServiceId: "18", countryCode: "WW", startMinutesMin: 0, startMinutesMax: 5 };
+    const { created: [id] } = await createSourcedDrafts({ providerId, offers: [offer], reason: "Wholesale fixture extraction", actorUserId: actorId });
+    expect((await getServiceReview(id!)).service).toMatchObject({ priceUnit: "per_1000", priceAmount: "0.0440", minOrder: 50, maxOrder: 200000, refillMode: "manual", refillDays: 30, startMinutesMax: 5, pricingConfirmed: false });
+    expect((await getMarketplaceSnapshot({ scope: "services", market: "smm" })).services).toHaveLength(0);
+    const edited = await editServiceReview({ id: id!, revision: 1, platform: "Instagram", category: "Followers", countryCode: "WW", price: .044, priceCurrency: "USD", priceUnit: "per_1000", minOrder: 50, maxOrder: 200000, refillMode: "manual", refillDays: 30, evidenceUrl: offer.sourceUrl, pricingConfirmed: true, policyReviewed: true, reason: "Fixture source details reviewed", actorUserId: actorId });
+    await applyServiceReview({ items: [{ id: id!, revision: edited.revision }], action: "approve", reason: "Fixture wholesale approval", actorUserId: actorId });
+    await applyServiceReview({ items: [{ id: id!, revision: edited.revision + 1 }], action: "publish", reason: "Fixture wholesale publication", actorUserId: actorId });
+    const published = await getMarketplaceSnapshot({ scope: "services", market: "smm", category: "Followers" });
+    expect(published.pagination.total).toBe(1); expect(published.services[0]).toMatchObject({ sourceServiceId: "18", billingCycle: null, startTime: "0–5 min", min: 50 });
+    expect((await getMarketplaceSnapshot({ scope: "services", market: "packages" })).services).toHaveLength(0);
+    expect((await getMarketplaceSnapshot({ scope: "services", market: "smm", category: "Likes" })).services).toHaveLength(0);
+    expect((await getMarketplaceSnapshot({ scope: "providers", market: "smm" })).pagination.total).toBe(1);
+    expect((await getMarketplaceSnapshot({ scope: "providers", market: "packages" })).providers).toHaveLength(0);
+  });
   it("rolls back public-source drafts if audit logging fails", async () => {
     await state.db.update(providerRecords).set({ websiteUrl: "https://provider.example" }).where(eq(providerRecords.id, providerId));
     await expect(createSourcedDrafts({ providerId, offers: [webOffer], reason: "Audit rollback fixture", actorUserId: 2147483647 })).rejects.toThrow();

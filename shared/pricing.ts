@@ -67,6 +67,7 @@ export function comparablePrices(
     platform: string;
     category: string;
     countryCode?: string | null;
+    refill?: string;
   })[]
 ) {
   const first = rows[0];
@@ -82,7 +83,29 @@ export function comparablePrices(
         row.priceUnit === first.priceUnit &&
         row.platform === first.platform &&
         row.category === first.category &&
-        row.countryCode === first.countryCode
+        row.countryCode === first.countryCode &&
+        row.refill === first.refill &&
+        row.refill !== "—"
     )
+  );
+}
+
+// A quote is arithmetic on a published unit price, not an order or a delivery guarantee.
+export function quantityQuote(
+  row: PricingMetadata & { priceAmount: number; min: number; max: number },
+  quantity: number
+) {
+  if (
+    !hasPricingBasis(row) ||
+    row.priceUnit === "package" ||
+    !Number.isSafeInteger(quantity) ||
+    quantity < row.min ||
+    quantity > row.max ||
+    !Number.isFinite(row.priceAmount) ||
+    row.priceAmount < 0
+  )
+    return null;
+  return (
+    (row.priceAmount * quantity) / (row.priceUnit === "per_1000" ? 1000 : 1)
   );
 }

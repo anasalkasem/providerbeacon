@@ -42,7 +42,11 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
     const eligible = and(eq(providerRecords.status, "active"),
       marketplaceDemoEnabled() ? undefined : notInArray(providerRecords.slug, seedProviders.map(provider => provider.slug)));
     const providerScope = input.scope === "providers" || input.scope === "provider";
+    const marketFilter = input.market === "smm" ? and(inArray(serviceRecords.priceUnit, ["per_1000", "per_item"]),
+      inArray(serviceRecords.category, ["Followers", "Views", "Likes", "Comments", "Shares", "Subscribers"]))
+      : input.market === "packages" ? eq(serviceRecords.priceUnit, "package") : undefined;
     const providerFilter = and(eligible,
+      input.scope === "providers" && marketFilter ? sql`exists (select 1 from ${serviceRecords} where ${serviceRecords.providerId} = ${providerRecords.id} and ${approvedService()} and ${marketFilter})` : undefined,
       input.scope === "provider" ? eq(providerRecords.slug, input.slug ?? "") : undefined,
       input.scope === "providers" && input.q ? or(like(providerRecords.name, searchPattern(input.q)), like(providerRecords.location, searchPattern(input.q))) : undefined);
     const providerPage = providerScope ? await db.select().from(providerRecords)
@@ -50,6 +54,8 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       .orderBy(desc(providerRecords.id)).limit(input.scope === "provider" ? 1 : input.limit + 1) : [];
     if (input.scope === "provider" && !providerPage.length) return empty("database");
     const serviceFilter = and(eligible, approvedService(),
+      marketFilter,
+      input.category ? eq(serviceRecords.category, input.category) : undefined,
       input.scope === "provider" ? eq(serviceRecords.providerId, providerPage[0]!.id) : undefined,
       input.scope === "compare" ? (input.ids.length ? inArray(serviceRecords.id, input.ids) : sql`false`) : undefined,
       input.platform ? eq(serviceRecords.platform, input.platform) : undefined,
