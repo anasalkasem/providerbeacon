@@ -150,7 +150,7 @@ function AssistantChat({ path }: { path: string }) {
         onClick={() => setOpen(true)}
         aria-expanded={open}
         aria-controls="beacon-assistant"
-        className={`fixed bottom-5 end-5 z-[60] items-center gap-2 rounded-full bg-[#0B2A68] px-5 py-3.5 text-sm font-bold text-white shadow-xl ring-1 ring-white/30 hover:bg-blue-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600 ${open ? "hidden" : "inline-flex"}`}
+        className={`beacon-assistant-launcher fixed end-5 z-[60] items-center gap-2 rounded-full bg-[#0B2A68] px-5 py-3.5 text-sm font-bold text-white shadow-xl ring-1 ring-white/30 hover:bg-blue-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600 ${open ? "hidden" : "inline-flex"}`}
       >
         <Sparkles aria-hidden="true" className="size-5 text-teal-300" />
         {t.launcher}
