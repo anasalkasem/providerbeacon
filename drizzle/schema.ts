@@ -106,7 +106,7 @@ export const serviceRecords = mysqlTable("service_records", {
   originalSourceData: json("originalSourceData").$type<Record<string, string | number | boolean | null>>(),
   sourceHash: varchar("sourceHash", { length: 64 }),
   sourceUrl: varchar("sourceUrl", { length: 500 }),
-  sourceKind: mysqlEnum("sourceKind", ["legacy", "provider_api"]).default("legacy").notNull(),
+  sourceKind: mysqlEnum("sourceKind", ["legacy", "provider_api", "public_web"]).default("legacy").notNull(),
   classificationNotes: json("classificationNotes").$type<string[]>(),
   pricingConfirmed: boolean("pricingConfirmed").default(false).notNull(),
   policyReviewed: boolean("policyReviewed").default(false).notNull(),

@@ -116,8 +116,9 @@ export const pricingCopy: Record<string, typeof en> = {
     sourceHelp: "保留 API 原始费率。请使用该服务的具体证据确认金额和计价依据。",
   },
 };
-export function unitLabel(locale: string, row: PricingMetadata) {
+export function unitLabel(locale: string, row: PricingMetadata & { billingCycle?: "monthly" | null }) {
   const text = pricingCopy[locale] ?? en;
+  if (row.billingCycle === "monthly") return locale === "ar" ? "شهريًا · باقة محددة" : "per month · defined package";
   return row.priceUnit &&
     ["per_1000", "per_item", "package"].includes(row.priceUnit)
     ? text[row.priceUnit as "per_1000" | "per_item" | "package"]
@@ -125,12 +126,13 @@ export function unitLabel(locale: string, row: PricingMetadata) {
 }
 export function formatPrice(
   locale: string,
-  row: PricingMetadata & { priceAmount: number | string }
+  row: PricingMetadata & { priceAmount: number | string; priceType?: "listed" | "from" }
 ) {
   // Four decimals preserve small rates; currency codes avoid ambiguous dollar symbols.
   const amount = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 4,
   }).format(Number(row.priceAmount));
-  return row.priceCurrency ? `${row.priceCurrency} ${amount}` : amount;
+  const formatted = row.priceCurrency ? `${row.priceCurrency} ${amount}` : amount;
+  return row.priceType === "from" ? `${locale === "ar" ? "ابتداءً من" : "From"} ${formatted}` : formatted;
 }

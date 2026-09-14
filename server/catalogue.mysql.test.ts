@@ -1,3 +1,4 @@
+import { createSourcedDrafts } from "./sourcedOffersDb";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPool, type Pool } from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
@@ -85,6 +86,38 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     await applyServiceReview({ items: [{ id, revision: edited.revision + 1 }], action: "publish", reason: "Test fixture publication", actorUserId: actorId });
   }
 
+  const webOffer = { slug: "social-monthly", name: "Monthly content", nameAr: "محتوى شهري", platform: "Instagram" as const, category: "Content creation" as const, price: 99, currency: "USD" as const, scope: "10 posts each month", scopeAr: "عشرة منشورات في الشهر", terms: "One channel; extras cost more.", termsAr: "قناة واحدة؛ الإضافات برسوم.", sourceUrl: "https://provider.example/pricing", priceType: "listed" as const };
+  async function createWebDraft() {
+    await state.db.update(providerRecords).set({ websiteUrl: "https://provider.example" }).where(eq(providerRecords.id, providerId));
+    return createSourcedDrafts({ providerId, offers: [webOffer], reason: "Test public-source extraction", actorUserId: actorId });
+  }
+  it("public-source offers require the existing review gates and expose evidence after publication", async () => {
+    const { created: [id] } = await createWebDraft();
+    const detail = await getServiceReview(id!);
+    expect(detail.service).toMatchObject({ sourceKind: "public_web", status: "draft", pricingConfirmed: false, policyReviewed: false });
+    expect((await getMarketplaceSnapshot()).services).toHaveLength(0);
+    await expect(applyServiceReview({ items: [{ id: id!, revision: 1 }], action: "approve", reason: "Must still pass review", actorUserId: actorId })).rejects.toThrow("review_not_ready");
+    const edited = await editServiceReview({ id: id!, revision: 1, platform: "Instagram", category: "Content creation", countryCode: null, price: 99, priceCurrency: "USD", priceUnit: "package", packageDescription: webOffer.scope, minOrder: 1, maxOrder: 1, refillMode: "unknown", refillDays: null, evidenceUrl: webOffer.sourceUrl, pricingConfirmed: true, policyReviewed: true, reason: "Fixture pricing and content scope reviewed", actorUserId: actorId });
+    await applyServiceReview({ items: [{ id: id!, revision: edited.revision }], action: "approve", reason: "Fixture approval", actorUserId: actorId });
+    await applyServiceReview({ items: [{ id: id!, revision: edited.revision + 1 }], action: "publish", reason: "Fixture publication", actorUserId: actorId });
+    const [offer] = (await getMarketplaceSnapshot()).services;
+    expect(offer).toMatchObject({ billingCycle: "monthly", priceAmount: 99, sourceUrl: webOffer.sourceUrl, nameAr: webOffer.nameAr, termsAr: webOffer.termsAr });
+    expect(offer).not.toHaveProperty("sourceData");
+    const again = await createWebDraft(); expect(again).toEqual({ created: [], skipped: [id] });
+    expect((await getServiceReview(id!)).service.revision).toBe(4);
+    await sync();
+    expect((await getServiceReview(id!)).service).toMatchObject({ available: true, status: "active", reviewStatus: "approved" });
+  });
+  it("rejects an unrelated public-source host without creating offers", async () => {
+    await state.db.update(providerRecords).set({ websiteUrl: "https://unrelated.example" }).where(eq(providerRecords.id, providerId));
+    await expect(createSourcedDrafts({ providerId, offers: [webOffer], reason: "Invalid fixture evidence host", actorUserId: actorId })).rejects.toThrow("official website");
+    expect(await state.db.select().from(serviceRecords)).toHaveLength(0);
+  });
+  it("rolls back public-source drafts if audit logging fails", async () => {
+    await state.db.update(providerRecords).set({ websiteUrl: "https://provider.example" }).where(eq(providerRecords.id, providerId));
+    await expect(createSourcedDrafts({ providerId, offers: [webOffer], reason: "Audit rollback fixture", actorUserId: 2147483647 })).rejects.toThrow();
+    expect(await state.db.select().from(serviceRecords)).toHaveLength(0);
+  });
   it("suspending a provider removes its offers while leaving other providers visible", async () => {
     const [other] = await state.db.insert(providerRecords).values({ slug: "other-provider", name: "Other provider", initials: "OP", status: "active" }).$returningId();
     await addService(); await addService("active", other.id);

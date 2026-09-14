@@ -494,9 +494,7 @@ export default function ServiceReviewDetail({
             <section className="rounded-xl border border-slate-200 p-4">
               <h3 className="font-semibold">{text("sourceDetails")}</h3>
               <p className="mt-2 text-sm text-slate-500">
-                {text(
-                  row.sourceKind === "legacy" ? "legacySource" : "apiSource"
-                )}
+                {row.sourceKind === "public_web" ? (locale === "ar" ? "عرض معلن في موقع المزود" : "Offer listed on the provider website") : text(row.sourceKind === "legacy" ? "legacySource" : "apiSource")}
               </p>
               <p className="mt-1 text-xs text-slate-500">
                 {text("sourceClaim")}
