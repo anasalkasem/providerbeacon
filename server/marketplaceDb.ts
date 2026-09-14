@@ -65,8 +65,16 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
     const marketFilter = input.market === "smm" ? or(eq(serviceRecords.sourceKind, "provider_api"), and(inArray(serviceRecords.priceUnit, ["per_1000", "per_item"]),
       inArray(serviceRecords.category, ["Followers", "Views", "Likes", "Comments", "Shares", "Subscribers"])))
       : input.market === "packages" ? eq(serviceRecords.priceUnit, "package") : undefined;
+    const providerServiceFilter = and(visibleCatalogueService(), marketFilter,
+      input.platform ? eq(serviceRecords.platform, input.platform) : undefined,
+      input.category ? eq(serviceRecords.category, input.category) : undefined,
+      input.countryCode ? eq(serviceRecords.countryCode, input.countryCode) : undefined,
+      input.quantity ? and(sql`${serviceRecords.minOrder} <= ${input.quantity}`, sql`${serviceRecords.maxOrder} >= ${input.quantity}`) : undefined,
+      input.refillOnly ? inArray(serviceRecords.refillMode, ["manual", "automatic", "lifetime"]) : undefined,
+      input.serviceQuery ? or(like(serviceRecords.name, searchPattern(input.serviceQuery)), like(serviceRecords.category, searchPattern(input.serviceQuery)), like(serviceRecords.platform, searchPattern(input.serviceQuery))) : undefined);
     const providerFilter = and(eligible,
-      input.scope === "providers" && marketFilter ? sql`exists (select 1 from ${serviceRecords} where ${serviceRecords.providerId} = ${providerRecords.id} and ${visibleCatalogueService()} and ${marketFilter})` : undefined,
+      input.scope === "providers" && (marketFilter || input.platform || input.category || input.countryCode || input.quantity || input.refillOnly || input.serviceQuery)
+        ? sql`exists (select 1 from ${serviceRecords} where ${serviceRecords.providerId} = ${providerRecords.id} and ${providerServiceFilter})` : undefined,
       input.scope === "provider" ? eq(providerRecords.slug, input.slug ?? "") : undefined,
       input.scope === "providers" && input.q ? or(like(providerRecords.name, searchPattern(input.q)), like(providerRecords.location, searchPattern(input.q))) : undefined);
     const providerPage = providerScope ? await db.select().from(providerRecords)
@@ -80,6 +88,7 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       input.scope === "provider" ? eq(serviceRecords.providerId, providerPage[0]!.id) : undefined,
       input.scope === "compare" ? (input.ids.length ? inArray(serviceRecords.id, input.ids) : sql`false`) : undefined,
       input.platform ? eq(serviceRecords.platform, input.platform) : undefined,
+      input.countryCode ? eq(serviceRecords.countryCode, input.countryCode) : undefined,
       input.priceCurrency ? or(
         and(eq(serviceRecords.reviewStatus, "pending"), eq(serviceRecords.sourceCurrency, input.priceCurrency)),
         and(eq(serviceRecords.reviewStatus, "approved"), eq(serviceRecords.priceCurrency, input.priceCurrency))) : undefined,
@@ -87,7 +96,7 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       input.quantity ? and(sql`${serviceRecords.minOrder} <= ${input.quantity}`, sql`${serviceRecords.maxOrder} >= ${input.quantity}`) : undefined,
       input.quality ? eq(serviceRecords.quality, input.quality) : undefined,
       input.refillOnly ? inArray(serviceRecords.refillMode, ["manual", "automatic", "lifetime"]) : undefined,
-      input.q && !providerScope ? or(like(serviceRecords.name, searchPattern(input.q)), like(serviceRecords.category, searchPattern(input.q)),
+      input.q && input.scope !== "providers" ? or(like(serviceRecords.name, searchPattern(input.q)), like(serviceRecords.category, searchPattern(input.q)),
         like(serviceRecords.platform, searchPattern(input.q)), like(providerRecords.name, searchPattern(input.q)),
         and(eq(serviceRecords.sourceKind, "public_web"), sql`json_unquote(json_extract(${serviceRecords.sourceData}, '$.nameAr')) like ${searchPattern(input.q)}`)) : undefined);
     const rank = input.sort === "price" ? cataloguePriceAmount() : input.sort === "retention" ? sql<number>`coalesce(${serviceRecords.retentionBasisPoints}, -1)` : sql<number>`${serviceRecords.featured}`;

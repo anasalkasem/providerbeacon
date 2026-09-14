@@ -10,7 +10,9 @@ import { createPool, type Pool } from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
 import { migrate } from "drizzle-orm/mysql2/migrator";
 import { and, eq, sql } from "drizzle-orm";
-import { auditEntries, priceSnapshots, providerIntegrations, providerRecords, providerSyncJobs, providerSyncRows, serviceRecords, users } from "../drizzle/schema";
+import { assistantUsageBuckets, auditEntries, priceSnapshots, providerIntegrations, providerRecords, providerSyncJobs, providerSyncRows, serviceRecords, users } from "../drizzle/schema";
+import { reserveAssistantTurn } from "./assistantUsage";
+import { assistantOffersByIds } from "./assistantCatalogue";
 
 const state = vi.hoisted(() => ({ db: null as any }));
 vi.mock("./db", () => ({ getDb: async () => state.db }));
@@ -99,6 +101,42 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     return createSourcedDrafts({ providerId, offers: [webOffer], reason: "Test public-source extraction", actorUserId: actorId });
   }
 
+
+  it("enforces shared AI budgets atomically and resets at the UTC day boundary", async () => {
+    await state.db.delete(assistantUsageBuckets);
+    vi.stubEnv("BEACON_AI_DAILY_LIMIT", "2");
+    const now = Date.now();
+    const reservations = await Promise.allSettled(Array.from({length:8}, (_,i)=>reserveAssistantTurn(`client-${i}`, now)));
+    expect(reservations.filter(result=>result.status==="fulfilled")).toHaveLength(2);
+    const rows = await state.db.select().from(assistantUsageBuckets);
+    expect(rows.filter((row:any)=>row.key.startsWith("global:"))[0].used).toBe(2);
+    expect(rows).toHaveLength(5); // rejected client reservations roll back
+    await expect(reserveAssistantTurn("tomorrow", now+86400000)).resolves.toBeUndefined();
+  });
+
+  it("does not spend the global AI budget for requests rejected by the client limit", async () => {
+    await state.db.delete(assistantUsageBuckets);
+    vi.stubEnv("BEACON_AI_DAILY_LIMIT", "100");
+    const now=Date.now();
+    const reservations = await Promise.allSettled(Array.from({length:12}, ()=>reserveAssistantTurn("same-client",now)));
+    expect(reservations.filter(result=>result.status==="fulfilled")).toHaveLength(8);
+    const rows = await state.db.select().from(assistantUsageBuckets);
+    expect(rows.every((row:any)=>row.used===8)).toBe(true);
+  });
+
+  it("applies assistant target-market and keyword filters inside provider catalogues and hides retired offers", async () => {
+    const serviceId=await addService();
+    await state.db.update(serviceRecords).set({name:"French TikTok Views",countryCode:"US"}).where(eq(serviceRecords.id,serviceId));
+    expect((await getMarketplaceSnapshot({scope:"provider",slug:"test-provider",q:"French",countryCode:"US"})).services).toHaveLength(1);
+    expect((await getMarketplaceSnapshot({scope:"provider",slug:"test-provider",q:"Japanese",countryCode:"US"})).services).toHaveLength(0);
+    expect((await getMarketplaceSnapshot({scope:"provider",slug:"test-provider",q:"French",countryCode:"PA"})).services).toHaveLength(0);
+    expect((await getMarketplaceSnapshot({scope:"providers",platform:"TikTok",category:"Views",serviceQuery:"French",countryCode:"US"})).providers).toHaveLength(1);
+    expect((await getMarketplaceSnapshot({scope:"providers",platform:"Instagram",category:"Views",serviceQuery:"French",countryCode:"US"})).providers).toHaveLength(0);
+    expect(await assistantOffersByIds([`service-${serviceId}`])).toHaveLength(1);
+    await state.db.update(serviceRecords).set({status:"paused"}).where(eq(serviceRecords.id,serviceId));
+    invalidateCatalogueCaches();
+    expect(await assistantOffersByIds([`service-${serviceId}`])).toHaveLength(0);
+  });
 
   it("removes manually researched listings but preserves connections and activates only the existing JAP API", async () => {
     const [manual] = await state.db.insert(providerRecords).values({slug:"smm-africa",name:"SMM Africa",initials:"SA"}).$returningId();
