@@ -8,7 +8,7 @@ import { retiredDemoSlugs, assertRealProviderSlug } from "./retiredDemoProviders
 import { auditEntries, localizedContent, priceSnapshots, providerRecords, serviceRecords, staffSessions, teamMembers, type TeamRole } from "../drizzle/schema";
 import { getDb } from "./db";
 import { approvedService } from "./catalogueRules";
-import { connectedApiCatalogue, visibleCatalogueService } from "./apiCatalogue";
+import { connectedApiCatalogue, visibleCatalogueProvider, visibleCatalogueService } from "./apiCatalogue";
 import { adminProvidersInput, type AdminProvidersInput, catalogueInput, searchPattern, type CatalogueInput } from "../shared/catalogueQuery";
 
 const tierFromDb = {
@@ -57,9 +57,7 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
   const db = await getDb();
   if (!db) return empty("unavailable");
   try {
-    const eligible = and(eq(providerRecords.status, "active"),
-      or(eq(providerRecords.apiCataloguePublished, false), connectedApiCatalogue()),
-      notInArray(providerRecords.slug, [...retiredDemoSlugs]));
+    const eligible = visibleCatalogueProvider();
     const providerScope = input.scope === "providers" || input.scope === "provider";
     const marketFilter = input.market === "smm" ? or(eq(serviceRecords.sourceKind, "provider_api"), and(inArray(serviceRecords.priceUnit, ["per_1000", "per_item"]),
       inArray(serviceRecords.category, ["Followers", "Views", "Likes", "Comments", "Shares", "Subscribers"])))

@@ -1,7 +1,8 @@
-import { and, eq, gte, inArray, isNotNull, lte, or, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNotNull, lte, notInArray, or, sql } from "drizzle-orm";
 import { providerRecords, serviceRecords } from "../drizzle/schema";
 import { approvedService } from "./catalogueRules";
 import { NORMALIZATION_VERSION } from "./serviceNormalizer";
+import { retiredDemoSlugs } from "./retiredDemoProviders";
 
 // A source catalogue is opt-in. It does not approve services or verify their quality.
 // Credentials and account data never enter public queries or responses.
@@ -32,4 +33,10 @@ export function sourceCatalogueService() {
 
 export function visibleCatalogueService() {
   return or(approvedService(), sourceCatalogueService());
+}
+
+export function visibleCatalogueProvider() {
+  return and(eq(providerRecords.status, "active"),
+    or(eq(providerRecords.apiCataloguePublished, false), connectedApiCatalogue()),
+    notInArray(providerRecords.slug, [...retiredDemoSlugs]));
 }

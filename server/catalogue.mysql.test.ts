@@ -125,6 +125,8 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     await state.db.update(serviceRecords).set({sourceRate: "1.0123456"}).where(eq(serviceRecords.id, stored.id));
     const result = await getMarketplaceSnapshot({scope: "services", market: "smm"});
     expect(result.pagination.total).toBe(1);
+    expect((await listAdminServices({view:"published"})).total).toBe(1);
+    expect((await getAdminOverview(["services.read"])).publishedServices).toBe(1);
     expect(result.providers[0]).toMatchObject({apiConnected: true, score: null, verified: false, activeServicesCount: 1});
     expect(result.services[0]).toMatchObject({sourceServiceId: "100", catalogueListing: "api_source", sourceRate: "1.0123456", priceAmount: 1.0123456, priceCurrency: null, priceUnit: null});
     expect(result.services[0]).not.toHaveProperty("sourceData");
@@ -744,6 +746,19 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect((await listAdminProviders({q: "Scale provider 999"})).map(provider => provider.name)).toEqual(["Scale provider 999"]);
     expect(await listAdminProviders({limit: 50, includeId: providerId})).toHaveLength(50);
     expect((await listAdminProviders({limit: 50, includeId: providerId}))[0]?.id).toBe(providerId);
+    const apiIntegration = await addIntegration("active");
+    await state.db.update(providerIntegrations).set({lastSyncedAt:new Date()}).where(eq(providerIntegrations.id,apiIntegration));
+    await state.db.update(providerRecords).set({apiCataloguePublished:true}).where(eq(providerRecords.id,providerId));
+    await state.db.update(serviceRecords).set({externalId:sql`cast(${serviceRecords.id} as char)`,sourceKind:"provider_api",sourceRate:"1.0123456",status:"draft",reviewStatus:"pending",pricingConfirmed:false,priceCurrency:null,priceUnit:null,policyReviewed:false,incomplete:true}).where(eq(serviceRecords.providerId,providerId));
+    invalidateCatalogueCaches();
+    const apiPage = await measure("api_catalogue_page_ms",()=>getMarketplaceSnapshot({scope:"services",market:"smm"}));
+    expect(apiPage.pagination.total).toBe(size); expect(apiPage.services).toHaveLength(25);
+    expect(apiPage.services.every(service=>service.catalogueListing==="api_source" && service.sourceRate==="1.0123456")).toBe(true);
+    const apiReaders = await measure("api_catalogue_100_readers_ms",()=>Promise.all(Array.from({length:100},()=>getCachedMarketplaceSnapshot({scope:"services",market:"smm"}))));
+    expect(apiReaders.every(page=>page.pagination.total===size && page.services.length===25)).toBe(true);
+    expect(timings.api_catalogue_page_ms).toBeLessThan(2500); expect(timings.api_catalogue_100_readers_ms).toBeLessThan(2500);
+    expect(Buffer.byteLength(JSON.stringify(apiPage))).toBeLessThan(40000);
+    console.log("API_CATALOGUE_SCALE_RESULT",JSON.stringify({services:size,simultaneousReaders:100,publicBytes:Buffer.byteLength(JSON.stringify(apiPage)),api_page_ms:timings.api_catalogue_page_ms,api_100_readers_ms:timings.api_catalogue_100_readers_ms}));
     await state.db.update(providerRecords).set({ status: "draft" }).where(eq(providerRecords.id, providerId));
     const stats = await getAdminOverview(rolePermissions.catalogue_editor);
     expect(stats).toMatchObject({ totalServices: size, publishedServices: 0, teamMembers: null, recordedActions: null });
