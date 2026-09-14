@@ -142,6 +142,12 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
       await state.db.update(serviceRecords).set({reviewStatus:"pending",available:true,status:"draft",sourceRate:"1.00",sourceKind:"provider_api",sourceUpdatedAt:new Date(),minOrder:100,...blocked}).where(eq(serviceRecords.id, stored.id));
       expect((await getMarketplaceSnapshot({scope:"services",market:"smm"})).services).toHaveLength(0);
     }
+    await state.db.update(serviceRecords).set({reviewStatus:"changes_requested",reviewReason:"Owner withdrew this listing",available:true,status:"draft",sourceRate:"1.00",sourceKind:"provider_api",sourceUpdatedAt:new Date(),minOrder:100}).where(eq(serviceRecords.id,stored.id));
+    vi.stubGlobal("fetch",vi.fn(async()=>new Response(JSON.stringify([{...payload[0],rate:"2.50"}]),{status:200})));
+    await sync();
+    const reviewed=await getServiceReview(stored.id);
+    expect(reviewed.service).toMatchObject({reviewStatus:"changes_requested",reviewReason:"Owner withdrew this listing",sourceRate:"2.50"});
+    expect((await getMarketplaceSnapshot({scope:"services",market:"smm"})).services).toHaveLength(0);
   });
   it("removes only original demo records, cascades their offers and retains an audit", async () => {
     const [demo] = await state.db.insert(providerRecords).values({slug: "northstar-social", name: "Northstar Social", initials: "NS"}).$returningId();
