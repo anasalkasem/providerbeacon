@@ -15,7 +15,7 @@ import { auditEntries, priceSnapshots, providerIntegrations, providerRecords, pr
 const state = vi.hoisted(() => ({ db: null as any }));
 vi.mock("./db", () => ({ getDb: async () => state.db }));
 vi.mock("node:dns/promises", () => ({ lookup: async () => [{ address: "93.184.216.34", family: 4 }] }));
-import { getCachedMarketplaceSnapshot, listAdminProviderPage, listAdminProviders, getMarketplaceSnapshot, updateProviderStatus, updateServiceRecord } from "./marketplaceDb";
+import { getCachedMarketplaceSnapshot, listAdminProviderPage, listAdminProviders, getMarketplaceSnapshot, setProviderCataloguePublication, updateProviderStatus, updateServiceRecord } from "./marketplaceDb";
 import { deleteProviderIntegration, listProviderIntegrations, runDueProviderSyncs, saveProviderIntegration, setProviderIntegrationEnabled, syncStoredIntegration } from "./vaultDb";
 import { cleanupProviderSyncSnapshots, listProviderSyncIssues, runProviderSyncStep } from "./providerSync";
 import { getAdminOverview, getServiceReviewSummary, listAdminServices, listSyncAlerts } from "./adminCatalogueDb";
@@ -194,6 +194,93 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     await sync();
     return state.db.select().from(serviceRecords);
   }
+  const publication = { enabled: true, reason: "Owner requested visibility of the connected provider" };
+  const ownerCaller = () => appRouter.createCaller({ user: { id: actorId, openId: "catalogue-test-owner", role: "admin", email: null }, req: { headers: {}, ip: "127.0.0.1" }, res: {} } as any);
+
+  it("publishes a newly synced provider and refreshes the directory, profile and offers together", async () => {
+    await state.db.update(providerRecords).set({ status: "draft" }).where(eq(providerRecords.id, providerId));
+    await addIntegration("active");
+    await sync();
+    const [source] = await state.db.select().from(serviceRecords);
+    const filter = { scope: "providers" as const, market: "smm" as const };
+    expect((await listAdminProviderPage()).items[0]).toMatchObject({ status: "draft", apiCataloguePublished: false, apiConnectionReady: true, apiServicesReady: true });
+    expect((await getCachedMarketplaceSnapshot(filter)).providers).toHaveLength(0);
+    expect((await getCachedMarketplaceSnapshot({ scope: "services" })).services).toHaveLength(0);
+    const caller = ownerCaller();
+    expect(await caller.admin.providers.setCataloguePublication({ ...publication, id: providerId })).toMatchObject({ changed: true });
+    const directory = await getCachedMarketplaceSnapshot(filter);
+    expect(directory.providers).toHaveLength(1);
+    expect(directory.providers[0]).toMatchObject({ slug: "test-provider", apiConnected: true, activeServicesCount: 1, verified: false });
+    expect((await getCachedMarketplaceSnapshot({ scope: "services" })).services).toHaveLength(1);
+    expect((await getMarketplaceSnapshot({ scope: "provider", slug: "test-provider" })).services[0]).toMatchObject({ catalogueListing: "api_source", sourceRate: "1.00", priceCurrency: null, priceUnit: null });
+    expect((await getMarketplaceSnapshot({ scope: "home" })).providers).toHaveLength(1);
+    expect((await state.db.select().from(serviceRecords))[0]).toEqual(source);
+    expect(await caller.admin.providers.setCataloguePublication({ ...publication, id: providerId })).toMatchObject({ changed: false });
+    const audits = await state.db.select().from(auditEntries).where(eq(auditEntries.action, "provider.api_catalogue.publish"));
+    expect(audits).toHaveLength(1);
+    expect(audits[0]).toMatchObject({ actorUserId: actorId, ipAddress: "127.0.0.1", entityId: String(providerId) });
+    expect(audits[0].metadata).toMatchObject({ before: { status: "draft", apiCataloguePublished: false }, after: { status: "active", apiCataloguePublished: true }, serviceReviewsUnchanged: true });
+    await caller.admin.providers.setCataloguePublication({ ...publication, id: providerId, enabled: false });
+    expect((await getCachedMarketplaceSnapshot(filter)).providers).toHaveLength(0);
+    expect((await getCachedMarketplaceSnapshot({ scope: "services" })).services).toHaveLength(0);
+    expect((await state.db.select().from(serviceRecords))[0]).toEqual(source);
+  });
+
+  it("blocks publication until the connection and its imported services are ready", async () => {
+    const integrationId = await addIntegration("active");
+    const publish = () => ownerCaller().admin.providers.setCataloguePublication({ ...publication, id: providerId });
+    await expect(publish()).rejects.toMatchObject({ message: "api_catalogue_not_ready" });
+    await sync();
+    const [connection] = await state.db.select().from(providerIntegrations);
+    for (const blocked of [{ status: "disabled" }, { lastSyncedAt: null }, { credentialCiphertext: null }]) {
+      await state.db.update(providerIntegrations).set({ status: "active", lastSyncedAt: connection.lastSyncedAt, credentialCiphertext: connection.credentialCiphertext, ...blocked }).where(eq(providerIntegrations.id, integrationId));
+      expect((await listAdminProviderPage()).items[0].apiConnectionReady).toBe(false);
+      await expect(publish()).rejects.toMatchObject({ message: "api_catalogue_not_ready" });
+    }
+    await state.db.update(providerIntegrations).set({ credentialCiphertext: connection.credentialCiphertext }).where(eq(providerIntegrations.id, integrationId));
+    for (const blocked of [{ status: "paused" }, { reviewStatus: "changes_requested" }, { available: false }, { sourceRate: "invalid" }]) {
+      await state.db.update(serviceRecords).set({ status: "draft", reviewStatus: "pending", available: true, sourceRate: "1.00", ...blocked }).where(eq(serviceRecords.providerId, providerId));
+      expect((await listAdminProviderPage()).items[0].apiServicesReady).toBe(false);
+      await expect(publish()).rejects.toMatchObject({ message: "api_catalogue_not_ready" });
+    }
+    await state.db.update(providerRecords).set({ status: "suspended" }).where(eq(providerRecords.id, providerId));
+    await expect(publish()).rejects.toMatchObject({ message: "provider_suspended" });
+    expect((await state.db.select().from(providerRecords))[0]).toMatchObject({ status: "suspended", apiCataloguePublished: false });
+    expect(await state.db.select().from(auditEntries).where(eq(auditEntries.action, "provider.api_catalogue.publish"))).toHaveLength(0);
+  });
+
+  it("rolls back provider publication when its audit entry cannot be recorded", async () => {
+    await state.db.update(providerRecords).set({ status: "draft" }).where(eq(providerRecords.id, providerId));
+    await addIntegration("active"); await sync();
+    await expect(setProviderCataloguePublication({ ...publication, id: providerId, actorUserId: 2147483000 })).rejects.toThrow();
+    expect((await state.db.select().from(providerRecords))[0]).toMatchObject({ status: "draft", apiCataloguePublished: false });
+    expect((await getMarketplaceSnapshot({ scope: "providers", market: "smm" })).providers).toHaveLength(0);
+  });
+
+  it("repairs only the matching ready paksmmportal catalogue once, without altering service evidence", async () => {
+    await state.db.update(providerRecords).set({ slug: "paksmmportal", status: "draft" }).where(eq(providerRecords.id, providerId));
+    const integrationId = await addIntegration("active"); await sync();
+    const [source] = await state.db.select().from(serviceRecords);
+    const statements = readFileSync("drizzle/0014_publish_paksmmportal.sql", "utf8").split("--> statement-breakpoint").map(v => v.trim()).filter(Boolean);
+    const repair = () => state.db.transaction(async (tx: any) => { for (const statement of statements) await tx.execute(sql.raw(statement)); });
+    // A matching name is not enough when the endpoint belongs to another provider.
+    await repair();
+    expect((await state.db.select().from(providerRecords))[0].apiCataloguePublished).toBe(false);
+    await state.db.update(providerIntegrations).set({ baseUrl: "https://paksmmportal.com/api/v2", status: "disabled" }).where(eq(providerIntegrations.id, integrationId));
+    await repair();
+    expect((await state.db.select().from(providerRecords))[0].apiCataloguePublished).toBe(false);
+    await state.db.update(providerIntegrations).set({ status: "active" }).where(eq(providerIntegrations.id, integrationId));
+    await state.db.update(providerRecords).set({ status: "suspended" }).where(eq(providerRecords.id, providerId));
+    await repair();
+    expect((await state.db.select().from(providerRecords))[0]).toMatchObject({ status: "suspended", apiCataloguePublished: false });
+    await state.db.update(providerRecords).set({ status: "draft" }).where(eq(providerRecords.id, providerId));
+    await repair(); await repair();
+    expect((await state.db.select().from(providerRecords))[0]).toMatchObject({ status: "active", apiCataloguePublished: true, verified: false });
+    expect((await state.db.select().from(serviceRecords))[0]).toEqual(source);
+    expect((await getMarketplaceSnapshot({ scope: "providers", market: "smm" })).providers[0]?.slug).toBe("paksmmportal");
+    expect(await state.db.select().from(auditEntries).where(eq(auditEntries.action, "provider.api_catalogue.publish"))).toHaveLength(1);
+  });
+
   const unitEvidence = {unit:"per_1000" as const, evidenceUrl:"https://provider.example/services", confirmed:true as const, reason:"Each selected API rate is per 1000, checked in the source"};
   it("confirms source units with permission and audit, invalidates cache and leaves quality approval untouched", async () => {
     const [source] = await importUsdSource();

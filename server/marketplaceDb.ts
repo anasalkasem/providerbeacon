@@ -8,7 +8,8 @@ import { retiredDemoSlugs, assertRealProviderSlug } from "./retiredDemoProviders
 import { auditEntries, localizedContent, priceSnapshots, providerRecords, serviceRecords, staffSessions, teamMembers, type TeamRole } from "../drizzle/schema";
 import { getDb } from "./db";
 import { approvedService } from "./catalogueRules";
-import { cataloguePriceAmount, cataloguePriceUnit, confirmedSourcePricing, connectedApiCatalogue, visibleCatalogueProvider, visibleCatalogueService } from "./apiCatalogue";
+import { cataloguePriceAmount, cataloguePriceUnit, confirmedSourcePricing, connectedApiCatalogue, syncedApiConnection, hasSourceCatalogueRecords, visibleCatalogueProvider, visibleCatalogueService } from "./apiCatalogue";
+import { TRPCError } from "@trpc/server";
 import { adminProvidersInput, type AdminProvidersInput, catalogueInput, searchPattern, type CatalogueInput } from "../shared/catalogueQuery";
 
 const tierFromDb = {
@@ -203,6 +204,9 @@ const adminProviderColumns = {
   id: providerRecords.id, slug: providerRecords.slug, name: providerRecords.name,
   websiteUrl: providerRecords.websiteUrl, location: providerRecords.location,
   status: providerRecords.status, verified: providerRecords.verified, updatedAt: providerRecords.updatedAt,
+  apiCataloguePublished: providerRecords.apiCataloguePublished,
+  apiConnectionReady: sql<boolean>`${syncedApiConnection()}`.mapWith(Boolean),
+  apiServicesReady: sql<boolean>`${hasSourceCatalogueRecords()}`.mapWith(Boolean),
   // There is no completed evidence-backed scoring pipeline yet.
   score: sql<null>`null`, successRateBasisPoints: providerRecords.successRateBasisPoints,
 };
@@ -281,6 +285,40 @@ export async function updateProviderStatus(input: { id: number; status: "draft" 
     await tx.update(providerRecords).set(after).where(eq(providerRecords.id, input.id));
     await writeAudit({ actorUserId: input.actorUserId, action: "provider.status.update", entityType: "provider", entityId: String(input.id), summary: `Provider status changed to ${input.status}`, metadata: { before: { status: before.status, verified: before.verified }, after } }, tx);
     return { success: true };
+  });
+}
+
+export async function setProviderCataloguePublication(input: {
+  id: number;
+  enabled: boolean;
+  reason: string;
+  actorUserId: number;
+  ipAddress?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return db.transaction(async tx => {
+    // Connection edits, synchronization and publication share this provider lock.
+    const [before] = await tx.select().from(providerRecords).where(eq(providerRecords.id, input.id)).for("update");
+    if (!before) throw new TRPCError({ code: "NOT_FOUND", message: "provider_not_found" });
+    if (input.enabled) {
+      assertRealProviderSlug(before.slug);
+      if (before.status === "suspended") throw new TRPCError({ code: "BAD_REQUEST", message: "provider_suspended" });
+      const [ready] = await tx.select({ id: providerRecords.id }).from(providerRecords)
+        .where(and(eq(providerRecords.id, input.id), syncedApiConnection(), hasSourceCatalogueRecords())).limit(1);
+      if (!ready) throw new TRPCError({ code: "BAD_REQUEST", message: "api_catalogue_not_ready" });
+    }
+    const after = { apiCataloguePublished: input.enabled, status: input.enabled ? "active" as const : before.status };
+    if (before.apiCataloguePublished === after.apiCataloguePublished && before.status === after.status) return { success: true, changed: false };
+    await tx.update(providerRecords).set(after).where(eq(providerRecords.id, input.id));
+    await writeAudit({
+      actorUserId: input.actorUserId, ipAddress: input.ipAddress,
+      action: input.enabled ? "provider.api_catalogue.publish" : "provider.api_catalogue.unpublish",
+      entityType: "provider", entityId: String(input.id),
+      summary: input.enabled ? "Published connected provider profile and source catalogue" : "Withdrew provider source catalogue",
+      metadata: { reason: input.reason, before: { apiCataloguePublished: before.apiCataloguePublished, status: before.status }, after, verificationUnchanged: true, serviceReviewsUnchanged: true },
+    }, tx);
+    return { success: true, changed: true };
   });
 }
 

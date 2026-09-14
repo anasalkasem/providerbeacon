@@ -65,12 +65,12 @@ export default function ProviderIntegrationVault() {
   const canWrite = access.data?.permissions.includes("integrations.write");
 
   const reset = () => { setId(undefined); setProviderId(""); setName(""); setBaseUrl(""); setApiKey(""); setInterval("360"); setEnabled(false); };
-  const refresh = () => Promise.all([utils.admin.integrations.list.invalidate(), utils.admin.integrations.alerts.invalidate(), utils.admin.audit.list.invalidate()]);
+  const refresh = () => Promise.all([utils.admin.integrations.list.invalidate(), utils.admin.integrations.alerts.invalidate(), utils.admin.providers.page.invalidate(), utils.admin.providers.list.invalidate(), utils.admin.audit.list.invalidate(), utils.marketplace.snapshot.invalidate()]);
   const save = trpc.admin.integrations.save.useMutation({ onSuccess: async () => { toast.success(text(id ? "integrationUpdated" : "integrationSaved")); reset(); await refresh(); }, onError: error => toast.error(error.message) });
   const sync = trpc.admin.integrations.syncNow.useMutation({ onSuccess: async data => { toast.success(text("alreadyQueued" in data && data.alreadyQueued ? "syncAlreadyQueued" : "syncQueued")); await Promise.all([refresh(), utils.admin.overview.invalidate(), utils.admin.services.list.invalidate(), utils.marketplace.snapshot.invalidate()]); }, onError: error => toast.error(error.message) });
   const toggle = trpc.admin.integrations.setEnabled.useMutation({ onSuccess: refresh, onError: error => toast.error(error.message) });
   const remove = trpc.admin.integrations.remove.useMutation({ onSuccess: async () => { toast.success(text("integrationDeleted")); await refresh(); }, onError: error => toast.error(error.message) });
-  const createProvider = trpc.admin.providers.createDraft.useMutation({ onSuccess: async provider => { setProviderId(String(provider.id)); setShowNewProvider(false); setNewProviderName(""); setNewProviderWebsite(""); toast.success(text("providerDraftCreated")); await utils.admin.providers.list.invalidate(); }, onError: error => toast.error(error.message) });
+  const createProvider = trpc.admin.providers.createDraft.useMutation({ onSuccess: async provider => { setProviderId(String(provider.id)); setShowNewProvider(false); setNewProviderName(""); setNewProviderWebsite(""); toast.success(text("providerDraftCreated")); await Promise.all([utils.admin.providers.list.invalidate(), utils.admin.providers.page.invalidate()]); }, onError: error => toast.error(error.message) });
   useEffect(() => {
     for (const integration of integrations.data ?? []) {
       const job = integration.latestJob;
@@ -81,7 +81,7 @@ export default function ProviderIntegrationVault() {
         if (job.status === "completed_with_issues") toast.warning(text("syncWithIssues"));
         else if (job.status === "completed") toast.success(`${text("syncCompleted")}: ${job.processedCount}`);
         else toast.error(text("syncFailed"));
-        void Promise.all([utils.admin.overview.invalidate(), utils.admin.services.list.invalidate(), utils.admin.integrations.alerts.invalidate(), utils.admin.audit.list.invalidate(), utils.marketplace.snapshot.invalidate()]);
+        void Promise.all([utils.admin.overview.invalidate(), utils.admin.services.list.invalidate(), utils.admin.providers.page.invalidate(), utils.admin.providers.list.invalidate(), utils.admin.integrations.alerts.invalidate(), utils.admin.audit.list.invalidate(), utils.marketplace.snapshot.invalidate()]);
       }
     }
   }, [integrations.data, text, utils]);

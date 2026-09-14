@@ -6,7 +6,7 @@ import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { invokeLLM } from "../_core/llm";
 import { permissionProcedure, protectedProcedure, router } from "../_core/trpc";
-import { resolveTeamRole, rolePermissions } from "../authorization";
+import { hasPermission, resolveTeamRole, rolePermissions } from "../authorization";
 import {
   acceptTeamInvite,
   createProviderDraft,
@@ -17,6 +17,7 @@ import {
   listLocalizedContent,
   listTeamMembers,
   setTeamMemberStatus,
+  setProviderCataloguePublication,
   updateProviderStatus,
   updateServiceRecord,
   upsertLocalizedContent,
@@ -49,6 +50,12 @@ export const adminRouter = router({
     page: permissionProcedure("providers.read").input(adminProvidersInput).query(({ input }) => listAdminProviderPage(input)),
     createDraft: permissionProcedure("providers.write").input(z.object({ name: z.string().trim().min(2).max(200), websiteUrl: z.string().url().max(500) })).mutation(({ ctx, input }) => createProviderDraft({ ...input, actorUserId: ctx.user!.id })),
     setStatus: permissionProcedure("providers.review").input(z.object({ id: z.number().int().positive(), status: z.enum(["draft", "pending_review", "active", "suspended"]) })).mutation(({ ctx, input }) => updateProviderStatus({ ...input, actorUserId: ctx.user!.id })),
+    setCataloguePublication: permissionProcedure("providers.review")
+      .input(z.object({ id: z.number().int().positive(), enabled: z.boolean(), reason: z.string().trim().min(8).max(1000) }))
+      .mutation(({ ctx, input }) => {
+        if (!hasPermission(ctx.teamRole, "services.publish")) throw new TRPCError({ code: "FORBIDDEN" });
+        return setProviderCataloguePublication({ ...input, actorUserId: ctx.user!.id, ipAddress: ctx.req.ip });
+      }),
   }),
   services: router({
     confirmSourcePricing: permissionProcedure("services.review").input(sourcePricingInput).mutation(({ctx,input}) => confirmSourcePricing({...input,actorUserId:ctx.user!.id,ipAddress:ctx.req.ip})),
