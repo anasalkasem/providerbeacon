@@ -145,8 +145,10 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       retention: row.retentionBasisPoints == null ? null : row.retentionBasisPoints / 100, featured: row.featured,
     }));
     return { providers, services, source: "database" as const, pagination: { total: totals[0]?.total ?? 0, nextCursor } };
-  } catch {
-    console.warn("[Marketplace] Catalogue query failed; no substitute data will be shown");
+  } catch (error) {
+    const failure = (error as {cause?: Error & {code?: string}})?.cause ?? error as Error & {code?: string};
+    console.warn("[Marketplace] Catalogue query failed; no substitute data will be shown", failure?.code ?? "query_error");
+    if (process.env.VITEST && process.env.TEST_DATABASE_URL) console.warn("[Catalogue test diagnostic]", failure?.message);
     return empty("unavailable");
   }
 }

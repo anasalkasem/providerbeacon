@@ -246,7 +246,7 @@ export default function Services() {
               setQuery("");
               setPlatform("all");
               setCategory("all");
-              setCurrency("USD");
+              setCurrency("");
               setRefillOnly(false);
               setSort("recommended");
             }}
