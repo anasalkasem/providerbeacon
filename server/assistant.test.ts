@@ -380,4 +380,71 @@ describe("grounded catalogue orchestration", () => {
     expect(JSON.stringify(result)).not.toContain("secret");
     expect(model).toHaveBeenCalledTimes(2);
   });
+  it("grounds explanations in current eligibility and quote facts instead of promotional copy or old model claims", async () => {
+    const rows = [
+      candidate("service-1", {
+        name: "UNVERIFIED REAL FOLLOWERS WITH LIFETIME GUARANTEE",
+        terms: "INJECTED_PROVIDER_INSTRUCTION",
+        refill: "Lifetime guarantee",
+        min: 25,
+        max: 1000,
+        priceCurrency: null,
+        priceUnit: null,
+      }),
+      candidate("service-2", { min: 20, max: 1000000, priceAmount: 2 }),
+    ];
+    const model = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ...plan,
+        action: "compare",
+        quantity: 5000,
+        serviceIds: ["service-1", "service-2"],
+      })
+      .mockResolvedValueOnce({
+        answer: "The first offer is outside the requested quantity limits.",
+      });
+    const result = await runAssistantTurn(
+      assistantTurnInput.parse({
+        message: "قارن أول عرضين",
+        history: [
+          {
+            role: "assistant",
+            content: "INVENTED_GUARANTEE_FROM_PREVIOUS_TURN",
+          },
+        ],
+        context: { path: "/services", offerIds: ["service-1", "service-2"] },
+      }),
+      {
+        model,
+        byIds: vi.fn(async () => rows),
+        search: vi.fn(),
+        exchange: vi.fn(),
+      } as any
+    );
+    const evidence = JSON.parse(model.mock.calls[1]![3]);
+    expect(evidence.offerFacts).toEqual([
+      expect.objectContaining({
+        quantityStatus: "above_maximum",
+        pricingConfirmed: false,
+        totalAvailable: false,
+        lowest: false,
+        providerClaimsIndependentlyVerified: false,
+      }),
+      expect.objectContaining({
+        quantityStatus: "within_recorded_limits",
+        pricingConfirmed: true,
+        totalAvailable: true,
+        lowest: false,
+        providerClaimsIndependentlyVerified: false,
+      }),
+    ]);
+    expect(JSON.stringify(evidence)).not.toMatch(
+      /UNVERIFIED REAL|INJECTED_PROVIDER|INVENTED_GUARANTEE|Lifetime guarantee/
+    );
+    expect(evidence).not.toHaveProperty("history");
+    expect(evidence).not.toHaveProperty("contextOffers");
+    expect(result.offers[0]!.service.name).toBe(rows[0]!.service.name);
+    expect(result.offers[0]!.total).toBeNull();
+  });
 });
