@@ -21,6 +21,14 @@ export const adminServicesInput = z
   .default({ limit: 25, q: "" });
 export type AdminServicesInput = z.output<typeof adminServicesInput>;
 
+export const adminProvidersInput = z.object({
+  limit: z.number().int().min(1).max(50).default(25),
+  cursor: z.number().int().positive().optional(),
+  q: z.string().trim().max(100).default(""),
+  includeId: z.number().int().positive().optional(),
+}).default({ limit: 25, q: "" });
+export type AdminProvidersInput = z.output<typeof adminProvidersInput>;
+
 export const catalogueInput = z
   .object({
     scope: z

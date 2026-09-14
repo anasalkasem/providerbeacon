@@ -1,3 +1,4 @@
+import ProviderPicker from "./ProviderPicker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,7 +50,6 @@ export default function ProviderIntegrationVault() {
   const text = useAdminText();
   const utils = trpc.useUtils();
   const access = trpc.admin.access.useQuery();
-  const providers = trpc.admin.providers.list.useQuery(undefined, { retry: false });
   const integrations = trpc.admin.integrations.list.useQuery(undefined, { retry: false, refetchInterval: query => query.state.data?.some(item => jobActive(item.latestJob)) ? 3000 : 30000 });
   const seenJobs = useRef(new Map<number, string>());
   const [id, setId] = useState<number | undefined>();
@@ -92,7 +92,7 @@ export default function ProviderIntegrationVault() {
       <div className="flex items-start gap-3"><div className="grid size-11 place-items-center rounded-2xl bg-white text-cyan-700 shadow-sm"><KeyRound className="size-5"/></div><div><h2 className="text-lg font-extrabold text-slate-950">{text("connectProvider")}</h2><p className="mt-1 text-sm text-slate-600">{text("connectProviderBody")}</p></div></div>
       <div className="mt-5 grid gap-3 lg:grid-cols-3"><Step number={1} title={text("stepProvider")} body={text("stepProviderBody")}/><Step number={2} title={text("stepCredential")} body={text("stepCredentialBody")}/><Step number={3} title={text("stepVerify")} body={text("stepVerifyBody")}/></div>
       <form className="mt-5 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 md:grid-cols-2" onSubmit={event => { event.preventDefault(); save.mutate({ id, providerId: Number(providerId), name, baseUrl, apiKey: apiKey || undefined, syncIntervalMinutes: Number(interval), enabled }); }}>
-        <div className="grid gap-2 text-sm font-bold text-slate-700"><div className="flex items-center justify-between gap-3"><span>{text("provider")}</span><button type="button" className="text-xs font-extrabold text-cyan-700 hover:text-cyan-900" onClick={() => setShowNewProvider(value => !value)}>+ {text("addNewProvider")}</button></div><Select value={providerId} onValueChange={setProviderId}><SelectTrigger><SelectValue placeholder={text("selectProvider")}/></SelectTrigger><SelectContent>{providers.data?.filter(provider => Boolean(provider.websiteUrl)).map(provider => <SelectItem key={provider.id} value={String(provider.id)}>{provider.name}</SelectItem>)}</SelectContent></Select></div>
+        <div className="grid gap-2 text-sm font-bold text-slate-700"><div className="flex items-center justify-between gap-3"><span>{text("provider")}</span><button type="button" className="text-xs font-extrabold text-cyan-700 hover:text-cyan-900" onClick={() => setShowNewProvider(value => !value)}>+ {text("addNewProvider")}</button></div><ProviderPicker value={providerId} onChange={setProviderId}/></div>
         {showNewProvider && <div className="grid gap-3 rounded-xl border border-cyan-200 bg-cyan-50/70 p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]"><Input value={newProviderName} onChange={event => setNewProviderName(event.target.value)} placeholder={text("providerName")}/><Input dir="ltr" type="url" value={newProviderWebsite} onChange={event => setNewProviderWebsite(event.target.value)} placeholder="https://provider.example"/><Button type="button" variant="outline" disabled={createProvider.isPending || !newProviderName.trim() || !newProviderWebsite.trim()} onClick={() => createProvider.mutate({ name: newProviderName, websiteUrl: newProviderWebsite })}>{createProvider.isPending && <Loader2 className="size-4 animate-spin"/>}{text("createProvider")}</Button></div>}
         <label className="grid gap-2 text-sm font-bold text-slate-700"><span>{text("integrationName")}</span><Input value={name} onChange={event => setName(event.target.value)} placeholder={text("integrationNameExample")} required/></label>
         <label className="grid gap-2 text-sm font-bold text-slate-700 md:col-span-2"><span>{text("providerApiUrl")}</span><Input dir="ltr" type="url" value={baseUrl} onChange={event => setBaseUrl(event.target.value)} placeholder="https://provider.example/api/v2" required/><small className="font-normal text-slate-500">{text("endpointHelp")}</small></label>

@@ -1,3 +1,4 @@
+import { adminProvidersInput } from "../../shared/catalogueQuery";
 import { createSourcedDrafts } from "../sourcedOffersDb";
 import { sourcedBatchInput } from "../../shared/sourcedOffers";
 import { listProviderSyncIssues } from "../providerSync";
@@ -11,10 +12,10 @@ import {
   createProviderDraft,
   createTeamInvite,
   listAdminProviders,
+  listAdminProviderPage,
   listAuditEntries,
   listLocalizedContent,
   listTeamMembers,
-  seedMarketplaceIfEmpty,
   setTeamMemberStatus,
   updateProviderStatus,
   updateServiceRecord,
@@ -23,7 +24,7 @@ import {
 } from "../marketplaceDb";
 import { deleteProviderIntegration, listProviderIntegrations, saveProviderIntegration, setProviderIntegrationEnabled, syncStoredIntegration } from "../vaultDb";
 
-import { getAdminOverview, getProviderForAnalysis, getServiceReviewSummary, listAdminServices, listSyncAlerts } from "../adminCatalogueDb";
+import { getCachedAdminOverview, getProviderForAnalysis, getCachedServiceReviewSummary, listAdminServices, listSyncAlerts } from "../adminCatalogueDb";
 import { adminServicesInput } from "../../shared/catalogueQuery";
 import { reviewBatchInput, reviewEditInput } from "../../shared/serviceReview";
 import { applyServiceReview, editServiceReview, getServiceReview } from "../serviceReviewDb";
@@ -38,18 +39,18 @@ export const adminRouter = router({
   overview: protectedProcedure.query(async ({ ctx }) => {
     const role = await resolveTeamRole(ctx.user!);
     if (!role) throw new TRPCError({ code: "FORBIDDEN" });
-    return getAdminOverview(rolePermissions[role]);
+    return getCachedAdminOverview(rolePermissions[role]);
   }),
   acceptInvite: protectedProcedure.input(z.object({ token: z.string().min(20).max(200) })).mutation(({ ctx, input }) => acceptTeamInvite({ token: input.token, userId: ctx.user!.id, email: ctx.user!.email })),
-  seedMarketplace: permissionProcedure("providers.write").mutation(({ ctx }) => seedMarketplaceIfEmpty(ctx.user!.id)),
   providers: router({
-    list: permissionProcedure("providers.read").query(() => listAdminProviders()),
+    list: permissionProcedure("providers.read").input(adminProvidersInput).query(({ input }) => listAdminProviders(input)),
+    page: permissionProcedure("providers.read").input(adminProvidersInput).query(({ input }) => listAdminProviderPage(input)),
     createDraft: permissionProcedure("providers.write").input(z.object({ name: z.string().trim().min(2).max(200), websiteUrl: z.string().url().max(500) })).mutation(({ ctx, input }) => createProviderDraft({ ...input, actorUserId: ctx.user!.id })),
     setStatus: permissionProcedure("providers.review").input(z.object({ id: z.number().int().positive(), status: z.enum(["draft", "pending_review", "active", "suspended"]) })).mutation(({ ctx, input }) => updateProviderStatus({ ...input, actorUserId: ctx.user!.id })),
   }),
   services: router({
     createSourcedDrafts: permissionProcedure("services.write").input(sourcedBatchInput).mutation(({ ctx, input }) => createSourcedDrafts({ ...input, actorUserId: ctx.user!.id, ipAddress: ctx.req.ip })),
-    reviewSummary: permissionProcedure("services.read").input(adminServicesInput).query(({ input }) => getServiceReviewSummary(input)),
+    reviewSummary: permissionProcedure("services.read").input(adminServicesInput).query(({ input }) => getCachedServiceReviewSummary(input)),
     detail: permissionProcedure("services.read").input(z.object({ id: z.number().int().positive() })).query(({ input }) => getServiceReview(input.id)),
     editReview: permissionProcedure("services.write").input(reviewEditInput).mutation(({ ctx, input }) => editServiceReview({ ...input, actorUserId: ctx.user!.id, ipAddress: ctx.req.ip })),
     approve: permissionProcedure("services.review").input(reviewBatchInput).mutation(({ ctx, input }) => applyServiceReview({ ...input, action: "approve", actorUserId: ctx.user!.id, ipAddress: ctx.req.ip })),

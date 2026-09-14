@@ -27,7 +27,7 @@ type Filters = Partial<
 >;
 type Cursor = CatalogueInput["cursor"];
 type MarketplaceData = ReturnType<typeof catalogueIndex> & {
-  source: "database" | "seed" | "unavailable";
+  source: "database" | "unavailable";
   isLoading: boolean;
   isFetching: boolean;
   retry: () => void;

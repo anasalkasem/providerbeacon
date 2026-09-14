@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { catalogueIndex, comparisonSelection } from "../client/src/lib/catalogue";
-import { providers, services } from "../client/src/data/marketplace";
+import { providers, services } from "./testFixtures";
 
 const state = vi.hoisted(() => ({ db: null as any }));
 vi.mock("./db", () => ({ getDb: async () => state.db }));
-import { getMarketplaceSnapshot, seedMarketplaceIfEmpty } from "./marketplaceDb";
+import { getMarketplaceSnapshot } from "./marketplaceDb";
 
 beforeEach(() => { state.db = null; vi.stubEnv("NODE_ENV", "production"); vi.stubEnv("MARKETPLACE_DEMO_MODE", "true"); });
 afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
@@ -13,14 +13,9 @@ describe("public catalogue availability", () => {
   it("never returns fixtures in production, including when demo mode was accidentally enabled", async () => {
     expect(await getMarketplaceSnapshot()).toEqual({ providers: [], services: [], source: "unavailable", pagination: { total: 0, nextCursor: null } });
   });
-  it("blocks the seed operation in production", async () => {
-    expect(await seedMarketplaceIfEmpty()).toEqual({ seeded: false, reason: "demo_disabled" });
-  });
-  it("requires an explicit development demo setting", async () => {
-    vi.stubEnv("NODE_ENV", "development"); vi.stubEnv("MARKETPLACE_DEMO_MODE", "false");
-    expect((await getMarketplaceSnapshot()).providers).toEqual([]);
-    vi.stubEnv("MARKETPLACE_DEMO_MODE", "true");
-    expect((await getMarketplaceSnapshot()).source).toBe("seed");
+  it("never substitutes fixtures in development even if a retired demo setting remains", async () => {
+    vi.stubEnv("NODE_ENV", "development"); vi.stubEnv("MARKETPLACE_DEMO_MODE", "true");
+    expect((await getMarketplaceSnapshot()).source).toBe("unavailable");
   });
   it("distinguishes a database failure from an empty catalogue without substituting fixtures", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});

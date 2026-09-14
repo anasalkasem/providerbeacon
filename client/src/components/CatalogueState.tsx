@@ -7,8 +7,8 @@ export function CatalogueNotice() {
   const { source, isLoading, retry } = useMarketplaceData();
   const { locale } = useLocale(); const t = catalogueCopy[locale];
   if (isLoading || source === "database") return null;
-  return <div role={source === "unavailable" ? "alert" : "status"} className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-center text-sm text-amber-950">
-    {source === "seed" ? t.demo : t.unavailable}
+  return <div role="alert" className="border-b border-amber-200 bg-amber-50 px-5 py-3 text-center text-sm text-amber-950">
+    {t.unavailable}
     {source === "unavailable" && <button onClick={retry} className="ms-3 font-bold underline">{t.retry}</button>}
   </div>;
 }

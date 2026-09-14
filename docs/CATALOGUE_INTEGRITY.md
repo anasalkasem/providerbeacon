@@ -6,7 +6,7 @@ Work is isolated on `codex/catalogue-integrity`; production remains on its exist
 ## Resulting behavior
 
 - Production never falls back to invented providers, including when the database is not configured. Empty and unavailable catalogues have separate states.
-- Preview fixtures require `MARKETPLACE_DEMO_MODE=true` outside production and are visibly labelled. The seed mutation is disabled in production; known demo profiles cannot be published.
+- Superseded by the real-catalogue release: runtime fixtures, the seed endpoint and the seed script are removed in every environment. Migration 0009 removes the original fictional records; their slugs remain reserved against reintroduction. See `real-catalogue-performance.md`.
 - The existing active-provider filter is preserved. Client indexes also omit orphan and ambiguous offers. The service table uses the current provider record, not fixture lookups.
 - Public IDs are now `provider-<database id>` and `service-<database id>`. Old comparison URLs show an unavailable-selection message; they are not silently mapped to unrelated offers.
 - Publication does not grant verification. Unknown metrics are represented as unavailable. Database-backed Beacon Scores are withheld until there is an evidence-backed scoring pipeline.
