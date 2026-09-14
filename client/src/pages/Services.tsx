@@ -413,7 +413,7 @@ export default function Services() {
           </div>
         </details>
         {selected.length > 0 && (
-          <div className="sticky bottom-4 z-20 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#0B2A48] p-4 text-white shadow-xl">
+          <div data-compare-tray className="sticky bottom-4 z-20 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#0B2A48] p-4 text-white shadow-xl">
             <p>
               {ar
                 ? `اخترت ${selected.length} من ٤ عروض`
