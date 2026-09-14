@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { catalogueIndex } from "../client/src/lib/catalogue";
 import { providers, services } from "./testFixtures";
 
-const state = vi.hoisted(() => ({ data: null as any, slug: "real-provider", search: "" }));
+const state = vi.hoisted(() => ({ data: null as any, slug: "real-provider", search: "", quotes: undefined as any }));
+vi.mock("@/lib/trpc", () => ({trpc:{assistant:{quotes:{useQuery:()=>({data:state.quotes})}}}}));
 vi.mock("@/contexts/MarketplaceDataContext", () => ({ useMarketplaceData: () => state.data }));
 vi.mock("@/contexts/LocaleContext", async importOriginal => ({ ...await importOriginal<any>(), useLocale: () => ({ locale: "en", setLocale: () => {} }) }));
 vi.mock("@/components/SiteChrome", () => ({ PublicLayout: ({ children }: any) => children }));
@@ -25,6 +26,7 @@ beforeEach(() => {
   const service = { ...services[0]!, id: "service-40", providerId: provider.id, name: "Available real offer", featured: false, retention: null };
   state.data = { ...catalogueIndex([provider], [service]), source: "database", isLoading: false, retry: () => {} };
   state.slug = provider.slug;
+  state.quotes = undefined;
   vi.stubGlobal("window", { location: { search: "" } });
 });
 afterEach(() => vi.unstubAllGlobals());
@@ -64,6 +66,20 @@ describe("public catalogue rendering", () => {
     const comparison=render(Compare);
     expect(comparison).toContain("Total requires confirmed currency and sale unit");
     expect(comparison).not.toContain(">Lowest price<");
+  });
+  it("shows dated converted totals and a server-confirmed lowest price across currencies", () => {
+    const a={...state.data.services[0],priceCurrency:"USD",priceUnit:"per_1000",priceAmount:2};
+    const b={...a,id:"service-41",priceCurrency:"PKR",priceAmount:280};
+    state.data={...state.data,...catalogueIndex(state.data.providers,[a,b])};
+    state.quotes={comparable:true,currency:"USD",offers:[{id:a.id,total:"2.00",convertedTotal:null,fxAsOf:null,lowest:false},{id:b.id,total:"280.00",convertedTotal:"1.00",fxAsOf:1789400000000,lowest:true}]};
+    vi.stubGlobal("window",{location:{search:"?services=service-40,service-41&quantity=1000&currency=USD"}});
+    const html=render(Compare);
+    expect(html).toContain("Estimated converted total");
+    expect(html).toContain("USD 1.00");
+    expect(html).toContain("https://www.exchangerate-api.com");
+    expect(html.split(">Lowest price<").length-1).toBe(1);
+    expect(html).not.toContain("No lowest-price ranking");
+    expect(render(QuoteCost,{service:{...a,priceType:"from"},quantity:1000})).toContain("Starting price; a final quote is needed");
   });
   it("uses the live provider in the actual service table row", () => {
     const html = render(ServiceRow, { service: state.data.services[0], selected: false, onToggle: () => {} });

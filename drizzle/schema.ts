@@ -1,4 +1,17 @@
-import { boolean, decimal, index, int, json, mysqlEnum, mysqlTable, primaryKey, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+import { bigint, boolean, decimal, index, int, json, mysqlEnum, mysqlTable, primaryKey, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+
+export const assistantUsageBuckets = mysqlTable("assistant_usage_buckets", {
+  key: varchar("bucket_key", { length: 128 }).primaryKey(),
+  used: int("used").default(0).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+}, table => [index("assistant_usage_expiry_idx").on(table.expiresAt)]);
+
+export const assistantExchangeRates = mysqlTable("assistant_exchange_rates", {
+  baseCode: varchar("base_code", { length: 3 }).primaryKey(),
+  rates: json("rates").$type<Record<string, string>>().notNull(),
+  asOf: bigint("as_of", { mode: "number" }).notNull(),
+  nextUpdate: bigint("next_update", { mode: "number" }).notNull(),
+});
 
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),

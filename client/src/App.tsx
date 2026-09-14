@@ -21,6 +21,7 @@ const Login = lazy(() => import("@/pages/Login"));
 const Setup = lazy(() => import("@/pages/Setup"));
 const Security = lazy(() => import("@/pages/Security"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
+const BeaconAssistant = lazy(() => import("@/components/BeaconAssistant"));
 
 function Router() {
   return <Suspense fallback={<div className="grid min-h-screen place-items-center bg-[#F6F8FC]"><div className="size-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-500" aria-label="Loading page"/></div>}><Switch>
@@ -43,5 +44,5 @@ function Router() {
 }
 
 export default function App() {
-  return <ErrorBoundary><ThemeProvider defaultTheme="light"><LocaleProvider><MarketplaceDataProvider><TooltipProvider><Toaster richColors /><Router /></TooltipProvider></MarketplaceDataProvider></LocaleProvider></ThemeProvider></ErrorBoundary>;
+  return <ErrorBoundary><ThemeProvider defaultTheme="light"><LocaleProvider><MarketplaceDataProvider><TooltipProvider><Toaster richColors /><Router /><Suspense fallback={null}><BeaconAssistant /></Suspense></TooltipProvider></MarketplaceDataProvider></LocaleProvider></ThemeProvider></ErrorBoundary>;
 }

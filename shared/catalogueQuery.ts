@@ -43,6 +43,8 @@ export const catalogueInput = z
     q: z.string().trim().max(100).default(""),
     platform: z.string().trim().max(80).optional(),
     priceCurrency: z.enum(priceCurrencies).optional(),
+    countryCode: z.string().regex(/^[A-Z]{2}$/).optional(),
+    serviceQuery: z.string().trim().max(80).optional(),
     priceUnit: z.enum(priceUnits).optional(),
     quantity: z.number().int().min(1).max(2147483647).optional(),
     quality: z.enum(["standard", "premium", "elite"]).optional(),

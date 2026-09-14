@@ -6,12 +6,17 @@ import OfferEvidence, {
 import QuoteWorkbench from "./QuoteWorkbench";
 import QuoteCost from "@/components/QuoteCost";
 import OfferPrice, { PriceLegend } from "@/components/OfferPrice";
+import ConvertedQuote from "@/components/ConvertedQuote";
+import { assistantCopy } from "@/i18n/assistant";
+import { trpc } from "@/lib/trpc";
 import Services from "./Services";
 import { useState } from "react";
 import {
   comparablePrices,
   compareQuoteAmounts,
   quantityQuoteExact,
+  priceCurrencies,
+  type PriceCurrency,
 } from "../../../shared/pricing";
 import { unitLabel, pricingCopy } from "@/i18n/pricing";
 import { CatalogueState } from "@/components/CatalogueState";
@@ -48,6 +53,7 @@ export default function Compare() {
   const { locale } = useLocale();
   const t = pageCopy[locale];
   const ar = locale === "ar";
+  const assistantText = assistantCopy[locale];
   const initialQuantity = Number(
     new URLSearchParams(window.location.search).get("quantity") ?? 1000
   );
@@ -55,6 +61,32 @@ export default function Compare() {
     Number.isSafeInteger(initialQuantity) && initialQuantity > 0
       ? initialQuantity
       : 1000
+  );
+  const requestedCurrency = new URLSearchParams(window.location.search).get(
+    "currency"
+  );
+  const [currency, setCurrency] = useState<PriceCurrency>(
+    priceCurrencies.includes(requestedCurrency as PriceCurrency)
+      ? (requestedCurrency as PriceCurrency)
+      : "USD"
+  );
+  const requestedIds = (
+    new URLSearchParams(window.location.search).get("services") ?? ""
+  )
+    .split(",")
+    .filter(id => /^service-[1-9]\d{0,9}$/.test(id))
+    .slice(0, 4);
+  const convertedQuotes = trpc.assistant.quotes.useQuery(
+    { serviceIds: requestedIds, quantity, currency },
+    {
+      enabled:
+        requestedIds.length >= 2 &&
+        Number.isSafeInteger(quantity) &&
+        quantity > 0 &&
+        quantity <= 2147483647,
+      staleTime: 10000,
+      retry: false,
+    }
   );
   const { providerFor, serviceFor } = useMarketplaceData();
   const { selected: compared, missing } = comparisonSelection(
@@ -75,11 +107,16 @@ export default function Compare() {
         />
       </PublicLayout>
     );
-  const comparable =
+  const nativeComparable =
     comparablePrices(compared) &&
-    compared.every(service => quantityQuoteExact(service, quantity) != null);
+    compared.every(
+      service =>
+        service.priceType !== "from" &&
+        quantityQuoteExact(service, quantity) != null
+    );
+  const comparable = convertedQuotes.data?.comparable ?? nativeComparable;
   const quotes = compared.map(service => quantityQuoteExact(service, quantity));
-  const lowest = comparable
+  const lowest = nativeComparable
     ? quotes.reduce<string | null>(
         (best, amount) =>
           best == null || compareQuoteAmounts(amount!, best) < 0
@@ -89,8 +126,12 @@ export default function Compare() {
       )
     : null;
   const isLowest = (service: Service) =>
-    comparable &&
-    compareQuoteAmounts(quantityQuoteExact(service, quantity)!, lowest!) === 0;
+    convertedQuotes.data
+      ? (convertedQuotes.data.offers.find(offer => offer.id === service.id)
+          ?.lowest ?? false)
+      : nativeComparable &&
+        compareQuoteAmounts(quantityQuoteExact(service, quantity)!, lowest!) ===
+          0;
   const bestScore = Math.max(
     ...compared.flatMap(service => {
       const score = providerFor(service).score;
@@ -221,13 +262,35 @@ export default function Compare() {
     rows.splice(1, 0, [
       ar ? "تكلفة الكمية المحددة" : "Cost for selected quantity",
       <DollarSign />,
-      service => (
-        <QuoteCost
-          service={service}
-          quantity={quantity}
-          lowest={isLowest(service)}
-        />
-      ),
+      service => {
+        const converted = convertedQuotes.data?.offers.find(
+          offer => offer.id === service.id
+        );
+        return (
+          <>
+            <QuoteCost
+              service={service}
+              quantity={quantity}
+              lowest={isLowest(service)}
+            />
+            {converted?.convertedTotal && converted.fxAsOf != null && (
+              <ConvertedQuote
+                amount={converted.convertedTotal}
+                currency={currency}
+                asOf={converted.fxAsOf}
+                lowest={isLowest(service)}
+              />
+            )}
+            {service.priceCurrency !== currency &&
+              converted?.total &&
+              !converted.convertedTotal && (
+                <p className="mt-2 text-xs text-amber-800">
+                  {assistantText.fxUnavailable}
+                </p>
+              )}
+          </>
+        );
+      },
     ]);
     rows.push(
       [
@@ -288,6 +351,23 @@ export default function Compare() {
         {compared.every(service => service.priceUnit !== "package") && (
           <div className="mb-5 flex flex-wrap items-end gap-4 rounded-xl border border-slate-200 bg-white p-4">
             <label className="grid gap-2 text-sm font-bold">
+              {assistantText.currency}
+              <select
+                value={currency}
+                onChange={event =>
+                  setCurrency(event.target.value as PriceCurrency)
+                }
+                className="h-12 rounded-xl border border-slate-200 px-3"
+                dir="ltr"
+              >
+                {priceCurrencies.map(code => (
+                  <option key={code} value={code}>
+                    {code}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-2 text-sm font-bold">
               {ar ? "كمية المقارنة" : "Comparison quantity"}
               <input
                 type="number"
@@ -300,9 +380,7 @@ export default function Compare() {
               />
             </label>
             <p className="max-w-xl text-sm leading-6 text-slate-500">
-              {ar
-                ? "تكلفة محسوبة من السعر المعلن؛ الشروط وجودة التنفيذ قد تختلف بين المزودين. لا تشمل رسوم الدفع الإضافية."
-                : "Calculated from advertised unit prices. Terms and delivery quality may differ. Additional payment fees are not included."}
+              {assistantText.priceNote}
             </p>
           </div>
         )}

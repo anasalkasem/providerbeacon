@@ -36,6 +36,11 @@ async function startServer() {
   if (process.env.NODE_ENV === "production") await runMigrations();
   const app = express();
   const server = createServer(app);
+  const assistantJson = express.json({ limit: "32kb" });
+  app.use((req, res, next) => {
+    const procedures = req.path.startsWith("/api/trpc/") ? req.path.slice("/api/trpc/".length).split(",") : [];
+    return procedures.includes("assistant.chat") ? assistantJson(req, res, next) : next();
+  });
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
