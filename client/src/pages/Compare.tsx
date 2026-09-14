@@ -13,6 +13,7 @@ import Services from "./Services";
 import { useState } from "react";
 import {
   comparablePrices,
+  hasPricingBasis,
   compareQuoteAmounts,
   quantityQuoteExact,
   priceCurrencies,
@@ -392,7 +393,9 @@ export default function Compare() {
             {pricingCopy[locale].mixed}
           </p>
         )}
-        <PriceLegend />
+        <PriceLegend
+          hasUnconfirmed={compared.some(service => !hasPricingBasis(service))}
+        />
         <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full min-w-[960px]">
             <thead>

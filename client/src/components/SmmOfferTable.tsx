@@ -8,6 +8,7 @@ import { localizeData, localizeDuration, formatNumber } from "@/i18n/messages";
 import OfferEvidence, { serviceName, serviceScope } from "./OfferEvidence";
 import QuoteCost from "./QuoteCost";
 import OfferPrice, { PriceLegend } from "./OfferPrice";
+import { hasPricingBasis } from "../../../shared/pricing";
 
 export default function SmmOfferTable({
   services,
@@ -26,7 +27,11 @@ export default function SmmOfferTable({
   const lowest = lowestVisiblePriceIds(services, quantity);
   return (
     <>
-      {services.length > 0 && <PriceLegend />}
+      {services.length > 0 && (
+        <PriceLegend
+          hasUnconfirmed={services.some(service => !hasPricingBasis(service))}
+        />
+      )}
       <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
         <table className="w-full min-w-[900px] text-start text-sm">
           <thead className="bg-slate-50 text-slate-600">
