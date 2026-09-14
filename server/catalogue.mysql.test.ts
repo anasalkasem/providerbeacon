@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+import { performance } from "node:perf_hooks";
+import { invalidateCatalogueCaches } from "./catalogueCache";
+import { appRouter } from "./routers";
 import { createSourcedDrafts } from "./sourcedOffersDb";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPool, type Pool } from "mysql2/promise";
@@ -9,7 +13,7 @@ import { auditEntries, priceSnapshots, providerIntegrations, providerRecords, pr
 const state = vi.hoisted(() => ({ db: null as any }));
 vi.mock("./db", () => ({ getDb: async () => state.db }));
 vi.mock("node:dns/promises", () => ({ lookup: async () => [{ address: "93.184.216.34", family: 4 }] }));
-import { getMarketplaceSnapshot, updateProviderStatus, updateServiceRecord } from "./marketplaceDb";
+import { getCachedMarketplaceSnapshot, listAdminProviderPage, listAdminProviders, getMarketplaceSnapshot, updateProviderStatus, updateServiceRecord } from "./marketplaceDb";
 import { deleteProviderIntegration, listProviderIntegrations, runDueProviderSyncs, saveProviderIntegration, setProviderIntegrationEnabled, syncStoredIntegration } from "./vaultDb";
 import { cleanupProviderSyncSnapshots, listProviderSyncIssues, runProviderSyncStep } from "./providerSync";
 import { getAdminOverview, getServiceReviewSummary, listAdminServices, listSyncAlerts } from "./adminCatalogueDb";
@@ -36,6 +40,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     actorId = owner.id;
   }, 30_000);
   beforeEach(async () => {
+    invalidateCatalogueCaches();
     vi.stubEnv("NODE_ENV", "production"); vi.stubEnv("MARKETPLACE_DEMO_MODE", "false");
     vi.stubEnv("VAULT_MASTER_KEY", Buffer.alloc(32, 17).toString("base64url"));
     await state.db.delete(auditEntries);
@@ -91,6 +96,39 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     await state.db.update(providerRecords).set({ websiteUrl: "https://provider.example" }).where(eq(providerRecords.id, providerId));
     return createSourcedDrafts({ providerId, offers: [webOffer], reason: "Test public-source extraction", actorUserId: actorId });
   }
+  it("removes only original demo records, cascades their offers and retains an audit", async () => {
+    const [demo] = await state.db.insert(providerRecords).values({slug: "northstar-social", name: "Northstar Social", initials: "NS"}).$returningId();
+    await addService("draft", demo.id);
+    const [official] = await state.db.insert(providerRecords).values({slug: "pulse-media-lab", name: "Official source fixture", initials: "OS", websiteUrl: "https://official.example"}).$returningId();
+    const [connected] = await state.db.insert(providerRecords).values({slug: "sociaflow", name: "Connected source fixture", initials: "CS"}).$returningId();
+    await state.db.insert(providerIntegrations).values({providerId: connected.id, name: "Existing connection", baseUrl: "https://connected.example/api"});
+    const [sourced] = await state.db.insert(providerRecords).values({slug: "apex-smm", name: "Reviewed source fixture", initials: "RS"}).$returningId();
+    const sourceId = await addService("draft", sourced.id);
+    await state.db.update(serviceRecords).set({sourceKind: "public_web"}).where(eq(serviceRecords.id, sourceId));
+    const original = await addService();
+    const statements = readFileSync("drizzle/0009_remove_demo_catalogue.sql", "utf8").split("--> statement-breakpoint").map(v => v.trim()).filter(Boolean);
+    for (let attempt = 0; attempt < 2; attempt++) await state.db.transaction(async (tx: any) => { for (const statement of statements) await tx.execute(sql.raw(statement)); });
+    const rows = await state.db.select().from(providerRecords);
+    expect(rows.map((row: any) => row.id).sort()).toEqual([providerId, official.id, connected.id, sourced.id].sort());
+    expect(await state.db.select().from(serviceRecords).where(eq(serviceRecords.providerId, demo.id))).toHaveLength(0);
+    expect((await getServiceReview(original)).service.providerId).toBe(providerId);
+    const entries = await state.db.select().from(auditEntries).where(eq(auditEntries.action, "marketplace.demo.remove"));
+    expect(entries).toHaveLength(1); expect(entries[0].metadata).toMatchObject({slug: "northstar-social", servicesRemoved: 1});
+  });
+  it("invalidates a warm public catalogue after an authorized publication change", async () => {
+    await addService();
+    expect((await getCachedMarketplaceSnapshot()).services).toHaveLength(1);
+    const caller = appRouter.createCaller({user: {id: actorId, openId: "catalogue-test-owner", role: "admin", email: null}, req: {headers: {}}, res: {}} as any);
+    await caller.admin.providers.setStatus({id: providerId, status: "suspended"});
+    expect((await getCachedMarketplaceSnapshot()).services).toHaveLength(0);
+  });
+  it("does not load retained API payloads or turn unknown metadata into strings", async () => {
+    const id = await addService();
+    await state.db.update(serviceRecords).set({sourceKind: "public_web", sourceData: {nameAr: null, terms: null, sourceServiceId: 123, scopeAr: "وصف حقيقي", payload: "x".repeat(200000)}, originalSourceData: {payload: "x".repeat(200000)}}).where(eq(serviceRecords.id, id));
+    const result = await getMarketplaceSnapshot({scope: "services"});
+    expect(result.services[0]).toMatchObject({nameAr: null, terms: null, sourceServiceId: null, packageDescriptionAr: "وصف حقيقي"});
+    expect(Buffer.byteLength(JSON.stringify(result))).toBeLessThan(5000);
+  });
   it("public-source offers require the existing review gates and expose evidence after publication", async () => {
     const { created: [id] } = await createWebDraft();
     const detail = await getServiceReview(id!);
@@ -600,8 +638,8 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(row).toMatchObject({ canApprove: false, canPublish: false, stale: true });
     await expect(applyServiceReview({ items: [{ id, revision: row.revision }], action: "approve", reason: "Attempt with outdated evidence", actorUserId: actorId })).rejects.toMatchObject({ message: "review_not_ready" });
   });
-  it("keeps payloads bounded across a 50,000-service catalogue and excludes unpublished providers", async () => {
-    const size = 50_000;
+  it("keeps payloads bounded across a 100,000-service catalogue and excludes unpublished providers", async () => {
+    const size = 100_000;
     for (let start = 0; start < size; start += 500) {
       await state.db.insert(serviceRecords).values(Array.from({ length: 500 }, (_, offset) => {
         const n = start + offset;
@@ -609,7 +647,11 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
           priceAmount: "1.0000", minOrder: 10, maxOrder: 1000, status: "active", reviewStatus: "approved", incomplete: false, normalizationVersion: 1, pricingConfirmed: true, priceCurrency: "USD", priceUnit: "per_1000", policyReviewed: true, evidenceUrl: "https://provider.example/services", sourceUpdatedAt: new Date(), retentionBasisPoints: n % 2 ? null : 9500 };
       }));
     }
-    const first = await listAdminServices();
+    const timings: Record<string, number> = {};
+    async function measure<T>(name: string, operation: () => Promise<T>): Promise<T> {
+      const start = performance.now(); const result = await operation(); timings[name] = Math.round(performance.now() - start); return result;
+    }
+    const first = await measure("admin_page_ms", () => listAdminServices());
     expect(first.items).toHaveLength(25); expect(first.total).toBe(size);
     expect(Buffer.byteLength(JSON.stringify(first))).toBeLessThan(32_000);
     const next = await listAdminServices({ cursor: first.nextCursor!, limit: 100 });
@@ -622,7 +664,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(Buffer.byteLength(JSON.stringify(reviewSummary))).toBeLessThan(1000);
     expect((await listAdminServices({ q: "' OR 1=1 --" })).total).toBe(0);
     expect((await listAdminServices({ q: "%" })).total).toBe(0);
-    const publicPage = await getMarketplaceSnapshot({ scope: "services" });
+    const publicPage = await measure("public_page_ms", () => getMarketplaceSnapshot({ scope: "services" }));
     expect(publicPage.source).toBe("database"); expect(publicPage.services).toHaveLength(25);
     expect(publicPage.pagination.total).toBe(size); expect(publicPage.providers[0]?.activeServicesCount).toBe(size);
     const comparison = await getMarketplaceSnapshot({ scope: "compare", ids: [first.items.at(-1)!.id] });
@@ -635,12 +677,26 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
       const ids = new Set(page.services.map(item => item.id));
       expect(after.services).toHaveLength(25); expect(after.services.some(item => ids.has(item.id))).toBe(false);
     }
+    const concurrent = await measure("cold_100_readers_ms", () => Promise.all(Array.from({length: 100}, () => getCachedMarketplaceSnapshot({scope: "services"}))));
+    expect(concurrent.every(result => result.pagination.total === size && result.services.length === 25)).toBe(true);
+    await measure("warm_100_readers_ms", () => Promise.all(Array.from({length: 100}, () => getCachedMarketplaceSnapshot({scope: "services"}))));
+    expect(Buffer.byteLength(JSON.stringify(publicPage))).toBeLessThan(40_000);
+    for (const name of ["admin_page_ms", "public_page_ms", "cold_100_readers_ms"]) expect(timings[name]).toBeLessThan(2500);
+    expect(timings.warm_100_readers_ms).toBeLessThan(500);
+    console.log("CATALOGUE_SCALE_RESULT", JSON.stringify({services: size, simultaneousReaders: 100, publicBytes: Buffer.byteLength(JSON.stringify(publicPage)), ...timings}));
+    await state.db.insert(providerRecords).values(Array.from({length: 1000}, (_, n) => ({slug: `scale-provider-${n}`, name: `Scale provider ${n}`, initials: "SP", websiteUrl: "https://scale.example"})));
+    const providersPage = await listAdminProviderPage(); expect(providersPage.total).toBe(1001); expect(providersPage.items).toHaveLength(25);
+    const providerNext = await listAdminProviderPage({cursor: providersPage.nextCursor!});
+    expect(providerNext.items.every(provider => provider.id < providersPage.items.at(-1)!.id)).toBe(true);
+    expect((await listAdminProviders({q: "Scale provider 999"})).map(provider => provider.name)).toEqual(["Scale provider 999"]);
+    expect(await listAdminProviders({limit: 50, includeId: providerId})).toHaveLength(50);
+    expect((await listAdminProviders({limit: 50, includeId: providerId}))[0]?.id).toBe(providerId);
     await state.db.update(providerRecords).set({ status: "draft" }).where(eq(providerRecords.id, providerId));
     const stats = await getAdminOverview(rolePermissions.catalogue_editor);
     expect(stats).toMatchObject({ totalServices: size, publishedServices: 0, teamMembers: null, recordedActions: null });
     expect((await getMarketplaceSnapshot({ scope: "services" })).services).toEqual([]);
     expect((await getMarketplaceSnapshot({ scope: "compare", ids: [first.items[0]!.id] })).services).toEqual([]);
     expect((await listAdminServices()).total).toBe(size);
-  }, 60_000);
+  }, 120_000);
 
 });

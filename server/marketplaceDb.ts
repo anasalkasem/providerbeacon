@@ -1,20 +1,15 @@
+import { AsyncResultCache, registerCatalogueCache } from "./catalogueCache";
 import { publicOfferMetadata } from "../shared/sourcedOffers";
 import { and, asc, count, desc, eq, gt, inArray, like, lt, ne, notInArray, or, sql } from "drizzle-orm";
 import { createHash, randomBytes } from "node:crypto";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
-import { providers as seedProviders, services as seedServices } from "../client/src/data/marketplace";
+import { retiredDemoSlugs, assertRealProviderSlug } from "./retiredDemoProviders";
 import { auditEntries, localizedContent, priceSnapshots, providerRecords, serviceRecords, staffSessions, teamMembers, type TeamRole } from "../drizzle/schema";
 import { getDb } from "./db";
 import { approvedService } from "./catalogueRules";
-import { catalogueInput, searchPattern, type CatalogueInput } from "../shared/catalogueQuery";
+import { adminProvidersInput, type AdminProvidersInput, catalogueInput, searchPattern, type CatalogueInput } from "../shared/catalogueQuery";
 
-const tierToDb = {
-  "Tier 1 Direct Source": "tier_1_direct",
-  "Verified Enterprise": "verified_enterprise",
-  "Certified Wholesale": "certified_wholesale",
-  "Specialized Partner": "specialized_partner",
-} as const;
 const tierFromDb = {
   tier_1_direct: "Tier 1 Direct Source",
   verified_enterprise: "Verified Enterprise",
@@ -22,9 +17,33 @@ const tierFromDb = {
   specialized_partner: "Specialized Partner",
 } as const;
 
-// Demo fixtures are opt-in and are never a production fallback.
-export function marketplaceDemoEnabled() {
-  return process.env.NODE_ENV !== "production" && process.env.MARKETPLACE_DEMO_MODE === "true";
+const publicServiceColumns = {
+  id: serviceRecords.id, providerId: serviceRecords.providerId, platform: serviceRecords.platform,
+  category: serviceRecords.category, name: serviceRecords.name, priceAmount: serviceRecords.priceAmount,
+  priceCurrency: serviceRecords.priceCurrency, priceUnit: serviceRecords.priceUnit,
+  packageDescription: serviceRecords.packageDescription, countryCode: serviceRecords.countryCode,
+  minOrder: serviceRecords.minOrder, maxOrder: serviceRecords.maxOrder,
+  startMinutesMin: serviceRecords.startMinutesMin, startMinutesMax: serviceRecords.startMinutesMax,
+  deliveryMinutesMin: serviceRecords.deliveryMinutesMin, deliveryMinutesMax: serviceRecords.deliveryMinutesMax,
+  refillMode: serviceRecords.refillMode, refillDays: serviceRecords.refillDays, quality: serviceRecords.quality,
+  retentionBasisPoints: serviceRecords.retentionBasisPoints, featured: serviceRecords.featured,
+  sourceKind: serviceRecords.sourceKind, evidenceUrl: serviceRecords.evidenceUrl,
+  priceCheckedAt: serviceRecords.priceCheckedAt, sourceUpdatedAt: serviceRecords.sourceUpdatedAt,
+  sourceData: sql<Record<string, unknown> | null>`case when ${serviceRecords.sourceKind} = 'public_web' then json_object(
+    'nameAr', case when json_type(json_extract(${serviceRecords.sourceData}, '$.nameAr')) = 'STRING' then left(json_unquote(json_extract(${serviceRecords.sourceData}, '$.nameAr')), 200) else null end,
+    'sourceServiceId', case when json_type(json_extract(${serviceRecords.sourceData}, '$.sourceServiceId')) = 'STRING' then left(json_unquote(json_extract(${serviceRecords.sourceData}, '$.sourceServiceId')), 80) else null end,
+    'scopeAr', case when json_type(json_extract(${serviceRecords.sourceData}, '$.scopeAr')) = 'STRING' then left(json_unquote(json_extract(${serviceRecords.sourceData}, '$.scopeAr')), 300) else null end,
+    'terms', case when json_type(json_extract(${serviceRecords.sourceData}, '$.terms')) = 'STRING' then left(json_unquote(json_extract(${serviceRecords.sourceData}, '$.terms')), 500) else null end,
+    'termsAr', case when json_type(json_extract(${serviceRecords.sourceData}, '$.termsAr')) = 'STRING' then left(json_unquote(json_extract(${serviceRecords.sourceData}, '$.termsAr')), 500) else null end,
+    'priceType', json_extract(${serviceRecords.sourceData}, '$.priceType')) else null end`
+    .mapWith(value => typeof value === "string" ? JSON.parse(value) : value),
+};
+
+const snapshotCache = new AsyncResultCache<Awaited<ReturnType<typeof getMarketplaceSnapshot>>>();
+registerCatalogueCache(() => snapshotCache.clear());
+export function getCachedMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
+  const input = catalogueInput.parse(raw);
+  return snapshotCache.get(JSON.stringify(input), () => getMarketplaceSnapshot(input), value => value.source === "database");
 }
 
 export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
@@ -32,15 +51,10 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
   const empty = (source: "database" | "unavailable") => ({ providers: [], services: [], source,
     pagination: { total: 0, nextCursor: null as CatalogueInput["cursor"] | null } });
   const db = await getDb();
-  if (!db) {
-    if (!marketplaceDemoEnabled()) return empty("unavailable");
-    const services = seedServices.slice(0, input.limit);
-    return { providers: seedProviders.slice(0, 25), services, source: "seed" as const,
-      pagination: { total: services.length, nextCursor: null as CatalogueInput["cursor"] | null } };
-  }
+  if (!db) return empty("unavailable");
   try {
     const eligible = and(eq(providerRecords.status, "active"),
-      marketplaceDemoEnabled() ? undefined : notInArray(providerRecords.slug, seedProviders.map(provider => provider.slug)));
+      notInArray(providerRecords.slug, [...retiredDemoSlugs]));
     const providerScope = input.scope === "providers" || input.scope === "provider";
     const marketFilter = input.market === "smm" ? and(inArray(serviceRecords.priceUnit, ["per_1000", "per_item"]),
       inArray(serviceRecords.category, ["Followers", "Views", "Likes", "Comments", "Shares", "Subscribers"]))
@@ -71,14 +85,14 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       input.sort === "price" ? gt(rank, input.cursor.rank) : lt(rank, input.cursor.rank),
       and(eq(rank, input.cursor.rank), lt(serviceRecords.id, input.cursor.id))) : undefined;
     const limit = input.scope === "home" ? 8 : input.scope === "compare" ? 4 : input.limit;
-    const servicePage = input.scope === "providers" ? [] : await db.select({ service: serviceRecords, rank }).from(serviceRecords)
+    const servicePage = input.scope === "providers" ? [] : await db.select({ service: publicServiceColumns, rank }).from(serviceRecords)
       .innerJoin(providerRecords, eq(providerRecords.id, serviceRecords.providerId)).where(and(serviceFilter, after))
       .orderBy(input.sort === "price" ? asc(rank) : desc(rank), desc(serviceRecords.id)).limit(limit + 1);
     const serviceRows = servicePage.slice(0, limit).map(row => row.service);
     const serviceProviderIds = Array.from(new Set(serviceRows.map(row => row.providerId)));
-    const providerRows = providerScope ? providerPage.slice(0, input.limit) : await db.select().from(providerRecords)
+    const providerRows = providerScope ? providerPage.slice(0, input.limit) : serviceProviderIds.length ? await db.select().from(providerRecords)
       .where(and(eligible, serviceProviderIds.length ? inArray(providerRecords.id, serviceProviderIds) : undefined))
-      .orderBy(providerRecords.name).limit(serviceProviderIds.length || 8);
+      .orderBy(providerRecords.name).limit(serviceProviderIds.length) : [];
     const providerIds = providerRows.map(row => row.id);
     const counts = providerIds.length ? await db.select({ providerId: serviceRecords.providerId, total: count() }).from(serviceRecords)
       .where(and(approvedService(), inArray(serviceRecords.providerId, providerIds))).groupBy(serviceRecords.providerId) : [];
@@ -117,8 +131,7 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       quality: `${row.quality.charAt(0).toUpperCase()}${row.quality.slice(1)}` as "Standard" | "Premium" | "Elite",
       retention: row.retentionBasisPoints == null ? null : row.retentionBasisPoints / 100, featured: row.featured,
     }));
-    const hasDemoProfiles = providerRows.some(row => seedProviders.some(provider => provider.slug === row.slug));
-    return { providers, services, source: hasDemoProfiles ? "seed" as const : "database" as const, pagination: { total: totals[0]?.total ?? 0, nextCursor } };
+    return { providers, services, source: "database" as const, pagination: { total: totals[0]?.total ?? 0, nextCursor } };
   } catch {
     console.warn("[Marketplace] Catalogue query failed; no substitute data will be shown");
     return empty("unavailable");
@@ -148,39 +161,6 @@ export async function assertPublicHttpsUrl(value: string) {
   return endpoint;
 }
 
-export async function seedMarketplaceIfEmpty(actorUserId?: number) {
-  if (!marketplaceDemoEnabled()) return { seeded: false, reason: "demo_disabled" as const };
-  const db = await getDb(); if (!db) return { seeded: false, reason: "database_unavailable" as const };
-  const existing = await db.select({ id: providerRecords.id }).from(providerRecords).limit(1);
-  if (existing.length) return { seeded: false, reason: "already_seeded" as const };
-  const providerIds = new Map<string, number>();
-  for (const provider of seedProviders) {
-    const inserted = await db.insert(providerRecords).values({
-      slug: provider.slug, name: provider.name, initials: provider.initials, status: "active", tier: tierToDb[provider.tier],
-      location: provider.location, description: provider.description, verified: provider.verified, score: provider.score ?? 0,
-      ratingBasisPoints: Math.round((provider.rating ?? 0) * 100), reviewCount: provider.reviews,
-      responseMinutes: Number.parseInt(provider.responseTime), apiLatencyMs: Number.parseInt(provider.apiLatency),
-      apiUptimeBasisPoints: Math.round(Number.parseFloat(provider.apiUptime) * 100), successRateBasisPoints: Math.round((provider.successRate ?? 0) * 100),
-      minDepositUsd: provider.minDeposit.replace("$", ""), totalOrdersLabel: provider.totalOrders,
-      activeServicesCount: provider.activeServicesCount, refillPolicy: provider.refillPolicy,
-      paymentMethods: provider.paymentMethods, specialties: provider.specialties, strengths: provider.strengths,
-      auditSignals: provider.auditSignals, sourceUpdatedAt: new Date(),
-    }).$returningId();
-    providerIds.set(provider.id, inserted[0]!.id);
-  }
-  for (const service of seedServices) {
-    const providerId = providerIds.get(service.providerId); if (!providerId) continue;
-    await db.insert(serviceRecords).values({ providerId, externalId: service.id, slug: service.id, platform: service.platform, category: service.category,
-      name: service.name, status: "active", priceAmount: service.priceAmount.toString(), priceCurrency: service.priceCurrency, priceUnit: service.priceUnit, minOrder: service.min, maxOrder: service.max,
-      refillMode: service.refill.toLowerCase().includes("lifetime") ? "lifetime" : service.refill.toLowerCase().includes("auto") ? "automatic" : service.refill.toLowerCase().includes("no refill") ? "none" : "manual",
-      refillDays: Number.parseInt(service.refill) || null, quality: service.quality.toLowerCase() as "standard" | "premium" | "elite",
-      retentionBasisPoints: Math.round((service.retention ?? 0) * 100), featured: Boolean(service.featured), sourceUpdatedAt: new Date(),
-    });
-  }
-  await writeAudit({ actorUserId, action: "marketplace.seed", entityType: "marketplace", entityId: "initial", summary: `Seeded ${seedProviders.length} providers and ${seedServices.length} services` });
-  return { seeded: true, providers: seedProviders.length, services: seedServices.length };
-}
-
 export async function listTeamMembers() { const db = await getDb(); return db ? db.select().from(teamMembers).orderBy(desc(teamMembers.createdAt)) : []; }
 export async function setTeamMemberStatus(input: { id: number; status: "active" | "suspended"; actorUserId: number }) {
   const db = await getDb(); if (!db) throw new Error("Database unavailable");
@@ -193,12 +173,43 @@ export async function setTeamMemberStatus(input: { id: number; status: "active" 
   await writeAudit({ actorUserId: input.actorUserId, action: `team.member.${input.status}`, entityType: "team_member", entityId: String(input.id), summary: `${member.email} changed to ${input.status}` });
   return { success: true };
 }
-export async function listAdminProviders() { const db = await getDb(); return db ? db.select().from(providerRecords).orderBy(desc(providerRecords.updatedAt)) : []; }
+const adminProviderColumns = {
+  id: providerRecords.id, slug: providerRecords.slug, name: providerRecords.name,
+  websiteUrl: providerRecords.websiteUrl, location: providerRecords.location,
+  status: providerRecords.status, verified: providerRecords.verified, updatedAt: providerRecords.updatedAt,
+  // There is no completed evidence-backed scoring pipeline yet.
+  score: sql<null>`null`, successRateBasisPoints: providerRecords.successRateBasisPoints,
+};
+function providerSearch(q: string) {
+  return q ? or(like(providerRecords.name, searchPattern(q)), like(providerRecords.slug, searchPattern(q))) : undefined;
+}
+export async function listAdminProviders(raw?: Partial<AdminProvidersInput>) {
+  const input = adminProvidersInput.parse(raw);
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  return db.select(adminProviderColumns).from(providerRecords)
+    .where(and(notInArray(providerRecords.slug, [...retiredDemoSlugs]),
+      input.includeId ? or(eq(providerRecords.id, input.includeId), providerSearch(input.q) ?? sql`true`) : providerSearch(input.q)))
+    .orderBy(desc(sql`${providerRecords.id} = ${input.includeId ?? 0}`), desc(providerRecords.id)).limit(input.limit);
+}
+export async function listAdminProviderPage(raw?: Partial<AdminProvidersInput>) {
+  const input = adminProvidersInput.parse(raw);
+  const db = await getDb(); if (!db) throw new Error("Database unavailable");
+  const filter = and(notInArray(providerRecords.slug, [...retiredDemoSlugs]), providerSearch(input.q));
+  const [rows, totals] = await Promise.all([
+    db.select(adminProviderColumns).from(providerRecords)
+      .where(and(filter, input.cursor ? lt(providerRecords.id, input.cursor) : undefined))
+      .orderBy(desc(providerRecords.id)).limit(input.limit + 1),
+    db.select({ total: count() }).from(providerRecords).where(filter),
+  ]);
+  const items = rows.slice(0, input.limit);
+  return { items, total: totals[0]?.total ?? 0, nextCursor: rows.length > input.limit ? items.at(-1)!.id : null };
+}
 export async function createProviderDraft(input: { name: string; websiteUrl: string; actorUserId: number }) {
   const db = await getDb(); if (!db) throw new Error("Database unavailable");
   const name = input.name.trim().slice(0, 200);
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 160);
   if (!name || !slug) throw new Error("Provider name is invalid");
+  assertRealProviderSlug(slug);
   const endpoint = await assertPublicHttpsUrl(input.websiteUrl);
   const initials = name.split(/\s+/).map(part => part[0]).join("").slice(0, 4).toUpperCase();
   await db.insert(providerRecords).values({
@@ -218,7 +229,6 @@ export async function createProviderDraft(input: { name: string; websiteUrl: str
 }
 export async function ensureCanonicalProviderDrafts() {
   const db = await getDb(); if (!db) return { created: 0 };
-  await db.update(providerRecords).set({ status: "draft", verified: false }).where(inArray(providerRecords.slug, seedProviders.map(provider => provider.slug)));
   const [existing] = await db.select({ id: providerRecords.id }).from(providerRecords).where(eq(providerRecords.slug, "justanotherpanel")).limit(1);
   if (existing) return { created: 0 };
   const inserted = await db.insert(providerRecords).values({
@@ -239,9 +249,7 @@ export async function updateProviderStatus(input: { id: number; status: "draft" 
   return db.transaction(async tx => {
     const [before] = await tx.select().from(providerRecords).where(eq(providerRecords.id, input.id)).for("update");
     if (!before) throw new Error("Provider not found");
-    if (input.status === "active" && !marketplaceDemoEnabled() && seedProviders.some(provider => provider.slug === before.slug)) {
-      throw new Error("Demo providers cannot be published outside explicit demo mode");
-    }
+    if (input.status === "active") assertRealProviderSlug(before.slug);
     // Publication never grants identity verification; suspending a listing withdraws its badge.
     const after = { status: input.status, verified: input.status === "suspended" ? false : before.verified };
     await tx.update(providerRecords).set(after).where(eq(providerRecords.id, input.id));

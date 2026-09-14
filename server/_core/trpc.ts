@@ -1,3 +1,4 @@
+import { invalidateCatalogueCaches } from "../catalogueCache";
 import { NOT_ADMIN_ERR_MSG, UNAUTHED_ERR_MSG } from '@shared/const';
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
@@ -30,12 +31,14 @@ export const protectedProcedure = t.procedure.use(requireUser);
 
 export const permissionProcedure = (permission: Permission) =>
   protectedProcedure.use(
-    t.middleware(async ({ ctx, next }) => {
+    t.middleware(async ({ ctx, next, type }) => {
       const teamRole = await resolveTeamRole(ctx.user!);
       if (!hasPermission(teamRole, permission)) {
         throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
       }
-      return next({ ctx: { ...ctx, teamRole } });
+      const result = await next({ ctx: { ...ctx, teamRole } });
+      if (type === "mutation" && result.ok) invalidateCatalogueCaches();
+      return result;
     }),
   );
 

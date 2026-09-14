@@ -64,6 +64,20 @@
       "when": 1789392000000,
       "tag": "0008_public_source_offers",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1789392001000,
+      "tag": "0009_remove_demo_catalogue",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1789392002000,
+      "tag": "0010_catalogue_scale_indexes",
+      "breakpoints": true
     }
   ]
 }

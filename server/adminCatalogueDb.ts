@@ -1,3 +1,4 @@
+import { AsyncResultCache, registerCatalogueCache } from "./catalogueCache";
 import { and, count, desc, eq, gt, like, lt, or, sql, type SQL } from "drizzle-orm";
 import { auditEntries, providerRecords, providerIntegrations, providerSyncJobs, serviceRecords, teamMembers } from "../drizzle/schema";
 import { adminServicesInput, searchPattern, type AdminServicesInput } from "../shared/catalogueQuery";
@@ -6,6 +7,17 @@ import type { Permission } from "./authorization";
 import { catalogueViewFilter, reviewNeedFilter } from "./catalogueRules";
 import { reviewNeeds, type ReviewNeed } from "../shared/serviceReview";
 import { isStale, reviewBlockers } from "./serviceNormalizer";
+
+const summaryCache = new AsyncResultCache<Awaited<ReturnType<typeof getServiceReviewSummary>>>(10_000, 64);
+const overviewCache = new AsyncResultCache<Awaited<ReturnType<typeof getAdminOverview>>>(10_000, 16);
+registerCatalogueCache(() => { summaryCache.clear(); overviewCache.clear(); });
+export function getCachedServiceReviewSummary(raw?: Partial<AdminServicesInput>) {
+  const { cursor, need, limit, ...filters } = adminServicesInput.parse(raw);
+  return summaryCache.get(JSON.stringify(filters), () => getServiceReviewSummary(filters));
+}
+export function getCachedAdminOverview(permissions: readonly Permission[]) {
+  return overviewCache.get(JSON.stringify([...permissions].sort()), () => getAdminOverview(permissions));
+}
 
 function adminServiceFilter(input: AdminServicesInput) {
   return and(

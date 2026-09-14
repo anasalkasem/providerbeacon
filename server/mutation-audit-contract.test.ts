@@ -16,7 +16,6 @@ function functionBody(sourceText: string, name: string, nextName?: string) {
 
 describe("mutation audit contract", () => {
   it.each([
-    ["seedMarketplaceIfEmpty", "listTeamMembers", "marketplace.seed"],
     ["setTeamMemberStatus", "listAdminProviders", "team.member."],
     ["createProviderDraft", "ensureCanonicalProviderDrafts", "provider.draft.create"],
     ["ensureCanonicalProviderDrafts", "updateProviderStatus", "provider.draft.bootstrap"],

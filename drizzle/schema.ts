@@ -72,7 +72,7 @@ export const providerRecords = mysqlTable("provider_records", {
   sourceUpdatedAt: timestamp("sourceUpdatedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-}, table => [uniqueIndex("provider_slug_unique").on(table.slug), index("provider_status_score_idx").on(table.status, table.score)]);
+}, table => [uniqueIndex("provider_slug_unique").on(table.slug), index("provider_status_score_idx").on(table.status, table.score), index("provider_status_id_idx").on(table.status, table.id)]);
 
 export const serviceRecords = mysqlTable("service_records", {
   id: int("id").autoincrement().primaryKey(),
@@ -125,6 +125,8 @@ export const serviceRecords = mysqlTable("service_records", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [uniqueIndex("service_provider_slug_unique").on(table.providerId, table.slug), index("service_marketplace_idx").on(table.status, table.platform, table.category),
+  index("service_public_state_idx").on(table.status, table.reviewStatus, table.available, table.incomplete, table.providerId, table.id),
+  index("service_public_category_price_idx").on(table.status, table.reviewStatus, table.priceCurrency, table.priceUnit, table.platform, table.category, table.priceAmount, table.id),
   index("service_provider_id_idx").on(table.providerId, table.id),
   index("service_status_id_idx").on(table.status, table.id),
   index("service_platform_id_idx").on(table.platform, table.id),

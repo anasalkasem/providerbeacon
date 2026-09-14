@@ -5,7 +5,7 @@ import type { TeamRole } from "../drizzle/schema";
 const state = vi.hoisted(() => ({ role: "catalogue_editor" as TeamRole | null,
   list: vi.fn(async () => ({ items: [], total: 0, nextCursor: null })), overview: vi.fn(async () => ({})), reviewSummary: vi.fn(async () => ({ total: 0 })) }));
 vi.mock("./authorization", async original => ({ ...await original<any>(), resolveTeamRole: async () => state.role }));
-vi.mock("./adminCatalogueDb", () => ({ listAdminServices: state.list, getAdminOverview: state.overview, getServiceReviewSummary: state.reviewSummary, getProviderForAnalysis: vi.fn(), listSyncAlerts: vi.fn() }));
+vi.mock("./adminCatalogueDb", () => ({ listAdminServices: state.list, getCachedAdminOverview: state.overview, getCachedServiceReviewSummary: state.reviewSummary, getProviderForAnalysis: vi.fn(), listSyncAlerts: vi.fn() }));
 import { adminRouter } from "./routers/admin";
 import { catalogueInput } from "../shared/catalogueQuery";
 

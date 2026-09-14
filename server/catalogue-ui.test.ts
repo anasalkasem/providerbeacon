@@ -2,7 +2,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { catalogueIndex } from "../client/src/lib/catalogue";
-import { providers, services } from "../client/src/data/marketplace";
+import { providers, services } from "./testFixtures";
 
 const state = vi.hoisted(() => ({ data: null as any, slug: "real-provider", search: "" }));
 vi.mock("@/contexts/MarketplaceDataContext", () => ({ useMarketplaceData: () => state.data }));

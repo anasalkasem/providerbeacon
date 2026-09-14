@@ -1,3 +1,4 @@
+import { invalidateCatalogueCaches } from "./catalogueCache";
 import {
   and,
   asc,
@@ -701,6 +702,7 @@ export async function runProviderSyncStep() {
   } catch (error) {
     await failJob(claim, error);
   }
+  invalidateCatalogueCaches();
   return true;
 }
 

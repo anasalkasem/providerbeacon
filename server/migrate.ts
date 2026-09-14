@@ -12,10 +12,13 @@ export async function runMigrations() {
     return { applied: false as const, reason: "database_unavailable" as const };
   }
   const db = drizzle(process.env.DATABASE_URL);
-  await migrate(db, { migrationsFolder: path.resolve(process.cwd(), "drizzle") });
-  const { ensureCanonicalProviderDrafts, seedMarketplaceIfEmpty } = await import("./marketplaceDb");
-  const seed = await seedMarketplaceIfEmpty();
+  try {
+    await migrate(db, { migrationsFolder: path.resolve(process.cwd(), "drizzle") });
+  } finally {
+    await db.$client.end();
+  }
+  const { ensureCanonicalProviderDrafts } = await import("./marketplaceDb");
   const canonicalProviders = await ensureCanonicalProviderDrafts();
-  console.log("[Database] Migrations are up to date; seed status:", seed.reason ?? "seeded", "canonical provider drafts:", canonicalProviders.created);
-  return { applied: true as const, seed, canonicalProviders };
+  console.log("[Database] Migrations are up to date; real provider drafts:", canonicalProviders.created);
+  return { applied: true as const, canonicalProviders };
 }
