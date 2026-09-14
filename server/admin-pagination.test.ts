@@ -58,6 +58,14 @@ describe("bounded administrative queries", () => {
 
 describe("review permissions at the API boundary", () => {
   const batch = { items: [{ id: 1, revision: 1 }], reason: "Checked the source" };
+  it("requires authentication and both provider review and service publication permission for an API catalogue", async () => {
+    const request = { id: 1, enabled: true, reason: "Publish the connected provider" };
+    await expect(caller(false).providers.setCataloguePublication(request)).rejects.toMatchObject({ code: "UNAUTHORIZED" });
+    for (const role of ["catalogue_editor", "provider_reviewer", "translation_manager", "auditor"] as const) {
+      state.role = role;
+      await expect(caller().providers.setCataloguePublication(request)).rejects.toMatchObject({ code: "FORBIDDEN" });
+    }
+  });
   it("does not let editors approve or publish, or auditors request changes", async () => {
     await expect(caller().services.approve(batch)).rejects.toMatchObject({ code: "FORBIDDEN" });
     await expect(caller().services.publish(batch)).rejects.toMatchObject({ code: "FORBIDDEN" });
