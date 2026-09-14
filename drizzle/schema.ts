@@ -87,6 +87,7 @@ export const serviceRecords = mysqlTable("service_records", {
   // Retain the physical column name for an additive, rolling deployment migration.
   priceAmount: decimal("pricePerThousandUsd", { precision: 12, scale: 4 }).notNull(),
   sourceRate: varchar("sourceRate", { length: 2000 }),
+  sourceCurrency: varchar("sourceCurrency", { length: 3 }),
   priceCurrency: varchar("priceCurrency", { length: 3 }),
   priceUnit: mysqlEnum("priceUnit", ["per_1000", "per_item", "package"]),
   packageDescription: varchar("packageDescription", { length: 300 }),
@@ -170,6 +171,7 @@ export const providerIntegrations = mysqlTable("provider_integrations", {
   providerId: int("providerId").notNull().references(() => providerRecords.id, { onDelete: "cascade" }),
   name: varchar("name", { length: 160 }).notNull(),
   baseUrl: varchar("baseUrl", { length: 500 }).notNull(),
+  sourceCurrency: varchar("sourceCurrency", { length: 3 }),
   credentialReference: varchar("credentialReference", { length: 240 }),
   credentialCiphertext: text("credentialCiphertext"),
   credentialIv: varchar("credentialIv", { length: 64 }),

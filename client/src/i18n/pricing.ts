@@ -118,7 +118,9 @@ export const pricingCopy: Record<string, typeof en> = {
 };
 export function unitLabel(locale: string, row: PricingMetadata & { billingCycle?: "monthly" | null; catalogueListing?: string }) {
   const text = pricingCopy[locale] ?? en;
-  if (row.catalogueListing === "api_source") return locale === "ar" ? "قيمة API · العملة ووحدة السعر قيد التحقق" : "API rate · currency and unit awaiting confirmation";
+  if (row.catalogueListing === "api_source") return row.priceCurrency
+    ? locale === "ar" ? "قيمة API · وحدة السعر قيد التحقق" : "API rate · sale unit awaiting confirmation"
+    : locale === "ar" ? "قيمة API · العملة ووحدة السعر قيد التحقق" : "API rate · currency and unit awaiting confirmation";
   if (row.billingCycle === "monthly") return locale === "ar" ? "شهريًا · باقة محددة" : "per month · defined package";
   return row.priceUnit &&
     ["per_1000", "per_item", "package"].includes(row.priceUnit)
@@ -129,7 +131,7 @@ export function formatPrice(
   locale: string,
   row: PricingMetadata & { priceAmount: number | string; priceType?: "listed" | "from"; catalogueListing?: string; sourceRate?: string | null }
 ) {
-  if (row.catalogueListing === "api_source" && row.sourceRate) return row.sourceRate;
+  if (row.catalogueListing === "api_source" && row.sourceRate) return row.priceCurrency ? `${row.priceCurrency} ${row.sourceRate}` : row.sourceRate;
   // Four decimals preserve small rates; currency codes avoid ambiguous dollar symbols.
   const amount = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,

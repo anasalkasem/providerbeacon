@@ -268,7 +268,7 @@ export default function ServiceReviewDetail({
                 <div className="rounded-lg bg-slate-50 p-3 text-sm sm:col-span-2">
                   <p className="font-semibold">
                     {pricing.sourceRate}:{" "}
-                    <bdi dir="ltr">{row.sourceRate ?? "—"}</bdi>
+                    <bdi dir="ltr">{row.sourceCurrency ? `${row.sourceCurrency} ` : ""}{row.sourceRate ?? "—"}</bdi>
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
                     {pricing.sourceHelp}
@@ -592,11 +592,11 @@ export default function ServiceReviewDetail({
                         <td>
                           <bdi dir="ltr">
                             {price.kind === "source"
-                              ? (price.sourceRate ?? price.priceAmount)
+                              ? formatPrice(locale, { ...price, catalogueListing: "api_source", sourceRate: price.sourceRate ?? price.priceAmount })
                               : formatPrice(locale, price)}
                           </bdi>
                           <p className="mt-1 text-xs text-slate-500">
-                            {pricing[`history_${price.kind}`]}
+                            {price.kind === "source" ? unitLabel(locale, { ...price, catalogueListing: "api_source" }) : pricing[`history_${price.kind}`]}
                             {price.kind === "review"
                               ? ` · ${unitLabel(locale, price)}`
                               : ""}

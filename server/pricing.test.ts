@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { catalogueInput } from "../shared/catalogueQuery";
-import { comparablePrices } from "../shared/pricing";
+import { comparablePrices, quantityQuote } from "../shared/pricing";
 import { reviewEditInput } from "../shared/serviceReview";
 import { formatPrice, unitLabel } from "../client/src/i18n/pricing";
 import { classifyService, normalizeApiService } from "./serviceNormalizer";
@@ -27,6 +27,14 @@ const edit = {
   reason: "Service-specific evidence checked",
 };
 describe("explicit pricing", () => {
+  it("shows confirmed API dollars at original precision without implying a sale unit or quote", () => {
+    const row = { catalogueListing: "api_source", sourceRate: "0.01234567", priceAmount: 0.01234567, priceCurrency: "USD", priceUnit: null, min: 10, max: 10000 };
+    expect(formatPrice("ar", row)).toBe("USD 0.01234567");
+    expect(formatPrice("en", row)).toBe("USD 0.01234567");
+    expect(unitLabel("ar", row)).toBe("قيمة API · وحدة السعر قيد التحقق");
+    expect(quantityQuote(row, 1000)).toBeNull();
+    expect(comparablePrices([{ ...row, platform: "TikTok", category: "Views", countryCode: "US" }, { ...row, platform: "TikTok", category: "Views", countryCode: "US" }])).toBe(false);
+  });
   it("requires a supported currency and unit before confirmation", () => {
     expect(reviewEditInput.safeParse(edit).success).toBe(true);
     for (const patch of [
