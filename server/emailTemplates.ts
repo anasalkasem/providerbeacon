@@ -2,6 +2,8 @@ import { memberLocale } from "../shared/memberAuth";
 import { memberAuthOrigin } from "./memberSecurity";
 
 export type MailKind = "welcome" | "verify" | "reset" | "security" | "customer";
+const EMAIL_LOGO_URL = 'https://files.manuscdn.com/user_upload_by_module/session_file/88685962/XnmaySgPSyTkeTNP.png';
+
 type Words = {
   welcome: string;
   welcomeBody: string;
@@ -223,7 +225,7 @@ export function renderEmail(input: {
   ]
     .filter(Boolean)
     .join("\n\n");
-  const html = `<!DOCTYPE html><html lang="${locale}" dir="${locale === "ar" ? "rtl" : "ltr"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>${e(subject)}</title></head><body style="margin:0;padding:0;background:#f3f6fb;font-family:Arial,Tahoma,sans-serif;color:#10243c"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${e(body.slice(0, 150))}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f6fb"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border:1px solid #dfe7f1;border-radius:18px"><tr><td style="padding:28px 32px;background:#071a35;border-radius:18px 18px 0 0;border-bottom:4px solid #35c8c0"><a href="${origin}" style="font-size:24px;font-weight:bold;color:#ffffff;text-decoration:none" dir="ltr">Provider<span style="color:#68e0d2">Beacon</span></a></td></tr><tr><td style="padding:32px;text-align:${locale === "ar" ? "right" : "left"}"><h1 style="margin:0 0 24px;font-size:25px;line-height:1.5;color:#0b2a68">${e(subject)}</h1><p style="font-size:16px;line-height:1.9;margin:0 0 14px">${e(greeting)}</p>${body
+  const html = `<!DOCTYPE html><html lang="${locale}" dir="${locale === "ar" ? "rtl" : "ltr"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="color-scheme" content="light"><title>${e(subject)}</title></head><body style="margin:0;padding:0;background:#f3f6fb;font-family:Arial,Tahoma,sans-serif;color:#10243c"><div style="display:none;max-height:0;overflow:hidden;opacity:0">${e(body.slice(0, 150))}</div><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f3f6fb"><tr><td align="center" style="padding:28px 12px"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border:1px solid #dfe7f1;border-radius:18px"><tr><td style="padding:28px 32px;background:#071a35;border-radius:18px 18px 0 0;border-bottom:4px solid #35c8c0"><table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td style="padding-right:12px"><img src="${e(EMAIL_LOGO_URL)}" alt="ProviderBeacon" width="44" height="44" style="display:block;width:44px;height:44px;border:0;outline:none;text-decoration:none" /></td><td><a href="${origin}" style="font-size:24px;font-weight:bold;color:#ffffff;text-decoration:none" dir="ltr">Provider<span style="color:#68e0d2">Beacon</span></a></td></tr></table></td></tr><tr><td style="padding:32px;text-align:${locale === "ar" ? "right" : "left"}"><h1 style="margin:0 0 24px;font-size:25px;line-height:1.5;color:#0b2a68">${e(subject)}</h1><p style="font-size:16px;line-height:1.9;margin:0 0 14px">${e(greeting)}</p>${body
     .split(/\n+/)
     .map(
       p =>

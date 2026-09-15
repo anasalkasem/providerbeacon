@@ -36,7 +36,9 @@ describe("branded email and opt-in boundaries", () => {
       expect(value.html).toContain(`lang="${locale}"`);
       expect(value.html).toContain(`dir="${locale === "ar" ? "rtl" : "ltr"}"`);
       expect(value.html).toContain("&lt;img");
-      expect(value.html).not.toMatch(/<img|<script|javascript:|<form/);
+      expect(value.html).toContain(`src="${"https://files.manuscdn.com/user_upload_by_module/session_file/88685962/XnmaySgPSyTkeTNP.png"}`);
+      expect(value.html).toContain(`alt="ProviderBeacon"`);
+      expect(value.html).not.toMatch(/<script|javascript:|<form|<img[^>]*onerror=/);
       expect(value.text).toContain("https://providerbeacon.com/services");
       expect(value.subject).not.toMatch(/[\r\n]/);
     }
