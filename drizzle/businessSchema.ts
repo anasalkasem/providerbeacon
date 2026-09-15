@@ -29,6 +29,7 @@ export const providerBusinessAccounts = mysqlTable(
     status: mysqlEnum("status", planStatuses).default("inactive").notNull(),
     startsAt: timestamp("starts_at", { fsp: 3 }),
     endsAt: timestamp("ends_at", { fsp: 3 }),
+    firstActivatedAt: timestamp("first_activated_at", { fsp: 3 }),
     revision: int("revision").default(1).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),

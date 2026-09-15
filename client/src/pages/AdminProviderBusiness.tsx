@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { toast } from "sonner";
 import { Building2, ExternalLink } from "lucide-react";
+import { BusinessPricing } from "@/components/BusinessPricing";
+import { providerPricingText } from "@/i18n/providerPricing";
+import { providerMonthAnniversary } from "../../../shared/providerBusinessPricing";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../server/routers";
 import {
@@ -108,7 +111,7 @@ function SubscriptionPicker({ manage }: { manage: boolean }) {
     </div>
   );
 }
-function SubscriptionForm({
+export function SubscriptionForm({
   data,
   manage,
 }: {
@@ -117,6 +120,7 @@ function SubscriptionForm({
 }) {
   const { locale } = useLocale();
   const t = businessText(locale);
+  const pricingText = providerPricingText(locale);
   const utils = trpc.useUtils();
   const [status, setStatus] = useState(data.subscription.status);
   const [startsAt, setStart] = useState(
@@ -124,7 +128,8 @@ function SubscriptionForm({
   );
   const [endsAt, setEnd] = useState(
     businessDateInput(
-      data.subscription.endsAt ?? new Date(Date.now() + 30 * 86_400_000)
+      data.subscription.endsAt ??
+        providerMonthAnniversary(businessParseDate(startsAt)!, 1)
     )
   );
   const [note, setNote] = useState("");
@@ -227,6 +232,22 @@ function SubscriptionForm({
             </label>
           </div>
           <p className="text-xs text-slate-500">{t.utc}</p>
+          {!data.subscription.firstActivatedAt &&
+            status === "active" &&
+            startsAt && (
+              <p className="text-sm font-semibold text-slate-600">
+                {pricingText.preview}
+              </p>
+            )}
+          <BusinessPricing
+            firstActivatedAt={
+              data.subscription.firstActivatedAt ??
+              (status === "active" ? businessParseDate(startsAt) : null)
+            }
+          />
+          <p className="text-xs leading-6 text-slate-500">
+            {pricingText.customPeriod}
+          </p>
           <label className="block text-sm font-semibold">
             {t.note}
             <textarea

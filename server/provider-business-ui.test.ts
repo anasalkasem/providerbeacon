@@ -85,6 +85,8 @@ vi.mock("@/lib/trpc", () => {
           useQuery: () => ({ data: { permissions: state.permissions } }),
         },
         business: {
+          setSubscription: mutation,
+          revokeOwner: mutation,
           account: {
             useQuery: () => {
               state.accountCalls();
@@ -97,7 +99,11 @@ vi.mock("@/lib/trpc", () => {
   };
 });
 import ProviderBusiness from "../client/src/pages/ProviderBusiness";
-import { AdminBusinessPanel } from "../client/src/pages/AdminProviderBusiness";
+import {
+  AdminBusinessPanel,
+  SubscriptionForm,
+} from "../client/src/pages/AdminProviderBusiness";
+import { BusinessPricing } from "../client/src/components/BusinessPricing";
 import { PublicPromotions } from "../client/src/components/BusinessUi";
 import { BusinessAnalytics } from "../client/src/components/BusinessAnalytics";
 
@@ -121,18 +127,75 @@ afterEach(async () => {
   await act(() => root.unmount());
   container.remove();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 const render = (element: React.ReactNode) => act(() => root.render(element));
 
 describe("provider package interfaces", () => {
-  it("offers a real sign-in path without inventing subscription prices or an active account", async () => {
+  it("discloses both approved USD monthly prices before sign-in without inventing checkout", async () => {
     await render(React.createElement(ProviderBusiness));
     expect(container.textContent).toContain("لوحة المزود");
     expect(
       container.querySelector('a[href="/sign-in?next=/account/provider"]')
     ).not.toBeNull();
-    expect(container.textContent).not.toMatch(/\$|Stripe|checkout/i);
+    expect(container.textContent).toContain("$19");
+    expect(container.textContent).toContain("$29");
+    expect(container.textContent).toContain("لكل شهر من أول 3 أشهر");
+    expect(container.textContent).toContain("ابتداءً من الشهر 4");
+    expect(container.textContent).toContain("الخصم التلقائي غير مفعّل");
+    expect(container.textContent).not.toMatch(/Stripe|checkout/i);
     expect(state.analyticsCalls).not.toHaveBeenCalled();
+  });
+  it("updates the displayed monthly rate at the recorded introductory expiry", async () => {
+    state.locale = "en";
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-30T12:44:59Z"));
+    await render(
+      React.createElement(BusinessPricing, {
+        firstActivatedAt: new Date("2026-01-31T12:45:00Z"),
+      })
+    );
+    expect(container.querySelector(".text-4xl")?.textContent).toBe("$19");
+    expect(container.textContent).toContain("Apr 30, 2026");
+    await act(() => vi.advanceTimersByTime(5_000));
+    expect(container.querySelector(".text-4xl")?.textContent).toBe("$29");
+    expect(container.textContent).toContain("Automatic billing is not enabled");
+  });
+  it("previews the price change before a first activation and defaults to a calendar month", async () => {
+    state.locale = "en";
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-31T12:45:00Z"));
+    await render(
+      React.createElement(SubscriptionForm, {
+        data: {
+          provider: { id: 1, name: "Provider" },
+          owner: null,
+          subscription: {
+            status: "inactive",
+            startsAt: null,
+            endsAt: null,
+            firstActivatedAt: null,
+            revision: 0,
+          },
+        } as any,
+        manage: true,
+      })
+    );
+    const dates = container.querySelectorAll<HTMLInputElement>(
+      'input[type="datetime-local"]'
+    );
+    expect(dates[0].value).toBe("2026-01-31T12:45");
+    expect(dates[1].value).toBe("2026-02-28T12:45");
+    const status = container.querySelector("select")!;
+    await act(() => {
+      status.value = "active";
+      status.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(container.textContent).toContain("Schedule preview");
+    expect(container.textContent).toContain("Apr 30, 2026");
+    expect(container.textContent).toContain(
+      "monthly rates, not a payment total"
+    );
   });
   it("keeps unpaid analytics and publishing locked while allowing the owner to view saved tools", async () => {
     state.member = { id: 7, emailVerified: true };

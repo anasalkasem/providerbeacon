@@ -1,4 +1,5 @@
 import type { Locale } from "@/contexts/LocaleContext";
+import { providerPricingText } from "./providerPricing";
 
 const strings = {
   title: [
@@ -526,6 +527,7 @@ export function businessError(message: string, locale: Locale) {
     business_destination_domain: t.wrongDomain,
     business_promotion_limit: t.limit,
     business_invalid_dates: t.invalidDates,
+    business_pricing_start_fixed: providerPricingText(locale).startFixed,
   };
   return errors[message] ?? t.failed;
 }
