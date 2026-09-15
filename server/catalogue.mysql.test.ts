@@ -157,6 +157,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
       status: "lower",
       original: "2.60",
       now: "2.40",
+      targetReached: true,
     });
     const points = (await watchHistory(auth, watch.id)).points;
     expect(points.map(p => Number(p.rate))).toContain(2.6);
@@ -164,6 +165,11 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(points.length).toBeGreaterThanOrEqual(2);
     const { evaluateOnePriceAlert } = await import("./priceAlerts");
     const { emailOutbox } = await import("../drizzle/emailSchema");
+    const { memberWatches } = await import("../drizzle/workspaceSchema");
+    // Simulate the next worker tick. MySQL TIMESTAMP has second precision;
+    // checking in the same sub-second as subscription is not a due-time test.
+    await state.db.update(memberWatches).set({ emailAlertNextCheckAt: new Date(Date.now() - 5000) })
+      .where(eq(memberWatches.id, watch.id));
     expect(await evaluateOnePriceAlert()).toBe(true);
     expect(await evaluateOnePriceAlert()).toBe(false);
     const emails = await state.db.select().from(emailOutbox).where(eq(emailOutbox.kind, "price_target"));
