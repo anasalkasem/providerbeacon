@@ -1,4 +1,6 @@
 import "dotenv/config";
+import { registerProviderAnalyticsRoutes } from "../providerAnalyticsRoutes";
+import { startProviderAnalyticsCleanup } from "../providerAnalyticsDb";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
@@ -40,6 +42,7 @@ async function startServer() {
   if (process.env.NODE_ENV === "production") await runMigrations();
   const app = express();
   const server = createServer(app);
+  registerProviderAnalyticsRoutes(app);
   registerEmailRoutes(app);
   const assistantJson = express.json({ limit: "32kb" });
   app.use((req, res, next) => {
@@ -112,6 +115,7 @@ async function startServer() {
     });
     server.on("close", stopWorker);
     server.on("close", startEmailWorker());
+    server.on("close", startProviderAnalyticsCleanup());
     server.on("close", startPriceAlertWorker());
   });
 }

@@ -25,6 +25,7 @@ const Providers = lazy(() => import("@/pages/Providers"));
 const Provider = lazy(() => import("@/pages/Provider"));
 const Admin = lazy(() => import("@/pages/Admin"));
 const AdminEmail = lazy(() => import("@/pages/AdminEmail"));
+const AdminProviderAnalytics = lazy(() => import("@/pages/AdminProviderAnalytics"));
 const AdminModule = lazy(() => import("@/pages/AdminModule"));
 const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
 const Login = lazy(() => import("@/pages/Login"));
@@ -88,6 +89,7 @@ function Router() {
         <Route path="/admin/security" component={Security} />
         <Route path="/admin/email" component={AdminEmail} />
         <Route path="/admin/groups" component={AdminGroups} />
+        <Route path="/admin/analytics" component={AdminProviderAnalytics} />
         <Route path="/admin/:module" component={AdminModule} />
         <Route path="/team/accept" component={AcceptInvite} />
         <Route path="/404" component={NotFound} />

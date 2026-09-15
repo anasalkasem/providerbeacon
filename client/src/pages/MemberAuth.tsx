@@ -1,3 +1,4 @@
+import { analyticsPrivacy } from "@/i18n/providerAnalytics";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import {
@@ -797,6 +798,7 @@ function AccountDetails({
   );
 }
 export function MemberPrivacy() {
+  const { locale } = useLocale();
   const emailText = useEmailText();
   const t = useMemberText();
   return (
@@ -810,6 +812,7 @@ export function MemberPrivacy() {
               t.privacyData,
               t.privacyGoogle,
               t.privacyCookies,
+              analyticsPrivacy[locale],
               t.privacyAI,
               t.privacyDelete,
               emailText.privacy,
