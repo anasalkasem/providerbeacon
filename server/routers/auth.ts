@@ -1,3 +1,6 @@
+import { assertStaffOrigin } from "../staffOrigin";
+import { memberClientKey } from "../memberSecurity";
+import { reserveMemberRequests } from "../memberDb";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
@@ -58,6 +61,9 @@ export const authRouter = router({
     } catch (error) { throw authError(error); }
   }),
   registerInvite: publicProcedure.input(registration.extend({ token: z.string().min(20).max(300) })).mutation(async ({ ctx, input }) => {
+    assertStaffOrigin(ctx.req);
+    ctx.res.setHeader("Cache-Control", "no-store");
+    await reserveMemberRequests([{ key: `staff-accept:${memberClientKey(ctx.req)}`, limit: 20, windowMs: 900000 }]);
     try {
       const result = await registerInvitedAccount({ ...input, req: ctx.req });
       setStaffCookie(ctx, result.token, true);

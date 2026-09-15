@@ -171,6 +171,9 @@ export const teamMembers = mysqlTable("team_members", {
   invitedByUserId: int("invitedByUserId").references(() => users.id, { onDelete: "set null" }),
   invitationTokenHash: varchar("invitationTokenHash", { length: 128 }),
   invitationExpiresAt: timestamp("invitationExpiresAt"),
+  invitationLocale: varchar("invitation_locale", { length: 5 }).default("en").notNull(),
+  inviteEmailId: int("invite_email_id"),
+  revision: int("revision").default(1).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [uniqueIndex("team_member_email_unique").on(table.email), index("team_member_user_status_idx").on(table.userId, table.status)]);

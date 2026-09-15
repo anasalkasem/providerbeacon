@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const marketplaceSource = readFileSync(new URL("./marketplaceDb.ts", import.meta.url), "utf8");
+const teamSource = readFileSync(new URL("./teamDb.ts", import.meta.url), "utf8");
 const authSource = readFileSync(new URL("./authDb.ts", import.meta.url), "utf8");
 const vaultSource = readFileSync(new URL("./vaultDb.ts", import.meta.url), "utf8");
 const authRouterSource = readFileSync(new URL("./routers/auth.ts", import.meta.url), "utf8");
@@ -25,7 +26,7 @@ describe("mutation audit contract", () => {
     ["acceptTeamInvite", "listAuditEntries", "team.invite.accept"],
     ["upsertLocalizedContent", "writeAudit", "translation.upsert"],
   ])("requires %s to write an audit entry", (name, nextName, action) => {
-    const source = functionBody(marketplaceSource, name, nextName);
+    const source = functionBody(["setTeamMemberStatus", "createTeamInvite"].includes(name) ? teamSource : marketplaceSource, name, nextName);
     expect(source).toContain("writeAudit(");
     expect(source).toContain(action);
   });

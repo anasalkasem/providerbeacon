@@ -1,3 +1,5 @@
+import { assertStaffOrigin } from "../staffOrigin";
+import { teamRouter } from "./team";
 import { adminProvidersInput } from "../../shared/catalogueQuery";
 import { emailAdminRouter } from "./emailAdmin";
 import { communityAdminRouter } from "./communityAdmin";
@@ -12,13 +14,10 @@ import { hasPermission, resolveTeamRole, rolePermissions } from "../authorizatio
 import {
   acceptTeamInvite,
   createProviderDraft,
-  createTeamInvite,
   listAdminProviders,
   listAdminProviderPage,
   listAuditEntries,
   listLocalizedContent,
-  listTeamMembers,
-  setTeamMemberStatus,
   setProviderCataloguePublication,
   updateProviderStatus,
   updateServiceRecord,
@@ -34,7 +33,6 @@ import { sourcePricingInput } from "../../shared/sourcePricing";
 import { confirmSourcePricing } from "../sourcePricing";
 import { applyServiceReview, editServiceReview, getServiceReview } from "../serviceReviewDb";
 
-const teamRole = z.enum(["owner", "administrator", "operations_manager", "provider_reviewer", "catalogue_editor", "translation_manager", "auditor"]);
 
 const providerAssessment = z.object({
   riskLevel: z.enum(["low", "medium", "high"]),
@@ -64,7 +62,7 @@ export const adminRouter = router({
     if (!role) throw new TRPCError({ code: "FORBIDDEN" });
     return getCachedAdminOverview(rolePermissions[role]);
   }),
-  acceptInvite: protectedProcedure.input(z.object({ token: z.string().min(20).max(200) })).mutation(({ ctx, input }) => acceptTeamInvite({ token: input.token, userId: ctx.user!.id, email: ctx.user!.email })),
+  acceptInvite: protectedProcedure.input(z.object({ token: z.string().min(20).max(200) })).mutation(({ ctx, input }) => { assertStaffOrigin(ctx.req); ctx.res.setHeader("Cache-Control", "no-store"); return acceptTeamInvite({ token: input.token, userId: ctx.user!.id, email: ctx.user!.email }); }),
   providers: router({
     list: permissionProcedure("providers.read").input(adminProvidersInput).query(({ input }) => listAdminProviders(input)),
     page: permissionProcedure("providers.read").input(adminProvidersInput).query(({ input }) => listAdminProviderPage(input)),
@@ -102,11 +100,7 @@ export const adminRouter = router({
     syncNow: permissionProcedure("integrations.write").input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => syncStoredIntegration({ id: input.id, actorUserId: ctx.user!.id })),
     remove: permissionProcedure("integrations.write").input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => deleteProviderIntegration({ id: input.id, actorUserId: ctx.user!.id })),
   }),
-  team: router({
-    list: permissionProcedure("team.read").query(() => listTeamMembers()),
-    invite: permissionProcedure("team.write").input(z.object({ email: z.string().email().max(320), role: teamRole.exclude(["owner"]) })).mutation(({ ctx, input }) => createTeamInvite({ ...input, actorUserId: ctx.user!.id })),
-    setStatus: permissionProcedure("team.write").input(z.object({ id: z.number().int().positive(), status: z.enum(["active", "suspended"]) })).mutation(({ ctx, input }) => setTeamMemberStatus({ ...input, actorUserId: ctx.user!.id })),
-  }),
+  team: teamRouter,
   translations: router({
     list: permissionProcedure("translations.read").query(() => listLocalizedContent()),
     upsert: permissionProcedure("translations.write").input(z.object({ entityType: z.enum(["provider", "service", "page"]), entityId: z.string().min(1).max(160), fieldName: z.string().min(1).max(100), locale: z.enum(["en", "es", "ar", "hi", "zh"]), value: z.string().min(1).max(10000), status: z.enum(["draft", "machine_translated", "reviewed", "published"]) })).mutation(({ ctx, input }) => upsertLocalizedContent({ ...input, actorUserId: ctx.user!.id })),

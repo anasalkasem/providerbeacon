@@ -6,6 +6,7 @@ import {
   emailSuppressions,
   memberEmailTokens,
 } from "../drizzle/emailSchema";
+import { teamMembers } from "../drizzle/schema";
 import { memberAccounts } from "../drizzle/memberSchema";
 import { memberWatches } from "../drizzle/workspaceSchema";
 import type {
@@ -156,7 +157,7 @@ export async function enqueueEmail(
   tx: MailTransaction,
   member: Member,
   input: {
-    kind: MailKind;
+    kind: Exclude<MailKind, "staff_invite">;
     key: string;
     url: string;
     subject?: string;
@@ -340,6 +341,24 @@ export async function recordEmailEvent(
     .onDuplicateKeyUpdate({ set: { id: sql`id` } });
   await reconcileEmailEvents(event.data.email_id);
 }
+// Shared worker supports customer accounts and staff invitations without inventing
+// customer accounts for employees. Both paths recheck eligibility before dispatch.
+async function emailRecipientEligible(db: Pick<MailDatabase, "select">, mail: typeof emailOutbox.$inferSelect) {
+  if (mail.kind === "staff_invite") {
+    if (!mail.teamMemberId || mail.memberId || !mail.inviteTokenHash) return false;
+    const [invite] = await db.select().from(teamMembers).where(eq(teamMembers.id, mail.teamMemberId)).limit(1);
+    return Boolean(invite && invite.status === "invited"
+      && invite.invitationTokenHash === mail.inviteTokenHash
+      && invite.invitationExpiresAt && invite.invitationExpiresAt > new Date()
+      && memberEmailKey(invite.email) === mail.recipientHash);
+  }
+  if (!mail.memberId || mail.teamMemberId) return false;
+  const [member] = await db.select().from(memberAccounts).where(eq(memberAccounts.id, mail.memberId)).limit(1);
+  return Boolean(member && member.status === "active"
+    && memberEmailKey(member.email) === mail.recipientHash
+    && (mail.kind !== "customer" || (member.emailVerifiedAt && member.marketingOptIn))
+    && (mail.kind !== "price_target" || member.emailVerifiedAt));
+}
 export async function claimEmail() {
   const db = await mailDatabase(),
     now = new Date();
@@ -363,11 +382,6 @@ export async function claimEmail() {
       .limit(1)
       .for("update", { skipLocked: true });
     if (!mail) return null;
-    const [member] = await tx
-      .select()
-      .from(memberAccounts)
-      .where(eq(memberAccounts.id, mail.memberId))
-      .limit(1);
     const [blocked] = await tx
       .select()
       .from(emailSuppressions)
@@ -377,13 +391,7 @@ export async function claimEmail() {
       mail.expiresAt <= now ||
       (mail.firstAttemptAt &&
         now.getTime() - mail.firstAttemptAt.getTime() > 23 * 3600000);
-    const ineligible =
-      !member ||
-      member.status !== "active" ||
-      memberEmailKey(member.email) !== mail.recipientHash ||
-      (mail.kind === "customer" &&
-        (!member.emailVerifiedAt || !member.marketingOptIn)) ||
-      (mail.kind === "price_target" && !member.emailVerifiedAt);
+    const ineligible = !(await emailRecipientEligible(tx, mail));
     if (
       expired ||
       ineligible ||
@@ -444,25 +452,12 @@ export async function sendOneEmail() {
       decryptValue(mail.payload, "email-outbox")
     ) as MailPayload;
     // Recheck consent/suppression immediately before the network call, after the claim.
-    const [member] = await db
-      .select()
-      .from(memberAccounts)
-      .where(eq(memberAccounts.id, mail.memberId))
-      .limit(1);
     const [blocked] = await db
       .select()
       .from(emailSuppressions)
       .where(eq(emailSuppressions.recipientHash, mail.recipientHash))
       .limit(1);
-    if (
-      !member ||
-      member.status !== "active" ||
-      blocked ||
-      memberEmailKey(member.email) !== mail.recipientHash ||
-      (mail.kind === "customer" &&
-        (!member.marketingOptIn || !member.emailVerifiedAt)) ||
-      (mail.kind === "price_target" && !member.emailVerifiedAt)
-    ) {
+    if (blocked || !(await emailRecipientEligible(db, mail))) {
       await db
         .update(emailOutbox)
         .set({
@@ -486,6 +481,8 @@ export async function sendOneEmail() {
           .where(ownsLease);
         return false;
       }
+    }
+    {
       const [lease] = await db
         .select({ id: emailOutbox.id })
         .from(emailOutbox)

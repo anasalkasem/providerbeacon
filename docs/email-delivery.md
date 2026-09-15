@@ -31,6 +31,10 @@ Resend webhook endpoint: `https://providerbeacon.com/api/webhooks/resend`. Event
 
 After activation, test a new registration with an authorized test recipient, confirmation, password reset and log delivery. Do not use an address copied from a screenshot as authorization to send. No customer campaign or real-recipient test was sent during setup.
 
+## Staff invitations
+
+Staff invitations now use the same branded delivery queue and sender, with their own team recipient reference. See [team access](team-access.md) for resending existing unsent invitations, role editing, deletion and delivery status. No new environment variables or automatic historical sends are required.
+
 ## Customer communication
 
 `/admin/email` provides localized template previews, a customer search, a plain-text composer, explicit preview confirmation, and a paginated delivery log. Each submission targets one verified customer who explicitly opted in to updates; it is not a bulk campaign tool. Only the owner and administrator have email permissions by default. The preview binds the exact recipient, content, sender and acting staff member for ten minutes. Repeated confirmation of the same preview queues one message.

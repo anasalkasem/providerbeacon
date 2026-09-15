@@ -197,7 +197,7 @@ export async function priceAlertStillEligible(
 ) {
   if (mail.kind !== "price_target") return true;
   const ref = mail.priceAlert;
-  if (!ref || mail.expiresAt.getTime() <= Date.now()) return false;
+  if (!ref || !mail.memberId || mail.expiresAt.getTime() <= Date.now()) return false;
   const db = await mailDatabase();
   const [watch] = await db
     .select()

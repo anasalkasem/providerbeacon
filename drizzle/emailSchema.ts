@@ -8,6 +8,7 @@ import {
   varchar,
 } from "drizzle-orm/mysql-core";
 import { memberAccounts } from "./memberSchema";
+import { teamMembers } from "./schema";
 import type { PriceAlertReference } from "../shared/priceAlerts";
 
 export type EncryptedMail = {
@@ -21,8 +22,10 @@ export const emailOutbox = mysqlTable(
   {
     id: int("id").autoincrement().primaryKey(),
     memberId: int("member_id")
-      .notNull()
       .references(() => memberAccounts.id, { onDelete: "cascade" }),
+    teamMemberId: int("team_member_id")
+      .references(() => teamMembers.id, { onDelete: "cascade" }),
+    inviteTokenHash: varchar("invite_token_hash", { length: 64 }),
     dedupeKey: varchar("dedupe_key", { length: 160 }).notNull(),
     kind: varchar("kind", { length: 24 }).notNull(),
     locale: varchar("locale", { length: 5 }).notNull(),
@@ -48,6 +51,7 @@ export const emailOutbox = mysqlTable(
     uniqueIndex("email_provider_unique").on(t.providerId),
     index("email_due_idx").on(t.status, t.availableAt),
     index("email_member_idx").on(t.memberId, t.id),
+    index("email_team_idx").on(t.teamMemberId, t.id),
     index("email_created_idx").on(t.createdAt),
     index("email_expiry_idx").on(t.expiresAt),
   ]
