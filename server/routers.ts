@@ -7,11 +7,13 @@ import { authRouter } from "./routers/auth";
 import { marketplaceRouter } from "./routers/marketplace";
 import { assistantRouter } from "./routers/assistant";
 import { memberRouter } from "./routers/member";
+import { businessRouter } from "./routers/business";
 
 export const appRouter = router({
   system: systemRouter,
   auth: authRouter,
   member: memberRouter,
+  business: businessRouter,
   workspace: workspaceRouter,
   community: communityRouter,
   marketplace: marketplaceRouter,

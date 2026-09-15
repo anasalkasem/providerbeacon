@@ -300,3 +300,4 @@ export type AuditEntry = typeof auditEntries.$inferSelect;
 
 export * from "./workspaceSchema";
 export * from "./communitySchema";
+export * from "./businessSchema";

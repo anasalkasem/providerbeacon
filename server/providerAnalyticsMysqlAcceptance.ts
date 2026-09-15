@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
+import { providerBusinessAccounts } from "../drizzle/businessSchema";
 import { providerRecords, teamMembers, users } from "../drizzle/schema";
 import {
   providerAnalyticsDaily as daily,
@@ -58,6 +59,7 @@ export function providerAnalyticsAcceptanceCases(
       vi.stubEnv("AUTH_PEPPER", "analytics-acceptance-secret");
       vi.stubEnv("PUBLIC_APP_URL", "https://providerbeacon.com");
       await database().delete(limits);
+      await database().insert(providerBusinessAccounts).values({ providerId: providerId(), status: "active", startsAt: new Date(Date.now() - 86_400_000), endsAt: new Date(Date.now() + 86_400_000) });
       await database()
         .update(providerAnalyticsState)
         .set({ startedAt: new Date(now - 2 * ANALYTICS_DAY_MS) })

@@ -158,6 +158,7 @@ export function CommunityCard({
 export function GroupForm({
   initial,
   admin = false,
+  fixedProvider,
   onSave,
   onCancel,
   pending,
@@ -165,6 +166,7 @@ export function GroupForm({
 }: {
   initial?: Partial<GroupInput> & { linkMetadata?: GroupLinkMetadata | null };
   admin?: boolean;
+  fixedProvider?: { id: number; name: string };
   onSave: (input: GroupInput) => void;
   onCancel?: () => void;
   pending: boolean;
@@ -178,7 +180,7 @@ export function GroupForm({
     url: initial?.url ?? "",
     topic: initial?.topic ?? "providers",
     language: initial?.language ?? locale,
-    providerId: initial?.providerId ?? null,
+    providerId: fixedProvider?.id ?? initial?.providerId ?? null,
     evidenceUrl: initial?.evidenceUrl ?? "",
   });
   const touched = useRef(
@@ -200,7 +202,7 @@ export function GroupForm({
   }, [search]);
   const providers = trpc.community.providers.useQuery(
     { q },
-    { staleTime: 30000, retry: false }
+    { staleTime: 30000, retry: false, enabled: !fixedProvider }
   );
   const change = <K extends keyof GroupInput>(key: K, value: GroupInput[K]) => {
     touched.current.add(key);
@@ -349,7 +351,7 @@ export function GroupForm({
           </GroupField>
         </div>
         <div className="grid gap-3 rounded-xl bg-slate-50 p-4">
-          <GroupField label={t.providerSearch}>
+          {!fixedProvider && <GroupField label={t.providerSearch}>
             <input
               className={fieldClass}
               type="search"
@@ -357,10 +359,11 @@ export function GroupForm({
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
-          </GroupField>
+          </GroupField>}
           <GroupField label={t.provider}>
             <select
               className={fieldClass}
+              disabled={Boolean(fixedProvider)}
               value={values.providerId ?? ""}
               onChange={e =>
                 change(
@@ -369,8 +372,9 @@ export function GroupForm({
                 )
               }
             >
-              <option value="">{t.noProvider}</option>
+              {fixedProvider ? <option value={fixedProvider.id}>{fixedProvider.name}</option> : <option value="">{t.noProvider}</option>}
               {values.providerId &&
+                !fixedProvider &&
                 !providers.data?.some(p => p.id === values.providerId) && (
                   <option value={values.providerId}>{t.savedProvider}</option>
                 )}

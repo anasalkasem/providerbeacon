@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   json,
   int,
@@ -36,6 +37,7 @@ export const communityGroups = mysqlTable(
     providerId: int("provider_id").references(() => providerRecords.id, {
       onDelete: "set null",
     }),
+    requiresSubscription: boolean("requires_subscription").default(false).notNull(),
     evidenceUrl: varchar("evidence_url", { length: 500 }),
     linkMetadata: json("link_metadata").$type<GroupLinkMetadata>(),
     status: mysqlEnum("status", groupStatuses).default("pending").notNull(),
@@ -56,6 +58,7 @@ export const communityGroups = mysqlTable(
       t.id
     ),
     index("community_group_member_idx").on(t.submittedBy, t.id),
+    index("community_group_provider_idx").on(t.providerId, t.id),
   ]
 );
 export const communityReports = mysqlTable(

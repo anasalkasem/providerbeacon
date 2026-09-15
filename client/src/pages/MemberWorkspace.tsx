@@ -29,6 +29,7 @@ import { useMember } from "@/hooks/useMember";
 import { useLocale } from "@/contexts/LocaleContext";
 import { workspaceCopy } from "@/i18n/workspace";
 import { communityCopy } from "@/i18n/community";
+import { businessText } from "@/i18n/providerBusiness";
 import { PublicLayout } from "@/components/SiteChrome";
 import { unitLabel } from "@/i18n/pricing";
 import OfferEvidence from "@/components/OfferEvidence";
@@ -120,6 +121,7 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Link href="/account/provider" className="inline-flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-bold text-teal-800">{businessText(locale).title}</Link>
           <Link
             href="/find"
             className="inline-flex items-center gap-2 rounded-xl bg-[#0B2A48] px-4 py-3 text-sm font-bold text-white"

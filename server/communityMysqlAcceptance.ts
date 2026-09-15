@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
+import { providerBusinessAccounts } from "../drizzle/businessSchema";
 import {
   communityGroups as groups,
   communityReports as reports,
@@ -192,7 +193,8 @@ export function communityAcceptanceCases(
       );
       expect(await database().select().from(groups)).toHaveLength(3);
     });
-    it("requires first-party provider evidence and removes hidden provider associations from public responses", async () => {
+    it("requires first-party evidence and an active plan, and hides a suspended provider's groups", async () => {
+      await database().insert(providerBusinessAccounts).values({ providerId: providerId(), status: "active", startsAt: new Date(Date.now() - 86_400_000), endsAt: new Date(Date.now() + 86_400_000) });
       await database()
         .update(providerRecords)
         .set({ websiteUrl: "https://provider.example" })
@@ -230,10 +232,7 @@ export function communityAcceptanceCases(
         .update(providerRecords)
         .set({ status: "suspended" })
         .where(eq(providerRecords.id, providerId()));
-      expect((await list()).items[0]).toMatchObject({
-        provider: null,
-        evidenceUrl: null,
-      });
+      expect((await list()).items).toEqual([]);
       expect((await list({ providerId: providerId() })).items).toEqual([]);
       expect(await groupProviders("")).toEqual([]);
       await expect(

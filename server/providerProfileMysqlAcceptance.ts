@@ -66,7 +66,7 @@ export function providerProfileAcceptanceCases(
         websiteUrl: saved.websiteUrl,
         logoUrl: saved.logoUrl,
         websitePreviewUrl: saved.websitePreviewUrl,
-        telegramUrl: saved.telegramUrl,
+        telegramUrl: null, // The saved contact stays private until a plan is active.
         initials: "PI",
         verified: false,
         score: null,

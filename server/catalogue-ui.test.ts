@@ -8,6 +8,7 @@ const state = vi.hoisted(() => ({ data: null as any, slug: "real-provider", sear
 }));
 vi.mock("@/lib/trpc", () => ({trpc:{assistant:{quotes:{useQuery:()=>({data:state.quotes})}},
     member: { me: { useQuery: () => ({ data: { member: null } }) } },
+    business: { promotions: { list: { useQuery: () => ({ data: { items: [] } }) } } },
     workspace: {
       ids: { useQuery: () => ({ data: [] }) },
       watch: { useMutation: () => ({}) },

@@ -1,4 +1,5 @@
 import { savedLinkMetadata } from "./linkMetadata";
+import { currentProviderTelegram } from "./providerEntitlements";
 import { priceHistoryKey } from "./priceHistory";
 import { publicProfileUrl, providerTelegramUrl } from "../shared/providerProfile";
 import { AsyncResultCache, registerCatalogueCache } from "./catalogueCache";
@@ -50,14 +51,25 @@ const publicServiceColumns = {
     .mapWith(value => typeof value === "string" ? JSON.parse(value) : value),
 };
 
-const snapshotCache = new AsyncResultCache<Awaited<ReturnType<typeof getMarketplaceSnapshot>>>();
+const snapshotCache = new AsyncResultCache<Awaited<ReturnType<typeof buildMarketplaceSnapshot>>>();
 registerCatalogueCache(() => snapshotCache.clear());
-export function getCachedMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
+export async function getCachedMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
   const input = catalogueInput.parse(raw);
-  return snapshotCache.get(JSON.stringify(input), () => getMarketplaceSnapshot(input), value => value.source === "database");
+  const snapshot = await snapshotCache.get(JSON.stringify(input), () => buildMarketplaceSnapshot(input), value => value.source === "database");
+  return withCurrentPaidContacts(snapshot);
 }
 
 export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
+  return withCurrentPaidContacts(await buildMarketplaceSnapshot(raw));
+}
+async function withCurrentPaidContacts(snapshot: Awaited<ReturnType<typeof buildMarketplaceSnapshot>>) {
+  if (!snapshot.providers.length) return snapshot;
+  // Never expose contacts from the catalogue cache: subscription expiry and
+  // suspension must take effect even if another replica populated that cache.
+  const contacts = await currentProviderTelegram(snapshot.providers.map(p => Number(p.id.slice(9)))).catch(() => new Map<number, string | null>());
+  return { ...snapshot, providers: snapshot.providers.map(provider => ({ ...provider, telegramUrl: contacts.get(Number(provider.id.slice(9))) ?? null })) };
+}
+async function buildMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
   const input = catalogueInput.parse(raw);
   const empty = (source: "database" | "unavailable") => ({ providers: [], services: [], source,
     pagination: { total: 0, nextCursor: null as CatalogueInput["cursor"] | null } });
