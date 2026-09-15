@@ -39,7 +39,7 @@ export default function AcceptInvite() {
   const invalid = !token;
 
   return (
-    <PublicLayout>
+    <PublicLayout showCatalogueNotice={false}>
       <main className="container grid min-h-[76vh] place-items-center py-16">
         <section className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50">
           <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-emerald-50 text-emerald-700">
