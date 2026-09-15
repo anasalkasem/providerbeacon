@@ -1,3 +1,5 @@
+import { savedGroupMetadata } from "./linkMetadata";
+import type { GroupLinkMetadata } from "../shared/linkMetadata";
 import { createHash } from "node:crypto";
 import {
   and,
@@ -66,6 +68,7 @@ const ownColumns = {
   language: groups.language,
   providerId: groups.providerId,
   evidenceUrl: groups.evidenceUrl,
+  linkMetadata: groups.linkMetadata,
   status: groups.status,
   revision: groups.revision,
   reviewNote: groups.reviewNote,
@@ -111,6 +114,7 @@ export async function publicGroups(input: z.infer<typeof groupListInput>) {
         platform: groups.platform,
         topic: groups.topic,
         language: groups.language,
+        linkMetadata: groups.linkMetadata,
         reviewedAt: groups.reviewedAt,
         providerWebsite: providerRecords.websiteUrl,
         provider: {
@@ -176,7 +180,7 @@ export async function ownGroups(auth: MemberAuth) {
       .limit(10);
   });
 }
-async function checkedValues(tx: Transaction, input: GroupInput) {
+async function checkedValues(tx: Transaction, input: GroupInput, existing?: { url: string; linkMetadata: GroupLinkMetadata | null }) {
   const link = groupLink(input.url);
   if (!link) fail("invalid_link");
   let evidenceUrl: string | null = null;
@@ -196,6 +200,7 @@ async function checkedValues(tx: Transaction, input: GroupInput) {
     if (!evidenceUrl) fail("evidence_required");
   }
   return {
+    linkMetadata: input.metadataKey ? await savedGroupMetadata(input.metadataKey, input.url) : existing?.url === link.url ? existing.linkMetadata : null,
     name: input.name,
     description: input.description,
     topic: input.topic,
@@ -290,7 +295,7 @@ export async function editGroup(
     return await db.transaction(async tx => {
       await authorCheck(tx, author);
       const row = await lockedGroup(tx, input.id, input.revision, author);
-      const values = await checkedValues(tx, input);
+      const values = await checkedValues(tx, input, row);
       await tx
         .update(groups)
         .set({

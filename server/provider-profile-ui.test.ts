@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   invalidate: vi.fn(async () => {}),
   setData: vi.fn(),
 }));
+vi.mock("../client/src/components/LinkAutofill", () => ({ default: () => null, GroupSourceDetails: () => null }));
 vi.mock("@/contexts/LocaleContext", async original => ({
   ...(await original<any>()),
   useLocale: () => ({ locale: state.locale }),

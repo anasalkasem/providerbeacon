@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   locale: "ar" as "ar" | "en" | "es" | "hi" | "zh",
 }));
+vi.mock("../client/src/components/LinkAutofill", () => ({ default: () => null, GroupSourceDetails: () => null }));
 vi.mock("@/contexts/LocaleContext", () => ({
   useLocale: () => ({ locale: state.locale }),
 }));

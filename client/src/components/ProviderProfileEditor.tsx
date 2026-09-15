@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import LinkAutofill from "./LinkAutofill";
+import { fillSuggested, websiteHome } from "@shared/linkMetadata";
+import { useEffect, useRef, useState } from "react";
 import { ExternalLink, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useLocale } from "@/contexts/LocaleContext";
@@ -43,8 +45,15 @@ export default function ProviderProfileEditor({
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [conflict, setConflict] = useState(false);
+  const touched = useRef(new Set<keyof Draft>());
+  const suggested = useRef<Partial<Draft>>({});
+  const [fetching, setFetching] = useState(false);
   const adopt = (value: Profile) => {
     const next = toDraft(value);
+    touched.current = new Set(
+      (Object.keys(next) as (keyof Draft)[]).filter(key => Boolean(next[key]))
+    );
+    suggested.current = {};
     setDraft(next);
     setOriginal(next);
     setPreview(next);
@@ -102,8 +111,31 @@ export default function ProviderProfileEditor({
       </div>
     );
   const dirty = JSON.stringify(draft) !== JSON.stringify(original);
-  const update = (field: keyof Draft, value: string) =>
-    setDraft(current => (current ? { ...current, [field]: value } : current));
+  const update = (field: keyof Draft, value: string) => {
+    touched.current.add(field);
+    const last = suggested.current;
+    setDraft(current => {
+      if (!current) return current;
+      const next = { ...current, [field]: value };
+      if (
+        field === "websiteUrl" &&
+        websiteHome(current.websiteUrl ?? "") !== websiteHome(value)
+      ) {
+        for (const key of [
+          "name",
+          "description",
+          "logoUrl",
+          "websitePreviewUrl",
+          "telegramUrl",
+        ] as const)
+          if (!touched.current.has(key) && next[key] === last[key]) {
+            if (key === "name" || key === "description") next[key] = "";
+            else next[key] = null;
+          }
+      }
+      return next;
+    });
+  };
   return (
     <form
       className="mt-5 space-y-5"
@@ -115,7 +147,7 @@ export default function ProviderProfileEditor({
           setError(t.invalid);
           return;
         }
-        if (!dirty || save.isPending || conflict) return;
+        if (!dirty || save.isPending || fetching || conflict) return;
         setError(null);
         save.mutate(parsed.data);
       }}
@@ -146,6 +178,36 @@ export default function ProviderProfileEditor({
             onChange={event => update("websiteUrl", event.target.value)}
           />
         </label>
+        <LinkAutofill
+          kind="website"
+          url={draft.websiteUrl ?? ""}
+          automatic={draft.websiteUrl !== original?.websiteUrl}
+          onPending={setFetching}
+          onUseImage={(field, value) => {
+            update(field, value);
+            setPreview(current => ({
+              logoUrl: current?.logoUrl ?? null,
+              websitePreviewUrl: current?.websitePreviewUrl ?? null,
+              [field]: value,
+            }));
+          }}
+          onResolved={value => {
+            const incoming: Partial<Draft> = {
+              name: value.name ?? undefined,
+              description: value.description ?? undefined,
+              logoUrl: value.logoUrl,
+              websitePreviewUrl: value.websitePreviewUrl,
+              telegramUrl: value.telegramUrl,
+            };
+            const previous = suggested.current;
+            setDraft(current =>
+              current
+                ? fillSuggested(current, incoming, previous, touched.current)
+                : current
+            );
+            suggested.current = incoming;
+          }}
+        />
         <label className="grid gap-2 text-sm font-semibold sm:col-span-2">
           <span>{t.description}</span>
           <Textarea
@@ -256,7 +318,10 @@ export default function ProviderProfileEditor({
         </div>
       )}
       <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
-        <Button type="submit" disabled={!dirty || save.isPending || conflict}>
+        <Button
+          type="submit"
+          disabled={!dirty || save.isPending || fetching || conflict}
+        >
           {save.isPending ? (
             <Loader2 className="size-4 animate-spin" />
           ) : (

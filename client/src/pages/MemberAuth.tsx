@@ -1,3 +1,4 @@
+import { metadataPrivacy } from "@/i18n/linkMetadata";
 import { analyticsPrivacy } from "@/i18n/providerAnalytics";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
@@ -814,6 +815,7 @@ export function MemberPrivacy() {
               t.privacyCookies,
               analyticsPrivacy[locale],
               t.privacyAI,
+              metadataPrivacy[locale],
               t.privacyDelete,
               emailText.privacy,
             ].map(p => (

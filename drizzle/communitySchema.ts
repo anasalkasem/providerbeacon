@@ -1,5 +1,6 @@
 import {
   index,
+  json,
   int,
   mysqlEnum,
   mysqlTable,
@@ -7,6 +8,7 @@ import {
   uniqueIndex,
   varchar,
 } from "drizzle-orm/mysql-core";
+import type { GroupLinkMetadata } from "../shared/linkMetadata";
 import { memberAccounts } from "./memberSchema";
 import { providerRecords } from "./schema";
 import {
@@ -35,6 +37,7 @@ export const communityGroups = mysqlTable(
       onDelete: "set null",
     }),
     evidenceUrl: varchar("evidence_url", { length: 500 }),
+    linkMetadata: json("link_metadata").$type<GroupLinkMetadata>(),
     status: mysqlEnum("status", groupStatuses).default("pending").notNull(),
     revision: int("revision").default(1).notNull(),
     reviewNote: varchar("review_note", { length: 600 }),

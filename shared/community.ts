@@ -124,6 +124,7 @@ export function providerGroupEvidence(
 
 export const groupInput = z
   .object({
+    metadataKey: z.string().regex(/^[a-f0-9]{64}$/).optional(),
     name: z.string().trim().min(3).max(100),
     description: z.string().trim().min(20).max(600),
     url: z

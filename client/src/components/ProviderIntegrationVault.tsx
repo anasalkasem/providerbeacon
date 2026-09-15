@@ -1,3 +1,4 @@
+import ProviderDraftFields from "./ProviderDraftFields";
 import ProviderPicker from "./ProviderPicker";
 import ProviderProfileEditor from "./ProviderProfileEditor";
 import { providerProfileCopy } from "@/i18n/providerProfile";
@@ -66,8 +67,6 @@ export default function ProviderIntegrationVault() {
   const [interval, setInterval] = useState("360");
   const [enabled, setEnabled] = useState(false);
   const [showNewProvider, setShowNewProvider] = useState(false);
-  const [newProviderName, setNewProviderName] = useState("");
-  const [newProviderWebsite, setNewProviderWebsite] = useState("");
   const canWrite = access.data?.permissions.includes("integrations.write");
   const canEditProfile = access.data?.permissions.includes("providers.write");
   const openProfile = (id: number) => {
@@ -82,7 +81,7 @@ export default function ProviderIntegrationVault() {
   const sync = trpc.admin.integrations.syncNow.useMutation({ onSuccess: async data => { toast.success(text("alreadyQueued" in data && data.alreadyQueued ? "syncAlreadyQueued" : "syncQueued")); await Promise.all([refresh(), utils.admin.overview.invalidate(), utils.admin.services.list.invalidate(), utils.marketplace.snapshot.invalidate()]); }, onError: error => toast.error(error.message) });
   const toggle = trpc.admin.integrations.setEnabled.useMutation({ onSuccess: refresh, onError: error => toast.error(error.message) });
   const remove = trpc.admin.integrations.remove.useMutation({ onSuccess: async () => { toast.success(text("integrationDeleted")); await refresh(); }, onError: error => toast.error(error.message) });
-  const createProvider = trpc.admin.providers.createDraft.useMutation({ onSuccess: async provider => { setProviderId(String(provider.id)); setProfileProviderId(String(provider.id)); setShowNewProvider(false); setNewProviderName(""); setNewProviderWebsite(""); toast.success(text("providerDraftCreated")); await Promise.all([utils.admin.providers.list.invalidate(), utils.admin.providers.page.invalidate()]); }, onError: error => toast.error(error.message) });
+  const createProvider = trpc.admin.providers.createDraft.useMutation({ onSuccess: async provider => { setProviderId(String(provider.id)); setProfileProviderId(String(provider.id)); setShowNewProvider(false); toast.success(text("providerDraftCreated")); await Promise.all([utils.admin.providers.list.invalidate(), utils.admin.providers.page.invalidate()]); }, onError: error => toast.error(error.message) });
   useEffect(() => {
     for (const integration of integrations.data ?? []) {
       const job = integration.latestJob;
@@ -105,7 +104,7 @@ export default function ProviderIntegrationVault() {
       <div className="mt-5 grid gap-3 lg:grid-cols-3"><Step number={1} title={text("stepProvider")} body={text("stepProviderBody")}/><Step number={2} title={text("stepCredential")} body={text("stepCredentialBody")}/><Step number={3} title={text("stepVerify")} body={text("stepVerifyBody")}/></div>
       <form className="mt-5 grid gap-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 md:grid-cols-2" onSubmit={event => { event.preventDefault(); save.mutate({ id, providerId: Number(providerId), name, baseUrl, apiKey: apiKey || undefined, syncIntervalMinutes: Number(interval), enabled }); }}>
         <div className="grid gap-2 text-sm font-bold text-slate-700"><div className="flex items-center justify-between gap-3"><span>{text("provider")}</span><button type="button" className="text-xs font-extrabold text-cyan-700 hover:text-cyan-900" onClick={() => setShowNewProvider(value => !value)}>+ {text("addNewProvider")}</button></div><ProviderPicker value={providerId} onChange={value => { setProviderId(value); setProfileProviderId(value); }}/></div>
-        {showNewProvider && <div className="grid gap-3 rounded-xl border border-cyan-200 bg-cyan-50/70 p-4 md:col-span-2 md:grid-cols-[1fr_1fr_auto]"><Input value={newProviderName} onChange={event => setNewProviderName(event.target.value)} placeholder={text("providerName")}/><Input dir="ltr" type="url" value={newProviderWebsite} onChange={event => setNewProviderWebsite(event.target.value)} placeholder="https://provider.example"/><Button type="button" variant="outline" disabled={createProvider.isPending || !newProviderName.trim() || !newProviderWebsite.trim()} onClick={() => createProvider.mutate({ name: newProviderName, websiteUrl: newProviderWebsite })}>{createProvider.isPending && <Loader2 className="size-4 animate-spin"/>}{text("createProvider")}</Button></div>}
+        {showNewProvider && canEditProfile && <ProviderDraftFields pending={createProvider.isPending} onCreate={input => createProvider.mutate(input)}/>}
         <label className="grid gap-2 text-sm font-bold text-slate-700"><span>{text("integrationName")}</span><Input value={name} onChange={event => setName(event.target.value)} placeholder={text("integrationNameExample")} required/></label>
         <label className="grid gap-2 text-sm font-bold text-slate-700 md:col-span-2"><span>{text("providerApiUrl")}</span><Input dir="ltr" type="url" value={baseUrl} onChange={event => setBaseUrl(event.target.value)} placeholder="https://provider.example/api/v2" required/><small className="font-normal text-slate-500">{text("endpointHelp")}</small></label>
         <label className="grid gap-2 text-sm font-bold text-slate-700"><span>{text("apiKey")}</span><Input dir="ltr" type="password" autoComplete="off" value={apiKey} onChange={event => setApiKey(event.target.value)} placeholder={text("apiKeyPlaceholder")} required={!id}/><small className="font-normal text-slate-500">{id ? text("keyOptional") : text("keyEncryptedHelp")}</small></label>

@@ -1,4 +1,6 @@
-import { useEffect, useState, type ReactNode } from "react";
+import LinkAutofill, { GroupSourceDetails } from "./LinkAutofill";
+import { fillSuggested, type GroupLinkMetadata } from "@shared/linkMetadata";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import {
   ArrowUpRight,
@@ -13,6 +15,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../server/routers";
 import {
   groupInput,
+  groupLink,
   groupLanguages,
   groupTopics,
   type GroupInput,
@@ -77,6 +80,7 @@ export function CommunityCard({
           {t.topics[group.topic]}
         </span>
       </div>
+      <GroupSourceDetails data={group.linkMetadata} />
       <h2
         dir="auto"
         className="mt-5 break-words text-xl font-extrabold leading-8 text-[#0B2A48]"
@@ -153,12 +157,14 @@ export function CommunityCard({
 }
 export function GroupForm({
   initial,
+  admin = false,
   onSave,
   onCancel,
   pending,
   error,
 }: {
-  initial?: Partial<GroupInput>;
+  initial?: Partial<GroupInput> & { linkMetadata?: GroupLinkMetadata | null };
+  admin?: boolean;
   onSave: (input: GroupInput) => void;
   onCancel?: () => void;
   pending: boolean;
@@ -175,6 +181,16 @@ export function GroupForm({
     providerId: initial?.providerId ?? null,
     evidenceUrl: initial?.evidenceUrl ?? "",
   });
+  const touched = useRef(
+    new Set<keyof GroupInput>(
+      initial ? ["name", "description", "topic", "language"] : []
+    )
+  );
+  const previous = useRef<Partial<GroupInput>>({
+    topic: initial?.topic ?? "providers",
+    language: initial?.language ?? locale,
+  });
+  const [fetching, setFetching] = useState(false);
   const [search, setSearch] = useState("");
   const [q, setQ] = useState("");
   const [invalid, setInvalid] = useState(false);
@@ -186,12 +202,35 @@ export function GroupForm({
     { q },
     { staleTime: 30000, retry: false }
   );
-  const change = <K extends keyof GroupInput>(key: K, value: GroupInput[K]) =>
-    setValues(v => ({ ...v, [key]: value }));
+  const change = <K extends keyof GroupInput>(key: K, value: GroupInput[K]) => {
+    touched.current.add(key);
+    const last = previous.current;
+    setValues(v => {
+      const next = { ...v, [key]: value };
+      if (
+        key === "url" &&
+        groupLink(String(value))?.url !== groupLink(v.url)?.url
+      ) {
+        next.metadataKey = undefined;
+        for (const field of ["name", "description"] as const)
+          if (!touched.current.has(field) && next[field] === last[field])
+            next[field] = "";
+        if (!touched.current.has("topic")) next.topic = "providers";
+        if (!touched.current.has("language")) next.language = locale;
+      }
+      return next;
+    });
+    if (
+      key === "url" &&
+      groupLink(String(value))?.url !== groupLink(values.url)?.url
+    )
+      previous.current = { topic: "providers", language: locale };
+  };
   return (
     <form
       onSubmit={event => {
         event.preventDefault();
+        if (pending || fetching) return;
         const parsed = groupInput.safeParse(values);
         if (
           !parsed.success ||
@@ -212,6 +251,47 @@ export function GroupForm({
         </p>
       </div>
       <fieldset disabled={pending} className="grid gap-5 disabled:opacity-70">
+        <GroupField label={t.link}>
+          <input
+            className={fieldClass}
+            type="url"
+            dir="ltr"
+            required
+            maxLength={500}
+            placeholder="https://t.me/…"
+            value={values.url}
+            onChange={e => change("url", e.target.value)}
+          />
+          <span className="text-xs font-normal leading-6 text-slate-500">
+            {t.linkHint}
+          </span>
+        </GroupField>
+        <LinkAutofill
+          kind="telegram"
+          url={values.url}
+          admin={admin}
+          automatic={!initial || values.url !== initial.url}
+          onPending={setFetching}
+          onResolved={data => {
+            const incoming: Partial<GroupInput> = {
+              name: data.name ?? undefined,
+              description: data.description ?? undefined,
+              topic: data.topic ?? undefined,
+              language: data.language ?? undefined,
+            };
+            const old = previous.current;
+            setValues(current => ({
+              ...fillSuggested(current, incoming, old, touched.current),
+              metadataKey: data.key,
+            }));
+            previous.current = incoming;
+          }}
+        />
+        {!values.metadataKey &&
+          initial?.linkMetadata &&
+          groupLink(values.url)?.url === groupLink(initial.url ?? "")?.url && (
+            <GroupSourceDetails data={initial.linkMetadata} />
+          )}
         <GroupField label={t.name}>
           <input
             className={fieldClass}
@@ -235,21 +315,7 @@ export function GroupForm({
             onChange={e => change("description", e.target.value)}
           />
         </GroupField>
-        <GroupField label={t.link}>
-          <input
-            className={fieldClass}
-            type="url"
-            dir="ltr"
-            required
-            maxLength={500}
-            placeholder="https://t.me/…"
-            value={values.url}
-            onChange={e => change("url", e.target.value)}
-          />
-          <span className="text-xs font-normal leading-6 text-slate-500">
-            {t.linkHint}
-          </span>
-        </GroupField>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <GroupField label={t.topic}>
             <select
@@ -351,7 +417,11 @@ export function GroupForm({
         </p>
       )}
       <div className="flex flex-wrap gap-3">
-        <button type="submit" className={primaryClass} disabled={pending}>
+        <button
+          type="submit"
+          className={primaryClass}
+          disabled={pending || fetching}
+        >
           {pending ? t.saving : t.save}
         </button>
         {onCancel && (

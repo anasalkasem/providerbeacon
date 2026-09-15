@@ -1,3 +1,4 @@
+import { registerImportedMediaRoutes, startImportedMediaCleanup } from "../importedMediaRoutes";
 import "dotenv/config";
 import { registerProviderAnalyticsRoutes } from "../providerAnalyticsRoutes";
 import { startProviderAnalyticsCleanup } from "../providerAnalyticsDb";
@@ -43,11 +44,12 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   registerProviderAnalyticsRoutes(app);
+  registerImportedMediaRoutes(app);
   registerEmailRoutes(app);
   const assistantJson = express.json({ limit: "32kb" });
   app.use((req, res, next) => {
     const procedures = req.path.startsWith("/api/trpc/") ? req.path.slice("/api/trpc/".length).split(",") : [];
-    return procedures.some(name => name === "assistant.chat" || name.startsWith("member.") || name.startsWith("workspace.") || name.startsWith("admin.email.")) ? assistantJson(req, res, next) : next();
+    return procedures.some(name => name === "assistant.chat" || name.startsWith("member.") || name.startsWith("workspace.") || name.startsWith("admin.email.") || name.startsWith("community.") || name.startsWith("admin.groups.") || ["admin.providers.previewWebsite", "admin.providers.createDraft", "admin.providers.saveProfile"].includes(name)) ? assistantJson(req, res, next) : next();
   });
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
@@ -116,6 +118,7 @@ async function startServer() {
     server.on("close", stopWorker);
     server.on("close", startEmailWorker());
     server.on("close", startProviderAnalyticsCleanup());
+    startImportedMediaCleanup();
     server.on("close", startPriceAlertWorker());
   });
 }

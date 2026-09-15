@@ -1,6 +1,8 @@
+import { telegramPreviewInput } from "../../shared/linkMetadata";
+import { metadataBudget, previewLink } from "../linkMetadata";
 import { z } from "zod";
 import { permissionProcedure, router } from "../_core/trpc";
-import { assertMemberOrigin } from "../memberSecurity";
+import { assertStaffOrigin } from "../staffOrigin";
 import { safely } from "../memberProcedures";
 import {
   groupEditInput,
@@ -20,10 +22,13 @@ import {
 const guard = (permission: "groups.read" | "groups.review") =>
   permissionProcedure(permission).use(({ ctx, type, next }) => {
     ctx.res.setHeader("Cache-Control", "no-store");
-    if (type === "mutation") assertMemberOrigin(ctx.req);
+    if (type === "mutation") assertStaffOrigin(ctx.req);
     return next();
   });
 export const communityAdminRouter = router({
+  previewTelegram: guard("groups.review").input(telegramPreviewInput).mutation(async ({ ctx, input }) => {
+    await metadataBudget(`staff:${ctx.user!.id}`); return previewLink("telegram", input.url);
+  }),
   list: guard("groups.read")
     .input(
       z.object({
