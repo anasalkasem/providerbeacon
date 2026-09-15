@@ -4,6 +4,7 @@ import { reviewEn, reviewAr } from "./review";
 import { syncEn, syncAr } from "./sync";
 
 const en = {
+  customerEmail: "Customer email",
   ...reviewEn,
   ...syncEn,
   searchServices: "Search services", searchServicesHint: "Service, provider, category or ID", allStatuses: "All statuses", platform: "Platform", allPlatforms: "All platforms", rowsPerPage: "Rows per page", refresh: "Refresh", matchingServices: "Matching services", publicationHint: "Reviewed offers require approval. An enabled API source catalogue may also show pending imported records with their original rates.", providerNotPublished: "Provider is not published", loadError: "Data could not be loaded.", retry: "Retry", loading: "Loading…", noServices: "No services match these filters.", pagination: "Pagination", page: "Page", previous: "Previous", next: "Next", editService: "Edit service", saveChanges: "Save changes",
@@ -28,6 +29,7 @@ const en = {
 export type AdminTextKey = keyof typeof en;
 const translations: Record<Exclude<Locale,"en">, Partial<Record<AdminTextKey,string>>> = {
   ar: {
+    customerEmail: "بريد العملاء",
     ...reviewAr,
     ...syncAr,
     searchServices: "البحث في الخدمات", searchServicesHint: "اسم الخدمة أو المزود أو التصنيف أو المعرّف", allStatuses: "جميع الحالات", platform: "المنصة", allPlatforms: "جميع المنصات", rowsPerPage: "صفوف في الصفحة", refresh: "تحديث", matchingServices: "الخدمات المطابقة", publicationHint: "العروض المعتمدة تتطلب مراجعة. كتالوج API المفعّل يعرض أيضًا سجلات المصدر المستوردة بأسعارها الأصلية مع بقاء حالة مراجعتها واضحة.", providerNotPublished: "المزود غير منشور", loadError: "تعذّر تحميل البيانات.", retry: "إعادة المحاولة", loading: "جارٍ التحميل…", noServices: "لا توجد خدمات تطابق هذه الفلاتر.", pagination: "التنقل بين الصفحات", page: "الصفحة", previous: "السابق", next: "التالي", editService: "تعديل الخدمة", saveChanges: "حفظ التعديلات",
@@ -55,5 +57,9 @@ const translations: Record<Exclude<Locale,"en">, Partial<Record<AdminTextKey,str
 
 export function useAdminText() {
   const { locale } = useLocale();
+  if (locale === "es" || locale === "hi" || locale === "zh") {
+    const emailLabel = { es: "Correo a clientes", hi: "ग्राहक ईमेल", zh: "客户邮件" }[locale];
+    return (key: AdminTextKey) => key === "customerEmail" ? emailLabel : translations[locale][key] ?? en[key];
+  }
   return (key: AdminTextKey) => locale === "en" ? en[key] : translations[locale][key] ?? en[key];
 }

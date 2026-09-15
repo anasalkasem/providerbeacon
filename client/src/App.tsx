@@ -15,6 +15,7 @@ const Compare = lazy(() => import("@/pages/Compare"));
 const Providers = lazy(() => import("@/pages/Providers"));
 const Provider = lazy(() => import("@/pages/Provider"));
 const Admin = lazy(() => import("@/pages/Admin"));
+const AdminEmail = lazy(() => import("@/pages/AdminEmail"));
 const AdminModule = lazy(() => import("@/pages/AdminModule"));
 const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
 const Login = lazy(() => import("@/pages/Login"));
@@ -27,6 +28,7 @@ const MemberSignUp = lazy(() => import("@/pages/MemberAuth").then(m => ({ defaul
 const MemberAccount = lazy(() => import("@/pages/MemberAuth").then(m => ({ default: m.MemberAccount })));
 const MemberRecovery = lazy(() => import("@/pages/MemberAuth").then(m => ({ default: m.MemberRecovery })));
 const MemberPrivacy = lazy(() => import("@/pages/MemberAuth").then(m => ({ default: m.MemberPrivacy })));
+const MemberEmailPage = lazy(() => import("@/pages/MemberEmail"));
 
 function Router() {
   return <Suspense fallback={<div className="grid min-h-screen place-items-center bg-[#F6F8FC]"><div className="size-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-500" aria-label="Loading page"/></div>}><Switch>
@@ -43,9 +45,14 @@ function Router() {
     <Route path="/account" component={MemberAccount} />
     <Route path="/recover-account" component={MemberRecovery} />
     <Route path="/privacy" component={MemberPrivacy} />
+    <Route path="/verify-email" component={MemberEmailPage} />
+    <Route path="/forgot-password" component={MemberEmailPage} />
+    <Route path="/reset-password" component={MemberEmailPage} />
+    <Route path="/unsubscribe" component={MemberEmailPage} />
     <Route path="/setup" component={Setup} />
     <Route path="/admin" component={Admin} />
     <Route path="/admin/security" component={Security} />
+    <Route path="/admin/email" component={AdminEmail} />
     <Route path="/admin/:module" component={AdminModule} />
     <Route path="/team/accept" component={AcceptInvite} />
     <Route path="/404" component={NotFound} />

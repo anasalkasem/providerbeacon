@@ -7,6 +7,9 @@ import {
 } from "../drizzle/memberSchema";
 import type { MemberProfile } from "../shared/memberAuth";
 import { getDb } from "./db";
+import { queueNewMemberEmail, queueSecurityEmail } from "./emailDb";
+import { emailLocale } from "./emailTemplates";
+import { MAIL_CONSENT_VERSION } from "../shared/email";
 import { decryptValue, encryptValue, randomToken } from "./security";
 import {
   checkMemberPassword,
@@ -50,6 +53,8 @@ export function memberProfile(member: Member): MemberProfile {
     name: member.name,
     email: member.email,
     emailVerified: Boolean(member.emailVerifiedAt),
+    locale: member.locale,
+    marketingOptIn: member.marketingOptIn,
     hasPassword: Boolean(member.passwordHash),
     googleLinked: Boolean(member.googleSubjectHash),
     hasRecoveryCode: Boolean(member.recoveryCodeHash),
@@ -85,7 +90,7 @@ async function lockedMember(tx: Transaction, id: number) {
     throw new MemberAuthError("invalid_credentials");
   return member;
 }
-async function lockedAuth(tx: Transaction, auth: MemberAuth) {
+export async function lockedAuth(tx: Transaction, auth: MemberAuth) {
   const member = await lockedMember(tx, auth.member.id);
   const [session] = await tx
     .select()
@@ -139,6 +144,8 @@ export async function registerMember(input: {
   name: string;
   email: string;
   password: string;
+  locale?: string;
+  marketingOptIn?: boolean;
 }) {
   const passwordHash = await hashMemberPassword(input.password);
   const recoveryCode = newMemberRecoveryCode();
@@ -151,10 +158,15 @@ export async function registerMember(input: {
           name: input.name,
           email: input.email,
           passwordHash,
+          locale: emailLocale(input.locale ?? "en"),
+          marketingOptIn: input.marketingOptIn ?? false,
+          marketingConsentAt: input.marketingOptIn ? new Date() : null,
+          marketingConsentVersion: input.marketingOptIn ? MAIL_CONSENT_VERSION : null,
           recoveryCodeHash: memberRecoveryHash(recoveryCode),
         })
         .$returningId();
       const member = await lockedMember(tx, created.id);
+      await queueNewMemberEmail(tx, member);
       return { ...(await issueSession(tx, member, "password")), recoveryCode };
     });
   } catch (error) {
@@ -220,6 +232,7 @@ export async function changeMemberPassword(
     await tx
       .delete(memberSessions)
       .where(eq(memberSessions.memberId, member.id));
+    await queueSecurityEmail(tx, member);
     return {
       ...(await issueSession(
         tx,
@@ -280,6 +293,7 @@ export async function recoverMember(input: {
       .update(memberAccounts)
       .set({ passwordHash, recoveryCodeHash, googleSubjectHash: null })
       .where(eq(memberAccounts.id, member.id));
+    await queueSecurityEmail(tx, member);
     await tx
       .delete(memberSessions)
       .where(eq(memberSessions.memberId, member.id));
@@ -321,7 +335,8 @@ export async function deleteMember(auth: MemberAuth, currentPassword?: string) {
 export async function loginGoogleMember(
   identity: GoogleIdentity,
   link?: GoogleFlow["link"],
-  browserSession?: string
+  browserSession?: string,
+  locale = "en"
 ) {
   const db = await database();
   const subjectHash = googleSubjectHash(identity.subject);
@@ -380,11 +395,14 @@ export async function loginGoogleMember(
         .values({
           name: identity.name,
           email: identity.email,
+          locale: emailLocale(locale),
           googleSubjectHash: subjectHash,
           emailVerifiedAt: new Date(),
         })
         .$returningId();
-      return issueSession(tx, await lockedMember(tx, created.id), "google");
+      const createdMember = await lockedMember(tx, created.id);
+      await queueNewMemberEmail(tx, createdMember);
+      return issueSession(tx, createdMember, "google");
     });
   } catch (error) {
     if (duplicate(error))

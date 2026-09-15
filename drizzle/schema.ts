@@ -275,6 +275,7 @@ export const localizedContent = mysqlTable("localized_content", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, table => [uniqueIndex("localized_content_unique").on(table.entityType, table.entityId, table.fieldName, table.locale), index("localized_status_idx").on(table.locale, table.status)]);
 
+export * from "./emailSchema";
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 export type StaffAccount = typeof staffAccounts.$inferSelect;

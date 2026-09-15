@@ -15,6 +15,8 @@ export const memberRegistration = z
     name: z.string().trim().min(2).max(120),
     email: memberEmail,
     password: memberPassword,
+    locale: memberLocale.default("en"),
+    marketingOptIn: z.boolean().default(false),
   })
   .strict();
 export const memberProof = z
@@ -71,6 +73,8 @@ export type MemberProfile = {
   name: string;
   email: string;
   emailVerified: boolean;
+  locale: string;
+  marketingOptIn: boolean;
   hasPassword: boolean;
   googleLinked: boolean;
   hasRecoveryCode: boolean;

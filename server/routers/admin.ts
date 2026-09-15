@@ -1,4 +1,5 @@
 import { adminProvidersInput } from "../../shared/catalogueQuery";
+import { emailAdminRouter } from "./emailAdmin";
 import { createSourcedDrafts } from "../sourcedOffersDb";
 import { sourcedBatchInput } from "../../shared/sourcedOffers";
 import { listProviderSyncIssues } from "../providerSync";
@@ -35,6 +36,7 @@ import { applyServiceReview, editServiceReview, getServiceReview } from "../serv
 const teamRole = z.enum(["owner", "administrator", "operations_manager", "provider_reviewer", "catalogue_editor", "translation_manager", "auditor"]);
 
 export const adminRouter = router({
+  email: emailAdminRouter,
   access: protectedProcedure.query(async ({ ctx }) => {
     const role = await resolveTeamRole(ctx.user!);
     return { role, permissions: role ? rolePermissions[role] : [], authMode: ctx.authMode ?? null };

@@ -29,7 +29,7 @@ const en = {
   recoveryCode: "Recovery code",
   recoveryTitle: "Save your recovery code",
   recoveryBody:
-    "Keep this code in a safe place. It is shown only now and replaces any previous code. You need it if you forget your password; email reset is not available yet.",
+    "Keep this backup code in a safe place. It is shown only now and replaces any previous code. It lets you recover access if you cannot sign in.",
   savedCode: "I have saved my recovery code",
   continue: "Continue",
   copy: "Copy code",
@@ -124,7 +124,7 @@ const ar: Text = {
   recoveryCode: "رمز الاستعادة",
   recoveryTitle: "احفظ رمز استعادة حسابك",
   recoveryBody:
-    "احتفظ بهذا الرمز في مكان آمن. يظهر الآن فقط ويحلّ محل أي رمز سابق. تحتاجه إذا نسيت كلمة المرور؛ الاستعادة عبر البريد غير متاحة بعد.",
+    "احتفظ بهذا الرمز الاحتياطي في مكان آمن. يظهر الآن فقط ويحلّ محل أي رمز سابق، ويمكنك استخدامه لاستعادة الوصول إذا تعذّر تسجيل الدخول.",
   savedCode: "حفظت رمز الاستعادة",
   continue: "متابعة",
   copy: "نسخ الرمز",
@@ -219,7 +219,7 @@ const es: Text = {
   recoveryCode: "Código de recuperación",
   recoveryTitle: "Guarda tu código de recuperación",
   recoveryBody:
-    "Guarda este código en un lugar seguro. Solo se muestra ahora y sustituye cualquier código anterior. Lo necesitarás si olvidas la contraseña; la recuperación por correo aún no está disponible.",
+    "Guarda este código de respaldo en un lugar seguro. Solo se muestra ahora y sustituye cualquier código anterior. Permite recuperar el acceso si no puedes iniciar sesión.",
   savedCode: "He guardado mi código",
   continue: "Continuar",
   copy: "Copiar código",
@@ -377,7 +377,7 @@ Object.assign(hi, {
     "खाता बनाते समय सहेजा गया पुनर्प्राप्ति कोड डालें। सभी डिवाइस से साइन आउट होगा और Google का लिंक हटेगा; आप बाद में उसे फिर जोड़ सकते हैं।",
   recoveryTitle: "अपना पुनर्प्राप्ति कोड सहेजें",
   recoveryBody:
-    "यह कोड सुरक्षित रखें। यह केवल अभी दिखेगा और पुराने कोड की जगह लेगा। पासवर्ड भूलने पर इसकी ज़रूरत होगी; ईमेल से पुनर्प्राप्ति अभी उपलब्ध नहीं है।",
+    "यह बैकअप कोड सुरक्षित रखें। यह केवल अभी दिखेगा और पुराने कोड की जगह लेगा। साइन इन न कर पाने पर इससे पहुँच बहाल कर सकते हैं।",
   savedCode: "मैंने पुनर्प्राप्ति कोड सहेज लिया है",
   unverified: "ईमेल सत्यापित नहीं है",
   verified: "ईमेल सत्यापित है",
@@ -430,7 +430,7 @@ Object.assign(zh, {
     "使用创建账户时保存的恢复码。这会退出所有设备并解除 Google 关联；之后可以重新关联。",
   recoveryTitle: "保存你的恢复码",
   recoveryBody:
-    "请将恢复码保存在安全的地方。它仅显示一次，并会替换旧码。忘记密码时需要使用此码；邮箱重置尚未开通。",
+    "请将此备用恢复码保存在安全的地方。它仅显示一次，并会替换旧码。无法登录时，可用它恢复访问。",
   savedCode: "我已保存恢复码",
   unverified: "邮箱未验证",
   verified: "邮箱已验证",
