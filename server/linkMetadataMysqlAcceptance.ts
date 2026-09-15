@@ -101,6 +101,7 @@ export function linkMetadataAcceptanceCases(
       sourceUrl = "https://provider.com/"
     ) {
       const data: LinkMetadata = {
+        parserVersion: 2,
         key: metadataKey(kind, sourceUrl),
         kind,
         sourceUrl,
