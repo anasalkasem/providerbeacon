@@ -204,6 +204,13 @@
       "when": 1789491600000,
       "tag": "0028_provider_plan_pricing",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "5",
+      "when": 1789506600000,
+      "tag": "0029_provider_payments",
+      "breakpoints": true
     }
   ]
 }

@@ -48,6 +48,21 @@ vi.mock("@/lib/trpc", () => {
       community: { providers: { useQuery: () => ({ data: [] }) } },
       business: {
         mine: { useQuery: () => ({ data: state.workspace }) },
+        payments: {
+          methods: {
+            useQuery: () => ({
+              data: [
+                { gateway: "paypal", available: false },
+                { gateway: "nowpayments", available: false },
+              ],
+            }),
+          },
+          list: { useQuery: () => ({}) },
+          status: { useQuery: () => ({}) },
+          checkout: mutation,
+          check: mutation,
+          cancel: mutation,
+        },
         prepareClaim: mutation,
         submitProof: mutation,
         analytics: {

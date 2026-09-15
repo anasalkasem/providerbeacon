@@ -1,4 +1,4 @@
-/** One provider plan, priced in integer US cents. Payment collection is manual. */
+/** One provider plan, priced in integer US cents. Checkout and manual activation share this price schedule. */
 export const PROVIDER_PLAN = Object.freeze({
   key: "provider-monthly-v1",
   currency: "USD",

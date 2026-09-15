@@ -1,5 +1,10 @@
 import { BusinessAnalytics } from "@/components/BusinessAnalytics";
 import { BusinessPricing } from "@/components/BusinessPricing";
+import {
+  PaymentMethods,
+  PaymentReturn,
+  ProviderCheckout,
+} from "@/components/ProviderPayments";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -63,6 +68,9 @@ export default function ProviderBusiness() {
             </p>
           </div>
         </header>
+        {member.data?.member && (
+          <PaymentReturn accountId={member.data.member.id} />
+        )}
         {member.isLoading ? (
           <p role="status">{t.loading}</p>
         ) : member.isError ? (
@@ -73,6 +81,7 @@ export default function ProviderBusiness() {
               <h2 className="text-2xl font-bold text-[#0B2A68]">{t.plan}</h2>
               <BusinessPricing />
               <p className="mt-4 leading-8 text-slate-600">{t.planHelp}</p>
+              <PaymentMethods />
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
                   className={businessPrimary}
@@ -130,7 +139,12 @@ function ProviderWorkspace({
     { accountId },
     { retry: false, staleTime: 0, refetchInterval: 30_000 }
   );
-  const [selected, setSelected] = useState<number>();
+  const [selected, setSelected] = useState<number | undefined>(() => {
+    const id = Number(
+      new URLSearchParams(window.location.search).get("provider")
+    );
+    return Number.isSafeInteger(id) && id > 0 ? id : undefined;
+  });
   const owned =
     query.data?.providers.find(p => p.provider.id === selected) ??
     query.data?.providers[0];
@@ -181,6 +195,7 @@ function ProviderWorkspace({
             <BusinessCard>
               <h2 className="text-xl font-bold text-[#0B2A68]">{t.plan}</h2>
               <BusinessPricing />
+              <PaymentMethods />
               <p className="mt-4 text-sm leading-7 text-slate-600">
                 {t.planHelp}
               </p>
@@ -410,6 +425,12 @@ function ProviderTools({
               UTC
             </bdi>
           </p>
+        )}
+        {owned.ownershipValid && (
+          <ProviderCheckout
+            accountId={accountId}
+            providerId={owned.provider.id}
+          />
         )}
         <a
           className={`${businessSecondary} mt-4`}
