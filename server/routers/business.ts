@@ -39,6 +39,24 @@ import {
   withdrawPromotion,
 } from "../providerBusinessDb";
 import { createGroup, editGroup, withdrawGroup } from "../communityDb";
+import {
+  checkoutInput,
+  gatewaySettingsInput,
+  paymentInput,
+} from "../../shared/providerPayments";
+import {
+  adminPayments,
+  applyReviewedPayment,
+  closeReviewedPayment,
+  cancelProviderCheckout,
+  gatewaySettings,
+  ownerPayment,
+  ownerPayments,
+  publicPaymentMethods,
+  recheckProviderPayment,
+  saveGatewaySettings,
+  startProviderCheckout,
+} from "../providerPaymentsDb";
 
 const write = (action: string, limit = 20) =>
   signedIn.use(async ({ ctx, next }) => {
@@ -65,6 +83,38 @@ const publicRead = publicProcedure.use(({ ctx, next }) => {
   return next();
 });
 export const businessRouter = router({
+  payments: router({
+    methods: publicRead.query(() => safely(publicPaymentMethods)),
+    list: ownRead
+      .input(businessOwnedInput)
+      .query(({ ctx, input }) =>
+        safely(() => ownerPayments(ctx.memberAuth, input.providerId))
+      ),
+    status: ownRead
+      .input(
+        businessMineInput.extend({ paymentId: z.string().uuid() }).strict()
+      )
+      .query(({ ctx, input }) =>
+        safely(() => ownerPayment(ctx.memberAuth, input.paymentId))
+      ),
+    checkout: write("checkout", 10)
+      .input(checkoutInput)
+      .mutation(({ ctx, input }) =>
+        safely(() =>
+          startProviderCheckout(ctx.memberAuth, input.providerId, input.gateway)
+        )
+      ),
+    check: write("payment-check", 30)
+      .input(paymentInput)
+      .mutation(({ ctx, input }) =>
+        safely(() => recheckProviderPayment(ctx.memberAuth, input.paymentId))
+      ),
+    cancel: write("payment-cancel", 10)
+      .input(paymentInput)
+      .mutation(({ ctx, input }) =>
+        safely(() => cancelProviderCheckout(ctx.memberAuth, input.paymentId))
+      ),
+  }),
   mine: ownRead.query(({ ctx }) =>
     safely(() => businessWorkspace(ctx.memberAuth))
   ),
@@ -168,6 +218,39 @@ const staff = (permission: "business.read" | "business.manage") =>
     return next();
   });
 export const businessAdminRouter = router({
+  payments: router({
+    settings: staff("business.manage").query(() => safely(gatewaySettings)),
+    saveSettings: staff("business.manage")
+      .input(gatewaySettingsInput)
+      .mutation(({ ctx, input }) =>
+        safely(() => saveGatewaySettings(ctx.user!.id, input))
+      ),
+    list: staff("business.read")
+      .input(z.object({ cursor: z.string().uuid().optional() }).strict())
+      .query(({ input }) => safely(() => adminPayments(input.cursor))),
+    applyReviewed: staff("business.manage")
+      .input(
+        paymentInput
+          .extend({ note: z.string().trim().min(8).max(600) })
+          .strict()
+      )
+      .mutation(({ ctx, input }) =>
+        safely(() =>
+          applyReviewedPayment(ctx.user!.id, input.paymentId, input.note)
+        )
+      ),
+    closeReview: staff("business.manage")
+      .input(
+        paymentInput
+          .extend({ note: z.string().trim().min(8).max(600) })
+          .strict()
+      )
+      .mutation(({ ctx, input }) =>
+        safely(() =>
+          closeReviewedPayment(ctx.user!.id, input.paymentId, input.note)
+        )
+      ),
+  }),
   account: staff("business.read")
     .input(businessProviderInput)
     .query(({ input }) => safely(() => adminBusinessAccount(input.providerId))),

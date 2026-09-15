@@ -160,11 +160,11 @@ const strings = {
     "供应商套餐",
   ],
   planHelp: [
-    "Includes group listings, private analytics and up to five new offers per UTC calendar month. Activation and renewal are currently handled by our team.",
-    "تشمل نشر الجروبات والإحصائيات الخاصة وحتى خمسة عروض جديدة في الشهر الميلادي بتوقيت UTC. التفعيل والتجديد حالياً عبر فريقنا.",
-    "Incluye grupos, estadísticas privadas y hasta cinco ofertas nuevas por mes natural UTC. Nuestro equipo gestiona la activación y renovación.",
-    "समूह लिस्टिंग, निजी आँकड़े और प्रति UTC कैलेंडर माह पाँच नए ऑफ़र शामिल हैं। सक्रियण और नवीनीकरण अभी हमारी टीम करती है।",
-    "包含群组展示、私人统计和每个 UTC 自然月最多五条新优惠。目前由团队处理开通和续订。",
+    "Includes group listings, private analytics and up to five new offers per UTC calendar month.",
+    "تشمل نشر الجروبات والإحصائيات الخاصة وحتى خمسة عروض جديدة في الشهر الميلادي بتوقيت UTC.",
+    "Incluye grupos, estadísticas privadas y hasta cinco ofertas nuevas por mes natural UTC.",
+    "समूह लिस्टिंग, निजी आँकड़े और प्रति UTC कैलेंडर माह पाँच नए ऑफ़र शामिल हैं।",
+    "包含群组展示、私人统计和每个 UTC 自然月最多五条新优惠。",
   ],
   renew: [
     "Request activation or renewal",
