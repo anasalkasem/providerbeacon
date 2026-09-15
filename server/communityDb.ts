@@ -72,8 +72,12 @@ const ownColumns = {
   reviewedAt: groups.reviewedAt,
   createdAt: groups.createdAt,
 };
+// Explicit qualification is required in this correlated subquery. Drizzle's
+// single-table SELECT projection unqualifies interpolated column objects,
+// which would bind `id` to the inner report instead of the outer group.
 const openReports =
-  sql<number>`(select count(*) from ${reports} where ${reports.groupId} = ${groups.id} and ${reports.status} = 'open')`.mapWith(
+  sql<number>`(select count(*) from community_reports group_report
+  where group_report.group_id = community_groups.id and group_report.status = 'open')`.mapWith(
     Number
   );
 
