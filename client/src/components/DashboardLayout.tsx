@@ -34,6 +34,7 @@ const menuItems = [
   { icon: LayoutDashboard, label: "overview" as AdminTextKey, path: "/admin", permission: null },
   { icon: BadgeCheck, label: "providers" as AdminTextKey, path: "/admin/providers", permission: "providers.read" },
   { icon: BarChart3, label: "providerAnalytics" as AdminTextKey, path: "/admin/analytics", permission: "providers.read" },
+  { icon: BadgeCheck, label: "providerSubscriptions" as AdminTextKey, path: "/admin/subscriptions", permission: "business.read" },
   { icon: Layers3, label: "services" as AdminTextKey, path: "/admin/services", permission: "services.read" },
   { icon: ClipboardCheck, label: "reviewQueue" as AdminTextKey, path: "/admin/review", permission: "services.read" },
   { icon: Bell, label: "alertsTitle" as AdminTextKey, path: "/admin/alerts", permission: "integrations.read" },

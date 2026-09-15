@@ -1,5 +1,7 @@
 # Provider analytics
 
+The [provider business package](provider-business.md) also exposes an owner-scoped report at `/account/provider` for active subscribers, with comparison to the prior period. The staff dashboard remains available with its existing permission. Public Telegram buttons and their measurement now require an active provider package.
+
 The staff dashboard at `/admin/analytics` reports public provider profile visits and clicks on that profile's **Website** and **Telegram** buttons. Access requires the existing `providers.read` permission, checked against active staff membership on every report request. A provider filter, 7/30/90-day UTC ranges, daily chart and accessible daily table, and paginated provider rankings are included. Providers are ordered by measured contact clicks, then visits, then ID. This analytics ordering does not alter public price comparisons or trust scores.
 
 ## Measurement

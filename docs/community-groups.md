@@ -2,6 +2,8 @@
 
 Public directory: `/groups`. Member submissions: `/account/groups`. Staff review: `/admin/groups`.
 
+Provider-associated groups now additionally require an active provider package. See [provider-business.md](provider-business.md) for ownership, activation and expiry. Independent community groups remain free. The paid flag survives provider deletion so a commercial listing cannot become free by losing its association.
+
 The directory starts empty. No competitor records, personal contacts, invented activity counts, paid placement or unverified provider associations are seeded. Telegram usernames alone cannot establish that a destination is a group. Staff must open each destination and check its actual type and purpose before publishing.
 
 ## Lifecycle
@@ -9,7 +11,7 @@ The directory starts empty. No competitor records, personal contacts, invented a
 - A member needs an active session and a verified email to submit, edit or report. Members can hide their own listings even without a currently verified address. Each account can manage ten submissions, including hidden and rejected entries.
 - Every submission is pending. Staff can publish, request changes or hide it with a note visible to its submitter. Staff-created entries also start pending and need the same review.
 - Editing any name, description, link or classification hides the published version and returns it to pending review. Revision checks reject stale reviews, edits and withdrawals. User IDs supplied as query cache partitions never determine ownership.
-- Provider association is optional. It requires a source page on the provider's own website, an eligible public provider, and an explicit reviewer confirmation of the exact group link. A hidden or deleted provider's association and source URL disappear from public responses.
+- Provider association is required for a provider's own commercial group. Independent community entries may be unassociated. It requires a source page on the provider's own website, an eligible public provider, and an explicit reviewer confirmation of the exact group link. A hidden or deleted provider's commercial group disappears from public responses. Subscription expiry hides it without removing its saved approval.
 - Publication means the link and listing were reviewed at the displayed date. It does not verify members, current activity, offer quality or provider performance. There is no automatic external link checking or server-side URL fetch.
 - Removing a member account cascades its submitted groups and reports. Staff-created groups survive. Provider deletion removes the association without deleting the community entry.
 

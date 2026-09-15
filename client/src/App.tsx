@@ -26,6 +26,9 @@ const Provider = lazy(() => import("@/pages/Provider"));
 const Admin = lazy(() => import("@/pages/Admin"));
 const AdminEmail = lazy(() => import("@/pages/AdminEmail"));
 const AdminProviderAnalytics = lazy(() => import("@/pages/AdminProviderAnalytics"));
+const ProviderBusiness = lazy(() => import("@/pages/ProviderBusiness"));
+const AdminProviderBusiness = lazy(() => import("@/pages/AdminProviderBusiness"));
+const ProviderOffers = lazy(() => import("@/pages/ProviderOffers"));
 const AdminModule = lazy(() => import("@/pages/AdminModule"));
 const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
 const Login = lazy(() => import("@/pages/Login"));
@@ -66,6 +69,7 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/find" component={Find} />
         <Route path="/groups" component={Groups} />
+        <Route path="/offers" component={ProviderOffers} />
         <Route path="/services" component={Services} />
         <Route path="/services/:slug" component={ServiceGuide} />
         <Route path="/directory/:slug" component={DirectoryProfile} />
@@ -77,6 +81,7 @@ function Router() {
         <Route path="/sign-up" component={MemberSignUp} />
         <Route path="/account" component={MemberWorkspace} />
         <Route path="/account/groups" component={MemberGroups} />
+        <Route path="/account/provider" component={ProviderBusiness} />
         <Route path="/account/settings" component={MemberAccount} />
         <Route path="/recover-account" component={MemberRecovery} />
         <Route path="/privacy" component={MemberPrivacy} />
@@ -90,6 +95,7 @@ function Router() {
         <Route path="/admin/email" component={AdminEmail} />
         <Route path="/admin/groups" component={AdminGroups} />
         <Route path="/admin/analytics" component={AdminProviderAnalytics} />
+        <Route path="/admin/subscriptions" component={AdminProviderBusiness} />
         <Route path="/admin/:module" component={AdminModule} />
         <Route path="/team/accept" component={AcceptInvite} />
         <Route path="/404" component={NotFound} />

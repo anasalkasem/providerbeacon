@@ -22,6 +22,7 @@ import {
 } from "../shared/providerProfile";
 import { visibleCatalogueProvider } from "./apiCatalogue";
 import { getDb } from "./db";
+import { activeProviderPlan, type BusinessTransaction } from "./providerEntitlements";
 
 export async function recordProviderEvent(
   input: ProviderEvent,
@@ -64,7 +65,8 @@ export async function recordProviderEvent(
       .where(
         and(
           eq(providerRecords.id, input.providerId),
-          visibleCatalogueProvider()
+          visibleCatalogueProvider(),
+          input.kind === "telegram" ? activeProviderPlan(providerRecords.id) : undefined
         )
       )
       .limit(1);
@@ -138,7 +140,8 @@ const sums = () => ({
 
 export async function getProviderAnalytics(
   input: z.infer<typeof providerAnalyticsInput>,
-  now = Date.now()
+  now = Date.now(),
+  transaction?: BusinessTransaction
 ) {
   const db = await getDb();
   if (!db)
@@ -152,8 +155,7 @@ export async function getProviderAnalytics(
     : undefined;
   const dates = and(gte(daily.day, period.start), lte(daily.day, period.end));
   // One repeatable-read snapshot keeps the cards, chart, pagination and rows consistent.
-  return db.transaction(
-    async tx => {
+  const read = async (tx: BusinessTransaction) => {
       const [state] = await tx
         .select()
         .from(providerAnalyticsState)
@@ -226,9 +228,8 @@ export async function getProviderAnalytics(
         page,
         pageCount,
       };
-    },
-    { isolationLevel: "repeatable read" }
-  );
+    };
+  return transaction ? read(transaction) : db.transaction(read, { isolationLevel: "repeatable read" });
 }
 
 export async function cleanupProviderAnalytics(now = Date.now()) {

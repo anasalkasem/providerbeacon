@@ -1,4 +1,5 @@
 import { workspaceCopy } from "@/i18n/workspace";
+import { businessText } from "@/i18n/providerBusiness";
 import { communityCopy } from "@/i18n/community";
 import { discoveryText } from "@/i18n/discovery";
 import { CatalogueNotice } from "@/components/CatalogueState";
@@ -45,6 +46,7 @@ export function SiteHeader() {
     ["/providers", t.navProviders],
     ["/compare", t.navCompare],
     ["/groups", communityCopy[locale].nav],
+    ["/offers", businessText(locale).offers],
     ["/#methodology", t.navInsights],
   ];
 
@@ -168,14 +170,15 @@ export function SiteFooter() {
             [t.navCompare, "/compare"],
             [t.navProviders, "/providers"],
             [communityCopy[locale].nav, "/groups"],
+            [businessText(locale).offers, "/offers"],
             [p.trustScores, "/#methodology"],
           ]}
         />
         <FooterColumn
           title={p.footerForProviders}
           links={[
-            [p.claimProfile, "/providers#join"],
-            [p.getVerified, "/providers#join"],
+            [p.claimProfile, "/account/provider"],
+            [businessText(locale).title, "/account/provider"],
             [p.partnerStandards, "/#methodology"],
             ["JustAnotherPanel API", "/directory/justanotherpanel"],
           ]}

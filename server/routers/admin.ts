@@ -9,6 +9,7 @@ import { teamRouter } from "./team";
 import { adminProvidersInput } from "../../shared/catalogueQuery";
 import { emailAdminRouter } from "./emailAdmin";
 import { communityAdminRouter } from "./communityAdmin";
+import { businessAdminRouter } from "./business";
 import { createSourcedDrafts } from "../sourcedOffersDb";
 import { sourcedBatchInput } from "../../shared/sourcedOffers";
 import { listProviderSyncIssues } from "../providerSync";
@@ -63,6 +64,7 @@ export const adminRouter = router({
   }),
   email: emailAdminRouter,
   groups: communityAdminRouter,
+  business: businessAdminRouter,
   access: protectedProcedure.query(async ({ ctx }) => {
     const role = await resolveTeamRole(ctx.user!);
     return { role, permissions: role ? rolePermissions[role] : [], authMode: ctx.authMode ?? null };

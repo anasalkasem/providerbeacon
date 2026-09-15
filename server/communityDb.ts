@@ -7,6 +7,7 @@ import {
   desc,
   eq,
   isNotNull,
+  isNull,
   like,
   lt,
   or,
@@ -33,10 +34,11 @@ import { getDb } from "./db";
 import { visibleCatalogueProvider } from "./apiCatalogue";
 import { lockedAuth, type MemberAuth } from "./memberDb";
 import { writeAudit } from "./marketplaceDb";
+import { activeProviderPlan, lockedProviderOwner } from "./providerEntitlements";
 
 type Database = NonNullable<Awaited<ReturnType<typeof getDb>>>;
 type Transaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
-type Author = { member: MemberAuth } | { actorId: number };
+type Author = { member: MemberAuth; providerId?: number } | { actorId: number };
 export async function communityDatabase() {
   const db = await getDb();
   if (!db)
@@ -56,8 +58,13 @@ function duplicate(error: unknown): boolean {
   const e = error as { code?: string; cause?: unknown };
   return e?.code === "ER_DUP_ENTRY" || Boolean(e?.cause && duplicate(e.cause));
 }
+const paidGroupVisibility = () => or(
+  and(eq(groups.requiresSubscription, false), isNull(groups.providerId)),
+  and(isNotNull(groups.providerId), activeProviderPlan(sql`community_groups.provider_id`),
+    sql`exists (select 1 from provider_records where provider_records.id = community_groups.provider_id and ${visibleCatalogueProvider()})`)
+);
 const published = () =>
-  and(eq(groups.status, "approved"), isNotNull(groups.reviewedAt));
+  and(eq(groups.status, "approved"), isNotNull(groups.reviewedAt), paidGroupVisibility());
 const ownColumns = {
   id: groups.id,
   name: groups.name,
@@ -67,6 +74,7 @@ const ownColumns = {
   topic: groups.topic,
   language: groups.language,
   providerId: groups.providerId,
+  requiresSubscription: groups.requiresSubscription,
   evidenceUrl: groups.evidenceUrl,
   linkMetadata: groups.linkMetadata,
   status: groups.status,
@@ -213,6 +221,10 @@ async function checkedValues(tx: Transaction, input: GroupInput, existing?: { ur
 }
 async function authorCheck(tx: Transaction, author: Author) {
   if ("member" in author) {
+    if (author.providerId) {
+      await lockedProviderOwner(tx, author.member, author.providerId);
+      return;
+    }
     const account = await lockedAuth(tx, author.member);
     if (!account.emailVerifiedAt) fail("verify_email");
   }
@@ -241,6 +253,11 @@ export async function createGroup(author: Author, input: GroupInput) {
   try {
     return await db.transaction(async tx => {
       await authorCheck(tx, author);
+      if ("member" in author && author.providerId) {
+        if (input.providerId !== author.providerId) fail("evidence_required");
+        const [amount] = await tx.select({ total: count() }).from(groups).where(eq(groups.providerId, author.providerId));
+        if (amount.total >= 20) fail("limit");
+      }
       if ("member" in author) {
         const [amount] = await tx
           .select({ total: count() })
@@ -253,6 +270,7 @@ export async function createGroup(author: Author, input: GroupInput) {
         .insert(groups)
         .values({
           ...values,
+          requiresSubscription: Boolean(input.providerId),
           submittedBy: "member" in author ? author.member.member.id : null,
         })
         .$returningId();
@@ -277,7 +295,7 @@ async function lockedGroup(
       and(
         eq(groups.id, id),
         author && "member" in author
-          ? eq(groups.submittedBy, author.member.member.id)
+          ? author.providerId ? eq(groups.providerId, author.providerId) : eq(groups.submittedBy, author.member.member.id)
           : undefined
       )
     )
@@ -295,11 +313,16 @@ export async function editGroup(
     return await db.transaction(async tx => {
       await authorCheck(tx, author);
       const row = await lockedGroup(tx, input.id, input.revision, author);
+      // Once a listing represents a provider, its submitter cannot remove that
+      // association to turn an unpaid promotion into a free community entry.
+      if ("member" in author && row.requiresSubscription && input.providerId !== row.providerId) fail("evidence_required");
+      if ("member" in author && author.providerId && input.providerId !== author.providerId) fail("evidence_required");
       const values = await checkedValues(tx, input, row);
       await tx
         .update(groups)
         .set({
           ...values,
+          requiresSubscription: row.requiresSubscription || Boolean(input.providerId),
           revision: row.revision + 1,
           status: "pending",
           reviewNote: null,
@@ -317,12 +340,14 @@ export async function editGroup(
 export async function withdrawGroup(
   auth: MemberAuth,
   id: number,
-  revision: number
+  revision: number,
+  providerId?: number
 ) {
   const db = await communityDatabase();
   return db.transaction(async tx => {
-    await lockedAuth(tx, auth);
-    const row = await lockedGroup(tx, id, revision, { member: auth });
+    if (providerId) await lockedProviderOwner(tx, auth, providerId, false);
+    else await lockedAuth(tx, auth);
+    const row = await lockedGroup(tx, id, revision, { member: auth, providerId });
     await tx
       .update(groups)
       .set({
