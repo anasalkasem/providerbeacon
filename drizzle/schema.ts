@@ -1,4 +1,5 @@
 import { bigint, boolean, decimal, index, int, json, mysqlEnum, mysqlTable, primaryKey, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+export * from "./memberSchema";
 
 export const assistantUsageBuckets = mysqlTable("assistant_usage_buckets", {
   key: varchar("bucket_key", { length: 128 }).primaryKey(),

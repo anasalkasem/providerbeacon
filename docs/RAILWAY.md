@@ -12,6 +12,8 @@ The public marketplace runs with only `NODE_ENV=production`; when `DATABASE_URL`
 
 Independent staff authentication requires `AUTH_BOOTSTRAP_TOKEN` for the one-time owner creation, `AUTH_PEPPER` for recovery-code hashing, and `VAULT_MASTER_KEY` for AES-256-GCM encryption. Generate each independently with at least 32 random bytes and keep them only in Railway's server-side variable store. Remove `AUTH_BOOTSTRAP_TOKEN` after the first owner account is created.
 
+Visitor email/password accounts reuse the existing database and security keys. Google sign-in requires server-only `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` and `PUBLIC_APP_URL=https://providerbeacon.com`. The exact callback is `https://providerbeacon.com/api/auth/google/callback`. See [visitor account activation](member-accounts.md) for Google Cloud configuration and recovery behavior.
+
 The optional Manus OAuth fallback requires `VITE_APP_ID`, `VITE_OAUTH_PORTAL_URL`, `OAUTH_SERVER_URL`, `JWT_SECRET` and `OWNER_OPEN_ID`. Built-in AI analysis additionally requires `BUILT_IN_FORGE_API_URL` and `BUILT_IN_FORGE_API_KEY`; without them, only the AI action fails and the marketplace remains available.
 
 Never copy an existing managed database URL into Railway. Provision a dedicated Railway database and let the initial migration create its schema. Provider API keys are encrypted before storage and must never be copied into source files, logs, browser storage or GitHub Actions secrets. The scheduled workflow uses GitHub OIDC and therefore needs no long-lived scheduler secret.

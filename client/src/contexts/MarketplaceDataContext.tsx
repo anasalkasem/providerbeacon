@@ -95,7 +95,10 @@ export function MarketplaceDataProvider({ children }: { children: ReactNode }) {
       cursor: current.cursors.at(-1),
     },
     {
-      enabled: !/^\/(admin|login|setup|team)(\/|$)/.test(path),
+      enabled:
+        !/^\/(admin|login|setup|team|sign-in|sign-up|account|recover-account|privacy)(\/|$)/.test(
+          path
+        ),
       staleTime: 30_000,
       gcTime: 120_000,
       retry: 1,

@@ -40,6 +40,11 @@ export function assertStrongPassword(password: string) {
 
 export async function hashPassword(password: string) {
   assertStrongPassword(password);
+  return encodePassword(password);
+}
+
+// Policy belongs to each account system; both use the same salted scrypt format.
+export async function encodePassword(password: string) {
   const salt = randomBytes(16);
   const derived = await scrypt(password, salt, SCRYPT_KEY_LENGTH, {
     N: SCRYPT_N,
