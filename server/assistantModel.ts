@@ -15,6 +15,10 @@ export function assistantAvailable() {
   );
 }
 
+export function assistantModelName() {
+  return process.env.OPENAI_MODEL?.trim() || "gpt-5-mini";
+}
+
 export async function readLimitedJson(
   response: Response,
   maxBytes = 128000
@@ -45,7 +49,7 @@ export async function assistantJson<T extends z.ZodType>(
 ): Promise<z.infer<T>> {
   if (!assistantAvailable()) throw new AssistantModelError("unconfigured");
   const { $schema: _draft, ...jsonSchema } = z.toJSONSchema(schema);
-  const model = process.env.OPENAI_MODEL?.trim() || "gpt-5-mini";
+  const model = assistantModelName();
   try {
     const response = await fetch("https://api.openai.com/v1/responses", {
       method: "POST",
