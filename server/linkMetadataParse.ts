@@ -116,6 +116,42 @@ export function parseWebsite(html: string, url: string) {
         /* Invalid source data is optional. */
       }
   }
+  const inBrand = (node: Element) => {
+    let parent = node.parentNode;
+    for (
+      let depth = 0;
+      parent && depth < 6;
+      depth++, parent = "parentNode" in parent ? parent.parentNode : null
+    ) {
+      if (!element(parent)) continue;
+      if (
+        /(?:logo|brand|site-name)/i.test(
+          `${attr(parent, "class")} ${attr(parent, "id")}`
+        )
+      )
+        return true;
+      if (
+        parent.tagName === "a" &&
+        imageUrl(attr(parent, "href"), url) === new URL("/", url).href
+      ) {
+        let region = parent.parentNode;
+        for (
+          let i = 0;
+          region && i < 5;
+          i++, region = "parentNode" in region ? region.parentNode : null
+        ) {
+          if (
+            element(region) &&
+            (region.tagName === "header" ||
+              region.tagName === "nav" ||
+              /header|navbar/i.test(attr(region, "class")))
+          )
+            return true;
+        }
+      }
+    }
+    return false;
+  };
   for (const node of nodes.filter(n => n.tagName === "img")) {
     if (
       /(?:logo|brand)/i.test(
@@ -125,9 +161,12 @@ export function parseWebsite(html: string, url: string) {
           attr(node, "class"),
           attr(node, "id"),
         ].join(" ")
-      )
-    )
-      add(attr(node, "src") || attr(node, "data-src"));
+      ) ||
+      inBrand(node)
+    ) {
+      add(attr(node, "data-src") || attr(node, "data-lazy-src"));
+      add(attr(node, "src"));
+    }
   }
   for (const rel of ["apple-touch-icon", "icon"]) {
     for (const node of nodes.filter(
@@ -227,6 +266,8 @@ const svgTags = new Set([
   "clipPath",
   "mask",
   "use",
+  "pattern",
+  "image",
   "title",
   "desc",
 ]);
@@ -273,6 +314,9 @@ const svgAttrs = new Set([
   "mask",
   "maskUnits",
   "maskContentUnits",
+  "patternUnits",
+  "patternContentUnits",
+  "patternTransform",
 ]);
 const escapeXml = (s: string) =>
   s
@@ -320,6 +364,18 @@ export function sanitizeSvg(source: string): Buffer | null {
       if (/^#[A-Za-z_][\w.-]*$/.test(href))
         attributes.push(`href="${escapeXml(href)}"`);
     }
+    if (node.tagName === "image") {
+      // Preserve self-contained raster logos, never external loads or nested SVG.
+      const embedded = attr(node, "href").match(
+        /^data:(image\/(?:png|jpeg|webp|gif));base64,([A-Za-z0-9+/=\s]+)$/
+      );
+      if (!embedded) return "";
+      const raster = safeImage(Buffer.from(embedded[2], "base64"), embedded[1]);
+      if (!raster || raster.mime !== embedded[1]) return "";
+      attributes.push(
+        `href="data:${raster.mime};base64,${raster.body.toString("base64")}"`
+      );
+    }
     if (node.tagName === "svg")
       attributes.push('xmlns="http://www.w3.org/2000/svg"');
     return `<${node.tagName} ${attributes.join(" ")}>${children(node)
@@ -327,7 +383,18 @@ export function sanitizeSvg(source: string): Buffer | null {
       .join("")}</${node.tagName}>`;
   }
   const result = render(svg);
-  return /<(?:path|rect|circle|ellipse|polygon|polyline|use)\b/.test(result)
+  // A removed pattern/image must not leave a valid-looking but invisible logo.
+  const ids = new Set(
+    Array.from(result.matchAll(/\bid="([^"]+)"/g), match => match[1])
+  );
+  const references = Array.from(
+    result.matchAll(/(?:url\(#|href="#)([A-Za-z_][\w.-]*)/g),
+    match => match[1]
+  );
+  if (references.some(id => !ids.has(id))) return null;
+  return /<(?:path|rect|circle|ellipse|polygon|polyline|use|image)\b/.test(
+    result
+  )
     ? Buffer.from(result)
     : null;
 }

@@ -21,6 +21,7 @@ import { parseTelegram, parseWebsite, safeImage } from "./linkMetadataParse";
 
 const HOUR = 3600000;
 const DAY = 24 * HOUR;
+const PARSER_VERSION = 2;
 const inFlight = new Map<string, Promise<LinkMetadata>>();
 const hints = z
   .object({
@@ -99,7 +100,7 @@ async function captureWebsite(source: string) {
     return null;
   }
 }
-async function websiteFields(source: string) {
+async function websitePage(source: string) {
   const page = await fetchPublicMetadata(source, {
     html: true,
     maxBytes: 1048576,
@@ -112,7 +113,9 @@ async function websiteFields(source: string) {
     )
   )
     throw new Error("metadata_protected");
-  const screenshot = captureWebsite(source);
+  return parsed;
+}
+async function websiteLogo(parsed: ReturnType<typeof parseWebsite>) {
   // Small batches bound latency and request fan-out; retain the source's order.
   let logoUrl: string | null = null;
   for (let i = 0; i < parsed.logos.length && !logoUrl; i += 3) {
@@ -121,12 +124,23 @@ async function websiteFields(source: string) {
     );
     logoUrl = images.find(Boolean) ?? null;
   }
+  return logoUrl;
+}
+export async function fetchWebsiteLogo(source: string) {
+  return websiteLogo(await websitePage(source));
+}
+async function websiteFields(source: string) {
+  const parsed = await websitePage(source);
+  const [logoUrl, websitePreviewUrl] = await Promise.all([
+    websiteLogo(parsed),
+    captureWebsite(source),
+  ]);
   return {
     name: parsed.name,
     description: parsed.description,
     telegramUrl: parsed.telegramUrl,
     logoUrl,
-    websitePreviewUrl: await screenshot,
+    websitePreviewUrl,
   };
 }
 async function telegramFields(source: string) {
@@ -190,7 +204,7 @@ export async function previewLink(
         )
       )
       .limit(1);
-    if (cached) return cached.payload;
+    if (cached?.payload.parserVersion === PARSER_VERSION) return cached.payload;
     try {
       await reserveMemberRequests([
         { key: "metadata:fetch", limit: 300, windowMs: DAY },
@@ -199,6 +213,7 @@ export async function previewLink(
       metadataError("TOO_MANY_REQUESTS", "busy");
     }
     const result: LinkMetadata = {
+      parserVersion: PARSER_VERSION,
       key,
       kind,
       sourceUrl,
@@ -216,7 +231,19 @@ export async function previewLink(
       complete: false,
     };
     if (kind === "website") {
-      Object.assign(result, await websiteFields(sourceUrl).catch(() => null));
+      try {
+        Object.assign(result, await websiteFields(sourceUrl));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "";
+        result.issue =
+          message === "metadata_protected"
+            ? "protected"
+            : message === "metadata_source_busy"
+              ? "source_busy"
+              : message === "metadata_timeout"
+                ? "timeout"
+                : "unavailable";
+      }
       result.complete = Boolean(result.logoUrl && result.websitePreviewUrl);
     } else {
       Object.assign(result, await telegramFields(sourceUrl).catch(() => null));

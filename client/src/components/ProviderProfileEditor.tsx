@@ -274,6 +274,7 @@ export default function ProviderProfileEditor({
                   {t.logo}
                 </figcaption>
                 <ProviderImage
+                  logo
                   src={preview.logoUrl}
                   alt={t.logo}
                   errorText={t.imageFailed}

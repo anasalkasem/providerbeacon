@@ -74,7 +74,10 @@ export async function resolveMetadataUrl(raw: string, remainingMs = 8000) {
       addresses.some(value => !publicAddress(value.address))
     )
       throw new Error("metadata_private_address");
-    return { url, address: addresses[0].address, family: addresses[0].family };
+    // Railway's service has IPv6 egress disabled. Still validate every DNS answer.
+    const selected =
+      addresses.find(value => value.family === 4) ?? addresses[0];
+    return { url, address: selected.address, family: selected.family };
   } finally {
     clearTimeout(timer);
   }
@@ -123,6 +126,14 @@ export async function fetchPublicMetadata(
         },
         res => {
           const status = res.statusCode ?? 0;
+          if (status === 401 || status === 403) {
+            req.destroy(new Error("metadata_protected"));
+            return;
+          }
+          if (status === 429) {
+            req.destroy(new Error("metadata_source_busy"));
+            return;
+          }
           if (
             [301, 302, 303, 307, 308].includes(status) &&
             res.headers.location

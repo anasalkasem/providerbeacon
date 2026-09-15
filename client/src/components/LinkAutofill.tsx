@@ -3,6 +3,7 @@ import { Loader2, RefreshCw, WandSparkles } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { useLocale } from "@/contexts/LocaleContext";
 import { linkMetadataCopy } from "@/i18n/linkMetadata";
+import { ProviderImage } from "./ProviderMedia";
 import { groupLink } from "@shared/community";
 import {
   websiteHome,
@@ -178,11 +179,17 @@ export default function LinkAutofill({
               ? t.busy
               : t.unavailable
             : data
-              ? hasData
-                ? data.complete
-                  ? t.ready
-                  : t.partial
-                : t.unavailable
+              ? data.issue === "protected"
+                ? t.protected
+                : data.issue === "source_busy"
+                  ? t.sourceBusy
+                  : data.issue === "timeout"
+                    ? t.timeout
+                    : hasData
+                      ? data.complete
+                        ? t.ready
+                        : t.partial
+                      : t.unavailable
               : t.hint}
       </p>
       {data && (
@@ -191,10 +198,11 @@ export default function LinkAutofill({
             <div className="flex flex-wrap items-start gap-4">
               {data.logoUrl && (
                 <figure>
-                  <img
+                  <ProviderImage
+                    logo
                     src={data.logoUrl}
                     alt={t.logo}
-                    referrerPolicy="no-referrer"
+                    errorText={t.unavailable}
                     className="size-16 rounded-lg border bg-white object-contain p-2"
                   />
                   <figcaption className="mt-1 text-xs text-slate-500">

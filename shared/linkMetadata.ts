@@ -39,6 +39,8 @@ export type GroupLinkMetadata = {
   fetchedAt: string;
 };
 export type LinkMetadata = {
+  parserVersion?: number;
+  issue?: "protected" | "source_busy" | "timeout" | "unavailable";
   key: string;
   kind: "website" | "telegram";
   sourceUrl: string;

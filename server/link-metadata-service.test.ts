@@ -122,8 +122,38 @@ describe("automatic import orchestration", () => {
     });
     const result = await previewLink("website", "https://provider.com");
     expect(result.name).toBeNull();
+    expect(result.issue).toBe("protected");
     expect(result.websitePreviewUrl).toBeNull();
     expect(state.fetch).toHaveBeenCalledTimes(1);
+  });
+  it("returns a useful reason when a provider blocks metadata or times out", async () => {
+    for (const issue of ["protected", "timeout", "source_busy"] as const) {
+      state.fetch.mockRejectedValue(new Error(`metadata_${issue}`));
+      const result = await previewLink("website", "https://provider.com/");
+      expect(result).toMatchObject({
+        issue,
+        complete: false,
+        logoUrl: null,
+        websitePreviewUrl: null,
+      });
+    }
+  });
+  it("refreshes metadata produced by the old logo parser instead of serving its cached blank image", async () => {
+    const result = await previewLink("website", "https://provider.com/");
+    state.cached = [
+      {
+        payload: {
+          ...result,
+          parserVersion: undefined,
+          name: "Old cached name",
+        },
+      },
+    ];
+    state.fetch.mockClear();
+    expect((await previewLink("website", "https://provider.com/")).name).toBe(
+      "Provider"
+    );
+    expect(state.fetch).toHaveBeenCalled();
   });
   it("lets AI suggest only topic/language and keeps Telegram's observed audience", async () => {
     const result = await previewLink("telegram", "https://t.me/provider_group");

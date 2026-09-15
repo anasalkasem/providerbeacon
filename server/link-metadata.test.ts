@@ -88,6 +88,7 @@ describe("source metadata extraction", () => {
       <script>alert(1)</script><foreignObject><iframe src="https://evil.com"></iframe></foreignObject>
       <image href="https://evil.com/pixel"/><style>@import 'https://evil.com'</style>
       <path d="M0 0H20V20Z" style="fill: #00f; stroke: url(https://evil.com)"/><use href="https://evil.com/a.svg#x"/>
+      <defs><linearGradient id="gradient"><stop offset="0" stop-color="#00f"/></linearGradient></defs>
       <circle r="8" fill="url(#gradient)"/></svg>`)?.toString();
     expect(safe).toContain('viewBox="0 0 64 64"');
     expect(safe).toContain('fill="#00f"');
@@ -114,6 +115,44 @@ describe("source metadata extraction", () => {
       )
     ).toBeNull();
     expect(safeImage(Buffer.alloc(1048577), "image/png")).toBeNull();
+  });
+  it("finds the provider's header image before a favicon even when the image has no logo label", () => {
+    const page = parseWebsite(
+      '<div class="header"><a href="/"><div class="site-name"><img src="/brand-image.png" alt="provider.com"></div></a></div><img src="/sale.png"><link rel="icon" href="/favicon.ico">',
+      "https://provider.com/"
+    );
+    expect(page.logos[0]).toBe("https://provider.com/brand-image.png");
+    expect(page.logos).not.toContain("https://provider.com/sale.png");
+  });
+  it("preserves raster artwork embedded in SVG patterns and refuses empty paint references", () => {
+    const png =
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6YwAAAABJRU5ErkJggg==";
+    const source = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><rect width="131" height="59" fill="url(#pattern0)"/><defs><pattern id="pattern0" patternContentUnits="objectBoundingBox" width="1" height="1"><use xlink:href="#image0"/></pattern><image id="image0" width="1" height="1" xlink:href="data:image/png;base64,${png}"/></defs></svg>`;
+    const safe = sanitizeSvg(source)?.toString();
+    expect(safe).toContain('<pattern id="pattern0"');
+    expect(safe).toContain('href="#image0"');
+    expect(safe).toContain(`href="data:image/png;base64,${png}"`);
+    expect(
+      sanitizeSvg(
+        '<svg><rect width="131" height="59" fill="url(#missing)"/><defs/></svg>'
+      )
+    ).toBeNull();
+    expect(
+      sanitizeSvg(
+        source.replace(
+          `data:image/png;base64,${png}`,
+          "https://evil.com/tracker.png"
+        )
+      )
+    ).toBeNull();
+    expect(
+      sanitizeSvg(
+        source.replace(
+          `data:image/png;base64,${png}`,
+          `data:image/png;base64,${Buffer.from('<svg onload="alert(1)"/>').toString("base64")}`
+        )
+      )
+    ).toBeNull();
   });
 });
 
