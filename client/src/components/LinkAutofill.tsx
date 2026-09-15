@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { useLocale } from "@/contexts/LocaleContext";
 import { linkMetadataCopy } from "@/i18n/linkMetadata";
 import { groupLink } from "@shared/community";
+import { ProviderLogo, ProviderImage } from "./ProviderMedia";
 import {
   websiteHome,
   type GroupLinkMetadata,
@@ -106,7 +107,10 @@ export default function LinkAutofill({
     callbacks.current.onPending?.(true);
     const timer = setTimeout(() => {
       void load
-        .current({ url: source })
+        .current({
+          url: source,
+          ...(kind === "website" && attempt > 0 ? { refresh: true } : {}),
+        })
         .then(data => {
           if (cancelled || current.current !== source) return;
           setState({ source, pending: false, data });
@@ -178,11 +182,15 @@ export default function LinkAutofill({
               ? t.busy
               : t.unavailable
             : data
-              ? hasData
-                ? data.complete
-                  ? t.ready
-                  : t.partial
-                : t.unavailable
+              ? data.issue === "restricted"
+                ? t.restricted
+                : data.issue === "timeout"
+                  ? t.timeout
+                  : hasData
+                    ? data.complete
+                      ? t.ready
+                      : t.partial
+                    : t.unavailable
               : t.hint}
       </p>
       {data && (
@@ -191,11 +199,11 @@ export default function LinkAutofill({
             <div className="flex flex-wrap items-start gap-4">
               {data.logoUrl && (
                 <figure>
-                  <img
+                  <ProviderLogo
                     src={data.logoUrl}
-                    alt={t.logo}
-                    referrerPolicy="no-referrer"
-                    className="size-16 rounded-lg border bg-white object-contain p-2"
+                    name={t.logo}
+                    initials={data.name?.slice(0, 2).toUpperCase() || "—"}
+                    className="h-20 w-36"
                   />
                   <figcaption className="mt-1 text-xs text-slate-500">
                     {t.logo}
@@ -213,10 +221,10 @@ export default function LinkAutofill({
               )}
               {data.websitePreviewUrl && (
                 <figure className="max-w-full">
-                  <img
+                  <ProviderImage
                     src={data.websitePreviewUrl}
                     alt={t.screenshot}
-                    referrerPolicy="no-referrer"
+                    errorText={t.imageFailed}
                     className="aspect-[1200/750] w-60 max-w-full rounded-lg border bg-white object-cover"
                   />
                   <figcaption className="mt-1 text-xs text-slate-500">

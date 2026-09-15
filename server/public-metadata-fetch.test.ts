@@ -39,6 +39,16 @@ beforeEach(() => {
   });
 });
 describe("bounded DNS-pinned public metadata transport", () => {
+  it("distinguishes a denied source from a transient transport failure", async () => {
+    state.replies = [{ status: 403, body: "Just a moment" }];
+    await expect(
+      fetchPublicMetadata("https://provider.com", {
+        html: true,
+        maxBytes: 1000,
+      })
+    ).rejects.toThrow("metadata_restricted");
+    expect(state.calls).toHaveLength(1);
+  });
   it("pins the checked IP while validating TLS for the original hostname, with no credentials", async () => {
     const result = await fetchPublicMetadata("https://provider.com/home", {
       html: true,

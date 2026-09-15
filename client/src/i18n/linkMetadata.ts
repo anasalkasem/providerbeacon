@@ -9,6 +9,12 @@ const en = {
   unavailable:
     "Details could not be retrieved. You can try again or enter them manually.",
   busy: "Please try again later, or enter the details manually.",
+  restricted:
+    "This website restricts automatic access. You can add its details and image links manually.",
+  timeout:
+    "The website took too long to respond. Try again shortly; you can still enter the details manually.",
+  imageFailed:
+    "This image could not be displayed. Try fetching the details again.",
   logo: "Website logo",
   screenshot: "Homepage screenshot",
   avatar: "Group photo",
@@ -34,6 +40,11 @@ export const linkMetadataCopy = {
     unavailable:
       "تعذّر جلب البيانات حاليًا. يمكنك المحاولة مجددًا أو تعبئتها يدويًا.",
     busy: "جرّب مجددًا لاحقًا، أو أكمل البيانات يدويًا.",
+    restricted:
+      "هذا الموقع يقيّد الوصول التلقائي. يمكنك إضافة بياناته وروابط صوره يدويًا.",
+    timeout:
+      "تأخر الموقع في الاستجابة. جرّب مجددًا بعد قليل، ويمكنك إكمال البيانات يدويًا.",
+    imageFailed: "تعذّر عرض هذه الصورة. جرّب جلب البيانات مجددًا.",
     logo: "لوغو الموقع",
     screenshot: "لقطة الصفحة الرئيسية",
     avatar: "صورة الجروب",
@@ -57,6 +68,12 @@ export const linkMetadataCopy = {
     unavailable:
       "No se pudieron obtener los datos. Reintenta o complétalos manualmente.",
     busy: "Inténtalo más tarde o completa los datos manualmente.",
+    restricted:
+      "Este sitio restringe el acceso automático. Puedes añadir sus datos y enlaces de imágenes manualmente.",
+    timeout:
+      "El sitio tardó demasiado en responder. Reintenta en breve o completa los datos manualmente.",
+    imageFailed:
+      "No se pudo mostrar esta imagen. Intenta obtener los datos de nuevo.",
     logo: "Logotipo del sitio",
     screenshot: "Captura de la página principal",
     avatar: "Foto del grupo",
@@ -79,6 +96,11 @@ export const linkMetadataCopy = {
     partial: "कुछ जानकारी उपलब्ध नहीं है। बाकी फ़ील्ड भरें।",
     unavailable: "जानकारी प्राप्त नहीं हुई। फिर कोशिश करें या स्वयं भरें।",
     busy: "बाद में कोशिश करें या जानकारी स्वयं भरें।",
+    restricted:
+      "यह वेबसाइट स्वचालित पहुँच सीमित करती है। जानकारी और तस्वीरों के लिंक स्वयं जोड़ सकते हैं।",
+    timeout:
+      "वेबसाइट ने जवाब देने में बहुत समय लिया। थोड़ी देर में फिर कोशिश करें या जानकारी स्वयं भरें।",
+    imageFailed: "यह तस्वीर दिखाई नहीं जा सकी। जानकारी फिर से प्राप्त करें।",
     logo: "वेबसाइट का लोगो",
     screenshot: "होमपेज का स्क्रीनशॉट",
     avatar: "समूह की तस्वीर",
@@ -100,6 +122,9 @@ export const linkMetadataCopy = {
     partial: "部分信息不可用，请填写其余字段。",
     unavailable: "暂时无法获取信息。请重试或手动填写。",
     busy: "请稍后重试，或手动填写信息。",
+    restricted: "此网站限制自动访问。您可以手动添加信息和图片链接。",
+    timeout: "网站响应超时。请稍后重试，或手动填写信息。",
+    imageFailed: "无法显示此图片，请重新获取信息。",
     logo: "网站标志",
     screenshot: "首页截图",
     avatar: "群组头像",

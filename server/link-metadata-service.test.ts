@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import sharp from "sharp";
 const state = vi.hoisted(() => ({
   fetch: vi.fn(),
   budget: vi.fn(),
@@ -6,6 +7,7 @@ const state = vi.hoisted(() => ({
   available: true,
   cached: [] as any[],
   writes: [] as any[],
+  repair: vi.fn(),
 }));
 vi.mock("./publicMetadataFetch", async original => ({
   ...(await original<any>()),
@@ -13,6 +15,7 @@ vi.mock("./publicMetadataFetch", async original => ({
   resolveMetadataUrl: vi.fn(async () => ({})),
 }));
 vi.mock("./memberDb", () => ({ reserveMemberRequests: state.budget }));
+vi.mock("./importedLogoRepair", () => ({ repairImportedLogo: state.repair }));
 vi.mock("./assistantModel", () => ({
   assistantAvailable: () => state.available,
   assistantJson: state.model,
@@ -37,10 +40,13 @@ import {
 } from "../drizzle/linkMetadataSchema";
 import { previewLink } from "./linkMetadata";
 
-const png = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6YwAAAABJRU5ErkJggg==",
-  "base64"
-);
+const png = await sharp(
+  Buffer.from(
+    '<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg"><path fill="#245acc" d="M8 8h48v48H8z"/></svg>'
+  )
+)
+  .png()
+  .toBuffer();
 const website =
   '<title>Provider</title><meta name="description" content="A public provider description"><img class="logo" src="/logo.png?version=1"><meta property="og:image" content="/marketing.jpg">';
 const telegram =
@@ -162,7 +168,9 @@ describe("automatic import orchestration", () => {
   });
   it("reuses cached metadata without repeated screenshots, source requests, or AI charges", async () => {
     const result = await previewLink("telegram", "https://t.me/provider_group");
-    state.cached = [{ payload: result }];
+    state.cached = [
+      { payload: result, expiresAt: new Date(Date.now() + 3600000) },
+    ];
     state.fetch.mockClear();
     state.model.mockClear();
     state.budget.mockClear();
@@ -172,5 +180,71 @@ describe("automatic import orchestration", () => {
     expect(state.fetch).not.toHaveBeenCalled();
     expect(state.model).not.toHaveBeenCalled();
     expect(state.budget).not.toHaveBeenCalled();
+  });
+  it("rejects a blank first logo and continues to a working source image", async () => {
+    const fallback = state.fetch.getMockImplementation()!;
+    state.fetch.mockImplementation(async (url, options) =>
+      url.includes("/logo.png")
+        ? {
+            url,
+            contentType: "image/svg+xml",
+            body: Buffer.from(
+              '<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" fill="none"/></svg>'
+            ),
+          }
+        : fallback(url, options)
+    );
+    const result = await previewLink("website", "https://provider.com");
+    expect(result.logoUrl).toBeTruthy();
+    expect(
+      state.fetch.mock.calls.some(([url]) => url.endsWith("/favicon.ico"))
+    ).toBe(true);
+  });
+  it("upgrades legacy logos and retains an already captured homepage without a second screenshot charge", async () => {
+    const old = {
+      ...(await previewLink("website", "https://provider.com")),
+      version: undefined,
+    };
+    state.cached = [
+      { payload: old, expiresAt: new Date(Date.now() + 86400000) },
+    ];
+    state.fetch.mockClear();
+    state.budget.mockClear();
+    const next = await previewLink("website", "https://provider.com");
+    expect(next.version).toBe(2);
+    expect(next.websitePreviewUrl).toBe(old.websitePreviewUrl);
+    expect(
+      state.fetch.mock.calls.some(([url]) => url.includes("thum.io"))
+    ).toBe(false);
+    expect(state.repair).toHaveBeenCalledWith(old, next);
+  });
+  it("reports restricted sources honestly and never captures a challenge page as a website", async () => {
+    state.fetch.mockRejectedValue(new Error("metadata_restricted"));
+    const result = await previewLink("website", "https://provider.com");
+    expect(result).toMatchObject({
+      issue: "restricted",
+      complete: false,
+      logoUrl: null,
+      websitePreviewUrl: null,
+    });
+    expect(state.fetch).toHaveBeenCalledTimes(1);
+  });
+  it("allows an explicit refresh after the cooldown rather than returning a stale failure", async () => {
+    const old = {
+      ...(await previewLink("website", "https://provider.com")),
+      fetchedAt: new Date(Date.now() - 60000).toISOString(),
+      logoUrl: null,
+      complete: false,
+    };
+    state.cached = [{ payload: old, expiresAt: new Date(Date.now() + 300000) }];
+    state.fetch.mockClear();
+    expect(
+      (await previewLink("website", "https://provider.com")).logoUrl
+    ).toBeNull();
+    expect(state.fetch).not.toHaveBeenCalled();
+    expect(
+      (await previewLink("website", "https://provider.com", { refresh: true }))
+        .logoUrl
+    ).toBeTruthy();
   });
 });

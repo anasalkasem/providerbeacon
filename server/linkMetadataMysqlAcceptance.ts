@@ -6,7 +6,12 @@ import {
 } from "../drizzle/linkMetadataSchema";
 import { communityGroups } from "../drizzle/communitySchema";
 import { memberAuthBuckets } from "../drizzle/memberSchema";
-import { providerRecords, teamMembers, users } from "../drizzle/schema";
+import {
+  auditEntries,
+  providerRecords,
+  teamMembers,
+  users,
+} from "../drizzle/schema";
 import { groupInput, groupListInput } from "../shared/community";
 import type { LinkMetadata } from "../shared/linkMetadata";
 import {
@@ -14,7 +19,9 @@ import {
   savedLinkMetadata,
   cleanupImportedMedia,
   metadataBudget,
+  WEBSITE_METADATA_VERSION,
 } from "./linkMetadata";
+import { repairImportedLogo } from "./importedLogoRepair";
 import { createProviderDraft } from "./marketplaceDb";
 import {
   createGroup,
@@ -54,6 +61,7 @@ export function linkMetadataAcceptanceCases(
       sourceUrl = "https://provider.com/"
     ) {
       const data: LinkMetadata = {
+        ...(kind === "website" ? { version: WEBSITE_METADATA_VERSION } : {}),
         key: metadataKey(kind, sourceUrl),
         kind,
         sourceUrl,
@@ -83,6 +91,66 @@ export function linkMetadataAcceptanceCases(
         });
       return data;
     }
+    it("repairs an imported logo atomically with an audit and preserves all other provider fields", async () => {
+      const old = { ...(await seed()), version: undefined };
+      await database()
+        .update(providerRecords)
+        .set({
+          websiteUrl: old.sourceUrl,
+          logoUrl: old.logoUrl,
+          websitePreviewUrl: image("b".repeat(64)),
+          description: "My edited description",
+          profileRevision: 5,
+        })
+        .where(eq(providerRecords.id, providerId()));
+      const next = {
+        ...old,
+        version: WEBSITE_METADATA_VERSION,
+        logoUrl: image("c".repeat(64)),
+      };
+      expect(await repairImportedLogo(old, next)).toBe(1);
+      const [saved] = await database()
+        .select()
+        .from(providerRecords)
+        .where(eq(providerRecords.id, providerId()));
+      expect(saved).toMatchObject({
+        logoUrl: next.logoUrl,
+        websitePreviewUrl: image("b".repeat(64)),
+        description: "My edited description",
+        profileRevision: 6,
+      });
+      const audits = await database()
+        .select()
+        .from(auditEntries)
+        .where(eq(auditEntries.action, "provider.logo.repair"));
+      expect(audits).toHaveLength(1);
+      expect(audits[0].metadata).toMatchObject({
+        before: { revision: 5 },
+        after: { revision: 6 },
+      });
+      expect(await repairImportedLogo(old, next)).toBe(0);
+    });
+    it("does not replace a manual logo or an imported logo after the source URL changes", async () => {
+      const old = { ...(await seed()), version: undefined };
+      const next = {
+        ...old,
+        version: WEBSITE_METADATA_VERSION,
+        logoUrl: image("c".repeat(64)),
+      };
+      await database()
+        .update(providerRecords)
+        .set({
+          websiteUrl: old.sourceUrl,
+          logoUrl: "https://provider.com/manual.png",
+        })
+        .where(eq(providerRecords.id, providerId()));
+      expect(await repairImportedLogo(old, next)).toBe(0);
+      await database()
+        .update(providerRecords)
+        .set({ websiteUrl: "https://different.com/", logoUrl: old.logoUrl })
+        .where(eq(providerRecords.id, providerId()));
+      expect(await repairImportedLogo(old, next)).toBe(0);
+    });
     async function caller(origin = "https://providerbeacon.com") {
       const [user] = await database()
         .select()

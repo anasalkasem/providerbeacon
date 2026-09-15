@@ -15,6 +15,17 @@ import {
 } from "./linkMetadataParse";
 
 describe("source metadata extraction", () => {
+  it("recognizes a header logo with an opaque filename and a lazy placeholder", () => {
+    const result = parseWebsite(
+      '<div class="header"><a href="/"><div class="site-name"><img src="/placeholder.gif" data-src="https://cdn.com/opaque.png" alt="provider.com"></div></a></div><link rel="icon" href="/icon.png">',
+      "https://provider.com/"
+    );
+    expect(result.logos.slice(0, 3)).toEqual([
+      "https://cdn.com/opaque.png",
+      "https://provider.com/placeholder.gif",
+      "https://provider.com/icon.png",
+    ]);
+  });
   it("uses explicit logo sources and never mislabels a social banner as a screenshot", () => {
     const page = parseWebsite(
       `<html><head><title>Provider Home</title>

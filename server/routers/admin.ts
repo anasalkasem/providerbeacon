@@ -76,7 +76,7 @@ export const adminRouter = router({
   providers: router({
     previewWebsite: permissionProcedure("providers.write").input(websitePreviewInput).mutation(async ({ ctx, input }) => {
       assertStaffOrigin(ctx.req); ctx.res.setHeader("Cache-Control", "no-store");
-      await metadataBudget(`staff:${ctx.user!.id}`); return previewLink("website", input.url);
+      await metadataBudget(`staff:${ctx.user!.id}`); return previewLink("website", input.url, { refresh: input.refresh });
     }),
     profile: permissionProcedure("providers.read").input(z.object({ id: z.number().int().positive() })).query(({ input }) => getProviderProfile(input.id)),
     saveProfile: permissionProcedure("providers.write").input(providerProfileInput).mutation(({ ctx, input }) => {
