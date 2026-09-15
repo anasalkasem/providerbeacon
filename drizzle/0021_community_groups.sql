@@ -1,0 +1,41 @@
+CREATE TABLE `community_groups` (
+  `id` int AUTO_INCREMENT PRIMARY KEY,
+  `submitted_by` int,
+  `name` varchar(100) NOT NULL,
+  `description` varchar(600) NOT NULL,
+  `url` varchar(500) NOT NULL,
+  `url_key` varchar(64) NOT NULL,
+  `platform` enum('telegram','whatsapp','discord') NOT NULL,
+  `topic` enum('providers','offers','support','learning') NOT NULL,
+  `language` enum('ar','en','es','hi','zh','multi','other') NOT NULL,
+  `provider_id` int,
+  `evidence_url` varchar(500),
+  `status` enum('pending','approved','rejected','hidden') NOT NULL DEFAULT 'pending',
+  `revision` int NOT NULL DEFAULT 1,
+  `review_note` varchar(600),
+  `reviewed_at` timestamp NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY `community_group_url_unique` (`url_key`),
+  KEY `community_group_public_idx` (`status`,`id`),
+  KEY `community_group_filter_idx` (`status`,`platform`,`topic`,`language`,`id`),
+  KEY `community_group_member_idx` (`submitted_by`,`id`),
+  FOREIGN KEY (`submitted_by`) REFERENCES `member_accounts` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`provider_id`) REFERENCES `provider_records` (`id`) ON DELETE SET NULL
+);
+--> statement-breakpoint
+CREATE TABLE `community_reports` (
+  `id` int AUTO_INCREMENT PRIMARY KEY,
+  `group_id` int NOT NULL,
+  `member_id` int NOT NULL,
+  `reason` enum('broken','unrelated','spam','other') NOT NULL,
+  `note` varchar(500) NOT NULL,
+  `status` enum('open','resolved') NOT NULL DEFAULT 'open',
+  `revision` int NOT NULL DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `resolved_at` timestamp NULL,
+  UNIQUE KEY `community_report_member_unique` (`group_id`,`member_id`),
+  KEY `community_report_queue_idx` (`group_id`,`status`,`id`),
+  FOREIGN KEY (`group_id`) REFERENCES `community_groups` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`member_id`) REFERENCES `member_accounts` (`id`) ON DELETE CASCADE
+);

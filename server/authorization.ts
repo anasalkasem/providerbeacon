@@ -11,6 +11,7 @@ export type Permission =
   | "translations.read" | "translations.write"
   | "audit.read"
   | "emails.read" | "emails.send"
+  | "groups.read" | "groups.review"
   | "integrations.read" | "integrations.write";
 
 const allPermissions: Permission[] = [
@@ -18,16 +19,17 @@ const allPermissions: Permission[] = [
   "team.read", "team.write", "translations.read", "translations.write", "audit.read",
   "integrations.read", "integrations.write",
   "emails.read", "emails.send",
+  "groups.read", "groups.review",
 ];
 
 export const rolePermissions: Record<TeamRole, Permission[]> = {
   owner: allPermissions,
   administrator: allPermissions.filter(permission => permission !== "team.write"),
-  operations_manager: ["providers.read", "providers.write", "providers.review", "services.read", "services.write", "services.review", "services.publish", "translations.read", "audit.read", "integrations.read"],
-  provider_reviewer: ["providers.read", "providers.review", "services.read", "services.review", "audit.read"],
+  operations_manager: ["providers.read", "providers.write", "providers.review", "services.read", "services.write", "services.review", "services.publish", "translations.read", "audit.read", "integrations.read", "groups.read", "groups.review"],
+  provider_reviewer: ["providers.read", "providers.review", "services.read", "services.review", "audit.read", "groups.read", "groups.review"],
   catalogue_editor: ["providers.read", "services.read", "services.write"],
   translation_manager: ["providers.read", "services.read", "translations.read", "translations.write"],
-  auditor: ["providers.read", "services.read", "translations.read", "audit.read", "integrations.read"],
+  auditor: ["providers.read", "services.read", "translations.read", "audit.read", "integrations.read", "groups.read"],
 };
 
 export async function resolveTeamRole(user: User): Promise<TeamRole | null> {

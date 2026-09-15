@@ -1,4 +1,5 @@
 import { workspaceCopy } from "@/i18n/workspace";
+import { communityCopy } from "@/i18n/community";
 import { discoveryText } from "@/i18n/discovery";
 import { CatalogueNotice } from "@/components/CatalogueState";
 import { useMember } from "@/hooks/useMember";
@@ -43,6 +44,7 @@ export function SiteHeader() {
     ["/services", t.navServices],
     ["/providers", t.navProviders],
     ["/compare", t.navCompare],
+    ["/groups", communityCopy[locale].nav],
     ["/#methodology", t.navInsights],
   ];
 
@@ -55,7 +57,7 @@ export function SiteHeader() {
         <Brand compact />
         <nav
           aria-label={p.primaryNav}
-          className="hidden items-center gap-1 lg:flex"
+          className="hidden items-center gap-1 xl:flex"
         >
           {links.map(([href, label]) => (
             <Link
@@ -97,7 +99,7 @@ export function SiteHeader() {
           </Button>
         </div>
         <button
-          className="touch-target rounded-lg p-2 text-slate-700 lg:hidden"
+          className="touch-target rounded-lg p-2 text-slate-700 xl:hidden"
           aria-label={open ? "×" : p.mobileNav}
           onClick={() => setOpen(!open)}
         >
@@ -105,7 +107,7 @@ export function SiteHeader() {
         </button>
       </div>
       {open && (
-        <div className="border-t border-slate-200 bg-white p-4 lg:hidden">
+        <div className="border-t border-slate-200 bg-white p-4 xl:hidden">
           <nav className="grid gap-2" aria-label={p.mobileNav}>
             {links.map(([href, label]) => (
               <Link
@@ -165,6 +167,7 @@ export function SiteFooter() {
             [t.navServices, "/services"],
             [t.navCompare, "/compare"],
             [t.navProviders, "/providers"],
+            [communityCopy[locale].nav, "/groups"],
             [p.trustScores, "/#methodology"],
           ]}
         />

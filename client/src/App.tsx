@@ -8,6 +8,9 @@ import { MarketplaceDataProvider } from "./contexts/MarketplaceDataContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
 const Find = lazy(() => import("@/pages/Find"));
+const Groups = lazy(() => import("@/pages/Groups"));
+const MemberGroups = lazy(() => import("@/pages/MemberGroups"));
+const AdminGroups = lazy(() => import("@/pages/AdminGroups"));
 const MemberWorkspace = lazy(() => import("@/pages/MemberWorkspace"));
 const Home = lazy(() => import("@/pages/Home"));
 const ServiceGuide = lazy(() =>
@@ -61,6 +64,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/find" component={Find} />
+        <Route path="/groups" component={Groups} />
         <Route path="/services" component={Services} />
         <Route path="/services/:slug" component={ServiceGuide} />
         <Route path="/directory/:slug" component={DirectoryProfile} />
@@ -71,6 +75,7 @@ function Router() {
         <Route path="/sign-in" component={MemberSignIn} />
         <Route path="/sign-up" component={MemberSignUp} />
         <Route path="/account" component={MemberWorkspace} />
+        <Route path="/account/groups" component={MemberGroups} />
         <Route path="/account/settings" component={MemberAccount} />
         <Route path="/recover-account" component={MemberRecovery} />
         <Route path="/privacy" component={MemberPrivacy} />
@@ -82,6 +87,7 @@ function Router() {
         <Route path="/admin" component={Admin} />
         <Route path="/admin/security" component={Security} />
         <Route path="/admin/email" component={AdminEmail} />
+        <Route path="/admin/groups" component={AdminGroups} />
         <Route path="/admin/:module" component={AdminModule} />
         <Route path="/team/accept" component={AcceptInvite} />
         <Route path="/404" component={NotFound} />

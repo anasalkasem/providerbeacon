@@ -28,6 +28,7 @@ import { trpc } from "@/lib/trpc";
 import { useMember } from "@/hooks/useMember";
 import { useLocale } from "@/contexts/LocaleContext";
 import { workspaceCopy } from "@/i18n/workspace";
+import { communityCopy } from "@/i18n/community";
 import { PublicLayout } from "@/components/SiteChrome";
 import { unitLabel } from "@/i18n/pricing";
 import OfferEvidence from "@/components/OfferEvidence";
@@ -125,6 +126,12 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
           >
             {t.newSearch}
             <ArrowRight className="size-4 rtl:rotate-180" />
+          </Link>
+          <Link
+            href="/account/groups"
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600"
+          >
+            {communityCopy[locale].mine}
           </Link>
           <Link
             href="/account/settings"
