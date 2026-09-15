@@ -1,12 +1,12 @@
 import { discoveryText } from "@/i18n/discovery";
 import { CatalogueNotice } from "@/components/CatalogueState";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { useMember } from "@/hooks/useMember";
+import { useMemberText } from "@/i18n/memberAuth";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { startLogin } from "@/const";
 import { copy, localeNames, type Locale, useLocale } from "@/contexts/LocaleContext";
 import { pageCopy } from "@/i18n/messages";
-import { ChevronDown, Globe2, Menu, ShieldCheck, X } from "lucide-react";
+import { ChevronDown, Globe2, Menu, UserRound, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 
@@ -28,8 +28,8 @@ export function SiteHeader() {
   const { locale, setLocale } = useLocale();
   const t = copy[locale];
   const p = pageCopy[locale];
-  const { user, isAuthenticated } = useAuth();
-  const authConfigured = Boolean(import.meta.env.VITE_OAUTH_PORTAL_URL && import.meta.env.VITE_APP_ID);
+  const member = useMember();
+  const mt = useMemberText();
   const [open, setOpen] = useState(false);
   const [location] = useLocation();
   const links = [["/services", t.navServices], ["/providers", t.navProviders], ["/compare", t.navCompare], ["/#methodology", t.navInsights]];
@@ -47,13 +47,13 @@ export function SiteHeader() {
             <DropdownMenuTrigger asChild><Button variant="ghost" className="gap-2 text-slate-600"><Globe2 className="size-4" />{localeNames[locale]}<ChevronDown className="size-3.5" /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end">{(Object.keys(localeNames) as Locale[]).map(value => <DropdownMenuItem key={value} onClick={() => setLocale(value)}>{localeNames[value]}</DropdownMenuItem>)}</DropdownMenuContent>
           </DropdownMenu>
-          {authConfigured && user?.role === "admin" && <Button variant="ghost" asChild><Link href="/admin"><ShieldCheck className="size-4" />{t.admin}</Link></Button>}
-          {authConfigured && <Button className="rounded-xl bg-[#0B2A68] hover:bg-[#0E347F]" onClick={() => !isAuthenticated && startLogin()}>{isAuthenticated ? user?.name ?? p.account : t.signIn}</Button>}
+          <Button asChild className="rounded-xl bg-[#0B2A68] hover:bg-[#0E347F]"><a href={member.data?.member ? "/account" : "/sign-in"}><UserRound className="size-4"/>{member.data?.member ? mt.account : mt.signIn}</a></Button>
         </div>
         <button className="touch-target rounded-lg p-2 text-slate-700 lg:hidden" aria-label={open ? "×" : p.mobileNav} onClick={() => setOpen(!open)}>{open ? <X /> : <Menu />}</button>
       </div>
       {open && <div className="border-t border-slate-200 bg-white p-4 lg:hidden"><nav className="grid gap-2" aria-label={p.mobileNav}>
         {links.map(([href, label]) => <Link key={href} href={href} onClick={() => setOpen(false)} className="rounded-lg px-3 py-3 font-medium text-slate-700 hover:bg-slate-50">{label}</Link>)}
+        <a href={member.data?.member ? "/account" : "/sign-in"} onClick={() => setOpen(false)} className="flex items-center gap-2 rounded-lg bg-[#0B2A68] px-3 py-3 font-semibold text-white"><UserRound className="size-4"/>{member.data?.member ? mt.account : mt.signIn}</a>
         <div className="mt-2 grid grid-cols-2 gap-2">{(Object.keys(localeNames) as Locale[]).map(value => <button key={value} onClick={() => setLocale(value)} className={`rounded-lg border px-3 py-2 text-sm ${locale === value ? "border-cyan-500 bg-cyan-50 text-cyan-800" : "border-slate-200"}`}>{localeNames[value]}</button>)}</div>
       </nav></div>}
     </header>
@@ -64,13 +64,14 @@ export function SiteFooter() {
   const { locale } = useLocale();
   const t = copy[locale];
   const p = pageCopy[locale];
+  const mt = useMemberText();
   return (
     <footer className="border-t border-slate-200 bg-white">
       <div className="container grid gap-10 py-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div><Brand compact /><p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">{p.footerTagline}</p></div>
         <FooterColumn title={p.footerPlatform} links={[[t.navServices, "/services"], [t.navCompare, "/compare"], [t.navProviders, "/providers"], [p.trustScores, "/#methodology"]]} />
         <FooterColumn title={p.footerForProviders} links={[[p.claimProfile, "/providers#join"], [p.getVerified, "/providers#join"], [p.partnerStandards, "/#methodology"], ["JustAnotherPanel API", "/directory/justanotherpanel"]]} />
-        <FooterColumn title={p.footerCompany} links={[[t.methodology, "/#methodology"], [p.about, "/#about"], [p.editorialPolicy, "/#methodology"], [discoveryText(locale).contactLabel, "/providers#join"]]} />
+        <FooterColumn title={p.footerCompany} links={[[t.methodology, "/#methodology"], [p.about, "/#about"], [p.editorialPolicy, "/#methodology"], [discoveryText(locale).contactLabel, "/providers#join"], [mt.privacy, "/privacy"]]} />
       </div>
       <div className="border-t border-slate-100"><div className="container flex flex-col justify-between gap-3 py-5 text-xs text-slate-500 sm:flex-row"><span>© 2026 ProviderBeacon. {p.rights}</span><span>{p.transparentRanking}</span></div></div>
     </footer>
@@ -81,6 +82,6 @@ function FooterColumn({ title, links }: { title: string; links: [string, string]
   return <div><h2 className="text-sm font-bold text-slate-900">{title}</h2><ul className="mt-4 grid gap-3 text-sm text-slate-500">{links.map(([label, href]) => <li key={`${label}-${href}`}><a href={href} className="hover:text-[#0B2A68]">{label}</a></li>)}</ul></div>;
 }
 
-export function PublicLayout({ children }: { children: ReactNode }) {
-  return <div className="min-h-screen bg-[#F6F8FC] text-slate-950"><SiteHeader /><main id="main-content"><CatalogueNotice />{children}</main><SiteFooter /></div>;
+export function PublicLayout({ children, showCatalogueNotice = true }: { children: ReactNode; showCatalogueNotice?: boolean }) {
+  return <div className="min-h-screen bg-[#F6F8FC] text-slate-950"><SiteHeader /><main id="main-content">{showCatalogueNotice && <CatalogueNotice />}{children}</main><SiteFooter /></div>;
 }

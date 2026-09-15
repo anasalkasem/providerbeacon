@@ -12,6 +12,7 @@ import { verifyScheduledWorkflowToken } from "../schedulerAuth";
 import { runDueProviderSyncs } from "../vaultDb";
 import { startProviderSyncWorker } from "../providerSync";
 import { runLegacyNormalization } from "../serviceReviewDb";
+import { registerMemberRoutes } from "../memberGoogle";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -39,11 +40,12 @@ async function startServer() {
   const assistantJson = express.json({ limit: "32kb" });
   app.use((req, res, next) => {
     const procedures = req.path.startsWith("/api/trpc/") ? req.path.slice("/api/trpc/".length).split(",") : [];
-    return procedures.includes("assistant.chat") ? assistantJson(req, res, next) : next();
+    return procedures.some(name => name === "assistant.chat" || name.startsWith("member.")) ? assistantJson(req, res, next) : next();
   });
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+  registerMemberRoutes(app);
   app.get("/health", (_req, res) => {
     res.status(200).json({
       status: "healthy",

@@ -22,6 +22,11 @@ const Setup = lazy(() => import("@/pages/Setup"));
 const Security = lazy(() => import("@/pages/Security"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const BeaconAssistant = lazy(() => import("@/components/BeaconAssistant"));
+const MemberSignIn = lazy(() => import("@/pages/MemberAuth").then(m => ({ default: m.MemberSignIn })));
+const MemberSignUp = lazy(() => import("@/pages/MemberAuth").then(m => ({ default: m.MemberSignUp })));
+const MemberAccount = lazy(() => import("@/pages/MemberAuth").then(m => ({ default: m.MemberAccount })));
+const MemberRecovery = lazy(() => import("@/pages/MemberAuth").then(m => ({ default: m.MemberRecovery })));
+const MemberPrivacy = lazy(() => import("@/pages/MemberAuth").then(m => ({ default: m.MemberPrivacy })));
 
 function Router() {
   return <Suspense fallback={<div className="grid min-h-screen place-items-center bg-[#F6F8FC]"><div className="size-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-500" aria-label="Loading page"/></div>}><Switch>
@@ -33,6 +38,11 @@ function Router() {
     <Route path="/providers" component={Providers} />
     <Route path="/providers/:slug" component={Provider} />
     <Route path="/login" component={Login} />
+    <Route path="/sign-in" component={MemberSignIn} />
+    <Route path="/sign-up" component={MemberSignUp} />
+    <Route path="/account" component={MemberAccount} />
+    <Route path="/recover-account" component={MemberRecovery} />
+    <Route path="/privacy" component={MemberPrivacy} />
     <Route path="/setup" component={Setup} />
     <Route path="/admin" component={Admin} />
     <Route path="/admin/security" component={Security} />
