@@ -347,6 +347,8 @@ export function communityAcceptanceCases(
       const ordinary = (
         await caller(undefined, "https://providerbeacon.com", {
           ...staff,
+          id: 0,
+          openId: "ordinary-groups-test",
           role: "user",
         })
       ).api;

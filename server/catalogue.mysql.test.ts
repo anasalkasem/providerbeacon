@@ -1,3 +1,4 @@
+import { teamAcceptanceCases } from "./teamMysqlAcceptance";
 import { workspaceAcceptanceCases } from "./workspaceMysqlAcceptance";
 import { priceAlertAcceptanceCases } from "./priceAlertsMysqlAcceptance";
 import { communityAcceptanceCases } from "./communityMysqlAcceptance";
@@ -13,7 +14,7 @@ import { createPool, type Pool } from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
 import { migrate } from "drizzle-orm/mysql2/migrator";
 import { and, eq, sql } from "drizzle-orm";
-import { assistantUsageBuckets, auditEntries, priceSnapshots, providerIntegrations, providerRecords, providerSyncJobs, providerSyncRows, serviceRecords, users } from "../drizzle/schema";
+import { assistantUsageBuckets, auditEntries, priceSnapshots, providerIntegrations, providerRecords, providerSyncJobs, providerSyncRows, serviceRecords, users, teamMembers } from "../drizzle/schema";
 import { reserveAssistantTurn } from "./assistantUsage";
 import { assistantOffersByIds } from "./assistantCatalogue";
 import { memberAcceptanceCases } from "./memberMysqlAcceptance";
@@ -59,6 +60,8 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     vi.stubEnv("NODE_ENV", "production"); vi.stubEnv("MARKETPLACE_DEMO_MODE", "false");
     vi.stubEnv("VAULT_MASTER_KEY", Buffer.alloc(32, 17).toString("base64url"));
     await state.db.delete(auditEntries);
+    await state.db.delete(teamMembers);
+    await state.db.insert(teamMembers).values({ userId: actorId, email: "catalogue-owner@example.com", role: "administrator", status: "active" });
     await state.db.delete(providerRecords);
     const inserted = await state.db.insert(providerRecords).values({ slug: "test-provider", name: "Test provider", initials: "TP", status: "active", verified: false }).$returningId();
     providerId = inserted[0].id;
@@ -73,6 +76,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   priceAlertAcceptanceCases(() => state.db, () => providerId);
   emailAcceptanceCases(() => state.db, () => actorId);
   communityAcceptanceCases(() => state.db, () => actorId, () => providerId);
+  teamAcceptanceCases(() => state.db, () => actorId);
 
   async function addService(status: "draft" | "active" | "paused" | "archived" = "active", owner = providerId) {
     const inserted = await state.db.insert(serviceRecords).values({ providerId: owner, externalId: "100", slug: `legacy-service-${owner}`, name: "TikTok Views", platform: "TikTok", category: "Views", priceAmount: "1.0000", minOrder: 100, maxOrder: 1000, status, reviewStatus: "approved", incomplete: false, normalizationVersion: 1, pricingConfirmed: true, priceCurrency: "USD", priceUnit: "per_1000", policyReviewed: true, evidenceUrl: "https://provider.example/services", sourceUpdatedAt: new Date() }).$returningId();
@@ -475,7 +479,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   it("rejects unauthorized confirmations, unknown currencies, and stale mixed batches atomically", async () => {
     const rows = await importUsdSource([payload[0],{...payload[0],service:101}]);
     const items = rows.map((row:any)=>({id:row.id,revision:row.revision}));
-    const caller = appRouter.createCaller({user:{id:actorId,openId:"catalogue-test-owner",role:"user",email:null},req:{headers:{}},res:{}} as any);
+    const caller = appRouter.createCaller({user:{id:0,openId:"ordinary-test-user",role:"user",email:null},req:{headers:{}},res:{}} as any);
     await expect(caller.admin.services.confirmSourcePricing({...unitEvidence,items})).rejects.toMatchObject({code:"FORBIDDEN"});
     await expect(confirmSourcePricing({...unitEvidence,items:[items[0],{...items[1],revision:999}],actorUserId:actorId})).rejects.toMatchObject({code:"CONFLICT"});
     expect((await getServiceReview(rows[0].id)).service.sourcePriceUnit).toBeNull();

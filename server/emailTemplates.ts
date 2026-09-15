@@ -1,3 +1,4 @@
+import { teamInviteEmailContent } from "./teamEmail";
 import { memberLocale } from "../shared/memberAuth";
 import { memberAuthOrigin } from "./memberSecurity";
 import { priceTargetEmailContent } from "./priceAlertEmail";
@@ -9,7 +10,8 @@ export type MailKind =
   | "reset"
   | "security"
   | "customer"
-  | "price_target";
+  | "price_target"
+  | "staff_invite";
 const EMAIL_LOGO_URL =
   "https://files.manuscdn.com/user_upload_by_module/session_file/88685962/XnmaySgPSyTkeTNP.png";
 
@@ -210,15 +212,16 @@ export function renderEmail(input: {
     input.kind === "price_target"
       ? priceTargetEmailContent(input.priceTarget!, locale)
       : null;
+  const invite = input.kind === "staff_invite" ? teamInviteEmailContent(locale) : null;
   const kind =
-    input.kind === "customer" || input.kind === "price_target"
+    input.kind === "customer" || input.kind === "price_target" || input.kind === "staff_invite"
       ? "welcome"
       : input.kind;
   const subject =
-    price?.subject ?? (input.kind === "customer" ? input.subject! : w[kind]);
+    invite?.subject ?? price?.subject ?? (input.kind === "customer" ? input.subject! : w[kind]);
   const body =
-    price?.body ?? (input.kind === "customer" ? input.body! : w[`${kind}Body`]);
-  const label = price
+    invite?.body ?? price?.body ?? (input.kind === "customer" ? input.body! : w[`${kind}Body`]);
+  const label = invite ? invite.action : price
     ? price.action
     : input.kind === "verify"
       ? w.verifyAction
@@ -227,8 +230,8 @@ export function renderEmail(input: {
         : input.kind === "welcome"
           ? w.explore
           : w.account;
-  const sensitive = input.kind === "verify" || input.kind === "reset";
-  const greeting = `${w.greeting} ${input.name},`;
+  const sensitive = input.kind === "verify" || input.kind === "reset" || input.kind === "staff_invite";
+  const greeting = input.name ? `${w.greeting} ${input.name},` : w.greeting;
   const footer =
     price?.reason ??
     (input.kind === "customer" ? w.reason : sensitive ? w.ignore : "");

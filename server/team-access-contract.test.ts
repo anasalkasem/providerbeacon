@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const authSource = readFileSync(new URL("./authDb.ts", import.meta.url), "utf8");
-const marketplaceSource = readFileSync(new URL("./marketplaceDb.ts", import.meta.url), "utf8");
+const marketplaceSource = readFileSync(new URL("./teamDb.ts", import.meta.url), "utf8");
 const vaultSource = readFileSync(new URL("./vaultDb.ts", import.meta.url), "utf8");
 
 describe("team access lifecycle", () => {
@@ -15,7 +15,7 @@ describe("team access lifecycle", () => {
   it("prevents owner and self suspension and revokes suspended sessions", () => {
     expect(marketplaceSource).toContain('member.role === "owner"');
     expect(marketplaceSource).toContain("member.userId === input.actorUserId");
-    expect(marketplaceSource).toContain("db.delete(staffSessions)");
+    expect(marketplaceSource).toMatch(/tx\s*\.delete\(staffSessions\)/);
   });
 
   it("only deletes disabled integrations and records the deletion", () => {

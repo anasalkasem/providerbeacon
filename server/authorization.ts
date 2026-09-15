@@ -1,4 +1,4 @@
-import { and, eq, or } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { User } from "../drizzle/schema";
 import { teamMembers, type TeamRole } from "../drizzle/schema";
 import { ENV } from "./_core/env";
@@ -35,13 +35,13 @@ export const rolePermissions: Record<TeamRole, Permission[]> = {
 export async function resolveTeamRole(user: User): Promise<TeamRole | null> {
   if (user.openId === ENV.ownerOpenId) return "owner";
   const db = await getDb();
-  if (!db) return user.role === "admin" ? "administrator" : null;
-  const identity = user.email
-    ? or(eq(teamMembers.userId, user.id), eq(teamMembers.email, user.email))
-    : eq(teamMembers.userId, user.id);
-  const [membership] = await db.select().from(teamMembers).where(and(identity, eq(teamMembers.status, "active"))).limit(1);
-  if (membership) return membership.role;
-  return user.role === "admin" ? "administrator" : null;
+  if (!db) return null;
+  // Team membership is authoritative. Legacy user.role and matching email must
+  // never restore a deleted/suspended employee's privileges.
+  const [membership] = await db.select().from(teamMembers).where(and(
+    eq(teamMembers.userId, user.id), eq(teamMembers.status, "active")
+  )).limit(1);
+  return membership?.role ?? null;
 }
 
 export function hasPermission(role: TeamRole | null, permission: Permission) {

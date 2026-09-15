@@ -1,10 +1,11 @@
+import { assertStaffOrigin } from "../staffOrigin";
 import { previewPriceTarget } from "../priceAlertEmail";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, gt, isNotNull, like, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { emailOutbox, emailSuppressions } from "../../drizzle/emailSchema";
 import { memberAccounts } from "../../drizzle/memberSchema";
-import { auditEntries } from "../../drizzle/schema";
+import { auditEntries, teamMembers } from "../../drizzle/schema";
 import { customerEmailInput } from "../../shared/email";
 import { memberLocale } from "../../shared/memberAuth";
 import { protectedProcedure, router } from "../_core/trpc";
@@ -23,7 +24,6 @@ import {
 import { renderEmail } from "../emailTemplates";
 import { reserveMemberRequests } from "../memberDb";
 import {
-  assertMemberOrigin,
   memberAuthOrigin,
   memberEmailKey,
 } from "../memberSecurity";
@@ -34,7 +34,7 @@ const guard = (permission: Permission) =>
     if (!hasPermission(await resolveTeamRole(ctx.user), permission))
       throw new TRPCError({ code: "FORBIDDEN" });
     ctx.res.setHeader("Cache-Control", "no-store");
-    if (type === "mutation") assertMemberOrigin(ctx.req);
+    if (type === "mutation") assertStaffOrigin(ctx.req);
     return next();
   });
 const eligible = and(
@@ -289,7 +289,7 @@ export const emailAdminRouter = router({
         .select({
           id: emailOutbox.id,
           memberId: emailOutbox.memberId,
-          email: memberAccounts.email,
+          email: sql<string>`coalesce(${memberAccounts.email}, ${teamMembers.email})`,
           subject: emailOutbox.subject,
           kind: emailOutbox.kind,
           locale: emailOutbox.locale,
@@ -300,7 +300,8 @@ export const emailAdminRouter = router({
           updatedAt: emailOutbox.updatedAt,
         })
         .from(emailOutbox)
-        .innerJoin(memberAccounts, eq(memberAccounts.id, emailOutbox.memberId))
+        .leftJoin(memberAccounts, eq(memberAccounts.id, emailOutbox.memberId))
+        .leftJoin(teamMembers, eq(teamMembers.id, emailOutbox.teamMemberId))
         .where(input.cursor ? lt(emailOutbox.id, input.cursor) : undefined)
         .orderBy(desc(emailOutbox.id))
         .limit(26);

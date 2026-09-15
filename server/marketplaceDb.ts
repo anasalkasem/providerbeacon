@@ -6,7 +6,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { lookup } from "node:dns/promises";
 import { isIP } from "node:net";
 import { retiredDemoSlugs, assertRealProviderSlug } from "./retiredDemoProviders";
-import { auditEntries, localizedContent, priceSnapshots, providerRecords, serviceRecords, staffSessions, teamMembers, type TeamRole } from "../drizzle/schema";
+import { auditEntries, localizedContent, priceSnapshots, providerRecords, serviceRecords, teamMembers } from "../drizzle/schema";
 import { getDb } from "./db";
 import { approvedService } from "./catalogueRules";
 import { cataloguePriceAmount, cataloguePriceUnit, confirmedSourcePricing, connectedApiCatalogue, syncedApiConnection, hasSourceCatalogueRecords, visibleCatalogueProvider, visibleCatalogueService } from "./apiCatalogue";
@@ -204,18 +204,6 @@ export async function assertPublicHttpsUrl(value: string) {
   return endpoint;
 }
 
-export async function listTeamMembers() { const db = await getDb(); return db ? db.select().from(teamMembers).orderBy(desc(teamMembers.createdAt)) : []; }
-export async function setTeamMemberStatus(input: { id: number; status: "active" | "suspended"; actorUserId: number }) {
-  const db = await getDb(); if (!db) throw new Error("Database unavailable");
-  const [member] = await db.select().from(teamMembers).where(eq(teamMembers.id, input.id)).limit(1);
-  if (!member) throw new Error("Team member not found");
-  if (member.role === "owner") throw new Error("The owner account cannot be suspended");
-  if (member.userId === input.actorUserId) throw new Error("You cannot suspend your own account");
-  await db.update(teamMembers).set({ status: input.status, invitationTokenHash: null, invitationExpiresAt: null }).where(eq(teamMembers.id, input.id));
-  if (input.status === "suspended" && member.userId) await db.delete(staffSessions).where(eq(staffSessions.userId, member.userId));
-  await writeAudit({ actorUserId: input.actorUserId, action: `team.member.${input.status}`, entityType: "team_member", entityId: String(input.id), summary: `${member.email} changed to ${input.status}` });
-  return { success: true };
-}
 const adminProviderColumns = {
   id: providerRecords.id, slug: providerRecords.slug, name: providerRecords.name,
   websiteUrl: providerRecords.websiteUrl, location: providerRecords.location,
@@ -359,25 +347,24 @@ export async function updateServiceRecord(input: { id: number; status?: "draft" 
   });
 }
 
-export async function createTeamInvite(input: { email: string; role: TeamRole; actorUserId: number }) {
-  const db = await getDb(); if (!db) throw new Error("Database unavailable");
-  const token = randomBytes(32).toString("base64url");
-  const invitationTokenHash = createHash("sha256").update(token).digest("hex");
-  const invitationExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  await db.insert(teamMembers).values({ email: input.email.toLowerCase(), role: input.role, status: "invited", invitedByUserId: input.actorUserId, invitationTokenHash, invitationExpiresAt }).onDuplicateKeyUpdate({ set: { role: input.role, status: "invited", invitedByUserId: input.actorUserId, invitationTokenHash, invitationExpiresAt } });
-  await writeAudit({ actorUserId: input.actorUserId, action: "team.invite", entityType: "team_member", entityId: input.email.toLowerCase(), summary: `Invited team member as ${input.role}` });
-  return { success: true, token, expiresAt: invitationExpiresAt };
-}
-
 export async function acceptTeamInvite(input: { token: string; userId: number; email: string | null }) {
   const db = await getDb(); if (!db) throw new Error("Database unavailable");
-  if (!input.email) throw new Error("Your authenticated account must include an email address");
+  if (!input.email) throw new Error("team_invalid_invite");
   const invitationTokenHash = createHash("sha256").update(input.token).digest("hex");
-  const [invite] = await db.select().from(teamMembers).where(and(eq(teamMembers.invitationTokenHash, invitationTokenHash), eq(teamMembers.status, "invited"), gt(teamMembers.invitationExpiresAt, new Date()))).limit(1);
-  if (!invite || invite.email.toLowerCase() !== input.email.toLowerCase()) throw new Error("Invitation is invalid, expired, or belongs to another account");
-  await db.update(teamMembers).set({ userId: input.userId, status: "active", invitationTokenHash: null, invitationExpiresAt: null }).where(eq(teamMembers.id, invite.id));
-  await writeAudit({ actorUserId: input.userId, action: "team.invite.accept", entityType: "team_member", entityId: String(invite.id), summary: `Accepted team invitation as ${invite.role}` });
-  return { success: true, role: invite.role };
+  return db.transaction(async tx => {
+    const [invite] = await tx.select().from(teamMembers).where(and(
+      eq(teamMembers.email, input.email!.trim().toLowerCase()), eq(teamMembers.invitationTokenHash, invitationTokenHash),
+      eq(teamMembers.status, "invited"), gt(teamMembers.invitationExpiresAt, new Date())
+    )).for("update");
+    if (!invite || invite.role === "owner" || (invite.userId && invite.userId !== input.userId)) throw new Error("team_invalid_invite");
+    const [membership] = await tx.select().from(teamMembers).where(eq(teamMembers.userId, input.userId)).limit(1);
+    if (membership && membership.id !== invite.id) throw new Error("team_exists");
+    await tx.update(teamMembers).set({ userId: input.userId, status: "active", revision: invite.revision + 1, invitationTokenHash: null, invitationExpiresAt: null }).where(eq(teamMembers.id, invite.id));
+    const { cancelInviteEmails } = await import("./teamDb");
+    await cancelInviteEmails(tx, invite.id);
+    await writeAudit({ actorUserId: input.userId, action: "team.invite.accept", entityType: "team_member", entityId: String(invite.id), summary: `Accepted team invitation as ${invite.role}` }, tx);
+    return { success: true, role: invite.role };
+  });
 }
 
 export async function listAuditEntries(limit = 100) { const db = await getDb(); return db ? db.select().from(auditEntries).orderBy(desc(auditEntries.createdAt)).limit(limit) : []; }

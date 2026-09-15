@@ -1,3 +1,4 @@
+import { cancelInviteEmails } from "./teamDb";
 import { and, eq, gt, ne, sql } from "drizzle-orm";
 import * as OTPAuth from "otpauth";
 import QRCode from "qrcode";
@@ -157,16 +158,29 @@ export async function registerInvitedAccount(input: { token: string; email: stri
   if (!db) throw new Error("Database unavailable");
   const email = normalizeEmail(input.email);
   const invitationTokenHash = hashToken(input.token);
-  const [invite] = await db.select().from(teamMembers).where(and(
-    eq(teamMembers.invitationTokenHash, invitationTokenHash),
-    eq(teamMembers.email, email),
-    eq(teamMembers.status, "invited"),
-    gt(teamMembers.invitationExpiresAt, new Date()),
-  )).limit(1);
-  if (!invite) throw new Error("Invitation is invalid, expired, or belongs to another email");
-  const identity = await createLocalIdentity({ email, name: input.name, password: input.password, role: invite.role, invitedByUserId: invite.invitedByUserId ?? undefined });
+  // Hash outside the transaction, then validate and consume under the invitation
+  // row lock. A concurrent deletion/resend cannot resurrect an old invitation.
+  const passwordHash = await hashPassword(input.password);
+  const identity = await db.transaction(async tx => {
+    const [invite] = await tx.select().from(teamMembers).where(and(
+      eq(teamMembers.email, email), eq(teamMembers.invitationTokenHash, invitationTokenHash),
+      eq(teamMembers.status, "invited"), gt(teamMembers.invitationExpiresAt, new Date())
+    )).for("update");
+    if (!invite || invite.role === "owner") throw new Error("team_invalid_invite");
+    const [existing] = await tx.select().from(staffAccounts).where(eq(staffAccounts.email, email)).limit(1);
+    if (existing || invite.userId) throw new Error("team_exists");
+    const [{ id: userId }] = await tx.insert(users).values({
+      openId: `local:${randomToken(18)}`, name: input.name.trim().slice(0, 160), email,
+      loginMethod: "local", role: invite.role === "administrator" ? "admin" : "user", lastSignedIn: new Date(),
+    }).$returningId();
+    await tx.insert(staffAccounts).values({ userId, email, passwordHash });
+    await tx.update(teamMembers).set({ userId, status: "active", revision: invite.revision + 1,
+      invitationTokenHash: null, invitationExpiresAt: null }).where(eq(teamMembers.id, invite.id));
+    await cancelInviteEmails(tx, invite.id);
+    await writeAuthAudit({ actorUserId: userId, action: "auth.invite.register", summary: `Registered an invited ${invite.role} account`, req: input.req }, tx);
+    return { userId };
+  });
   const session = await createSession({ userId: identity.userId, mfaVerified: true, req: input.req });
-  await writeAuthAudit({ actorUserId: identity.userId, action: "auth.invite.register", summary: `Registered an invited ${invite.role} account`, req: input.req });
   return { ...session, userId: identity.userId, email };
 }
 
@@ -313,8 +327,8 @@ export async function revokeOtherSessions(input: { userId: number; currentSessio
   return { success: true };
 }
 
-async function writeAuthAudit(input: { actorUserId?: number; action: string; summary: string; req?: { headers: Record<string, unknown>; ip?: string } }) {
-  const db = await getDb();
+async function writeAuthAudit(input: { actorUserId?: number; action: string; summary: string; req?: { headers: Record<string, unknown>; ip?: string } }, executor?: Pick<NonNullable<Awaited<ReturnType<typeof getDb>>>, "insert">) {
+  const db = executor ?? await getDb();
   if (!db) return;
   await db.insert(auditEntries).values({
     actorUserId: input.actorUserId,
