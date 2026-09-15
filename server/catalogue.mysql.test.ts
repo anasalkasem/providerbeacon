@@ -14,6 +14,7 @@ import { assistantUsageBuckets, auditEntries, priceSnapshots, providerIntegratio
 import { reserveAssistantTurn } from "./assistantUsage";
 import { assistantOffersByIds } from "./assistantCatalogue";
 import { memberAcceptanceCases } from "./memberMysqlAcceptance";
+import { emailAcceptanceCases } from "./emailMysqlAcceptance";
 
 const state = vi.hoisted(() => ({ db: null as any }));
 vi.mock("./db", () => ({ getDb: async () => state.db }));
@@ -59,6 +60,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   });
   afterAll(async () => { if (pool) await pool.end(); });
   memberAcceptanceCases(() => state.db, () => actorId);
+  emailAcceptanceCases(() => state.db, () => actorId);
 
   async function addService(status: "draft" | "active" | "paused" | "archived" = "active", owner = providerId) {
     const inserted = await state.db.insert(serviceRecords).values({ providerId: owner, externalId: "100", slug: `legacy-service-${owner}`, name: "TikTok Views", platform: "TikTok", category: "Views", priceAmount: "1.0000", minOrder: 100, maxOrder: 1000, status, reviewStatus: "approved", incomplete: false, normalizationVersion: 1, pricingConfirmed: true, priceCurrency: "USD", priceUnit: "per_1000", policyReviewed: true, evidenceUrl: "https://provider.example/services", sourceUpdatedAt: new Date() }).$returningId();

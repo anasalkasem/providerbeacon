@@ -183,7 +183,8 @@ export async function googleCallback(req: Request, res: Response) {
     const result = await loginGoogleMember(
       identity,
       flow.link,
-      memberCookie(req, "session")
+      memberCookie(req, "session"),
+      locale
     );
     setMemberCookie(res, result.token);
     const next = new URL(safeMemberNext(flow.next), memberAuthOrigin());
@@ -206,7 +207,7 @@ export function registerMemberRoutes(app: Express) {
       req.hostname === "www.providerbeacon.com" &&
       memberAuthOrigin() === "https://providerbeacon.com" &&
       (req.path === "/" ||
-        /^\/(?:services|providers|compare|directory|sign-in|sign-up|account|recover-account|privacy)(?:\/|$)/.test(
+        /^\/(?:services|providers|compare|directory|sign-in|sign-up|account|recover-account|privacy|verify-email|reset-password|forgot-password|unsubscribe)(?:\/|$)/.test(
           req.path
         ))
     ) {

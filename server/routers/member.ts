@@ -7,7 +7,12 @@ import {
   memberProof,
   memberRecovery,
   memberRegistration,
+  memberLocale,
+  memberEmail,
 } from "../../shared/memberAuth";
+import { emailTokenInput } from "../../shared/email";
+import { mailConfiguration, unsubscribeMember } from "../emailDb";
+import { consumeMemberEmailToken, requestEmailVerification, requestPasswordEmail, updateMemberEmailPreferences } from "../memberEmail";
 import { publicProcedure, router } from "../_core/trpc";
 import {
   authenticateMemberSession,
@@ -99,7 +104,40 @@ async function limit(
     });
   await reserveMemberRequests(buckets);
 }
+async function emailLimit(req: Request, email: string) {
+  await reserveMemberRequests([
+    { key: `mail:ip:${memberClientKey(req)}`, limit: 5, windowMs: 3600000 },
+    { key: `mail:email:${memberEmailKey(email)}`, limit: 3, windowMs: 3600000 },
+    { key: "mail:requests:global", limit: 300, windowMs: 86400000 },
+  ]);
+}
 export const memberRouter = router({
+  emailPreferences: signedIn.input(z.object({ locale: memberLocale, marketingOptIn: z.boolean() }).strict()).mutation(({ ctx, input }) => safely(async () => {
+    await limit(ctx.req, "security");
+    return updateMemberEmailPreferences(ctx.memberAuth, input);
+  })),
+  requestVerification: signedIn.mutation(({ ctx }) => safely(async () => {
+    await emailLimit(ctx.req, ctx.memberAuth.member.email);
+    return requestEmailVerification(ctx.memberAuth);
+  })),
+  forgotPassword: memberPublic.input(z.object({ email: memberEmail }).strict()).mutation(({ ctx, input }) => safely(async () => {
+    await emailLimit(ctx.req, input.email);
+    return requestPasswordEmail(input.email);
+  })),
+  verifyEmail: memberPublic.input(z.object({ token: emailTokenInput }).strict()).mutation(({ ctx, input }) => safely(async () => {
+    await limit(ctx.req, "security");
+    return consumeMemberEmailToken(input.token, "verify");
+  })),
+  resetPassword: memberPublic.input(z.object({ token: emailTokenInput, newPassword: memberPassword }).strict()).mutation(({ ctx, input }) => safely(async () => {
+    await limit(ctx.req, "security");
+    const result = await consumeMemberEmailToken(input.token, "reset", input.newPassword);
+    clearMemberCookie(ctx.res);
+    return result;
+  })),
+  unsubscribe: memberPublic.input(z.object({ token: z.string().max(160) }).strict()).mutation(({ ctx, input }) => safely(async () => {
+    await limit(ctx.req, "security");
+    await unsubscribeMember(input.token); return { ok: true };
+  })),
   me: memberPublic.query(({ ctx }) =>
     safely(async () => {
       const auth = await authenticateMemberSession(
@@ -108,6 +146,7 @@ export const memberRouter = router({
       return {
         member: auth ? memberProfile(auth.member) : null,
         googleEnabled: googleAvailable(),
+        emailEnabled: mailConfiguration().enabled,
       };
     })
   ),

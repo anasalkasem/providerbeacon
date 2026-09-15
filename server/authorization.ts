@@ -10,12 +10,14 @@ export type Permission =
   | "team.read" | "team.write"
   | "translations.read" | "translations.write"
   | "audit.read"
+  | "emails.read" | "emails.send"
   | "integrations.read" | "integrations.write";
 
 const allPermissions: Permission[] = [
   "providers.read", "providers.write", "providers.review", "services.read", "services.write", "services.review", "services.publish",
   "team.read", "team.write", "translations.read", "translations.write", "audit.read",
   "integrations.read", "integrations.write",
+  "emails.read", "emails.send",
 ];
 
 export const rolePermissions: Record<TeamRole, Permission[]> = {

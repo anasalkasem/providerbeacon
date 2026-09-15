@@ -1,5 +1,6 @@
 import {
   index,
+  boolean,
   int,
   json,
   mysqlEnum,
@@ -20,6 +21,10 @@ export const memberAccounts = mysqlTable(
     googleSubjectHash: varchar("google_subject_hash", { length: 64 }),
     recoveryCodeHash: varchar("recovery_code_hash", { length: 64 }),
     emailVerifiedAt: timestamp("email_verified_at"),
+    locale: varchar("locale", { length: 5 }).default("en").notNull(),
+    marketingOptIn: boolean("marketing_opt_in").default(false).notNull(),
+    marketingConsentAt: timestamp("marketing_consent_at"),
+    marketingConsentVersion: varchar("marketing_consent_version", { length: 32 }),
     status: mysqlEnum("status", ["active", "suspended"])
       .default("active")
       .notNull(),

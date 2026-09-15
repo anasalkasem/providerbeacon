@@ -15,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useMember } from "@/hooks/useMember";
+import { useEmailText } from "@/i18n/email";
+import { EmailPreferences } from "./MemberEmail";
 import { memberErrorText, useMemberText } from "@/i18n/memberAuth";
 import { trpc } from "@/lib/trpc";
 import {
@@ -199,6 +201,8 @@ export function MemberSignUp() {
   return <CredentialsPage mode="register" />;
 }
 function CredentialsPage({ mode }: { mode: "login" | "register" }) {
+  const emailText = useEmailText();
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const t = useMemberText(),
     { locale } = useLocale();
   const [, navigate] = useLocation();
@@ -283,6 +287,8 @@ function CredentialsPage({ mode }: { mode: "login" | "register" }) {
                   name,
                   email,
                   password,
+                  locale,
+                  marketingOptIn,
                 });
                 if (!input.success) {
                   setError(t.invalid);
@@ -330,6 +336,7 @@ function CredentialsPage({ mode }: { mode: "login" | "register" }) {
             {mode === "register" && (
               <>
                 <p className="text-xs text-slate-500">{t.passwordHint}</p>
+                <label className="flex items-start gap-3 text-sm leading-7"><input type="checkbox" className="mt-2 size-4 shrink-0" checked={marketingOptIn} onChange={e => setMarketingOptIn(e.target.checked)}/>{emailText.consent}</label>
                 <PasswordInput
                   label={t.confirmPassword}
                   value={confirm}
@@ -360,10 +367,10 @@ function CredentialsPage({ mode }: { mode: "login" | "register" }) {
           </form>
           {mode === "login" && (
             <Link
-              href="/recover-account"
+              href={me.data?.emailEnabled ? "/forgot-password" : "/recover-account"}
               className="block text-center text-sm font-medium text-blue-800 hover:underline"
             >
-              {t.recover}
+              {me.data?.emailEnabled ? emailText.forgot : t.recover}
             </Link>
           )}
           <p className="text-center text-sm text-slate-500">
@@ -558,7 +565,7 @@ function AccountDetails({
     onError,
   });
   const leave = async () => {
-    utils.member.me.setData(undefined, { member: null, googleEnabled });
+    utils.member.me.setData(undefined, old => old ? { ...old, member: null } : undefined);
     navigate("/", { replace: true });
     await refresh();
   };
@@ -652,6 +659,7 @@ function AccountDetails({
               {t.save}
             </Button>
           </form>
+          <EmailPreferences member={member}/>
           <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
             <h2 className="text-xl font-bold">{t.security}</h2>
             {member.hasPassword ? (
@@ -785,6 +793,7 @@ function AccountDetails({
   );
 }
 export function MemberPrivacy() {
+  const emailText = useEmailText();
   const t = useMemberText();
   return (
     <PublicLayout showCatalogueNotice={false}>
@@ -799,6 +808,7 @@ export function MemberPrivacy() {
               t.privacyCookies,
               t.privacyAI,
               t.privacyDelete,
+              emailText.privacy,
             ].map(p => (
               <p key={p}>{p}</p>
             ))}

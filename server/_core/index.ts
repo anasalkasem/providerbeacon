@@ -13,6 +13,8 @@ import { runDueProviderSyncs } from "../vaultDb";
 import { startProviderSyncWorker } from "../providerSync";
 import { runLegacyNormalization } from "../serviceReviewDb";
 import { registerMemberRoutes } from "../memberGoogle";
+import { registerEmailRoutes } from "../emailRoutes";
+import { startEmailWorker } from "../emailDb";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -37,10 +39,11 @@ async function startServer() {
   if (process.env.NODE_ENV === "production") await runMigrations();
   const app = express();
   const server = createServer(app);
+  registerEmailRoutes(app);
   const assistantJson = express.json({ limit: "32kb" });
   app.use((req, res, next) => {
     const procedures = req.path.startsWith("/api/trpc/") ? req.path.slice("/api/trpc/".length).split(",") : [];
-    return procedures.some(name => name === "assistant.chat" || name.startsWith("member.")) ? assistantJson(req, res, next) : next();
+    return procedures.some(name => name === "assistant.chat" || name.startsWith("member.") || name.startsWith("admin.email.")) ? assistantJson(req, res, next) : next();
   });
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
@@ -102,6 +105,7 @@ async function startServer() {
     if (process.env.NODE_ENV === "production") void runLegacyNormalization();
     const stopWorker = startProviderSyncWorker();
     server.on("close", stopWorker);
+    server.on("close", startEmailWorker());
   });
 }
 

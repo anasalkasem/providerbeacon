@@ -40,6 +40,7 @@ const menuItems = [
   { icon: Users, label: "team" as AdminTextKey, path: "/admin/team", permission: "team.read" },
   { icon: Languages, label: "translations" as AdminTextKey, path: "/admin/translations", permission: "translations.read" },
   { icon: ScrollText, label: "audit" as AdminTextKey, path: "/admin/audit", permission: "audit.read" },
+  { icon: Bell, label: "customerEmail" as AdminTextKey, path: "/admin/email", permission: "emails.read" },
   { icon: LockKeyhole, label: "security" as AdminTextKey, path: "/admin/security", permission: null },
 ];
 
