@@ -6,7 +6,8 @@ UPDATE service_records SET sourcePricingMode='manual' WHERE sourcePriceUnit IS N
 --> statement-breakpoint
 -- A previously withdrawn confirmation must not be restored automatically.
 UPDATE service_records s
-JOIN audit_entries a ON a.entityType='service' AND a.entityId=CAST(s.id AS CHAR)
+JOIN audit_entries a ON a.entityType='service'
+  AND a.entityId=CAST(s.id AS CHAR CHARACTER SET utf8mb4) COLLATE utf8mb4_unicode_ci
   AND a.action='service.source_pricing.revoke'
 SET s.sourcePricingMode='blocked'
 WHERE s.sourcePriceUnit IS NULL AND NOT EXISTS (
