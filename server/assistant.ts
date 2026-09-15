@@ -28,6 +28,7 @@ Example of natural Arabic for a currency question: نحافظ على السعر 
 export const PLANNER_INSTRUCTIONS = `${KNOWLEDGE}
 Turn the conversation into a bounded catalogue search plan. Use canonical English platform/category enums. Translate intent, not prices. Default market to smm unless marketing packages were explicitly requested in this conversation. Avoid duplicate search keywords when platform and category filters already express the request. Use query only for extra specific keywords that could occur in the provider's English catalogue. Use provider for a named provider. Use countryCode only for an explicitly requested service target market (WW means worldwide), never the visitor's location. Use displayCurrency for the requested comparison/budget currency, not a provider currency. If there is no requested comparison currency use null (the UI will clearly show USD as comparison currency).
 When a refill duration is explicitly requested, set minRefillDays to that number and refillOnly to true. Do not replace a specified duration with an unspecified refill claim. Never encode the duration in query.
+Never put the requested quantity, budget or display currency in query. These already have dedicated filters. For a request such as 'cheapest 1000 TikTok views in USD', use platform TikTok, category Views, quantity 1000, displayCurrency USD, preferLowest true and query an empty string. Only retain extra service descriptors in query.
 Preserve the last requested platform, category, quantity, market and currency when the user changes just one detail. Fresh contextOffers identify previous card order: 'first two' means their current IDs. Only use IDs present in contextOffers or explicitly mentioned by the user. For compare, require two to four distinct IDs; otherwise ask which offers. For an ambiguous purchase request ask at most two useful questions. For a general request to search, search even if quantity is unknown; keep quantity null, do not assume 1000. A request for 'cheapest' without a platform and service type needs clarification. Use help only for greetings, platform explanations, or unsupported actions; it must not state any live offer availability or prices. A help/clarify reply is shown directly: use two to four short sentences, at most 80 words, without a list unless requested. For search/compare, reply is a short neutral acknowledgement; the final answer will use retrieved facts.`;
 
 export const ANSWER_INSTRUCTIONS = `${KNOWLEDGE}
@@ -82,6 +83,21 @@ export const assistantDependencies = {
 };
 export type AssistantDependencies = typeof assistantDependencies;
 
+function withoutRepeatedQuantity(plan: AssistantPlan): AssistantPlan {
+  const numericQuery = plan.query
+    .normalize("NFKC")
+    .replace(/[٠-٩]/g, digit => String(digit.charCodeAt(0) - 1632))
+    .replace(/[۰-۹]/g, digit => String(digit.charCodeAt(0) - 1776))
+    .replace(/[,٬\s]/g, "");
+  // A quantity-only keyword duplicates the quantity filter and incorrectly
+  // requires that number to appear in a service name. Preserve other descriptors.
+  return plan.quantity != null &&
+    /^\d+(?:\.0+)?$/.test(numericQuery) &&
+    Number(numericQuery) === plan.quantity
+    ? { ...plan, query: "" }
+    : plan;
+}
+
 export async function runAssistantTurn(
   input: AssistantTurnInput,
   deps: AssistantDependencies = assistantDependencies
@@ -101,11 +117,13 @@ export async function runAssistantTurn(
       category: service.category,
     })),
   };
-  const plan = await deps.model(
-    "beacon_search_plan",
-    assistantPlanSchema,
-    PLANNER_INSTRUCTIONS,
-    JSON.stringify(conversation)
+  const plan = withoutRepeatedQuantity(
+    await deps.model(
+      "beacon_search_plan",
+      assistantPlanSchema,
+      PLANNER_INSTRUCTIONS,
+      JSON.stringify(conversation)
+    )
   );
   const base = {
     request: {

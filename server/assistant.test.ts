@@ -267,6 +267,44 @@ describe("exact, evidence-dependent multi-currency comparisons", () => {
 });
 
 describe("grounded catalogue orchestration", () => {
+  it.each([
+    ["1000", ""],
+    ["1,000", ""],
+    ["١٬٠٠٠", ""],
+    ["۱۰۰۰", ""],
+    ["2000", "2000"],
+    ["1000-day", "1000-day"],
+  ])(
+    "keeps quantity separate from residual search words: %s",
+    async (query, expected) => {
+      const search = vi.fn(async () => ({
+        candidates: [candidate("service-1")],
+        total: 1,
+        providerLimitReached: false,
+      }));
+      const model = vi
+        .fn()
+        .mockResolvedValueOnce({ ...plan, query })
+        .mockResolvedValueOnce({ answer: "Current offers are shown below." });
+      const result = await runAssistantTurn(
+        assistantTurnInput.parse({
+          message: "أرخص 1000 مشاهدة تيك توك",
+          context: { path: "/find" },
+        }),
+        { model, search, byIds: vi.fn(), exchange: vi.fn() } as any
+      );
+      expect(search).toHaveBeenCalledWith(
+        expect.objectContaining({ query: expected, quantity: 1000 })
+      );
+      expect(
+        new URL(
+          result.catalogueUrl,
+          "https://providerbeacon.com"
+        ).searchParams.get("q")
+      ).toBe(expected || null);
+      expect(result.offers).toHaveLength(1);
+    }
+  );
   it("looks up comparison IDs through public eligibility and never substitutes missing offers", async () => {
     const a = candidate("service-1");
     const snapshot = vi.fn(async () => ({
