@@ -1,3 +1,4 @@
+import { savedLinkMetadata } from "./linkMetadata";
 import { priceHistoryKey } from "./priceHistory";
 import { publicProfileUrl, providerTelegramUrl } from "../shared/providerProfile";
 import { AsyncResultCache, registerCatalogueCache } from "./catalogueCache";
@@ -241,13 +242,15 @@ export async function listAdminProviderPage(raw?: Partial<AdminProvidersInput>) 
   const items = rows.slice(0, input.limit);
   return { items, total: totals[0]?.total ?? 0, nextCursor: rows.length > input.limit ? items.at(-1)!.id : null };
 }
-export async function createProviderDraft(input: { name: string; websiteUrl: string; actorUserId: number }) {
+export async function createProviderDraft(input: { name: string; websiteUrl: string; actorUserId: number; metadataKey?: string }) {
   const db = await getDb(); if (!db) throw new Error("Database unavailable");
   const name = input.name.trim().slice(0, 200);
-  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 160);
+  const slugSource = /[a-z0-9]/i.test(name) ? name : new URL(input.websiteUrl).hostname.replace(/^www\./, "");
+  const slug = slugSource.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 160);
   if (!name || !slug) throw new Error("Provider name is invalid");
   assertRealProviderSlug(slug);
   const endpoint = await assertPublicHttpsUrl(input.websiteUrl);
+  const metadata = input.metadataKey ? await savedLinkMetadata(input.metadataKey, "website", input.websiteUrl) : null;
   const initials = name.split(/\s+/).map(part => part[0]).join("").slice(0, 4).toUpperCase();
   await db.insert(providerRecords).values({
     slug,
@@ -256,7 +259,10 @@ export async function createProviderDraft(input: { name: string; websiteUrl: str
     status: "draft",
     tier: "specialized_partner",
     websiteUrl: endpoint.origin,
-    description: "Provider details are listed from public sources. Service delivery and quality have not been independently verified.",
+    logoUrl: metadata?.logoUrl ?? null,
+    websitePreviewUrl: metadata?.websitePreviewUrl ?? null,
+    telegramUrl: metadata?.telegramUrl ?? null,
+    description: metadata?.description || "Provider details are listed from public sources. Service delivery and quality have not been independently verified.",
     verified: false,
   }).onDuplicateKeyUpdate({ set: { name, websiteUrl: endpoint.origin, profileRevision: sql`${providerRecords.profileRevision} + 1` } });
   const [provider] = await db.select().from(providerRecords).where(eq(providerRecords.slug, slug)).limit(1);

@@ -1,3 +1,4 @@
+import { GroupSourceDetails } from "@/components/LinkAutofill";
 import { useEffect, useState } from "react";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../server/routers";
@@ -225,6 +226,7 @@ function GroupModeration() {
           <div className="xl:sticky xl:top-4">
             {(selected === "new" || editing) && canReview ? (
               <GroupForm
+                admin
                 key={
                   selected === "new"
                     ? "new"
@@ -315,6 +317,7 @@ function ReviewPanel({
       >
         {group.description}
       </p>
+      <GroupSourceDetails data={group.linkMetadata} />
       <a
         href={group.url}
         target="_blank"

@@ -1,3 +1,5 @@
+import { telegramPreviewInput } from "../../shared/linkMetadata";
+import { previewLink } from "../linkMetadata";
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { publicProcedure, router } from "../_core/trpc";
@@ -37,6 +39,7 @@ const write = (action: string, limit: number) =>
     return next();
   });
 export const communityRouter = router({
+  previewTelegram: write("preview", 20).input(telegramPreviewInput).mutation(({ input }) => safely(() => previewLink("telegram", input.url))),
   list: publicRead
     .input(groupListInput)
     .query(({ input }) => safely(() => publicGroups(input))),

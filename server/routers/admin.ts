@@ -1,3 +1,5 @@
+import { metadataKeyInput, websitePreviewInput } from "../../shared/linkMetadata";
+import { metadataBudget, previewLink } from "../linkMetadata";
 import { providerAnalyticsInput } from "../../shared/providerAnalytics";
 import { getProviderAnalytics } from "../providerAnalyticsDb";
 import { assertStaffOrigin } from "../staffOrigin";
@@ -72,6 +74,10 @@ export const adminRouter = router({
   }),
   acceptInvite: protectedProcedure.input(z.object({ token: z.string().min(20).max(200) })).mutation(({ ctx, input }) => { assertStaffOrigin(ctx.req); ctx.res.setHeader("Cache-Control", "no-store"); return acceptTeamInvite({ token: input.token, userId: ctx.user!.id, email: ctx.user!.email }); }),
   providers: router({
+    previewWebsite: permissionProcedure("providers.write").input(websitePreviewInput).mutation(async ({ ctx, input }) => {
+      assertStaffOrigin(ctx.req); ctx.res.setHeader("Cache-Control", "no-store");
+      await metadataBudget(`staff:${ctx.user!.id}`); return previewLink("website", input.url);
+    }),
     profile: permissionProcedure("providers.read").input(z.object({ id: z.number().int().positive() })).query(({ input }) => getProviderProfile(input.id)),
     saveProfile: permissionProcedure("providers.write").input(providerProfileInput).mutation(({ ctx, input }) => {
       assertStaffOrigin(ctx.req);
@@ -79,7 +85,7 @@ export const adminRouter = router({
     }),
     list: permissionProcedure("providers.read").input(adminProvidersInput).query(({ input }) => listAdminProviders(input)),
     page: permissionProcedure("providers.read").input(adminProvidersInput).query(({ input }) => listAdminProviderPage(input)),
-    createDraft: permissionProcedure("providers.write").input(z.object({ name: z.string().trim().min(2).max(200), websiteUrl: z.string().url().max(500) })).mutation(({ ctx, input }) => createProviderDraft({ ...input, actorUserId: ctx.user!.id })),
+    createDraft: permissionProcedure("providers.write").input(z.object({ name: z.string().trim().min(2).max(200), websiteUrl: z.string().url().max(500), metadataKey: metadataKeyInput })).mutation(({ ctx, input }) => { assertStaffOrigin(ctx.req); return createProviderDraft({ ...input, actorUserId: ctx.user!.id }); }),
     setStatus: permissionProcedure("providers.review").input(z.object({ id: z.number().int().positive(), status: z.enum(["draft", "pending_review", "active", "suspended"]) })).mutation(({ ctx, input }) => updateProviderStatus({ ...input, actorUserId: ctx.user!.id })),
     setCataloguePublication: permissionProcedure("providers.review")
       .input(z.object({ id: z.number().int().positive(), enabled: z.boolean(), reason: z.string().trim().min(8).max(1000) }))
