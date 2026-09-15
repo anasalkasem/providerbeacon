@@ -7,6 +7,11 @@ import {
   memberEmailTokens,
 } from "../drizzle/emailSchema";
 import { memberAccounts } from "../drizzle/memberSchema";
+import { memberWatches } from "../drizzle/workspaceSchema";
+import type {
+  PriceAlertReference,
+  PriceTargetEmail,
+} from "../shared/priceAlerts";
 import { getDb } from "./db";
 import { decryptValue, encryptValue, randomToken } from "./security";
 import {
@@ -92,11 +97,23 @@ export function unsubscribeToken(member: Pick<Member, "id" | "email">) {
   const value = `${member.id}.${memberEmailKey(member.email)}`;
   return `${value}.${signEmailValue(value, "unsubscribe")}`;
 }
+export function priceUnsubscribeToken(member: Pick<Member, "id" | "email">) {
+  const value = `prices.${member.id}.${memberEmailKey(member.email)}`;
+  return `${value}.${signEmailValue(value, "price-unsubscribe")}`;
+}
 export async function unsubscribeMember(token: string) {
-  if (!/^\d{1,10}\.[a-f0-9]{64}\.[A-Za-z0-9_-]{43}$/.test(token))
+  const prices = token.startsWith("prices.");
+  const plain = prices ? token.slice(7) : token;
+  if (!/^\d{1,10}\.[a-f0-9]{64}\.[A-Za-z0-9_-]{43}$/.test(plain))
     throw new MemberAuthError("invalid_recovery");
-  const [id, emailHash, signature] = token.split(".");
-  if (!validEmailSignature(`${id}.${emailHash}`, "unsubscribe", signature))
+  const [id, emailHash, signature] = plain.split(".");
+  if (
+    !validEmailSignature(
+      `${prices ? "prices." : ""}${id}.${emailHash}`,
+      prices ? "price-unsubscribe" : "unsubscribe",
+      signature
+    )
+  )
     throw new MemberAuthError("invalid_recovery");
   const db = await mailDatabase();
   await db.transaction(async tx => {
@@ -106,6 +123,19 @@ export async function unsubscribeMember(token: string) {
       .where(eq(memberAccounts.id, Number(id)))
       .for("update");
     if (!member || memberEmailKey(member.email) !== emailHash) return;
+    if (prices) {
+      await tx
+        .update(memberWatches)
+        .set({
+          emailAlertEnabled: false,
+          emailAlertNextCheckAt: null,
+          emailAlertRevision: sql`${memberWatches.emailAlertRevision} + 1`,
+        })
+        .where(eq(memberWatches.memberId, member.id));
+      const { cancelWatchEmails } = await import("./priceAlerts");
+      await cancelWatchEmails(tx, member.id);
+      return;
+    }
     await tx
       .update(memberAccounts)
       .set({ marketingOptIn: false })
@@ -134,13 +164,19 @@ export async function enqueueEmail(
     locale?: string;
     expiresAt?: Date;
     actorId?: number;
+    priceAlert?: PriceAlertReference;
+    priceTarget?: PriceTargetEmail;
   }
 ) {
   const locale = emailLocale(input.locale || member.locale),
     config = mailConfiguration();
+  const unsubToken =
+    input.kind === "price_target"
+      ? priceUnsubscribeToken(member)
+      : unsubscribeToken(member);
   const unsubscribeUrl =
-    input.kind === "customer"
-      ? `${memberAuthOrigin()}/unsubscribe?lang=${locale}#token=${unsubscribeToken(member)}`
+    input.kind === "customer" || input.kind === "price_target"
+      ? `${memberAuthOrigin()}/unsubscribe?lang=${locale}${input.kind === "price_target" ? "&scope=prices" : ""}#token=${unsubToken}`
       : undefined;
   const rendered = renderEmail({
     ...input,
@@ -156,7 +192,7 @@ export async function enqueueEmail(
     ...(unsubscribeUrl
       ? {
           headers: {
-            "List-Unsubscribe": `<${memberAuthOrigin()}/api/email/unsubscribe?token=${unsubscribeToken(member)}>`,
+            "List-Unsubscribe": `<${memberAuthOrigin()}/api/email/unsubscribe?token=${unsubToken}>`,
             "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
           },
         }
@@ -172,6 +208,7 @@ export async function enqueueEmail(
       subject: rendered.subject,
       recipientHash: memberEmailKey(member.email),
       payload: encryptValue(JSON.stringify(payload), "email-outbox"),
+      priceAlert: input.priceAlert,
       expiresAt: input.expiresAt ?? new Date(Date.now() + 7 * 86400000),
       actorId: input.actorId,
     })
@@ -197,16 +234,14 @@ export async function createMemberEmailToken(
     expiresAt = new Date(Date.now() + (kind === "verify" ? 86400000 : 1800000));
   // Multiple verification requests remain valid until one succeeds; reset tokens are
   // invalidated together on any credential change and consumed under the member lock.
-  await tx
-    .insert(memberEmailTokens)
-    .values({
-      tokenHash: emailTokenHash(token),
-      memberId: member.id,
-      kind,
-      email: member.email,
-      credentialHash: credentialFingerprint(member),
-      expiresAt,
-    });
+  await tx.insert(memberEmailTokens).values({
+    tokenHash: emailTokenHash(token),
+    memberId: member.id,
+    kind,
+    email: member.email,
+    credentialHash: credentialFingerprint(member),
+    expiresAt,
+  });
   await enqueueEmail(tx, member, {
     kind,
     key: key ?? `${kind}:${emailTokenHash(token)}`,
@@ -347,7 +382,8 @@ export async function claimEmail() {
       member.status !== "active" ||
       memberEmailKey(member.email) !== mail.recipientHash ||
       (mail.kind === "customer" &&
-        (!member.emailVerifiedAt || !member.marketingOptIn));
+        (!member.emailVerifiedAt || !member.marketingOptIn)) ||
+      (mail.kind === "price_target" && !member.emailVerifiedAt);
     if (
       expired ||
       ineligible ||
@@ -424,7 +460,8 @@ export async function sendOneEmail() {
       blocked ||
       memberEmailKey(member.email) !== mail.recipientHash ||
       (mail.kind === "customer" &&
-        (!member.marketingOptIn || !member.emailVerifiedAt))
+        (!member.marketingOptIn || !member.emailVerifiedAt)) ||
+      (mail.kind === "price_target" && !member.emailVerifiedAt)
     ) {
       await db
         .update(emailOutbox)
@@ -435,6 +472,26 @@ export async function sendOneEmail() {
         })
         .where(ownsLease);
       return false;
+    }
+    if (mail.kind === "price_target") {
+      const { priceAlertStillEligible } = await import("./priceAlerts");
+      if (!(await priceAlertStillEligible(mail))) {
+        await db
+          .update(emailOutbox)
+          .set({
+            status: "cancelled",
+            payload: null,
+            lastError: "price_alert_changed",
+          })
+          .where(ownsLease);
+        return false;
+      }
+      const [lease] = await db
+        .select({ id: emailOutbox.id })
+        .from(emailOutbox)
+        .where(ownsLease)
+        .limit(1);
+      if (!lease) return false;
     }
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",

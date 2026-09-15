@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { memberComparisons, memberWatches } from "../drizzle/workspaceSchema";
@@ -11,7 +11,19 @@ import {
   watchChange,
   watchInput,
 } from "../shared/buyerWorkspace";
-import { quantityQuoteExact } from "../shared/pricing";
+import { compareQuoteAmounts, quantityQuoteExact } from "../shared/pricing";
+import {
+  PRICE_ALERT_CONSENT_VERSION,
+  priceAlertQuote,
+} from "../shared/priceAlerts";
+import { emailOutbox, emailSuppressions } from "../drizzle/emailSchema";
+import { mailConfiguration } from "./emailDb";
+import { memberEmailKey } from "./memberSecurity";
+import {
+  cancelWatchEmails,
+  currentWatchOffer,
+  priceAlertKey,
+} from "./priceAlerts";
 import {
   assistantOffersByIds,
   type AssistantCandidate,
@@ -96,6 +108,17 @@ export async function saveWatch(
 }
 export async function readWorkspace(auth: MemberAuth) {
   const db = await database();
+  const [emailBlocked] = await db
+    .select({ hash: emailSuppressions.recipientHash })
+    .from(emailSuppressions)
+    .where(
+      eq(emailSuppressions.recipientHash, memberEmailKey(auth.member.email))
+    )
+    .limit(1);
+  const emailAvailable =
+    mailConfiguration().enabled &&
+    !!auth.member.emailVerifiedAt &&
+    !emailBlocked;
   const [watches, comparisons] = await Promise.all([
     db
       .select()
@@ -114,6 +137,20 @@ export async function readWorkspace(auth: MemberAuth) {
     w.serviceId ? [`service-${w.serviceId}`] : []
   );
   const candidates: AssistantCandidate[] = [];
+  const mailKeys = watches
+    .filter(w => w.emailAlertTriggeredAt)
+    .map(w => priceAlertKey(w.id, w.emailAlertRevision));
+  const alerts = mailKeys.length
+    ? await db
+        .select({ key: emailOutbox.dedupeKey, status: emailOutbox.status })
+        .from(emailOutbox)
+        .where(
+          and(
+            eq(emailOutbox.memberId, auth.member.id),
+            inArray(emailOutbox.dedupeKey, mailKeys)
+          )
+        )
+    : [];
   for (let start = 0; start < ids.length; start += 8) {
     const chunks = [
       ids.slice(start, start + 4),
@@ -134,6 +171,27 @@ export async function readWorkspace(auth: MemberAuth) {
         baseline: w.baseline,
         providerName: w.providerName,
         target: w.targetTotal,
+        emailAlert: {
+          enabled: w.emailAlertEnabled,
+          available: emailAvailable,
+          revision: w.emailAlertRevision,
+          status: !w.emailAlertEnabled
+            ? "off"
+            : w.emailAlertTriggeredAt
+              ? (alerts.find(
+                  a => a.key === priceAlertKey(w.id, w.emailAlertRevision)
+                )?.status ?? "recorded")
+              : !emailAvailable
+                ? "unavailable"
+                : priceAlertQuote(
+                      w.baseline,
+                      candidate?.service ?? null,
+                      w.quantity,
+                      w.targetTotal
+                    ).ready
+                  ? "watching"
+                  : "paused",
+        },
         createdAt: w.createdAt,
         candidate,
         change: watchChange(
@@ -157,6 +215,7 @@ export async function removeWorkspaceItem(
   const db = await database();
   await db.transaction(async tx => {
     await lockedAuth(tx, auth);
+    if (kind === "watch") await cancelWatchEmails(tx, auth.member.id, id);
     const table = kind === "watch" ? memberWatches : memberComparisons;
     await tx
       .delete(table)
@@ -170,7 +229,7 @@ export async function setWatchTarget(
 ) {
   const db = await database();
   return db.transaction(async tx => {
-    await lockedAuth(tx, auth);
+    const member = await lockedAuth(tx, auth);
     const [watch] = await tx
       .select()
       .from(memberWatches)
@@ -181,6 +240,38 @@ export async function setWatchTarget(
         )
       );
     if (!watch) throw fail("workspace_missing");
+    const enabled =
+      input.target != null && (input.emailAlert ?? watch.emailAlertEnabled);
+    if (input.emailAlert && !input.target)
+      throw fail("price_alert_target_required");
+    const sameTarget =
+      input.target == null || watch.targetTotal == null
+        ? input.target === watch.targetTotal
+        : compareQuoteAmounts(input.target, watch.targetTotal) === 0;
+    const changed = !sameTarget || enabled !== watch.emailAlertEnabled;
+    if (enabled && changed) {
+      if (!member.emailVerifiedAt)
+        throw fail("price_alert_verification_required");
+      if (!mailConfiguration().enabled) throw fail("price_alert_unavailable");
+      const [blocked] = await tx
+        .select()
+        .from(emailSuppressions)
+        .where(
+          eq(emailSuppressions.recipientHash, memberEmailKey(member.email))
+        )
+        .limit(1);
+      if (blocked) throw fail("price_alert_unavailable");
+      const candidate = await currentWatchOffer(watch.serviceId);
+      if (
+        !priceAlertQuote(
+          watch.baseline,
+          candidate?.service ?? null,
+          watch.quantity,
+          input.target
+        ).ready
+      )
+        throw fail("price_alert_unconfirmed");
+    }
     if (
       input.target != null &&
       (watch.baseline.priceType === "from" ||
@@ -189,8 +280,25 @@ export async function setWatchTarget(
       throw fail("workspace_unconfirmed");
     await tx
       .update(memberWatches)
-      .set({ targetTotal: input.target })
+      .set({
+        targetTotal: sameTarget ? watch.targetTotal : input.target,
+        ...(changed
+          ? {
+              emailAlertEnabled: enabled,
+              emailAlertRevision: watch.emailAlertRevision + 1,
+              emailAlertTriggeredAt: null,
+              emailAlertNextCheckAt: enabled ? new Date() : null,
+              ...(enabled
+                ? {
+                    emailAlertConsentAt: new Date(),
+                    emailAlertConsentVersion: PRICE_ALERT_CONSENT_VERSION,
+                  }
+                : {}),
+            }
+          : {}),
+      })
       .where(eq(memberWatches.id, watch.id));
+    if (changed) await cancelWatchEmails(tx, member.id, watch.id);
     return { ok: true };
   });
 }

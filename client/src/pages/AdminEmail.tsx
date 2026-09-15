@@ -35,7 +35,7 @@ export default function AdminEmail() {
     { enabled: canRead, retry: false, refetchInterval: 15000 }
   );
   const [language, setLanguage] = useState<Locale>(locale),
-    [kind, setKind] = useState<"welcome" | "verify" | "reset" | "security">(
+    [kind, setKind] = useState<"welcome" | "verify" | "reset" | "security" | "price_target">(
       "welcome"
     );
   const template = trpc.admin.email.template.useQuery(
@@ -234,6 +234,7 @@ export default function AdminEmail() {
                   value={kind}
                   onChange={e => setKind(e.target.value as typeof kind)}
                 >
+                  <option value="price_target">{t("Price target", "تنبيه السعر", "Precio objetivo")}</option>
                   <option value="welcome">
                     {t("Welcome", "الترحيب", "Bienvenida")}
                   </option>

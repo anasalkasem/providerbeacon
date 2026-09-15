@@ -1,4 +1,5 @@
 import { workspaceAcceptanceCases } from "./workspaceMysqlAcceptance";
+import { priceAlertAcceptanceCases } from "./priceAlertsMysqlAcceptance";
 import { readFileSync } from "node:fs";
 import { performance } from "node:perf_hooks";
 import { invalidateCatalogueCaches } from "./catalogueCache";
@@ -68,6 +69,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   afterAll(async () => { if (pool) await pool.end(); });
   memberAcceptanceCases(() => state.db, () => actorId);
   workspaceAcceptanceCases(() => state.db, () => providerId);
+  priceAlertAcceptanceCases(() => state.db, () => providerId);
   emailAcceptanceCases(() => state.db, () => actorId);
 
   async function addService(status: "draft" | "active" | "paused" | "archived" = "active", owner = providerId) {
@@ -104,7 +106,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     const { registerMember, authenticateMemberSession } = await import(
       "./memberDb"
     );
-    const { saveWatch, readWorkspace, watchHistory } = await import(
+    const { saveWatch, readWorkspace, watchHistory, setWatchTarget } = await import(
       "./buyerWorkspace"
     );
     const { memberAccounts } = await import("../drizzle/memberSchema");
@@ -142,6 +144,11 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
       serviceId: first.id,
       quantity: 1000,
     });
+    await state.db.update(memberAccounts).set({ emailVerifiedAt: new Date() }).where(eq(memberAccounts.id, auth.member.id));
+    vi.stubEnv("MAIL_ENABLED", "true");
+    vi.stubEnv("RESEND_API_KEY", "local-test-no-network");
+    vi.stubEnv("RESEND_WEBHOOK_SECRET", "local-test");
+    await setWatchTarget(auth, { id: watch.id, target: "2.40", emailAlert: true });
     row.rate = "2.40";
     await sync();
     invalidateCatalogueCaches();
@@ -155,6 +162,13 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(points.map(p => Number(p.rate))).toContain(2.6);
     expect(points.map(p => Number(p.rate))).toContain(2.4);
     expect(points.length).toBeGreaterThanOrEqual(2);
+    const { evaluateOnePriceAlert } = await import("./priceAlerts");
+    const { emailOutbox } = await import("../drizzle/emailSchema");
+    expect(await evaluateOnePriceAlert()).toBe(true);
+    expect(await evaluateOnePriceAlert()).toBe(false);
+    const emails = await state.db.select().from(emailOutbox).where(eq(emailOutbox.kind, "price_target"));
+    expect(emails).toHaveLength(1);
+    expect(emails[0].priceAlert).toMatchObject({ total: "2.40", currency: "USD", quantity: 1000 });
   });
 
   async function prepareAndPublish(id: number) {

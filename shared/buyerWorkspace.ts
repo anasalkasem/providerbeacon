@@ -32,6 +32,7 @@ export const targetInput = z
       .string()
       .regex(/^\d{1,9}(\.\d{1,8})?$/)
       .nullable(),
+    emailAlert: z.boolean().optional(),
   })
   .strict();
 export type SavedPrice = Pick<

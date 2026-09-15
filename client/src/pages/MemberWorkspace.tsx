@@ -32,7 +32,8 @@ import { PublicLayout } from "@/components/SiteChrome";
 import { unitLabel } from "@/i18n/pricing";
 import OfferEvidence from "@/components/OfferEvidence";
 import { toast } from "sonner";
-import { targetInput } from "../../../shared/buyerWorkspace";
+import PriceTargetForm from "@/components/PriceTargetForm";
+import { priceAlertCopy, priceAlertStatus } from "@/i18n/priceAlerts";
 
 type Watch =
   inferRouterOutputs<AppRouter>["workspace"]["dashboard"]["watches"][number];
@@ -256,17 +257,9 @@ function WatchCard({ watch, accountId }: { watch: Watch; accountId: number }) {
   const t = workspaceCopy[locale];
   const utils = trpc.useUtils();
   const [expanded, setExpanded] = useState(false);
-  const [target, setTarget] = useState(watch.target ?? "");
   const remove = trpc.workspace.remove.useMutation({
     onSuccess: async () => {
       toast.success(t.removed);
-      await utils.workspace.invalidate();
-    },
-    onError: () => toast.error(t.error),
-  });
-  const save = trpc.workspace.target.useMutation({
-    onSuccess: async () => {
-      toast.success(t.targetSaved);
       await utils.workspace.invalidate();
     },
     onError: () => toast.error(t.error),
@@ -374,59 +367,29 @@ function WatchCard({ watch, accountId }: { watch: Watch; accountId: number }) {
       >
         <History className="size-4" />
         {t.history} · <Bell className="size-4" />
-        {t.saveTarget}
+        {t.saveTarget} · {priceAlertCopy[locale].title}
       </button>
+      {watch.emailAlert.enabled && !expanded && (
+        <p className="mt-2 text-xs leading-6 text-teal-800">
+          {priceAlertStatus(watch.emailAlert.status, locale)}
+        </p>
+      )}
       {expanded && (
         <div className="mt-4 border-t border-slate-100 pt-5">
           <PriceHistory accountId={accountId} id={watch.id} service={service} />
-          {change.original != null &&
-            change.status !== "terms_changed" &&
-            candidate && (
-              <form
-                className="mt-5"
-                onSubmit={e => {
-                  e.preventDefault();
-                  const value = targetInput.safeParse({
-                    id: watch.id,
-                    target: target.trim() || null,
-                  });
-                  if (!value.success) {
-                    toast.error(t.error);
-                    return;
-                  }
-                  save.mutate(value.data);
-                }}
-              >
-                <label
-                  className="block text-xs font-bold"
-                  htmlFor={`target-${watch.id}`}
-                >
-                  {t.target} ({baseline.priceCurrency})
-                </label>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <input
-                    id={`target-${watch.id}`}
-                    inputMode="decimal"
-                    dir="ltr"
-                    type="text"
-                    maxLength={24}
-                    value={target}
-                    onChange={e => setTarget(e.target.value)}
-                    placeholder={change.now ?? "0.00"}
-                    className="h-11 min-w-0 flex-1 rounded-xl border border-slate-200 px-3 text-sm"
-                  />
-                  <button
-                    disabled={save.isPending}
-                    className="rounded-xl bg-teal-700 px-4 py-2 text-xs font-bold text-white disabled:opacity-50"
-                  >
-                    {t.saveTarget}
-                  </button>
-                </div>
-                <p className="mt-2 text-xs leading-6 text-slate-500">
-                  {t.targetHelp}
-                </p>
-              </form>
-            )}
+          <PriceTargetForm
+            key={`${watch.target}:${watch.emailAlert.revision}`}
+            id={watch.id}
+            target={watch.target}
+            currency={baseline.priceCurrency}
+            current={change.now}
+            emailAlert={watch.emailAlert}
+            canSetTarget={
+              change.original != null &&
+              change.status !== "terms_changed" &&
+              !!candidate
+            }
+          />
         </div>
       )}
     </article>

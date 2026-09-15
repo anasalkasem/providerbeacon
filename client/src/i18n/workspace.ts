@@ -75,7 +75,7 @@ const en = {
   noHistory:
     "Not enough observations for a trend yet. The next recorded update will appear here.",
   observed: "Observed",
-  target: "Notify me in this workspace at or below",
+  target: "Target total for this quantity",
   targetHelp:
     "Target applies to the saved quantity, in the original currency. Leave blank to disable. Delivery and payment fees are excluded.",
   saveTarget: "Save target",
@@ -180,7 +180,7 @@ export const workspaceCopy: Record<Locale, typeof en> = {
     noHistory:
       "لا توجد مشاهدات كافية لرسم اتجاه بعد. سيظهر هنا التحديث المسجّل القادم.",
     observed: "تاريخ الرصد",
-    target: "نبّهني داخل هذه اللوحة عند هذا المبلغ أو أقل",
+    target: "السعر المستهدف لهذه الكمية",
     targetHelp:
       "الحد يخص الكمية المحفوظة وبالعملة الأصلية. اتركه فارغًا لإيقافه. لا يشمل رسوم التنفيذ أو الدفع الإضافية.",
     saveTarget: "احفظ حد التنبيه",
@@ -286,7 +286,7 @@ export const workspaceCopy: Record<Locale, typeof en> = {
     noHistory:
       "Aún faltan observaciones para una tendencia. Aquí aparecerá la próxima actualización registrada.",
     observed: "Observado",
-    target: "Avisarme en este espacio a este importe o menos",
+    target: "Precio objetivo para esta cantidad",
     targetHelp:
       "Para la cantidad guardada, en la moneda original. Déjalo vacío para desactivar. No incluye cargos adicionales de ejecución o pago.",
     saveTarget: "Guardar objetivo",
@@ -389,7 +389,7 @@ export const workspaceCopy: Record<Locale, typeof en> = {
     noHistory:
       "रुझान के लिए अभी पर्याप्त अवलोकन नहीं हैं। अगला दर्ज अपडेट यहाँ दिखेगा।",
     observed: "अवलोकन",
-    target: "इस कार्यक्षेत्र में इस राशि या कम पर सूचित करें",
+    target: "इस मात्रा का लक्षित कुल मूल्य",
     targetHelp:
       "सहेजी मात्रा और मूल मुद्रा के लिए। बंद करने हेतु खाली छोड़ें। अतिरिक्त निष्पादन और भुगतान शुल्क शामिल नहीं हैं।",
     saveTarget: "लक्ष्य सहेजें",
@@ -486,7 +486,7 @@ export const workspaceCopy: Record<Locale, typeof en> = {
     historyNote: "仅包含真实观察，不将不同条款的价格合并为同一趋势。",
     noHistory: "观察数据尚不足以显示趋势，下次记录的更新将在此显示。",
     observed: "观察时间",
-    target: "达到此金额或更低时在工作台提醒",
+    target: "此数量的目标总价",
     targetHelp:
       "按保存数量及原始币种计算，留空关闭。不含额外交付及支付手续费。",
     saveTarget: "保存目标价",
