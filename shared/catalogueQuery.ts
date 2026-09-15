@@ -36,9 +36,11 @@ export const catalogueInput = z
       .default("home"),
     market: z.enum(["smm", "packages"]).optional(),
     category: z.enum(serviceTypes).optional(),
-    limit: z.number().int().min(1).max(50).default(25),
+    limit: z.number().int().min(1).max(100).default(25),
     cursor: z
-      .object({ id: z.number().int().positive(), rank: z.union([z.number().finite(), z.string().max(67).regex(/^-?\d+(\.\d+)?$/)]) })
+      .object({ id: z.number().int().positive(), rank: z.union([z.number().finite(), z.string().max(67).regex(/^-?\d+(\.\d+)?$/),
+        ]),
+      })
       .optional(),
     q: z.string().trim().max(100).default(""),
     platform: z.string().trim().max(80).optional(),
@@ -49,6 +51,7 @@ export const catalogueInput = z
     quantity: z.number().int().min(1).max(2147483647).optional(),
     quality: z.enum(["standard", "premium", "elite"]).optional(),
     refillOnly: z.boolean().default(false),
+    minRefillDays: z.number().int().min(1).max(3650).optional(),
     sort: z.enum(["recommended", "price", "retention"]).default("recommended"),
     slug: z.string().max(190).optional(),
     ids: z.array(z.number().int().positive()).max(4).default([]),

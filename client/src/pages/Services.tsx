@@ -1,5 +1,6 @@
+import { workspaceCopy } from "@/i18n/workspace";
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { PublicLayout } from "@/components/SiteChrome";
 import { CataloguePagination } from "@/components/CataloguePagination";
 import { useLocale } from "@/contexts/LocaleContext";
@@ -17,8 +18,14 @@ import { GuideGrid } from "@/components/Discovery";
 import SmmOfferTable from "@/components/SmmOfferTable";
 
 export default function Services() {
+  const search = useSearch();
+  return <ServicesPage key={search} />;
+}
+
+function ServicesPage() {
   const { locale } = useLocale();
   const ar = locale === "ar";
+  const wt = workspaceCopy[locale];
   const params = new URLSearchParams(window.location.search);
   const { services, setFilters, pagination, isLoading, source } =
     useMarketplaceData();
@@ -39,10 +46,21 @@ export default function Services() {
   );
   const [currency, setCurrency] = useState<PriceCurrency | "">("");
   const [unit, setUnit] = useState<PriceUnit | "">("");
-  const [onlyMatching, setOnlyMatching] = useState(false);
+  const [onlyMatching, setOnlyMatching] = useState(params.has("quantity"));
   const [sort, setSort] = useState<"recommended" | "price">("recommended");
-  const [refillOnly, setRefillOnly] = useState(false);
-  const [quantity, setQuantity] = useState(1000);
+  const [refillOnly, setRefillOnly] = useState(params.get("refill") === "1");
+  const [quantity, setQuantity] = useState(
+    Number(params.get("quantity") || 1000)
+  );
+  const [countryCode, setCountryCode] = useState(
+    /^[A-Z]{2}$/.test(params.get("countryCode") ?? "")
+      ? params.get("countryCode")!
+      : ""
+  );
+  const [refillDays, setRefillDays] = useState(
+    Math.min(3650, Math.max(0, Number(params.get("refillDays") || 0))) || 0
+  );
+  const [limit, setLimit] = useState(25);
   const validQuantity =
     Number.isSafeInteger(quantity) && quantity > 0 && quantity <= 2147483647;
   const filterQuantity =
@@ -55,6 +73,10 @@ export default function Services() {
       () =>
         setFilters({
           q: query.trim(),
+          limit,
+          countryCode: countryCode.length === 2 ? countryCode : undefined,
+          minRefillDays:
+            market === "smm" && refillDays > 0 ? refillDays : undefined,
           market,
           platform: platform === "all" ? undefined : platform,
           category:
@@ -83,6 +105,9 @@ export default function Services() {
     filterQuantity,
     refillOnly,
     sort,
+    countryCode,
+    refillDays,
+    limit,
     setFilters,
   ]);
   const toggle = (service: Service) =>
@@ -107,6 +132,12 @@ export default function Services() {
             ? "استكشف الخدمات التي جلبها اتصال المزود، وابحث حسب المنصة والنوع وحدود الطلب. الأسعار الأصلية تظهر كما وردت؛ حساب تكلفة الكمية يتاح بعد تأكيد العملة ووحدة السعر."
             : "Explore services imported through the provider connection. Search by platform, type and order limits. Original rates are preserved; quantity quotes require confirmed currency and sale units."}
         </p>
+        <Link
+          href="/find"
+          className="mt-5 inline-flex rounded-xl bg-[#0B2A48] px-5 py-3 text-sm font-bold text-white"
+        >
+          {wt.search} ✦
+        </Link>
         <div
           className="my-6 flex flex-wrap gap-2"
           role="group"
@@ -351,6 +382,63 @@ export default function Services() {
             </>
           )}
         </div>
+        <div className="mb-5 flex flex-wrap items-end gap-3">
+          <label className="grid gap-2 text-xs font-bold">
+            {wt.country}
+            <input
+              dir="ltr"
+              maxLength={2}
+              placeholder="WW / PA"
+              className="h-11 w-36 rounded-xl border border-slate-200 bg-white px-3"
+              value={countryCode}
+              onChange={e =>
+                setCountryCode(
+                  e.target.value.toUpperCase().replace(/[^A-Z]/g, "")
+                )
+              }
+            />
+          </label>
+          {market === "smm" && (
+            <label className="grid gap-2 text-xs font-bold">
+              {wt.refillDays}
+              <select
+                className="h-11 rounded-xl border border-slate-200 bg-white px-3"
+                value={refillDays}
+                onChange={e => setRefillDays(Number(e.target.value))}
+              >
+                <option value={0}>{wt.any}</option>
+                {Array.from(
+                  new Set([
+                    7,
+                    30,
+                    60,
+                    90,
+                    365,
+                    ...(refillDays > 0 ? [refillDays] : []),
+                  ])
+                )
+                  .sort((a, b) => a - b)
+                  .map(n => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          )}
+          <label className="grid gap-2 text-xs font-bold">
+            {wt.rows}
+            <select
+              className="h-11 rounded-xl border border-slate-200 bg-white px-3"
+              value={limit}
+              onChange={e => setLimit(Number(e.target.value))}
+            >
+              {[25, 50, 100].map(n => (
+                <option key={n}>{n}</option>
+              ))}
+            </select>
+          </label>
+        </div>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="font-bold text-slate-700">
             {pagination.total.toLocaleString(locale)} {ar ? "عرض" : "offers"}
@@ -360,6 +448,8 @@ export default function Services() {
             className="text-sm font-bold text-teal-700"
             onClick={() => {
               setQuery("");
+              setCountryCode("");
+              setRefillDays(0);
               setPlatform("all");
               setCategory("all");
               setCurrency("");
@@ -413,7 +503,10 @@ export default function Services() {
           </div>
         </details>
         {selected.length > 0 && (
-          <div data-compare-tray className="sticky bottom-4 z-20 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#0B2A48] p-4 text-white shadow-xl">
+          <div
+            data-compare-tray
+            className="sticky bottom-4 z-20 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#0B2A48] p-4 text-white shadow-xl"
+          >
             <p>
               {ar
                 ? `اخترت ${selected.length} من ٤ عروض`

@@ -52,6 +52,7 @@ const plan: AssistantPlan = {
   displayCurrency: "USD",
   budget: null,
   refillOnly: false,
+  minRefillDays: null,
   preferLowest: false,
   serviceIds: [],
   reply: "I will check the catalogue.",

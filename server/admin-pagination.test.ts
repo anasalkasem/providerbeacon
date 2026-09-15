@@ -34,7 +34,7 @@ describe("bounded administrative queries", () => {
     expect(state.overview).toHaveBeenCalledWith(["providers.read", "services.read", "services.write"]);
   });
   it("caps public pages and explicit comparisons independently", () => {
-    expect(catalogueInput.safeParse({ limit: 51 }).success).toBe(false);
+    expect(catalogueInput.safeParse({ limit: 101 }).success).toBe(false);
     expect(catalogueInput.safeParse({ scope: "compare", ids: [1, 2, 3, 4, 5] }).success).toBe(false);
   });
   it("validates review needs and summary filters before running database queries", async () => {

@@ -224,6 +224,7 @@ function CredentialsPage({ mode }: { mode: "login" | "register" }) {
     setConfirm("");
     setError("");
     if (data.recoveryCode) setRecovery(data.recoveryCode);
+    await utils.workspace.invalidate();
     await utils.member.me.invalidate();
     if (!data.recoveryCode) navigate(next, { replace: true });
   };
@@ -495,7 +496,7 @@ export function MemberAccount() {
   const [, navigate] = useLocation();
   useEffect(() => {
     if (me.data && !me.data.member)
-      navigate("/sign-in?next=/account", { replace: true });
+      navigate("/sign-in?next=/account/settings", { replace: true });
   }, [me.data, navigate]);
   return (
     <PublicLayout showCatalogueNotice={false}>
@@ -565,7 +566,10 @@ function AccountDetails({
     onError,
   });
   const leave = async () => {
-    utils.member.me.setData(undefined, old => old ? { ...old, member: null } : undefined);
+    await utils.workspace.invalidate();
+    utils.member.me.setData(undefined, old =>
+      old ? { ...old, member: null } : undefined
+    );
     navigate("/", { replace: true });
     await refresh();
   };
@@ -659,7 +663,7 @@ function AccountDetails({
               {t.save}
             </Button>
           </form>
-          <EmailPreferences member={member}/>
+          <EmailPreferences member={member} />
           <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
             <h2 className="text-xl font-bold">{t.security}</h2>
             {member.hasPassword ? (

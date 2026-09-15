@@ -1,3 +1,6 @@
+import { DecisionOffer } from "./DecisionOffer";
+import { FollowPrice } from "./WorkspaceActions";
+import { workspaceCopy } from "@/i18n/workspace";
 import { Link } from "wouter";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
@@ -23,6 +26,7 @@ export default function SmmOfferTable({
 }) {
   const { locale } = useLocale();
   const ar = locale === "ar";
+  const wt = workspaceCopy[locale];
   const { providerFor } = useMarketplaceData();
   const lowest = lowestVisiblePriceIds(services, quantity);
   return (
@@ -32,7 +36,40 @@ export default function SmmOfferTable({
           hasUnconfirmed={services.some(service => !hasPricingBasis(service))}
         />
       )}
-      <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:hidden">
+        {services.map(service => {
+          const chosen = selected.some(s => s.id === service.id);
+          return (
+            <div key={service.id}>
+              <DecisionOffer
+                service={service}
+                provider={providerFor(service)}
+                quantity={quantity}
+                lowest={lowest.has(service.id)}
+              />
+              <button
+                type="button"
+                onClick={() => toggle(service)}
+                disabled={!chosen && selected.length >= 4}
+                aria-pressed={chosen}
+                className={`mt-2 w-full rounded-xl border px-4 py-3 text-sm font-bold ${chosen ? "border-teal-500 bg-teal-50 text-teal-900" : "border-slate-200 bg-white text-slate-700"} disabled:opacity-40`}
+              >
+                {chosen ? "✓ " : "+ "}
+                {ar
+                  ? "قارن"
+                  : locale === "es"
+                    ? "Comparar"
+                    : locale === "zh"
+                      ? "比较"
+                      : locale === "hi"
+                        ? "तुलना"
+                        : "Compare"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+      <div className="hidden lg:block overflow-x-auto rounded-2xl border border-slate-200 bg-white">
         <table className="w-full min-w-[900px] text-start text-sm">
           <thead className="bg-slate-50 text-slate-600">
             <tr>
@@ -69,7 +106,10 @@ export default function SmmOfferTable({
                     >
                       {provider.name}
                     </Link>
-                    <p className="mt-1 font-semibold text-slate-950">
+                    <p
+                      className="mt-1 line-clamp-2 font-semibold text-slate-950"
+                      title={serviceName(locale, service)}
+                    >
                       {serviceName(locale, service)}
                     </p>
                     <p className="mt-1 text-xs text-slate-500">
@@ -82,7 +122,15 @@ export default function SmmOfferTable({
                         </>
                       )}
                     </p>
-                    <OfferEvidence service={service} />
+                    <details className="mt-2 text-xs">
+                      <summary className="cursor-pointer text-slate-500">
+                        {wt.allDetails}
+                      </summary>
+                      <p dir="auto" className="mt-2 leading-6">
+                        {serviceName(locale, service)}
+                      </p>
+                      <OfferEvidence service={service} />
+                    </details>
                   </td>
                   <td className="p-4 align-top">
                     <OfferPrice
@@ -142,6 +190,14 @@ export default function SmmOfferTable({
                           ? "قارن +"
                           : "Compare +"}
                     </button>
+                    {service.priceUnit !== "package" && (
+                      <div className="mt-2">
+                        <FollowPrice
+                          serviceId={service.id}
+                          quantity={quantity}
+                        />
+                      </div>
+                    )}
                   </td>
                 </tr>
               );

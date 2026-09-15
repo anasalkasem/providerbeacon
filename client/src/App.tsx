@@ -7,9 +7,15 @@ import { LocaleProvider } from "./contexts/LocaleContext";
 import { MarketplaceDataProvider } from "./contexts/MarketplaceDataContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 
+const Find = lazy(() => import("@/pages/Find"));
+const MemberWorkspace = lazy(() => import("@/pages/MemberWorkspace"));
 const Home = lazy(() => import("@/pages/Home"));
-const ServiceGuide = lazy(() => import("@/pages/DiscoveryDetail").then(m=>({default:m.ServiceGuide})));
-const DirectoryProfile = lazy(() => import("@/pages/DiscoveryDetail").then(m=>({default:m.DirectoryProfile})));
+const ServiceGuide = lazy(() =>
+  import("@/pages/DiscoveryDetail").then(m => ({ default: m.ServiceGuide }))
+);
+const DirectoryProfile = lazy(() =>
+  import("@/pages/DiscoveryDetail").then(m => ({ default: m.DirectoryProfile }))
+);
 const Services = lazy(() => import("@/pages/Services"));
 const Compare = lazy(() => import("@/pages/Compare"));
 const Providers = lazy(() => import("@/pages/Providers"));
@@ -23,43 +29,84 @@ const Setup = lazy(() => import("@/pages/Setup"));
 const Security = lazy(() => import("@/pages/Security"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const BeaconAssistant = lazy(() => import("@/components/BeaconAssistant"));
-const MemberSignIn = lazy(() => import("@/pages/MemberAuth").then(m => ({ default: m.MemberSignIn })));
-const MemberSignUp = lazy(() => import("@/pages/MemberAuth").then(m => ({ default: m.MemberSignUp })));
-const MemberAccount = lazy(() => import("@/pages/MemberAuth").then(m => ({ default: m.MemberAccount })));
-const MemberRecovery = lazy(() => import("@/pages/MemberAuth").then(m => ({ default: m.MemberRecovery })));
-const MemberPrivacy = lazy(() => import("@/pages/MemberAuth").then(m => ({ default: m.MemberPrivacy })));
+const MemberSignIn = lazy(() =>
+  import("@/pages/MemberAuth").then(m => ({ default: m.MemberSignIn }))
+);
+const MemberSignUp = lazy(() =>
+  import("@/pages/MemberAuth").then(m => ({ default: m.MemberSignUp }))
+);
+const MemberAccount = lazy(() =>
+  import("@/pages/MemberAuth").then(m => ({ default: m.MemberAccount }))
+);
+const MemberRecovery = lazy(() =>
+  import("@/pages/MemberAuth").then(m => ({ default: m.MemberRecovery }))
+);
+const MemberPrivacy = lazy(() =>
+  import("@/pages/MemberAuth").then(m => ({ default: m.MemberPrivacy }))
+);
 const MemberEmailPage = lazy(() => import("@/pages/MemberEmail"));
 
 function Router() {
-  return <Suspense fallback={<div className="grid min-h-screen place-items-center bg-[#F6F8FC]"><div className="size-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-500" aria-label="Loading page"/></div>}><Switch>
-    <Route path="/" component={Home} />
-    <Route path="/services" component={Services} />
-    <Route path="/services/:slug" component={ServiceGuide} />
-    <Route path="/directory/:slug" component={DirectoryProfile} />
-    <Route path="/compare" component={Compare} />
-    <Route path="/providers" component={Providers} />
-    <Route path="/providers/:slug" component={Provider} />
-    <Route path="/login" component={Login} />
-    <Route path="/sign-in" component={MemberSignIn} />
-    <Route path="/sign-up" component={MemberSignUp} />
-    <Route path="/account" component={MemberAccount} />
-    <Route path="/recover-account" component={MemberRecovery} />
-    <Route path="/privacy" component={MemberPrivacy} />
-    <Route path="/verify-email" component={MemberEmailPage} />
-    <Route path="/forgot-password" component={MemberEmailPage} />
-    <Route path="/reset-password" component={MemberEmailPage} />
-    <Route path="/unsubscribe" component={MemberEmailPage} />
-    <Route path="/setup" component={Setup} />
-    <Route path="/admin" component={Admin} />
-    <Route path="/admin/security" component={Security} />
-    <Route path="/admin/email" component={AdminEmail} />
-    <Route path="/admin/:module" component={AdminModule} />
-    <Route path="/team/accept" component={AcceptInvite} />
-    <Route path="/404" component={NotFound} />
-    <Route component={NotFound} />
-  </Switch></Suspense>;
+  return (
+    <Suspense
+      fallback={
+        <div className="grid min-h-screen place-items-center bg-[#F6F8FC]">
+          <div
+            className="size-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-500"
+            aria-label="Loading page"
+          />
+        </div>
+      }
+    >
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/find" component={Find} />
+        <Route path="/services" component={Services} />
+        <Route path="/services/:slug" component={ServiceGuide} />
+        <Route path="/directory/:slug" component={DirectoryProfile} />
+        <Route path="/compare" component={Compare} />
+        <Route path="/providers" component={Providers} />
+        <Route path="/providers/:slug" component={Provider} />
+        <Route path="/login" component={Login} />
+        <Route path="/sign-in" component={MemberSignIn} />
+        <Route path="/sign-up" component={MemberSignUp} />
+        <Route path="/account" component={MemberWorkspace} />
+        <Route path="/account/settings" component={MemberAccount} />
+        <Route path="/recover-account" component={MemberRecovery} />
+        <Route path="/privacy" component={MemberPrivacy} />
+        <Route path="/verify-email" component={MemberEmailPage} />
+        <Route path="/forgot-password" component={MemberEmailPage} />
+        <Route path="/reset-password" component={MemberEmailPage} />
+        <Route path="/unsubscribe" component={MemberEmailPage} />
+        <Route path="/setup" component={Setup} />
+        <Route path="/admin" component={Admin} />
+        <Route path="/admin/security" component={Security} />
+        <Route path="/admin/email" component={AdminEmail} />
+        <Route path="/admin/:module" component={AdminModule} />
+        <Route path="/team/accept" component={AcceptInvite} />
+        <Route path="/404" component={NotFound} />
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
+  );
 }
 
 export default function App() {
-  return <ErrorBoundary><ThemeProvider defaultTheme="light"><LocaleProvider><MarketplaceDataProvider><TooltipProvider><Toaster richColors /><Router /><Suspense fallback={null}><BeaconAssistant /></Suspense></TooltipProvider></MarketplaceDataProvider></LocaleProvider></ThemeProvider></ErrorBoundary>;
+  return (
+    <ErrorBoundary>
+      <ThemeProvider defaultTheme="light">
+        <LocaleProvider>
+          <MarketplaceDataProvider>
+            <TooltipProvider>
+              <Toaster richColors />
+              <Router />
+              <Suspense fallback={null}>
+                <BeaconAssistant />
+              </Suspense>
+            </TooltipProvider>
+          </MarketplaceDataProvider>
+        </LocaleProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
+  );
 }

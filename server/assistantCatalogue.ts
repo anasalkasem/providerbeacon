@@ -1,3 +1,4 @@
+import { comparisonGroup } from "../shared/offerComparison";
 import type { Provider, Service } from "../client/src/data/marketplace";
 import type { AssistantPlan } from "../shared/assistant";
 import {
@@ -51,6 +52,7 @@ export async function assistantSearch(
     countryCode: plan.countryCode ?? undefined,
     quantity: plan.quantity ?? undefined,
     refillOnly: plan.refillOnly,
+    minRefillDays: plan.minRefillDays ?? undefined,
     serviceQuery: plan.query || undefined,
     limit: 8,
   });
@@ -72,6 +74,7 @@ export async function assistantSearch(
           q: plan.query,
           quantity: plan.quantity ?? undefined,
           refillOnly: plan.refillOnly,
+          minRefillDays: plan.minRefillDays ?? undefined,
           limit: 6,
         })
       )
@@ -92,29 +95,6 @@ export async function assistantSearch(
     total,
     providerLimitReached: !!providerPage.pagination.nextCursor,
   };
-}
-
-function comparisonGroup(service: Service) {
-  if (
-    !hasPricingBasis(service) ||
-    service.priceUnit === "package" ||
-    service.priceType === "from" ||
-    !service.countryCode ||
-    service.platform === "Unknown" ||
-    service.category === "Other" ||
-    !service.refill ||
-    service.refill === "—" ||
-    service.refill === "Refill available; duration unspecified"
-  )
-    return null;
-  return JSON.stringify([
-    service.platform,
-    service.category,
-    service.countryCode,
-    service.refill,
-    service.quality,
-    service.billingCycle ?? null,
-  ]);
 }
 
 export function quoteAssistantOffers(
@@ -183,5 +163,9 @@ export function assistantCatalogueUrl(plan: AssistantPlan) {
   if (plan.platform) params.set("platform", plan.platform);
   if (plan.category) params.set("category", plan.category);
   if (plan.provider || plan.query) params.set("q", plan.provider || plan.query);
+  if (plan.quantity) params.set("quantity", String(plan.quantity));
+  if (plan.countryCode) params.set("countryCode", plan.countryCode);
+  if (plan.refillOnly) params.set("refill", "1");
+  if (plan.minRefillDays) params.set("refillDays", String(plan.minRefillDays));
   return `/services${params.size ? `?${params}` : ""}`;
 }

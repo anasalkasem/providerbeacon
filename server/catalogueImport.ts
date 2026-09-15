@@ -1,3 +1,4 @@
+import { priceHistoryKey } from "./priceHistory";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import {
@@ -7,7 +8,8 @@ import {
   serviceRecords,
 } from "../drizzle/schema";
 import { getDb } from "./db";
-import { compareQuoteAmounts, priceCurrencies, type PriceCurrency } from "../shared/pricing";
+import { compareQuoteAmounts, priceCurrencies, type PriceCurrency,
+} from "../shared/pricing";
 import { writeAudit } from "./marketplaceDb";
 import { sourcePricingIdentity } from "./sourcePricing";
 import { automaticSourcePricing } from "./providerPricing";
@@ -83,6 +85,11 @@ export async function applyCatalogueBatch(
       maxOrder: serviceRecords.maxOrder,
       refillMode: serviceRecords.refillMode,
       refillDays: serviceRecords.refillDays,
+      quality: serviceRecords.quality,
+      startMinutesMin: serviceRecords.startMinutesMin,
+      startMinutesMax: serviceRecords.startMinutesMax,
+      deliveryMinutesMin: serviceRecords.deliveryMinutesMin,
+      deliveryMinutesMax: serviceRecords.deliveryMinutesMax,
     })
     .from(serviceRecords)
     .where(
@@ -160,11 +167,12 @@ export async function applyCatalogueBatch(
       sourceUrl,
       sourceUpdatedAt: now,
       normalizationVersion: NORMALIZATION_VERSION,
-      reviewStatus: preserveWithdrawal ? "changes_requested" as const : "pending" as const,
+      reviewStatus: preserveWithdrawal ? ("changes_requested" as const)
+        : ("pending" as const),
       incomplete: true,
       pricingConfirmed: false,
       sourceCurrency,
-      sourcePricingMode: existing?.sourcePricingMode ?? "auto" as const,
+      sourcePricingMode: existing?.sourcePricingMode ?? ("auto" as const),
       sourcePriceUnit: unit,
       sourcePackageDescription: keepSourcePricing ? existing!.sourcePackageDescription : null,
       sourcePricingEvidenceUrl: evidenceUrl,
@@ -205,10 +213,15 @@ export async function applyCatalogueBatch(
           ...(priceChanged ? { lastPriceChangeAt: now } : {}),
         })
         .where(eq(serviceRecords.id, existing.id));
-      if (priceChanged) {
-        priceChangeCount++;
+      if (
+        priceChanged ||
+        existing.sourceCurrency !== sourceCurrency ||
+        existing.sourcePriceUnit !== unit
+      ) {
+        if (priceChanged) priceChangeCount++;
         snapshots.push({
           serviceId: existing.id,
+          comparisonKey: priceHistoryKey({ ...existing, ...values }),
           priceAmount: item.priceAmount,
           sourceRate: item.sourceRate,
           priceCurrency: sourceCurrency,
@@ -285,6 +298,7 @@ export async function applyCatalogueBatch(
     inserted.forEach((row, index) =>
       snapshots.push({
         serviceId: row.id,
+        comparisonKey: priceHistoryKey(batch[index]!),
         priceAmount: batch[index]!.priceAmount,
         sourceRate: batch[index]!.sourceRate,
         priceCurrency: batch[index]!.sourceCurrency,

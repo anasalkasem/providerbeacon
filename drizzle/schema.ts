@@ -253,6 +253,7 @@ export const providerSyncRows = mysqlTable("provider_sync_rows", {
   index("sync_row_issue_idx").on(table.jobId, table.invalid, table.ordinal)]);
 
 export const priceSnapshots = mysqlTable("price_snapshots", {
+  comparisonKey: varchar("comparisonKey", { length: 64 }),
   id: int("id").autoincrement().primaryKey(),
   serviceId: int("serviceId").notNull().references(() => serviceRecords.id, { onDelete: "cascade" }),
   // Retain the physical column name for an additive, rolling deployment migration.
@@ -263,7 +264,8 @@ export const priceSnapshots = mysqlTable("price_snapshots", {
   packageDescription: varchar("packageDescription", { length: 300 }),
   kind: mysqlEnum("kind", ["legacy", "source", "review"]).default("legacy").notNull(),
   capturedAt: timestamp("capturedAt").defaultNow().notNull(),
-}, table => [index("price_service_captured_idx").on(table.serviceId, table.capturedAt)]);
+}, table => [index("price_service_captured_idx").on(table.serviceId, table.capturedAt),
+  index("price_history_basis_idx").on(table.serviceId, table.comparisonKey, table.capturedAt)]);
 
 export const localizedContent = mysqlTable("localized_content", {
   id: int("id").autoincrement().primaryKey(),
@@ -287,3 +289,5 @@ export type ServiceRecord = typeof serviceRecords.$inferSelect;
 export type TeamMember = typeof teamMembers.$inferSelect;
 export type TeamRole = TeamMember["role"];
 export type AuditEntry = typeof auditEntries.$inferSelect;
+
+export * from "./workspaceSchema";

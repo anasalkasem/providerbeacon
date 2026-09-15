@@ -1,4 +1,5 @@
-export type ProviderTier = "Tier 1 Direct Source" | "Verified Enterprise" | "Certified Wholesale" | "Specialized Partner";
+export type ProviderTier =
+  | "Tier 1 Direct Source" | "Verified Enterprise" | "Certified Wholesale" | "Specialized Partner";
 
 export type AuditSignals = {
   apiReliability: number;
@@ -40,6 +41,7 @@ export type Provider = {
 };
 
 export type Service = {
+  historyKey?: string;
   catalogueListing?: "api_source" | "reviewed";
   sourceRate?: string | null;
   id: string;

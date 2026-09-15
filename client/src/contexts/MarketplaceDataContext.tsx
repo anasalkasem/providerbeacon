@@ -24,6 +24,9 @@ type Filters = Partial<
     | "priceCurrency"
     | "priceUnit"
     | "quantity"
+    | "countryCode"
+    | "minRefillDays"
+    | "limit"
   >
 >;
 type Cursor = CatalogueInput["cursor"];
@@ -96,7 +99,7 @@ export function MarketplaceDataProvider({ children }: { children: ReactNode }) {
     },
     {
       enabled:
-        !/^\/(admin|login|setup|team|sign-in|sign-up|account|recover-account|privacy)(\/|$)/.test(
+        !/^\/(admin|login|setup|team|sign-in|sign-up|account|recover-account|privacy|find)(\/|$)/.test(
           path
         ),
       staleTime: 30_000,
