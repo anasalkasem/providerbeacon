@@ -58,6 +58,8 @@ describe("member authentication boundaries", () => {
       safeMemberNext("/compare?services=service-1,service-2#ignored")
     ).toBe("/compare?services=service-1,service-2");
     expect(safeMemberNext("/services?q=views")).toBe("/services?q=views");
+    expect(safeMemberNext("/groups")).toBe("/groups");
+    expect(safeMemberNext("/account/groups")).toBe("/account/groups");
   });
   it("requires the exact canonical origin for every mutation including anonymous login", async () => {
     for (const origin of [
