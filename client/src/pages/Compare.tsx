@@ -26,7 +26,7 @@ import {
   priceCurrencies,
   type PriceCurrency,
 } from "../../../shared/pricing";
-import { unitLabel, pricingCopy } from "@/i18n/pricing";
+import { pricingCopy } from "@/i18n/pricing";
 import { CatalogueState } from "@/components/CatalogueState";
 import { catalogueCopy, percentLabel } from "@/i18n/catalogue";
 import { comparisonSelection } from "@/lib/catalogue";
@@ -181,9 +181,6 @@ export default function Compare() {
       service => (
         <div>
           <OfferPrice service={service} />
-          <p className="mt-1 text-xs text-slate-500">
-            {unitLabel(locale, service)}
-          </p>
           {service.packageDescription && (
             <p className="mt-2 text-sm text-slate-600" dir="auto">
               {serviceScope(locale, service)}

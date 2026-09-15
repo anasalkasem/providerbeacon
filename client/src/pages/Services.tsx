@@ -129,8 +129,8 @@ function ServicesPage() {
         </h1>
         <p className="mt-3 max-w-3xl leading-7 text-slate-600">
           {ar
-            ? "استكشف الخدمات التي جلبها اتصال المزود، وابحث حسب المنصة والنوع وحدود الطلب. الأسعار الأصلية تظهر كما وردت؛ حساب تكلفة الكمية يتاح بعد تأكيد العملة ووحدة السعر."
-            : "Explore services imported through the provider connection. Search by platform, type and order limits. Original rates are preserved; quantity quotes require confirmed currency and sale units."}
+            ? "ابحث حسب المنصة ونوع الخدمة وحدود الطلب. استعرض أسعار المزوّدين بوحدات بيعها، واحسب تكلفة الكمية للعروض التي تتوفر بيانات تسعيرها."
+            : "Search by platform, service type and order limits. Browse provider prices with their sale units and calculate quantity totals where pricing data is available."}
         </p>
         <Link
           href="/find"

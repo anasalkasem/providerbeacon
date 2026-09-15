@@ -7,13 +7,16 @@ export default function QuoteCost({
   service,
   quantity,
   lowest = false,
+  hideMissingBasis = false,
 }: {
   service: Service;
   quantity: number;
   lowest?: boolean;
+  hideMissingBasis?: boolean;
 }) {
   const { locale } = useLocale();
   const ar = locale === "ar";
+  if (hideMissingBasis && !hasPricingBasis(service)) return null;
   const amount =
     service.priceType === "from"
       ? null
@@ -30,11 +33,11 @@ export default function QuoteCost({
         : !hasPricingBasis(service)
           ? service.priceCurrency
             ? ar
-              ? "بانتظار تأكيد وحدة السعر"
-              : "Awaiting confirmation of the sale unit"
+              ? "الإجمالي غير متاح: وحدة البيع غير محددة"
+              : "Total unavailable: sale unit unspecified"
             : ar
-              ? "حساب الإجمالي ينتظر تأكيد العملة ووحدة السعر"
-              : "Total requires confirmed currency and sale unit"
+              ? "الإجمالي غير متاح: عملة السعر غير محددة"
+              : "Total unavailable: currency unspecified"
           : service.priceUnit === "package"
             ? ar
               ? "السعر للباقة المحددة"
@@ -52,13 +55,13 @@ export default function QuoteCost({
                   : "Unable to calculate this rate";
   return (
     <div
-      className={`mt-3 rounded-lg px-3 py-2 text-xs leading-6 ${amount == null ? "bg-amber-50" : lowest ? "bg-emerald-100" : service.featured ? "bg-violet-100" : "bg-slate-50"}`}
+      className={`mt-3 rounded-lg px-3 py-2 text-xs leading-6 ${amount == null ? "bg-slate-50" : lowest ? "bg-emerald-100" : service.featured ? "bg-violet-100" : "bg-slate-50"}`}
     >
       <p className="text-slate-600">
         {ar ? "تكلفة الكمية المحددة" : "Cost for selected quantity"}
       </p>
       {amount == null ? (
-        <p className="text-amber-800">{reason}</p>
+        <p className="text-slate-600">{reason}</p>
       ) : (
         <bdi
           dir="ltr"
