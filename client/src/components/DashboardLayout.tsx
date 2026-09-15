@@ -25,7 +25,7 @@ import { trpc } from "@/lib/trpc";
 import { useLocale, localeNames, type Locale } from "@/contexts/LocaleContext";
 import { useAdminText, type AdminTextKey } from "@/i18n/admin";
 import { Bell, ClipboardCheck, BadgeCheck, KeyRound, Languages, Layers3, LayoutDashboard, LockKeyhole, LogOut, PanelLeft, ScrollText, Users } from "lucide-react";
-import { CSSProperties, useEffect, useRef, useState } from "react";
+import { CSSProperties, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
@@ -55,6 +55,30 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
+  useLayoutEffect(() => {
+    // The dashboard has its own language picker. Browser translation can detach
+    // React-owned text nodes during polling. Protect body-level dialog portals
+    // too, and restore public-page translation when leaving the dashboard.
+    const body = document.body;
+    const previousTranslate = body.getAttribute("translate");
+    const alreadyExcluded = body.classList.contains("notranslate");
+    body.setAttribute("translate", "no");
+    body.classList.add("notranslate");
+    return () => {
+      if (previousTranslate === null) body.removeAttribute("translate");
+      else body.setAttribute("translate", previousTranslate);
+      if (!alreadyExcluded) body.classList.remove("notranslate");
+    };
+  }, []);
+
+  return (
+    <div translate="no" className="notranslate min-w-0">
+      <DashboardShell>{children}</DashboardShell>
+    </div>
+  );
+}
+
+function DashboardShell({ children }: { children: React.ReactNode }) {
   const [sidebarWidth, setSidebarWidth] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
     const width = Number(saved);
