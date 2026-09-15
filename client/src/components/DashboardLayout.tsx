@@ -38,6 +38,7 @@ const menuItems = [
   { icon: Bell, label: "alertsTitle" as AdminTextKey, path: "/admin/alerts", permission: "integrations.read" },
   { icon: KeyRound, label: "integrations" as AdminTextKey, path: "/admin/integrations", permission: "integrations.read" },
   { icon: Users, label: "team" as AdminTextKey, path: "/admin/team", permission: "team.read" },
+  { icon: Users, label: "groups" as AdminTextKey, path: "/admin/groups", permission: "groups.read" },
   { icon: Languages, label: "translations" as AdminTextKey, path: "/admin/translations", permission: "translations.read" },
   { icon: ScrollText, label: "audit" as AdminTextKey, path: "/admin/audit", permission: "audit.read" },
   { icon: Bell, label: "customerEmail" as AdminTextKey, path: "/admin/email", permission: "emails.read" },

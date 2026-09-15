@@ -1,5 +1,6 @@
 import { adminProvidersInput } from "../../shared/catalogueQuery";
 import { emailAdminRouter } from "./emailAdmin";
+import { communityAdminRouter } from "./communityAdmin";
 import { createSourcedDrafts } from "../sourcedOffersDb";
 import { sourcedBatchInput } from "../../shared/sourcedOffers";
 import { listProviderSyncIssues } from "../providerSync";
@@ -53,6 +54,7 @@ const analysisErrors = {
 
 export const adminRouter = router({
   email: emailAdminRouter,
+  groups: communityAdminRouter,
   access: protectedProcedure.query(async ({ ctx }) => {
     const role = await resolveTeamRole(ctx.user!);
     return { role, permissions: role ? rolePermissions[role] : [], authMode: ctx.authMode ?? null };

@@ -1,5 +1,6 @@
 import { workspaceAcceptanceCases } from "./workspaceMysqlAcceptance";
 import { priceAlertAcceptanceCases } from "./priceAlertsMysqlAcceptance";
+import { communityAcceptanceCases } from "./communityMysqlAcceptance";
 import { readFileSync } from "node:fs";
 import { performance } from "node:perf_hooks";
 import { invalidateCatalogueCaches } from "./catalogueCache";
@@ -71,6 +72,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   workspaceAcceptanceCases(() => state.db, () => providerId);
   priceAlertAcceptanceCases(() => state.db, () => providerId);
   emailAcceptanceCases(() => state.db, () => actorId);
+  communityAcceptanceCases(() => state.db, () => actorId, () => providerId);
 
   async function addService(status: "draft" | "active" | "paused" | "archived" = "active", owner = providerId) {
     const inserted = await state.db.insert(serviceRecords).values({ providerId: owner, externalId: "100", slug: `legacy-service-${owner}`, name: "TikTok Views", platform: "TikTok", category: "Views", priceAmount: "1.0000", minOrder: 100, maxOrder: 1000, status, reviewStatus: "approved", incomplete: false, normalizationVersion: 1, pricingConfirmed: true, priceCurrency: "USD", priceUnit: "per_1000", policyReviewed: true, evidenceUrl: "https://provider.example/services", sourceUpdatedAt: new Date() }).$returningId();

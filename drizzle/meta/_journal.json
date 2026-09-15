@@ -148,6 +148,13 @@
       "when": 1789452000000,
       "tag": "0020_price_email_alerts",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1789455600000,
+      "tag": "0021_community_groups",
+      "breakpoints": true
     }
   ]
 }

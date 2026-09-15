@@ -291,3 +291,4 @@ export type TeamRole = TeamMember["role"];
 export type AuditEntry = typeof auditEntries.$inferSelect;
 
 export * from "./workspaceSchema";
+export * from "./communitySchema";

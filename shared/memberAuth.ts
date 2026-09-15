@@ -56,7 +56,7 @@ export function safeMemberNext(value: unknown) {
     )
       return "/account";
     if (
-      !/^\/(?:account|services|providers|compare|find)(?:\/[^?#]*)?$/.test(
+      !/^\/(?:account|services|providers|compare|find|groups)(?:\/[^?#]*)?$/.test(
         url.pathname
       ) &&
       url.pathname !== "/"

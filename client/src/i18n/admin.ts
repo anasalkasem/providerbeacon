@@ -1,9 +1,11 @@
 import { useLocale, type Locale } from "@/contexts/LocaleContext";
+import { communityCopy } from "./community";
 
 import { reviewEn, reviewAr } from "./review";
 import { syncEn, syncAr } from "./sync";
 
 const en = {
+  groups: "Group moderation",
   customerEmail: "Customer email",
   ...reviewEn,
   ...syncEn,
@@ -59,7 +61,7 @@ export function useAdminText() {
   const { locale } = useLocale();
   if (locale === "es" || locale === "hi" || locale === "zh") {
     const emailLabel = { es: "Correo a clientes", hi: "ग्राहक ईमेल", zh: "客户邮件" }[locale];
-    return (key: AdminTextKey) => key === "customerEmail" ? emailLabel : translations[locale][key] ?? en[key];
+    return (key: AdminTextKey) => key === "groups" ? communityCopy[locale].admin : key === "customerEmail" ? emailLabel : translations[locale][key] ?? en[key];
   }
-  return (key: AdminTextKey) => locale === "en" ? en[key] : translations[locale][key] ?? en[key];
+  return (key: AdminTextKey) => key === "groups" ? communityCopy[locale].admin : locale === "en" ? en[key] : translations[locale][key] ?? en[key];
 }
