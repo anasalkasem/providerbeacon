@@ -33,6 +33,7 @@ import Provider from "../client/src/pages/Provider";
 import Compare from "../client/src/pages/Compare";
 import Services from "../client/src/pages/Services";
 import QuoteCost from "../client/src/components/QuoteCost";
+import { FollowPrice, SaveComparison } from "../client/src/components/WorkspaceActions";
 import { CatalogueNotice } from "../client/src/components/CatalogueState";
 
 beforeEach(() => {
@@ -50,6 +51,19 @@ afterEach(() => vi.unstubAllGlobals());
 const render = (component: React.ComponentType<any>, props = {}) => renderToStaticMarkup(React.createElement(component, props));
 
 describe("public catalogue rendering", () => {
+  it("preserves edited quantities and comparison currency when signing in to save", () => {
+    vi.stubGlobal("window", { location: { pathname: "/compare", search: "?services=service-40,service-41&quantity=1000&currency=USD" } });
+    const destination = (html: string) => {
+      const href = html.match(/href="([^"]+)"/)![1]!;
+      return new URL(new URL(href, "https://providerbeacon.com").searchParams.get("next")!, "https://providerbeacon.com");
+    };
+    expect(destination(render(FollowPrice, { serviceId: "service-40", quantity: 5000 })).searchParams.get("quantity")).toBe("5000");
+    const next = destination(render(SaveComparison, { serviceIds: ["service-40", "service-41"], quantity: 5000, currency: "EUR", name: "My comparison" }));
+    expect(next.pathname).toBe("/compare");
+    expect(next.searchParams.get("quantity")).toBe("5000");
+    expect(next.searchParams.get("currency")).toBe("EUR");
+    expect(next.searchParams.get("services")).toBe("service-40,service-41");
+  });
   it("shows a visible quantity calculator and sale-unit filter in the explorer", () => {
     state.data = {...state.data, setFilters:()=>{}, pagination:{total:1,page:1,hasNext:false,next:()=>{},previous:()=>{},
       },
