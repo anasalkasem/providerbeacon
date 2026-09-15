@@ -54,6 +54,23 @@ afterEach(() => vi.unstubAllGlobals());
 const render = (component: React.ComponentType<any>, props = {}) => renderToStaticMarkup(React.createElement(component, props));
 
 describe("public catalogue rendering", () => {
+  it("shows supplied provider images and contact links without inventing verification", () => {
+    const provider = state.data.providers[0];
+    Object.assign(provider, { websiteUrl: "https://provider.example/", logoUrl: "https://cdn.example.com/logo.png", websitePreviewUrl: "https://cdn.example.com/website.png", telegramUrl: "https://t.me/providersupport" });
+    const html = render(Provider);
+    expect(html).toContain('href="https://provider.example/"');
+    expect(html).toContain('href="https://t.me/providersupport"');
+    expect(html).toContain('src="https://cdn.example.com/logo.png"');
+    expect(html).toContain('src="https://cdn.example.com/website.png"');
+    expect(html).toContain("Identity not verified");
+    expect(html).toContain('href="#provider-services"');
+    expect(html).toContain('id="provider-services"');
+    Object.assign(provider, { websiteUrl: null, logoUrl: null, websitePreviewUrl: null, telegramUrl: null });
+    const empty = render(Provider);
+    expect(empty).not.toContain('href="https://t.me/');
+    expect(empty).not.toContain('src="https://cdn.example.com/');
+    expect(empty).not.toContain("Visit website");
+  });
   it("shows known currency once with neutral pricing details instead of repeated warning panels", () => {
     const service = { ...state.data.services[0], catalogueListing: "api_source", sourceRate: "3000.00", priceCurrency: "EGP", priceUnit: null, sourceUrl: "https://foollo.com", min: 1, max: 1 };
     const html = render(OfferPrice, { service, lowest: true });

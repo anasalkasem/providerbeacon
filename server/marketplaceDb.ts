@@ -1,4 +1,5 @@
 import { priceHistoryKey } from "./priceHistory";
+import { publicProfileUrl, providerTelegramUrl } from "../shared/providerProfile";
 import { AsyncResultCache, registerCatalogueCache } from "./catalogueCache";
 import { publicOfferMetadata } from "../shared/sourcedOffers";
 import { and, asc, count, desc, eq, gt, inArray, like, lt, ne, notInArray, or, sql } from "drizzle-orm";
@@ -133,6 +134,8 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
     const providers = providerRows.map(row => ({
       apiConnected: connectedIds.has(row.id),
       id: `provider-${row.id}`, slug: row.slug, name: row.name, initials: row.initials, location: row.location ?? "",
+      websiteUrl: publicProfileUrl(row.websiteUrl), logoUrl: publicProfileUrl(row.logoUrl),
+      websitePreviewUrl: publicProfileUrl(row.websitePreviewUrl), telegramUrl: providerTelegramUrl(row.telegramUrl),
       verified: row.verified, tier: tierFromDb[row.tier],
       // Public scores remain unavailable until the evidence-backed scoring pipeline exists.
       score: null, auditSignals: null,
@@ -255,7 +258,7 @@ export async function createProviderDraft(input: { name: string; websiteUrl: str
     websiteUrl: endpoint.origin,
     description: "Provider details are listed from public sources. Service delivery and quality have not been independently verified.",
     verified: false,
-  }).onDuplicateKeyUpdate({ set: { name, websiteUrl: endpoint.origin } });
+  }).onDuplicateKeyUpdate({ set: { name, websiteUrl: endpoint.origin, profileRevision: sql`${providerRecords.profileRevision} + 1` } });
   const [provider] = await db.select().from(providerRecords).where(eq(providerRecords.slug, slug)).limit(1);
   if (!provider) throw new Error("Provider draft could not be created");
   await writeAudit({ actorUserId: input.actorUserId, action: "provider.draft.create", entityType: "provider", entityId: String(provider.id), summary: `Created or refreshed provider draft ${name}`, metadata: { websiteHost: endpoint.host } });

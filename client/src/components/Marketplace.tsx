@@ -1,4 +1,5 @@
 import OfferEvidence, { serviceName, serviceScope, serviceTerms } from "./OfferEvidence";
+import { ProviderLogo } from "./ProviderMedia";
 import { formatPrice, unitLabel, pricingCopy } from "@/i18n/pricing";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
 import { catalogueCopy, percentLabel } from "@/i18n/catalogue";
@@ -38,7 +39,7 @@ export function ApiStatusBadge({ latency, uptime = "—", compact = false }: { l
 }
 
 export function ProviderAvatar({ provider, large = false, xlarge = false }: { provider: Provider; large?: boolean; xlarge?: boolean }) {
-  return <div dir="ltr" className={`grid shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-[#0B2A68] via-[#103E99] to-[#0D9488] font-extrabold text-white shadow-md ${xlarge ? "size-20 rounded-3xl text-2xl" : large ? "size-14 text-lg" : "size-11 text-sm"}`}>{provider.initials}</div>;
+  return <ProviderLogo src={provider.logoUrl} name={provider.name} initials={provider.initials} className={xlarge ? "size-20 rounded-3xl text-2xl" : large ? "size-14 text-lg" : "size-11 text-sm"}/>;
 }
 
 export function PaymentMethodPill({ method }: { method: string }) {
