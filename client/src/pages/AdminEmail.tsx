@@ -35,9 +35,9 @@ export default function AdminEmail() {
     { enabled: canRead, retry: false, refetchInterval: 15000 }
   );
   const [language, setLanguage] = useState<Locale>(locale),
-    [kind, setKind] = useState<"welcome" | "verify" | "reset" | "security" | "price_target">(
-      "welcome"
-    );
+    [kind, setKind] = useState<
+      "welcome" | "verify" | "reset" | "security" | "price_target"
+    >("welcome");
   const template = trpc.admin.email.template.useQuery(
     { kind, locale: language },
     { enabled: canRead, retry: false }
@@ -117,7 +117,7 @@ export default function AdminEmail() {
   const langSelect = (value: Locale, set: (value: Locale) => void) => (
     <select
       aria-label={t("Email language", "لغة الرسالة", "Idioma del correo")}
-      className="h-11 rounded-lg border border-slate-300 bg-white px-3"
+      className="h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 sm:w-auto"
       value={value}
       onChange={e => set(e.target.value as Locale)}
     >
@@ -130,16 +130,16 @@ export default function AdminEmail() {
   );
   return (
     <DashboardLayout>
-      <div className="mx-auto max-w-6xl space-y-7 p-4 sm:p-7">
+      <div className="mx-auto w-full min-w-0 max-w-6xl space-y-5 p-1 sm:space-y-7 sm:p-7">
         <header className="flex items-center gap-4">
-          <span className="grid size-14 place-items-center rounded-2xl bg-cyan-50 text-cyan-800">
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-cyan-50 text-cyan-800 sm:size-14">
             <Mail />
           </span>
-          <div>
+          <div className="min-w-0">
             <p className="text-xs font-bold tracking-wider text-cyan-700">
               ProviderBeacon
             </p>
-            <h1 className="text-3xl font-extrabold">
+            <h1 className="text-2xl font-extrabold sm:text-3xl">
               {t("Customer email", "بريد العملاء", "Correo a clientes")}
             </h1>
             <p className="mt-1 text-sm text-slate-500">
@@ -170,25 +170,29 @@ export default function AdminEmail() {
               </p>
             )}
             <section
-              className={`rounded-2xl border p-6 ${status.data?.enabled ? "border-teal-200 bg-teal-50" : "border-amber-200 bg-amber-50"}`}
+              className={`rounded-2xl border p-4 sm:p-6 ${status.data?.enabled ? "border-teal-200 bg-teal-50" : "border-amber-200 bg-amber-50"}`}
             >
               <h2 className="flex items-center gap-2 font-bold">
                 {status.data?.enabled ? (
-                  <CheckCircle2 className="size-5" />
+                  <CheckCircle2 className="size-5 shrink-0" />
                 ) : (
-                  <Clock3 className="size-5" />
+                  <Clock3 className="size-5 shrink-0" />
                 )}
-                {status.data?.enabled
-                  ? t(
-                      "Email sending enabled",
-                      "إرسال البريد مفعّل",
-                      "Envío de correo habilitado"
-                    )
-                  : t(
-                      "Email delivery awaits activation",
-                      "الإرسال ينتظر التفعيل",
-                      "El envío espera activación"
-                    )}
+                {/* Keep an element as the icon's insertion anchor, even if a
+                    browser translator replaces the label's text node. */}
+                <span>
+                  {status.data?.enabled
+                    ? t(
+                        "Email sending enabled",
+                        "إرسال البريد مفعّل",
+                        "Envío de correo habilitado"
+                      )
+                    : t(
+                        "Email delivery awaits activation",
+                        "الإرسال ينتظر التفعيل",
+                        "El envío espera activación"
+                      )}
+                </span>
               </h2>
               <p dir="ltr" className="mt-2 break-all text-sm">
                 {status.data?.from}
@@ -212,13 +216,13 @@ export default function AdminEmail() {
                     key={c.status}
                     className="rounded-lg bg-white px-3 py-2 text-xs"
                   >
-                    {statusText[c.status] || c.status}:{" "}
+                    <span>{`${statusText[c.status] || c.status}: `}</span>
                     <strong>{c.count}</strong>
                   </span>
                 ))}
               </div>
             </section>
-            <section className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6">
+            <section className="min-w-0 space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
               <h2 className="text-xl font-bold">
                 {t(
                   "Automatic email templates",
@@ -226,15 +230,17 @@ export default function AdminEmail() {
                   "Plantillas de correos automáticos"
                 )}
               </h2>
-              <div className="flex flex-wrap gap-3">
+              <div className="grid gap-3 sm:flex sm:flex-wrap">
                 {langSelect(language, setLanguage)}
                 <select
                   aria-label={t("Template", "القالب", "Plantilla")}
-                  className="h-11 rounded-lg border border-slate-300 bg-white px-3"
+                  className="h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 sm:w-auto"
                   value={kind}
                   onChange={e => setKind(e.target.value as typeof kind)}
                 >
-                  <option value="price_target">{t("Price target", "تنبيه السعر", "Precio objetivo")}</option>
+                  <option value="price_target">
+                    {t("Price target", "تنبيه السعر", "Precio objetivo")}
+                  </option>
                   <option value="welcome">
                     {t("Welcome", "الترحيب", "Bienvenida")}
                   </option>
@@ -271,12 +277,12 @@ export default function AdminEmail() {
                   sandbox=""
                   referrerPolicy="no-referrer"
                   srcDoc={template.data.html}
-                  className="h-[620px] w-full rounded-xl border border-slate-200"
+                  className="block h-[70svh] max-h-[620px] min-h-96 w-full min-w-0 rounded-xl border border-slate-200"
                 />
               )}
             </section>
             {canSend && (
-              <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6">
+              <section className="min-w-0 space-y-5 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
                 <h2 className="text-xl font-bold">
                   {t(
                     "Write a customer update",
@@ -292,7 +298,9 @@ export default function AdminEmail() {
                   )}
                 </p>
                 <label className="grid gap-2 text-sm font-semibold">
-                  {t("Find a customer", "البحث عن عميل", "Buscar cliente")}
+                  <span>
+                    {t("Find a customer", "البحث عن عميل", "Buscar cliente")}
+                  </span>
                   <Input
                     maxLength={100}
                     value={q}
@@ -324,7 +332,7 @@ export default function AdminEmail() {
                           })
                         }
                       />
-                      <span>
+                      <span className="min-w-0 break-words">
                         <strong>{m.name}</strong>
                         <span dir="ltr" className="block break-all">
                           {m.email}
@@ -351,7 +359,7 @@ export default function AdminEmail() {
                     </p>
                   )}
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                   <Button
                     type="button"
                     variant="outline"
@@ -383,7 +391,7 @@ export default function AdminEmail() {
                     change({ locale: value })
                   )}
                   <label className="grid gap-2 text-sm font-semibold">
-                    {t("Subject", "عنوان الرسالة", "Asunto")}
+                    <span>{t("Subject", "عنوان الرسالة", "Asunto")}</span>
                     <Input
                       required
                       minLength={3}
@@ -393,7 +401,7 @@ export default function AdminEmail() {
                     />
                   </label>
                   <label className="grid gap-2 text-sm font-semibold">
-                    {t("Message", "نص الرسالة", "Mensaje")}
+                    <span>{t("Message", "نص الرسالة", "Mensaje")}</span>
                     <Textarea
                       dir={message.locale === "ar" ? "rtl" : "ltr"}
                       className="min-h-48"
@@ -405,13 +413,15 @@ export default function AdminEmail() {
                     />
                   </label>
                   <label className="grid gap-2 text-sm font-semibold">
-                    {t(
-                      "Button destination",
-                      "وجهة زر الرسالة",
-                      "Destino del botón"
-                    )}
+                    <span>
+                      {t(
+                        "Button destination",
+                        "وجهة زر الرسالة",
+                        "Destino del botón"
+                      )}
+                    </span>
                     <select
-                      className="h-11 rounded-lg border border-slate-300 bg-white px-3"
+                      className="h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3"
                       value={message.action}
                       onChange={e =>
                         change({
@@ -435,22 +445,25 @@ export default function AdminEmail() {
                     </select>
                   </label>
                   <Button
+                    className="h-auto min-h-11 w-full whitespace-normal sm:w-auto"
                     disabled={
                       !message.memberId || preview.isPending || send.isPending
                     }
                   >
                     <Eye className="size-4" />
-                    {t(
-                      "Preview message",
-                      "معاينة الرسالة",
-                      "Previsualizar mensaje"
-                    )}
+                    <span>
+                      {t(
+                        "Preview message",
+                        "معاينة الرسالة",
+                        "Previsualizar mensaje"
+                      )}
+                    </span>
                   </Button>
                 </form>
                 {preview.data && (
                   <div className="space-y-4 border-t border-slate-200 pt-5">
                     <p dir="ltr" className="break-all text-sm">
-                      {preview.data.from} → {preview.data.recipient.email}
+                      {`${preview.data.from} → ${preview.data.recipient.email}`}
                     </p>
                     <iframe
                       title={t(
@@ -461,22 +474,25 @@ export default function AdminEmail() {
                       sandbox=""
                       referrerPolicy="no-referrer"
                       srcDoc={preview.data.html}
-                      className="h-[620px] w-full rounded-xl border border-slate-200"
+                      className="block h-[70svh] max-h-[620px] min-h-96 w-full min-w-0 rounded-xl border border-slate-200"
                     />
                     <label className="flex items-start gap-3 text-sm leading-6">
                       <input
                         type="checkbox"
                         checked={confirmed}
                         onChange={e => setConfirmed(e.target.checked)}
-                        className="mt-1 size-4"
+                        className="mt-1 size-4 shrink-0"
                       />
-                      {t(
-                        "I reviewed this message and recipient and approve sending it.",
-                        "راجعت الرسالة وعنوان المستلم وأوافق على إرسالها.",
-                        "He revisado el mensaje y el destinatario y apruebo el envío."
-                      )}
+                      <span>
+                        {t(
+                          "I reviewed this message and recipient and approve sending it.",
+                          "راجعت الرسالة وعنوان المستلم وأوافق على إرسالها.",
+                          "He revisado el mensaje y el destinatario y apruebo el envío."
+                        )}
+                      </span>
                     </label>
                     <Button
+                      className="h-auto min-h-11 w-full whitespace-normal sm:w-auto"
                       disabled={
                         !confirmed || !status.data?.enabled || send.isPending
                       }
@@ -489,11 +505,13 @@ export default function AdminEmail() {
                       }
                     >
                       <Send className="size-4" />
-                      {t(
-                        "Confirm and queue email",
-                        "تأكيد وإضافة الرسالة للإرسال",
-                        "Confirmar y poner en cola"
-                      )}
+                      <span>
+                        {t(
+                          "Confirm and queue email",
+                          "تأكيد وإضافة الرسالة للإرسال",
+                          "Confirmar y poner en cola"
+                        )}
+                      </span>
                     </Button>
                   </div>
                 )}
@@ -513,10 +531,19 @@ export default function AdminEmail() {
               </section>
             )}
             <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-              <h2 className="p-6 text-xl font-bold">
+              <h2 className="p-4 text-xl font-bold sm:p-6">
                 {t("Email log", "سجل الرسائل", "Registro de correos")}
               </h2>
-              <div className="overflow-x-auto">
+              <div
+                className="max-w-full overflow-x-auto"
+                role="region"
+                aria-label={t(
+                  "Email log",
+                  "سجل الرسائل",
+                  "Registro de correos"
+                )}
+                tabIndex={0}
+              >
                 <table className="w-full min-w-[750px] text-start text-sm">
                   <thead className="bg-slate-50 text-slate-500">
                     <tr>
@@ -539,9 +566,9 @@ export default function AdminEmail() {
                           {row.email}
                         </td>
                         <td className="p-4">
-                          {row.subject}
+                          <span>{row.subject}</span>
                           <small className="mt-1 block text-slate-400">
-                            #{row.id} · {row.locale}
+                            {`#${row.id} · ${row.locale}`}
                           </small>
                         </td>
                         <td className="p-4">
@@ -581,7 +608,7 @@ export default function AdminEmail() {
                   </tbody>
                 </table>
               </div>
-              <div className="flex gap-3 p-4">
+              <div className="flex flex-wrap gap-3 p-4">
                 <Button
                   variant="outline"
                   onClick={() => setHistoryCursor(undefined)}
