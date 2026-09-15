@@ -48,6 +48,10 @@ import {
   type BusinessTransaction,
 } from "./providerEntitlements";
 import { getProviderAnalytics } from "./providerAnalyticsDb";
+import {
+  PROVIDER_PLAN,
+  providerPlanPricing,
+} from "../shared/providerBusinessPricing";
 
 const claimFields = {
   id: claims.id,
@@ -125,6 +129,8 @@ export async function businessWorkspace(auth: MemberAuth) {
           state: planState(account),
           startsAt: account.startsAt,
           endsAt: account.endsAt,
+          firstActivatedAt: account.firstActivatedAt,
+          pricing: providerPlanPricing(account.firstActivatedAt),
         },
         ownershipValid: Boolean(
           member.emailVerifiedAt &&
@@ -418,6 +424,8 @@ export async function adminBusinessAccount(providerId: number) {
       status: row?.account.status ?? "inactive",
       startsAt: row?.account.startsAt ?? null,
       endsAt: row?.account.endsAt ?? null,
+      firstActivatedAt: row?.account.firstActivatedAt ?? null,
+      pricing: providerPlanPricing(row?.account.firstActivatedAt ?? null),
       state: planState(row?.account),
       revision: row?.account.revision ?? 0,
     },
@@ -444,12 +452,25 @@ export async function setBusinessSubscription(
     )
       businessFail("invalid_dates");
     const account = await lockedBusinessAccount(tx, input.providerId);
+    // Renewals, suspension, ownership changes and reactivation never restart
+    // the introductory window. Clients cannot supply prices or its anchor.
+    if (
+      input.status === "active" &&
+      account.firstActivatedAt &&
+      input.startsAt &&
+      input.startsAt < account.firstActivatedAt
+    )
+      businessFail("pricing_start_fixed");
+    const firstActivatedAt =
+      account.firstActivatedAt ??
+      (input.status === "active" ? input.startsAt : null);
     await tx
       .update(accounts)
       .set({
         status: input.status,
         startsAt: input.startsAt,
         endsAt: input.endsAt,
+        firstActivatedAt,
         revision: account.revision + 1,
       })
       .where(eq(accounts.providerId, input.providerId));
@@ -465,6 +486,13 @@ export async function setBusinessSubscription(
         status: input.status,
         startsAt: input.startsAt?.toISOString(),
         endsAt: input.endsAt?.toISOString(),
+        planKey: PROVIDER_PLAN.key,
+        currency: PROVIDER_PLAN.currency,
+        firstActivatedAt: firstActivatedAt?.toISOString(),
+        introEndsAt:
+          providerPlanPricing(firstActivatedAt).introEndsAt?.toISOString(),
+        introMonthlyCents: PROVIDER_PLAN.introMonthlyCents,
+        monthlyCents: PROVIDER_PLAN.monthlyCents,
       }
     );
     return { providerId: input.providerId };

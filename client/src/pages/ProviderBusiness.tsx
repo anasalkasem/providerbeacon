@@ -1,4 +1,5 @@
 import { BusinessAnalytics } from "@/components/BusinessAnalytics";
+import { BusinessPricing } from "@/components/BusinessPricing";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -70,6 +71,7 @@ export default function ProviderBusiness() {
           <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
             <BusinessCard>
               <h2 className="text-2xl font-bold text-[#0B2A68]">{t.plan}</h2>
+              <BusinessPricing />
               <p className="mt-4 leading-8 text-slate-600">{t.planHelp}</p>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
@@ -176,9 +178,14 @@ function ProviderWorkspace({
               owned={owned}
             />
           ) : (
-            <p className="rounded-xl border border-dashed border-slate-300 p-6 text-slate-500">
-              {t.noProviders}
-            </p>
+            <BusinessCard>
+              <h2 className="text-xl font-bold text-[#0B2A68]">{t.plan}</h2>
+              <BusinessPricing />
+              <p className="mt-4 text-sm leading-7 text-slate-600">
+                {t.planHelp}
+              </p>
+              <p className="mt-4 text-sm text-slate-500">{t.noProviders}</p>
+            </BusinessCard>
           )}
           <div className="grid items-start gap-6 lg:grid-cols-2">
             <ClaimPicker verified={verified} />
@@ -387,6 +394,9 @@ function ProviderTools({
           </div>
           <BusinessStatus value={state} />
         </div>
+        <BusinessPricing
+          firstActivatedAt={owned.subscription.firstActivatedAt}
+        />
         <p className="mt-4 text-sm leading-7 text-slate-600">{t.planHelp}</p>
         {owned.subscription.endsAt && (
           <p className="mt-3 text-sm text-slate-600">

@@ -2,7 +2,15 @@
 
 Provider workspace: `/account/provider`. Staff management: `/admin/subscriptions`. Public offers: `/offers`, also shown on the associated provider profile.
 
-This release provides one manually activated provider package: provider group listings and Telegram profile links, private provider analytics, and up to five new promotions per UTC calendar month. It does not process payments, set a price, create free trials, or treat a manual activation as an online payment. The existing support address handles activation and renewal enquiries. No new service, environment variable or credential is required.
+This release provides one manually activated provider package: provider group listings and Telegram profile links, private provider analytics, and up to five new promotions per UTC calendar month. The approved price is **USD 19 per month for the first three months, then USD 29 per month from month four**. Prices apply per provider. The existing support address handles activation and renewal enquiries; automatic payment collection is not enabled. No new service, environment variable or credential is required.
+
+## Price and introductory period
+
+`shared/providerBusinessPricing.ts` is the single source for the `provider-monthly-v1` plan and its integer USD cents. The introduction lasts three consecutive calendar months from the provider's recorded first activation, not from registration or ownership review. Calendar anniversaries use UTC, preserve the original day/time, and clamp to the last day of shorter months. For example, an activation on January 31 at 12:45 changes to USD 29 on April 30 at 12:45 UTC. Each introductory month costs USD 19 (USD 57 across the first three months); USD 19 is not the total for a three-month package.
+
+The first activation date is stored server-side when an administrator first saves an active/scheduled period. Renewing, suspending, clearing a period, revoking ownership or reactivating never resets that date. Subsequent active periods cannot begin before it. Staff cannot post a different currency, price or introductory date through the subscription API. Saving an inactive record alone does not start the offer. The workspace and staff API return current pricing and the standard-price start date; visible prices also update when an open page crosses that boundary. The price schedule does not extend an expired entitlement.
+
+The public page discloses both prices before sign-in. The provider workspace and administration page show the recorded first activation and price-change date. On a new activation, the staff form previews that schedule from the selected start date. For an active period, its displayed monthly rate uses the selected period start, so a future month-four renewal quotes USD 29 even while today is still in the introductory window. All displayed prices are **monthly rates**, not invoices or confirmation of funds received. Staff must check custom period lengths and any price change before recording the actual payment reference. This release does not introduce proration, annual billing, a free trial, checkout or automatic debits.
 
 ## Ownership
 
@@ -33,6 +41,8 @@ Staff must review the destination and terms before approving the current revisio
 ## Deployment and checks
 
 Migration `0027_provider_business` adds three tables, a commercial-group flag and a provider/group index. Existing providers default to no active package. Consequently, existing provider Telegram profile links and provider-associated groups become hidden until an administrator activates the provider package. No existing listing, ownership or payment is fabricated.
+
+Migration `0028_provider_plan_pricing` adds the first-activation timestamp and backfills an existing valid saved period from its known start date. It does not activate a provider, extend a period or create a payment. Pre-pricing records have no separately recorded first-activation history; their saved start is the migration baseline.
 
 Run `pnpm check`, `pnpm test`, `pnpm build`. The existing MySQL 8.4 CI gate includes the new acceptance cases and refuses a non-local/non-test database. Cases cover proof ownership and expiry, concurrent competing claims, revocation, staff/member/session/Origin isolation, paid group and cached contact visibility, renewal without data loss, scoped analytics, offer scheduling and moderation, record revisions, concurrent quota enforcement and independence of quality scores.
 

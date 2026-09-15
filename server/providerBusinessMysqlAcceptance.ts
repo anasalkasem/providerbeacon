@@ -18,6 +18,7 @@ import {
   PROMOTIONS_PER_MONTH,
 } from "../shared/providerBusiness";
 import { analyticsDate } from "../shared/providerAnalytics";
+import { providerMonthAnniversary } from "../shared/providerBusinessPricing";
 import {
   authenticateMemberSession,
   logoutMember,
@@ -649,6 +650,103 @@ export function providerBusinessAcceptanceCases(
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
       await logoutMember(owner.result.token, true);
       await expect(savePromotion(owner.auth, offerInput())).rejects.toThrow();
+    });
+
+    it("preserves the first activation and 19/29 USD pricing through renewal, suspension and ownership revocation", async () => {
+      const owner = await approvedOwner();
+      expect(
+        (await adminBusinessAccount(providerId())).subscription.pricing.phase
+      ).toBe("not_started");
+      const first = new Date(Date.now() - 20 * BUSINESS_DAY_MS);
+      const write = async (
+        status: "active" | "inactive" | "suspended",
+        startsAt: Date | null,
+        endsAt: Date | null
+      ) => {
+        const current = await adminBusinessAccount(providerId());
+        return setBusinessSubscription(actorId(), {
+          providerId: providerId(),
+          revision: current.subscription.revision,
+          status,
+          startsAt,
+          endsAt,
+          note: "Recorded local subscription period",
+        });
+      };
+      await write("inactive", first, providerMonthAnniversary(first, 1));
+      expect(
+        (await adminBusinessAccount(providerId())).subscription.firstActivatedAt
+      ).toBeNull();
+      await write("active", first, providerMonthAnniversary(first, 1));
+      const initial = (await adminBusinessAccount(providerId())).subscription;
+      expect(initial.firstActivatedAt).toEqual(first);
+      expect(initial.pricing.currentMonthlyCents).toBe(1900);
+      expect(initial.pricing.introEndsAt).toEqual(
+        providerMonthAnniversary(first, 3)
+      );
+      await write(
+        "active",
+        providerMonthAnniversary(first, 1),
+        providerMonthAnniversary(first, 2)
+      );
+      await write("suspended", null, null);
+      await write("inactive", null, null);
+      await write(
+        "active",
+        new Date(),
+        providerMonthAnniversary(new Date(), 1)
+      );
+      const renewed = (await businessWorkspace(owner.auth)).providers[0]
+        .subscription;
+      expect(renewed.firstActivatedAt).toEqual(first);
+      expect(renewed.pricing.introEndsAt).toEqual(initial.pricing.introEndsAt);
+      await expect(
+        write(
+          "active",
+          new Date(first.getTime() - BUSINESS_DAY_MS),
+          providerMonthAnniversary(first, 1)
+        )
+      ).rejects.toThrow("business_pricing_start_fixed");
+      const latest = await adminBusinessAccount(providerId());
+      await revokeBusinessOwner(actorId(), {
+        providerId: providerId(),
+        revision: latest.subscription.revision,
+        note: "Ownership change keeps the original pricing window",
+      });
+      expect(
+        (await adminBusinessAccount(providerId())).subscription.firstActivatedAt
+      ).toEqual(first);
+    });
+
+    it("returns the standard price after the introductory window and does not restart it on reactivation", async () => {
+      const owner = await approvedOwner();
+      const first = new Date(Date.now() - 120 * BUSINESS_DAY_MS);
+      let current = await adminBusinessAccount(providerId());
+      await setBusinessSubscription(actorId(), {
+        providerId: providerId(),
+        revision: current.subscription.revision,
+        status: "active",
+        startsAt: first,
+        endsAt: new Date(Date.now() + BUSINESS_DAY_MS),
+        note: "Long-running local subscription fixture",
+      });
+      current = await adminBusinessAccount(providerId());
+      expect(current.subscription.pricing).toMatchObject({
+        currency: "USD",
+        phase: "standard",
+        currentMonthlyCents: 2900,
+      });
+      await setBusinessSubscription(actorId(), {
+        providerId: providerId(),
+        revision: current.subscription.revision,
+        status: "active",
+        startsAt: new Date(),
+        endsAt: providerMonthAnniversary(new Date(), 1),
+        note: "Renew at the standard monthly price",
+      });
+      expect(
+        (await businessWorkspace(owner.auth)).providers[0].subscription.pricing
+      ).toMatchObject({ firstActivatedAt: first, currentMonthlyCents: 2900 });
     });
 
     it("removes owner access on revocation or domain change and suspends public paid tools without deleting content", async () => {
