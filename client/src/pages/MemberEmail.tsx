@@ -8,6 +8,7 @@ import { useEmailText } from "@/i18n/email";
 import { useMember } from "@/hooks/useMember";
 import { useLocale, localeNames, type Locale } from "@/contexts/LocaleContext";
 import { trpc } from "@/lib/trpc";
+import { priceAlertCopy } from "@/i18n/priceAlerts";
 import type { MemberProfile } from "@shared/memberAuth";
 
 export function EmailPreferences({ member }: { member: MemberProfile }) {
@@ -124,6 +125,10 @@ export default function MemberEmailPage() {
       new URLSearchParams(window.location.search).get("token") ||
       ""
   );
+  const [priceScope] = useState(
+    () => path === "/unsubscribe" && token.startsWith("prices.")
+  );
+  const priceText = priceAlertCopy[locale];
   const [email, setEmail] = useState(""),
     [password, setPassword] = useState(""),
     [confirm, setConfirm] = useState(""),
@@ -142,6 +147,7 @@ export default function MemberEmailPage() {
     setPassword("");
     setConfirm("");
     await utils.member.me.invalidate();
+    await utils.workspace.invalidate();
   };
   const fail = () => setError(mode === "forgot" ? t.requestError : t.error);
   const forgot = trpc.member.forgotPassword.useMutation({
@@ -168,7 +174,9 @@ export default function MemberEmailPage() {
       : mode === "reset"
         ? t.reset
         : mode === "unsubscribe"
-          ? t.unsub
+          ? priceScope
+            ? priceText.unsubTitle
+            : t.unsub
           : t.forgot;
   return (
     <PublicLayout showCatalogueNotice={false}>
@@ -189,7 +197,9 @@ export default function MemberEmailPage() {
                 : mode === "reset"
                   ? t.resetDone
                   : mode === "unsubscribe"
-                    ? t.unsubDone
+                    ? priceScope
+                      ? priceText.unsubDone
+                      : t.unsubDone
                     : t.generic}
             </p>
           ) : (
@@ -248,7 +258,7 @@ export default function MemberEmailPage() {
               )}
               {mode === "unsubscribe" && (
                 <p className="text-sm leading-7 text-slate-600">
-                  {t.unsubBody}
+                  {priceScope ? priceText.unsubBody : t.unsubBody}
                 </p>
               )}
               {mode !== "forgot" && !token && (
@@ -274,7 +284,9 @@ export default function MemberEmailPage() {
                 {mode === "forgot"
                   ? t.request
                   : mode === "unsubscribe"
-                    ? t.unsub
+                    ? priceScope
+                      ? priceText.unsubTitle
+                      : t.unsub
                     : t.continue}
               </Button>
             </form>

@@ -8,6 +8,7 @@ import {
   varchar,
 } from "drizzle-orm/mysql-core";
 import { memberAccounts } from "./memberSchema";
+import type { PriceAlertReference } from "../shared/priceAlerts";
 
 export type EncryptedMail = {
   ciphertext: string;
@@ -28,6 +29,7 @@ export const emailOutbox = mysqlTable(
     subject: varchar("subject", { length: 200 }).notNull(),
     recipientHash: varchar("recipient_hash", { length: 64 }).notNull(),
     payload: json("payload").$type<EncryptedMail>(),
+    priceAlert: json("price_alert").$type<PriceAlertReference>(),
     status: varchar("status", { length: 24 }).default("queued").notNull(),
     attempts: int("attempts").default(0).notNull(),
     availableAt: timestamp("available_at").defaultNow().notNull(),

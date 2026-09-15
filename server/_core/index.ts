@@ -15,6 +15,7 @@ import { runLegacyNormalization } from "../serviceReviewDb";
 import { registerMemberRoutes } from "../memberGoogle";
 import { registerEmailRoutes } from "../emailRoutes";
 import { startEmailWorker } from "../emailDb";
+import { startPriceAlertWorker } from "../priceAlerts";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -106,6 +107,7 @@ async function startServer() {
     const stopWorker = startProviderSyncWorker();
     server.on("close", stopWorker);
     server.on("close", startEmailWorker());
+    server.on("close", startPriceAlertWorker());
   });
 }
 

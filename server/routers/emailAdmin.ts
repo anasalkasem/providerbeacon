@@ -1,3 +1,4 @@
+import { previewPriceTarget } from "../priceAlertEmail";
 import { TRPCError } from "@trpc/server";
 import { and, desc, eq, gt, isNotNull, like, lt, or, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -116,13 +117,17 @@ export const emailAdminRouter = router({
   template: guard("emails.read")
     .input(
       z.object({
-        kind: z.enum(["welcome", "verify", "reset", "security"]),
+        kind: z.enum(["welcome", "verify", "reset", "security", "price_target"]),
         locale: memberLocale,
       })
     )
     .query(({ input }) =>
       renderEmail({
         ...input,
+        ...(input.kind === "price_target" ? {
+          priceTarget: previewPriceTarget,
+          unsubscribeUrl: `${memberAuthOrigin()}/unsubscribe?scope=prices&preview=1`,
+        } : {}),
         name:
           input.locale === "ar"
             ? "عميلنا العزيز"

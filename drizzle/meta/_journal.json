@@ -141,6 +141,13 @@
       "when": 1789430400000,
       "tag": "0019_buyer_workspace",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1789452000000,
+      "tag": "0020_price_email_alerts",
+      "breakpoints": true
     }
   ]
 }

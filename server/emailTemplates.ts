@@ -1,8 +1,17 @@
 import { memberLocale } from "../shared/memberAuth";
 import { memberAuthOrigin } from "./memberSecurity";
+import { priceTargetEmailContent } from "./priceAlertEmail";
+import type { PriceTargetEmail } from "../shared/priceAlerts";
 
-export type MailKind = "welcome" | "verify" | "reset" | "security" | "customer";
-const EMAIL_LOGO_URL = 'https://files.manuscdn.com/user_upload_by_module/session_file/88685962/XnmaySgPSyTkeTNP.png';
+export type MailKind =
+  | "welcome"
+  | "verify"
+  | "reset"
+  | "security"
+  | "customer"
+  | "price_target";
+const EMAIL_LOGO_URL =
+  "https://files.manuscdn.com/user_upload_by_module/session_file/88685962/XnmaySgPSyTkeTNP.png";
 
 type Words = {
   welcome: string;
@@ -185,6 +194,7 @@ export function renderEmail(input: {
   subject?: string;
   body?: string;
   unsubscribeUrl?: string;
+  priceTarget?: PriceTargetEmail;
 }) {
   const locale = emailLocale(input.locale),
     w = copy[locale],
@@ -194,11 +204,23 @@ export function renderEmail(input: {
   if (action.origin !== origin) throw new Error("Invalid email action origin");
   if (input.unsubscribeUrl && new URL(input.unsubscribeUrl).origin !== origin)
     throw new Error("Invalid unsubscribe origin");
-  const kind = input.kind === "customer" ? "welcome" : input.kind;
-  const subject = input.kind === "customer" ? input.subject! : w[kind];
-  const body = input.kind === "customer" ? input.body! : w[`${kind}Body`];
-  const label =
-    input.kind === "verify"
+  if (input.kind === "price_target" && !input.priceTarget)
+    throw new Error("Missing price target details");
+  const price =
+    input.kind === "price_target"
+      ? priceTargetEmailContent(input.priceTarget!, locale)
+      : null;
+  const kind =
+    input.kind === "customer" || input.kind === "price_target"
+      ? "welcome"
+      : input.kind;
+  const subject =
+    price?.subject ?? (input.kind === "customer" ? input.subject! : w[kind]);
+  const body =
+    price?.body ?? (input.kind === "customer" ? input.body! : w[`${kind}Body`]);
+  const label = price
+    ? price.action
+    : input.kind === "verify"
       ? w.verifyAction
       : input.kind === "reset"
         ? w.resetAction
@@ -208,19 +230,25 @@ export function renderEmail(input: {
   const sensitive = input.kind === "verify" || input.kind === "reset";
   const greeting = `${w.greeting} ${input.name},`;
   const footer =
-    input.kind === "customer" ? w.reason : sensitive ? w.ignore : "";
+    price?.reason ??
+    (input.kind === "customer" ? w.reason : sensitive ? w.ignore : "");
+  const unsubscribeLabel = price?.unsubscribe ?? w.unsubscribe;
+  const priceTable = price
+    ? `<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin:20px 0;border:1px solid #dbe7e5;border-radius:12px;table-layout:fixed">${price.rows.map(([label, value], i) => `<tr><td style="padding:12px;width:44%;font-size:13px;color:#405169;vertical-align:top;${i === 4 ? "background:#e7f7f0;" : ""}">${e(label!)}</td><td dir="auto" style="padding:12px;font-size:${i === 4 ? "20" : "14"}px;font-weight:bold;overflow-wrap:anywhere;word-break:break-word;color:${i === 4 ? "#166044" : "#10243c"};${i === 4 ? "background:#e7f7f0;" : ""}">${e(value!)}</td></tr>`).join("")}</table>`
+    : "";
   const privacy = `${origin}/privacy?lang=${locale}`;
   const text = [
     subject,
     greeting,
     body,
+    ...(price ? price.rows.map(([label, value]) => `${label}: ${value}`) : []),
     `${label}: ${action.href}`,
     footer,
     w.help,
     w.team,
     `${w.privacy}: ${privacy}`,
     ...(input.unsubscribeUrl
-      ? [`${w.unsubscribe}: ${input.unsubscribeUrl}`]
+      ? [`${unsubscribeLabel}: ${input.unsubscribeUrl}`]
       : []),
   ]
     .filter(Boolean)
@@ -233,6 +261,6 @@ export function renderEmail(input: {
     )
     .join(
       ""
-    )}<table role="presentation" cellspacing="0" cellpadding="0" style="margin:26px 0"><tr><td bgcolor="#0b2a68" style="border-radius:9px"><a href="${e(action.href)}" style="display:inline-block;padding:15px 24px;color:#ffffff;font-size:16px;font-weight:bold;text-decoration:none">${e(label)}</a></td></tr></table>${sensitive ? `<p style="font-size:12px;line-height:1.7;color:#64748b">${e(w.fallback)}</p><p dir="ltr" style="font-size:12px;word-break:break-all"><a style="color:#0b2a68" href="${e(action.href)}">${e(action.href)}</a></p>` : ""}<p style="font-size:13px;line-height:1.8;color:#64748b">${e(footer)}</p><p style="font-size:14px;line-height:1.8">${e(w.help)}<br><strong>${e(w.team)}</strong></p></td></tr><tr><td style="padding:22px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0 0 18px 18px;font-size:12px;line-height:1.9;color:#64748b"><a style="color:#405169" href="${privacy}">${e(w.privacy)}</a>${input.unsubscribeUrl ? ` &nbsp; · &nbsp; <a style="color:#405169" href="${e(input.unsubscribeUrl)}">${e(w.unsubscribe)}</a>` : ""}<br><span dir="ltr">ProviderBeacon · providerbeacon.com</span></td></tr></table></td></tr></table></body></html>`;
+    )}${priceTable}<table role="presentation" cellspacing="0" cellpadding="0" style="margin:26px 0"><tr><td bgcolor="#0b2a68" style="border-radius:9px"><a href="${e(action.href)}" style="display:inline-block;padding:15px 24px;color:#ffffff;font-size:16px;font-weight:bold;text-decoration:none">${e(label)}</a></td></tr></table>${sensitive ? `<p style="font-size:12px;line-height:1.7;color:#64748b">${e(w.fallback)}</p><p dir="ltr" style="font-size:12px;word-break:break-all"><a style="color:#0b2a68" href="${e(action.href)}">${e(action.href)}</a></p>` : ""}<p style="font-size:13px;line-height:1.8;color:#64748b">${e(footer)}</p><p style="font-size:14px;line-height:1.8">${e(w.help)}<br><strong>${e(w.team)}</strong></p></td></tr><tr><td style="padding:22px 32px;background:#f8fafc;border-top:1px solid #e2e8f0;border-radius:0 0 18px 18px;font-size:12px;line-height:1.9;color:#64748b"><a style="color:#405169" href="${privacy}">${e(w.privacy)}</a>${input.unsubscribeUrl ? ` &nbsp; · &nbsp; <a style="color:#405169" href="${e(input.unsubscribeUrl)}">${e(unsubscribeLabel)}</a>` : ""}<br><span dir="ltr">ProviderBeacon · providerbeacon.com</span></td></tr></table></td></tr></table></body></html>`;
   return { subject, html, text };
 }
