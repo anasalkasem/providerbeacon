@@ -15,6 +15,10 @@ export type Provider = {
   slug: string;
   name: string;
   initials: string;
+  websiteUrl?: string | null;
+  logoUrl?: string | null;
+  websitePreviewUrl?: string | null;
+  telegramUrl?: string | null;
   location: string;
   verified: boolean;
   tier: ProviderTier;

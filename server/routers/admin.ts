@@ -1,4 +1,6 @@
 import { assertStaffOrigin } from "../staffOrigin";
+import { providerProfileInput } from "../../shared/providerProfile";
+import { getProviderProfile, saveProviderProfile } from "../providerProfileDb";
 import { teamRouter } from "./team";
 import { adminProvidersInput } from "../../shared/catalogueQuery";
 import { emailAdminRouter } from "./emailAdmin";
@@ -64,6 +66,11 @@ export const adminRouter = router({
   }),
   acceptInvite: protectedProcedure.input(z.object({ token: z.string().min(20).max(200) })).mutation(({ ctx, input }) => { assertStaffOrigin(ctx.req); ctx.res.setHeader("Cache-Control", "no-store"); return acceptTeamInvite({ token: input.token, userId: ctx.user!.id, email: ctx.user!.email }); }),
   providers: router({
+    profile: permissionProcedure("providers.read").input(z.object({ id: z.number().int().positive() })).query(({ input }) => getProviderProfile(input.id)),
+    saveProfile: permissionProcedure("providers.write").input(providerProfileInput).mutation(({ ctx, input }) => {
+      assertStaffOrigin(ctx.req);
+      return saveProviderProfile({ input, actorUserId: ctx.user!.id, ipAddress: ctx.req.ip });
+    }),
     list: permissionProcedure("providers.read").input(adminProvidersInput).query(({ input }) => listAdminProviders(input)),
     page: permissionProcedure("providers.read").input(adminProvidersInput).query(({ input }) => listAdminProviderPage(input)),
     createDraft: permissionProcedure("providers.write").input(z.object({ name: z.string().trim().min(2).max(200), websiteUrl: z.string().url().max(500) })).mutation(({ ctx, input }) => createProviderDraft({ ...input, actorUserId: ctx.user!.id })),
