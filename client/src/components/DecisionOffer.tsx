@@ -1,10 +1,10 @@
+import { hasPricingBasis, quantityQuoteExact } from "../../../shared/pricing";
 import { ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
 import { useLocale } from "@/contexts/LocaleContext";
 import { workspaceCopy } from "@/i18n/workspace";
 import { assistantCopy } from "@/i18n/assistant";
 import { localizeData, localizeDuration } from "@/i18n/messages";
-import { unitLabel } from "@/i18n/pricing";
 import type { Provider, Service } from "@/data/marketplace";
 import { comparisonFacts } from "../../../shared/offerComparison";
 import OfferEvidence, { serviceName } from "./OfferEvidence";
@@ -76,10 +76,8 @@ export function DecisionOffer({
         </h3>
         <div className="rounded-xl bg-slate-50 p-4">
           <OfferPrice service={service} lowest={lowest} />
-          <p className="mt-1 text-xs text-slate-500">
-            {unitLabel(locale, service)}
-          </p>
-          {service.priceUnit === "package" ? null : quantity != null ? (
+          {service.priceUnit === "package" ||
+          !hasPricingBasis(service) ? null : quantity != null ? (
             <div className="mt-3 border-t border-slate-200 pt-3">
               <p className="mb-1 text-xs font-semibold text-slate-500">
                 {t.quantity}: <bdi>{quantity.toLocaleString(locale)}</bdi>
@@ -101,9 +99,14 @@ export function DecisionOffer({
               lowest={lowest}
             />
           )}
-          {currency && service.priceCurrency && service.priceCurrency !== currency && !convertedTotal && quantity != null && (
-            <p className="mt-2 text-xs text-amber-800">{a.fxUnavailable}</p>
-          )}
+          {currency &&
+            service.priceCurrency &&
+            service.priceCurrency !== currency &&
+            !convertedTotal &&
+            quantity != null &&
+            quantityQuoteExact(service, quantity) != null && (
+              <p className="mt-2 text-xs text-amber-800">{a.fxUnavailable}</p>
+            )}
           {budgetStatus && (
             <p
               className={`mt-2 text-xs font-bold ${budgetStatus === "within" ? "text-emerald-800" : "text-amber-800"}`}

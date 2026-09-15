@@ -1,5 +1,10 @@
 import { priceCurrencies, type PriceCurrency } from "../shared/pricing";
 import type { ProviderPricingSnapshot } from "../shared/providerPricing";
+import {
+  fetchPublicRateTable,
+  publicRateTableUrl,
+  serviceNameFingerprint,
+} from "./publicRateTable";
 
 export function sourceCurrency(value: unknown): PriceCurrency | null {
   if (typeof value !== "string") return null;
@@ -121,11 +126,18 @@ export async function fetchProviderPricing(
   apiKey: string,
   previousCurrency: string | null
 ): Promise<ProviderPricingSnapshot> {
-  const [currency, perThousandEvidenceUrl] = await Promise.all([
-    accountCurrency(endpoint, apiKey, previousCurrency),
-    tableEvidence(endpoint),
-  ]);
-  return { currency, perThousandEvidenceUrl };
+  const [currency, perThousandEvidenceUrl, perThousandRows] = await Promise.all(
+    [
+      accountCurrency(endpoint, apiKey, previousCurrency),
+      tableEvidence(endpoint),
+      rateTableUrl(endpoint) ? undefined : fetchPublicRateTable(endpoint),
+    ]
+  );
+  return {
+    currency,
+    perThousandEvidenceUrl,
+    ...(perThousandRows ? { perThousandRows } : {}),
+  };
 }
 
 export function automaticSourcePricing(
@@ -153,6 +165,10 @@ export function automaticSourcePricing(
   if (unit) return { currency, unit, evidenceUrl: endpoint };
   // Unknown/contradictory explicit units and packages require individual review.
   if (source.unit != null) return { currency, unit: null, evidenceUrl: null };
+  // A generic per-1000 column also appears over fixed packages on some panels.
+  // A one-off service cannot inherit that header; it needs its own explicit unit.
+  if (Number(source.min) === 1 && Number(source.max) === 1)
+    return { currency, unit: null, evidenceUrl: null };
   const tableUrl = rateTableUrl(new URL(endpoint));
   if (
     tableUrl &&
@@ -160,5 +176,22 @@ export function automaticSourcePricing(
     source.type === "Default"
   )
     return { currency, unit: "per_1000" as const, evidenceUrl: tableUrl };
+  const rows = snapshot?.perThousandRows;
+  const id = String(source.service ?? source.id ?? "");
+  if (
+    rows &&
+    rows.url === publicRateTableUrl(new URL(endpoint)) &&
+    source.type === "Default" &&
+    typeof source.name === "string" &&
+    /^\d{1,64}$/.test(id) &&
+    Object.hasOwn(rows.names, id) &&
+    rows.names[id] === serviceNameFingerprint(source.name) &&
+    Number.isSafeInteger(Number(source.min)) &&
+    Number(source.min) >= 1 &&
+    Number.isSafeInteger(Number(source.max)) &&
+    Number(source.max) > 1 &&
+    Number(source.max) >= Number(source.min)
+  )
+    return { currency, unit: "per_1000" as const, evidenceUrl: rows.url };
   return { currency, unit: null, evidenceUrl: null };
 }

@@ -53,7 +53,7 @@ describe("explicit pricing", () => {
     const row = { catalogueListing: "api_source", sourceRate: "0.01234567", priceAmount: 0.01234567, priceCurrency: "USD", priceUnit: null, min: 10, max: 10000 };
     expect(formatPrice("ar", row)).toBe("USD 0.01234567");
     expect(formatPrice("en", row)).toBe("USD 0.01234567");
-    expect(unitLabel("ar", row)).toBe("قيمة API · وحدة السعر قيد التحقق");
+    expect(unitLabel("ar", row)).toBe("سعر المزوّد · وحدة البيع غير محددة");
     expect(quantityQuote(row, 1000)).toBeNull();
     expect(comparablePrices([{ ...row, platform: "TikTok", category: "Views", countryCode: "US" }, { ...row, platform: "TikTok", category: "Views", countryCode: "US" }])).toBe(false);
   });

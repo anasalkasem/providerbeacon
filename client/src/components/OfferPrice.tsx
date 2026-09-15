@@ -1,8 +1,8 @@
-import { ArrowDown, CircleHelp, Sparkles } from "lucide-react";
+import { ArrowDown, Sparkles } from "lucide-react";
 import { useLocale } from "@/contexts/LocaleContext";
 import type { Service } from "@/data/marketplace";
 import { pageCopy } from "@/i18n/messages";
-import { formatPrice } from "@/i18n/pricing";
+import { formatPrice, unitLabel } from "@/i18n/pricing";
 import { priceHighlightCopy } from "@/i18n/priceHighlights";
 import { hasPricingBasis } from "../../../shared/pricing";
 
@@ -31,13 +31,11 @@ export default function OfferPrice({
               : "regular"
       }
       className={
-        unconfirmed
-          ? "rounded-xl bg-amber-50 p-3 text-amber-900 ring-1 ring-inset ring-amber-300"
-          : showLowest
-            ? "rounded-xl bg-emerald-100 p-3 text-emerald-900 ring-1 ring-inset ring-emerald-300"
-            : service.featured
-              ? "rounded-xl bg-violet-100 p-3 text-violet-900 ring-1 ring-inset ring-violet-300"
-              : "rounded-xl bg-slate-50 p-3 text-slate-900 ring-1 ring-inset ring-slate-200"
+        showLowest
+          ? "rounded-xl bg-emerald-100 p-3 text-emerald-900 ring-1 ring-inset ring-emerald-300"
+          : service.featured
+            ? "rounded-xl bg-violet-100 p-3 text-violet-900 ring-1 ring-inset ring-violet-300"
+            : "rounded-xl bg-slate-50 p-3 text-slate-900 ring-1 ring-inset ring-slate-200"
       }
     >
       <bdi
@@ -46,7 +44,10 @@ export default function OfferPrice({
       >
         {formatPrice(locale, service)}
       </bdi>
-      {(showLowest || service.featured || unconfirmed) && (
+      <p className="mt-1 text-xs leading-5 text-slate-600">
+        {unitLabel(locale, service)}
+      </p>
+      {(showLowest || service.featured) && (
         <div className="mt-2 flex flex-wrap gap-1.5 text-xs font-bold">
           {showLowest && (
             <span className="inline-flex items-center gap-1 rounded-md bg-emerald-700 px-2 py-1 text-white">
@@ -63,16 +64,32 @@ export default function OfferPrice({
               <span>{t.featured}</span>
             </span>
           )}
-          {unconfirmed && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-1 text-amber-900">
-              <CircleHelp aria-hidden="true" className="size-3.5 shrink-0" />
-              <span>{t.unconfirmed}</span>
-            </span>
-          )}
         </div>
       )}
       {unconfirmed && (
-        <p className="mt-2 max-w-56 text-xs leading-5">{t.unconfirmedHint}</p>
+        <details className="mt-2 max-w-64 text-xs leading-5 text-slate-600">
+          <summary className="cursor-pointer font-semibold text-teal-800">
+            {t.unconfirmed}
+          </summary>
+          <p className="mt-2">
+            {!service.priceCurrency
+              ? t.currencyMissing
+              : service.priceUnit === "package"
+                ? t.packageMissing
+                : t.unitMissing}
+          </p>
+          <p className="mt-1">{t.unconfirmedHint}</p>
+          {service.sourceUrl && (
+            <a
+              className="mt-2 inline-block font-semibold text-teal-800 underline underline-offset-4"
+              href={service.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t.sourceLink}
+            </a>
+          )}
+        </details>
       )}
       {showLowest && (
         <p className="mt-2 max-w-56 text-xs leading-5">
@@ -108,10 +125,6 @@ export function PriceLegend({
           <Sparkles aria-hidden="true" className="size-3.5" />
           {t.featured}
         </li>
-        <li className="flex items-center gap-1.5 rounded-lg bg-amber-100 px-3 py-2 text-amber-900">
-          <CircleHelp aria-hidden="true" className="size-3.5" />
-          {t.unconfirmed}
-        </li>
         <li className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-slate-700">
           <span
             aria-hidden="true"
@@ -121,7 +134,7 @@ export function PriceLegend({
         </li>
       </ul>
       {hasUnconfirmed && (
-        <p className="mt-3 text-xs leading-6 text-amber-900">
+        <p className="mt-3 text-xs leading-6 text-slate-500">
           {t.pendingNotice}
         </p>
       )}

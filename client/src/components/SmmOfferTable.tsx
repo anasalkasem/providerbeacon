@@ -5,7 +5,6 @@ import { Link } from "wouter";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
 import { type Service } from "@/data/marketplace";
-import { unitLabel } from "@/i18n/pricing";
 import { lowestVisiblePriceIds } from "@/lib/priceHighlights";
 import { localizeData, localizeDuration, formatNumber } from "@/i18n/messages";
 import OfferEvidence, { serviceName, serviceScope } from "./OfferEvidence";
@@ -138,15 +137,13 @@ export default function SmmOfferTable({
                       lowest={lowest.has(service.id)}
                       scope="visible"
                     />
-                    <p className="mt-1 text-xs text-slate-500">
-                      {unitLabel(locale, service)}
-                    </p>
                     {service.priceUnit === "package" ? (
                       <p className="mt-2 max-w-xs">
                         {serviceScope(locale, service)}
                       </p>
                     ) : (
                       <QuoteCost
+                        hideMissingBasis
                         service={service}
                         quantity={quantity}
                         lowest={lowest.has(service.id)}

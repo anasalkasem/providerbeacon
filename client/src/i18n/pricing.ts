@@ -1,4 +1,10 @@
-import { hasPricingBasis, quantityQuoteExact, type PricingMetadata } from "../../../shared/pricing";
+import { priceHighlightCopy } from "./priceHighlights";
+import type { Locale } from "@/contexts/LocaleContext";
+import {
+  hasPricingBasis,
+  quantityQuoteExact,
+  type PricingMetadata,
+} from "../../../shared/pricing";
 
 const en = {
   price: "Price",
@@ -116,31 +122,57 @@ export const pricingCopy: Record<string, typeof en> = {
     sourceHelp: "保留 API 原始费率。请使用该服务的具体证据确认金额和计价依据。",
   },
 };
-export function unitLabel(locale: string, row: PricingMetadata & { billingCycle?: "monthly" | null; catalogueListing?: string }) {
+export function unitLabel(
+  locale: string,
+  row: PricingMetadata & {
+    billingCycle?: "monthly" | null;
+    catalogueListing?: string;
+  }
+) {
   const text = pricingCopy[locale] ?? en;
-  if (row.catalogueListing === "api_source" && !hasPricingBasis(row)) return row.priceCurrency
-    ? locale === "ar" ? "قيمة API · وحدة السعر قيد التحقق" : "API rate · sale unit awaiting confirmation"
-    : locale === "ar" ? "قيمة API · العملة ووحدة السعر قيد التحقق" : "API rate · currency and unit awaiting confirmation";
-  if (row.billingCycle === "monthly") return locale === "ar" ? "شهريًا · باقة محددة" : "per month · defined package";
+  if (row.catalogueListing === "api_source" && !hasPricingBasis(row)) {
+    const copy = priceHighlightCopy[locale as Locale] ?? priceHighlightCopy.en;
+    return `${copy.sourceAmount} · ${row.priceCurrency ? copy.unitUnspecified : copy.currencyUnspecified}`;
+  }
+  if (row.billingCycle === "monthly")
+    return locale === "ar"
+      ? "شهريًا · باقة محددة"
+      : "per month · defined package";
   return row.priceUnit &&
     ["per_1000", "per_item", "package"].includes(row.priceUnit)
     ? text[row.priceUnit as "per_1000" | "per_item" | "package"]
     : text.unknown;
 }
-export function formatQuotePrice(locale: string, row: Parameters<typeof quantityQuoteExact>[0], quantity: number) {
+export function formatQuotePrice(
+  locale: string,
+  row: Parameters<typeof quantityQuoteExact>[0],
+  quantity: number
+) {
   const amount = quantityQuoteExact(row, quantity);
   return amount == null ? null : `${row.priceCurrency} ${amount}`;
 }
 export function formatPrice(
   locale: string,
-  row: PricingMetadata & { priceAmount: number | string; priceType?: "listed" | "from"; catalogueListing?: string; sourceRate?: string | null }
+  row: PricingMetadata & {
+    priceAmount: number | string;
+    priceType?: "listed" | "from";
+    catalogueListing?: string;
+    sourceRate?: string | null;
+  }
 ) {
-  if (row.catalogueListing === "api_source" && row.sourceRate) return row.priceCurrency ? `${row.priceCurrency} ${row.sourceRate}` : row.sourceRate;
+  if (row.catalogueListing === "api_source" && row.sourceRate)
+    return row.priceCurrency
+      ? `${row.priceCurrency} ${row.sourceRate}`
+      : row.sourceRate;
   // Four decimals preserve small rates; currency codes avoid ambiguous dollar symbols.
   const amount = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 4,
   }).format(Number(row.priceAmount));
-  const formatted = row.priceCurrency ? `${row.priceCurrency} ${amount}` : amount;
-  return row.priceType === "from" ? `${locale === "ar" ? "ابتداءً من" : "From"} ${formatted}` : formatted;
+  const formatted = row.priceCurrency
+    ? `${row.priceCurrency} ${amount}`
+    : amount;
+  return row.priceType === "from"
+    ? `${locale === "ar" ? "ابتداءً من" : "From"} ${formatted}`
+    : formatted;
 }

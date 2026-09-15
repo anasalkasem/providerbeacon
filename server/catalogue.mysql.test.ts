@@ -8,6 +8,7 @@ import { invalidateCatalogueCaches } from "./catalogueCache";
 import { appRouter } from "./routers";
 import { confirmSourcePricing } from "./sourcePricing";
 import { quantityQuoteExact } from "../shared/pricing";
+import { serviceNameFingerprint } from "./publicRateTable";
 import { createSourcedDrafts } from "./sourcedOffersDb";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { createPool, type Pool } from "mysql2/promise";
@@ -454,6 +455,35 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect((await getServiceReview(row.id)).service).toMatchObject({ sourcePriceUnit: "per_item", sourcePricingMode: "manual" });
     await saveProviderIntegration({ id: integrationId, providerId, name: "Changed account", baseUrl: "https://provider.example/api/v2", apiKey: "replacement-synthetic-key", syncIntervalMinutes: 360, enabled: true, actorUserId: actorId });
     expect((await listProviderIntegrations())[0].sourceCurrency).toBeNull();
+  });
+
+  it("refreshes matching public-table units without guessing one-off packages and preserves the result in public quotes", async () => {
+    const integrationId = await addIntegration("active");
+    await state.db.update(providerIntegrations).set({ baseUrl: "https://foollo.com/api/v2" }).where(eq(providerIntegrations.id, integrationId));
+    const rows = [
+      { ...payload[0], service: 1450, name: "مشاركات انستجرام", type: "Default", rate: "32.0562", min: "10", max: "1000000" },
+      { ...payload[0], service: 1588, name: "إنشاء موقع إلكتروني", type: "Default", rate: "3000.00", min: "1", max: "1" },
+    ];
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(rows))));
+    state.pricing = { currency: "EGP", perThousandEvidenceUrl: null };
+    await sync();
+    expect((await state.db.select().from(serviceRecords)).every((row: any) => row.sourcePriceUnit === null)).toBe(true);
+    state.pricing = { ...state.pricing, perThousandRows: { url: "https://foollo.com/en/services", names: Object.fromEntries(rows.map(row => [String(row.service), serviceNameFingerprint(row.name)])) } };
+    await sync();
+    await state.db.update(providerRecords).set({ apiCataloguePublished: true }).where(eq(providerRecords.id, providerId));
+    const listed = (await getMarketplaceSnapshot({ scope: "services" })).services;
+    const quantityService = listed.find(row => row.sourceRate === "32.0562")!;
+    const oneOff = listed.find(row => row.sourceRate === "3000.00")!;
+    expect(quantityService).toMatchObject({ priceCurrency: "EGP", priceUnit: "per_1000" });
+    expect(quantityQuoteExact(quantityService, 500)).toBe("16.0281");
+    expect(oneOff).toMatchObject({ priceCurrency: "EGP", priceUnit: null });
+    expect(quantityQuoteExact(oneOff, 1)).toBeNull();
+    const original = (await state.db.select().from(serviceRecords)).find((row: any) => row.externalId === "1450");
+    expect(original).toMatchObject({ sourcePricingMode: "auto", sourcePricingEvidenceUrl: "https://foollo.com/en/services", pricingConfirmed: false, reviewStatus: "pending" });
+    // A replaced service with the same ID cannot inherit the old row's evidence.
+    rows[0]!.name = "خدمة مختلفة";
+    await sync();
+    expect((await getServiceReview(original.id)).service.sourcePriceUnit).toBeNull();
   });
 
   it("confirms source units with permission and audit, invalidates cache and leaves quality approval untouched", async () => {

@@ -105,6 +105,11 @@ async function startServer() {
     console.log(`Server running on http://localhost:${port}/`);
     if (process.env.NODE_ENV === "production") void runLegacyNormalization();
     const stopWorker = startProviderSyncWorker();
+    // Resume due pricing/catalogue refreshes after deployment without waiting
+    // for the external hourly scheduler. The shared queue deduplicates workers.
+    void runDueProviderSyncs(10).catch(() => {
+      console.warn("[Provider sync] Due catalogues will be retried by the scheduler");
+    });
     server.on("close", stopWorker);
     server.on("close", startEmailWorker());
     server.on("close", startPriceAlertWorker());
