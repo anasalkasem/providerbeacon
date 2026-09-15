@@ -127,6 +127,13 @@
       "when": 1789392009000,
       "tag": "0017_member_email",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1789392010000,
+      "tag": "0018_automatic_source_pricing",
+      "breakpoints": true
     }
   ]
 }

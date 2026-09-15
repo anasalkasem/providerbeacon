@@ -33,6 +33,7 @@ export async function listProviderIntegrations() {
     providerName,
     name: integration.name,
     baseUrl: integration.baseUrl,
+    sourceCurrency: integration.sourceCurrency,
     status: integration.status,
     credentialConfigured: Boolean(integration.credentialCiphertext),
     credentialHint: integration.credentialReference?.startsWith("vault:v1:") ? `•••• ${integration.credentialReference.slice(-4)}` : null,
@@ -74,6 +75,8 @@ export async function saveProviderIntegration(input: {
       if (running) throw new Error("Wait for the current synchronization to finish before changing the connection");
       await tx.update(providerIntegrations).set({
         providerId: input.providerId, name: input.name.trim().slice(0, 160), baseUrl: endpoint.toString(),
+        ...(input.apiKey || existing.baseUrl !== endpoint.toString() || existing.providerId !== input.providerId
+          ? { sourceCurrency: null } : {}),
         status: input.enabled ? "active" : "disabled", syncIntervalMinutes: interval,
         nextSyncAt: input.enabled ? existing.nextSyncAt ?? new Date() : null, lastError: null,
       }).where(eq(providerIntegrations.id, integrationId));

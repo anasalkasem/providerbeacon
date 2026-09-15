@@ -93,6 +93,7 @@ export async function confirmSourcePricing(
       throw new TRPCError({ code: "BAD_REQUEST", message: "review_not_ready" });
     for (const before of rows) {
       const after = {
+        sourcePricingMode: input.unit ? "manual" as const : "blocked" as const,
         sourcePriceUnit: input.unit,
         sourcePackageDescription:
           input.unit === "package" ? input.packageDescription : null,
