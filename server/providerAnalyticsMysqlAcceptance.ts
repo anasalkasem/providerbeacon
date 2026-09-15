@@ -110,6 +110,19 @@ export function providerAnalyticsAcceptanceCases(
       expect((await report({ providerId: providerId() })).totals.views).toBe(3);
       expect(await database().select().from(dedupe)).toHaveLength(4);
     });
+    it("counts first sub-second events and preserves the exact rolling boundary", async () => {
+      const first = now + 750;
+      expect(await record("view", first)).toBe("counted");
+      expect(await record("view", first + ANALYTICS_REPEAT_MS - 1)).toBe(
+        "duplicate"
+      );
+      expect(await record("view", first + ANALYTICS_REPEAT_MS)).toBe("counted");
+      const [row] = await database().select().from(dedupe);
+      expect(row.lastCountedAt).toEqual(new Date(first + ANALYTICS_REPEAT_MS));
+      expect((await report()).totals.views).toBe(2);
+      await cleanupProviderAnalytics(row.expiresAt.getTime());
+      expect(await database().select().from(dedupe)).toHaveLength(0);
+    });
     it("ignores unpublished providers and missing or unsafe contact destinations", async () => {
       for (const status of ["draft", "pending_review", "suspended"]) {
         await database()

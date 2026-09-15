@@ -75,6 +75,8 @@ export async function recordProviderEvent(
     )
       return "ignored";
 
+    // Millisecond timestamp columns preserve the rolling boundary and prevent
+    // MySQL from rounding a first event forward into the duplicate window.
     const identity = {
       providerId: input.providerId,
       visitorKey: keys.visitorKey,
@@ -236,11 +238,11 @@ export async function cleanupProviderAnalytics(now = Date.now()) {
   // aggregate counts remain for 13 months, independently of visitor identifiers.
   await db
     .delete(dedupe)
-    .where(lt(dedupe.expiresAt, new Date(now)))
+    .where(lte(dedupe.expiresAt, new Date(now)))
     .limit(10_000);
   await db
     .delete(limits)
-    .where(lt(limits.expiresAt, new Date(now)))
+    .where(lte(limits.expiresAt, new Date(now)))
     .limit(10_000);
   await db
     .delete(daily)

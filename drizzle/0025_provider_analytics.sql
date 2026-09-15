@@ -20,8 +20,8 @@ CREATE TABLE `provider_analytics_dedupe` (
   `provider_id` int NOT NULL,
   `visitor_key` varchar(64) NOT NULL,
   `kind` enum('view', 'website', 'telegram') NOT NULL,
-  `last_counted_at` timestamp NOT NULL,
-  `expires_at` timestamp NOT NULL,
+  `last_counted_at` timestamp(3) NOT NULL,
+  `expires_at` timestamp(3) NOT NULL,
   PRIMARY KEY (`provider_id`, `visitor_key`, `kind`),
   INDEX `provider_analytics_dedupe_expiry_idx` (`expires_at`),
   FOREIGN KEY (`provider_id`) REFERENCES `provider_records` (`id`) ON DELETE CASCADE
@@ -30,6 +30,6 @@ CREATE TABLE `provider_analytics_dedupe` (
 CREATE TABLE `provider_analytics_limits` (
   `bucket_key` varchar(100) NOT NULL PRIMARY KEY,
   `used` int NOT NULL DEFAULT 0,
-  `expires_at` timestamp NOT NULL,
+  `expires_at` timestamp(3) NOT NULL,
   INDEX `provider_analytics_limits_expiry_idx` (`expires_at`)
 );

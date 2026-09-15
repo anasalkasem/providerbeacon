@@ -41,8 +41,8 @@ export const providerAnalyticsDedupe = mysqlTable(
       .references(() => providerRecords.id, { onDelete: "cascade" }),
     visitorKey: varchar("visitor_key", { length: 64 }).notNull(),
     kind: mysqlEnum("kind", ["view", "website", "telegram"]).notNull(),
-    lastCountedAt: timestamp("last_counted_at").notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
+    lastCountedAt: timestamp("last_counted_at", { fsp: 3 }).notNull(),
+    expiresAt: timestamp("expires_at", { fsp: 3 }).notNull(),
   },
   table => [
     primaryKey({ columns: [table.providerId, table.visitorKey, table.kind] }),
@@ -55,7 +55,7 @@ export const providerAnalyticsLimits = mysqlTable(
   {
     key: varchar("bucket_key", { length: 100 }).primaryKey(),
     used: int("used").default(0).notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
+    expiresAt: timestamp("expires_at", { fsp: 3 }).notNull(),
   },
   table => [index("provider_analytics_limits_expiry_idx").on(table.expiresAt)]
 );
