@@ -283,10 +283,15 @@ export async function cleanupImportedMedia() {
     .delete(linkMetadataCache)
     .where(lt(linkMetadataCache.expiresAt, new Date(Date.now() - 30 * DAY)))
     .limit(100);
-  // Retain saved provider/group images and active previews. Purge abandoned imports.
+  // Compare asset paths as bytes: existing provider columns, new tables, and
+  // JSON extraction can have different MySQL collations. Retain only actual
+  // image references, not a hash mentioned in an untrusted description.
   await db.execute(sql`DELETE FROM imported_media WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)
-    AND NOT EXISTS (SELECT 1 FROM provider_records p WHERE p.logoUrl LIKE CONCAT('%/api/imported-media/', imported_media.id)
-      OR p.websitePreviewUrl LIKE CONCAT('%/api/imported-media/', imported_media.id))
-    AND NOT EXISTS (SELECT 1 FROM community_groups g WHERE JSON_UNQUOTE(JSON_EXTRACT(g.link_metadata, '$.avatarUrl')) LIKE CONCAT('%/api/imported-media/', imported_media.id))
-    AND NOT EXISTS (SELECT 1 FROM link_metadata_cache c WHERE CAST(c.payload AS CHAR) LIKE CONCAT('%', imported_media.id, '%')) LIMIT 100`);
+    AND NOT EXISTS (SELECT 1 FROM provider_records p WHERE CAST(p.logoUrl AS BINARY) LIKE CAST(CONCAT('%/api/imported-media/', imported_media.id) AS BINARY)
+      OR CAST(p.websitePreviewUrl AS BINARY) LIKE CAST(CONCAT('%/api/imported-media/', imported_media.id) AS BINARY))
+    AND NOT EXISTS (SELECT 1 FROM community_groups g WHERE CAST(JSON_UNQUOTE(JSON_EXTRACT(g.link_metadata, '$.avatarUrl')) AS BINARY) LIKE CAST(CONCAT('%/api/imported-media/', imported_media.id) AS BINARY))
+    AND NOT EXISTS (SELECT 1 FROM link_metadata_cache c WHERE
+      CAST(JSON_UNQUOTE(JSON_EXTRACT(c.payload, '$.logoUrl')) AS BINARY) LIKE CAST(CONCAT('%/api/imported-media/', imported_media.id) AS BINARY)
+      OR CAST(JSON_UNQUOTE(JSON_EXTRACT(c.payload, '$.websitePreviewUrl')) AS BINARY) LIKE CAST(CONCAT('%/api/imported-media/', imported_media.id) AS BINARY)
+      OR CAST(JSON_UNQUOTE(JSON_EXTRACT(c.payload, '$.avatarUrl')) AS BINARY) LIKE CAST(CONCAT('%/api/imported-media/', imported_media.id) AS BINARY)) LIMIT 100`);
 }

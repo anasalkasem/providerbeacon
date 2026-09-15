@@ -140,7 +140,7 @@ export default function LinkAutofill({
   return (
     <section
       aria-label={t[kind]}
-      className="min-w-0 rounded-xl border border-teal-100 bg-teal-50/60 p-4 sm:col-span-2"
+      className="col-span-full min-w-0 rounded-xl border border-teal-100 bg-teal-50/60 p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="flex items-center gap-2 text-sm font-bold text-teal-900">
