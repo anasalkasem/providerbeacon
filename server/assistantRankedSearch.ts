@@ -27,9 +27,11 @@ export async function assistantRankedSearch(plan: AssistantPlan) {
     return assistantSearch(plan);
   const db = await getDb();
   if (!db) throw new Error("CATALOGUE_UNAVAILABLE");
-  const currency = sql<string>`case when ${serviceRecords.reviewStatus} = 'pending' then ${serviceRecords.sourceCurrency} else ${serviceRecords.priceCurrency} end`;
-  const unit = cataloguePriceUnit();
-  const rate = sql<string>`case when ${serviceRecords.reviewStatus} = 'pending' then ${serviceRecords.sourceRate} else cast(${serviceRecords.priceAmount} as char) end`;
+  // All three values are validated ASCII. Pin their collation because source
+  // columns, legacy columns and numeric casts can inherit different defaults.
+  const currency = sql<string>`cast(case when ${serviceRecords.reviewStatus} = 'pending' then ${serviceRecords.sourceCurrency} else ${serviceRecords.priceCurrency} end as char character set ascii) collate ascii_bin`;
+  const unit = sql<string>`cast(${cataloguePriceUnit()} as char character set ascii) collate ascii_bin`;
+  const rate = sql<string>`cast(case when ${serviceRecords.reviewStatus} = 'pending' then ${serviceRecords.sourceRate} else cast(${serviceRecords.priceAmount} as char) end as char character set ascii) collate ascii_bin`;
   const ranked = db
     .select({
       id: serviceRecords.id,
