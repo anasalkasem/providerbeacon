@@ -25,6 +25,8 @@ import { getDb } from "./db";
 import { assertPublicHttpsUrl, writeAudit } from "./marketplaceDb";
 import { decryptValue } from "./security";
 import { inspectApiService, normalizeApiService } from "./serviceNormalizer";
+import { fetchProviderPricing } from "./providerPricing";
+import type { ProviderPricingSnapshot } from "../shared/providerPricing";
 import {
   applyCatalogueBatch,
   type NormalizedService,
@@ -133,7 +135,7 @@ async function withJob<T>(
 
 async function fetchCatalogue(
   integration: Integration
-): Promise<SnapshotItem[]> {
+): Promise<{ rows: SnapshotItem[]; pricing: ProviderPricingSnapshot }> {
   if (
     !integration.credentialCiphertext ||
     !integration.credentialIv ||
@@ -165,6 +167,7 @@ async function fetchCatalogue(
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 30_000);
   let payload: unknown;
+  let pricing: ProviderPricingSnapshot;
   try {
     const response = await fetch(endpoint, {
       method: "POST",
@@ -200,6 +203,7 @@ async function fetchCatalogue(
     } finally {
       reader.releaseLock();
     }
+    pricing = await fetchProviderPricing(endpoint, apiKey, integration.sourceCurrency);
   } catch (error) {
     if (error instanceof SyncError) throw error;
     throw new SyncError(
@@ -247,7 +251,7 @@ async function fetchCatalogue(
     throw new SyncError(
       `All ${rows.length} source services have invalid required values; existing services were preserved`
     );
-  return rows;
+  return { rows, pricing };
 }
 
 async function prepareSnapshot(claim: Job) {
@@ -277,7 +281,7 @@ async function prepareSnapshot(claim: Job) {
       return result.affectedRows;
     });
   } while (removed === 1000);
-  const rows = await fetchCatalogue(integration);
+  const { rows, pricing } = await fetchCatalogue(integration);
   const snapshotAt = new Date();
   for (let offset = 0; offset < rows.length; offset += SYNC_BATCH_SIZE) {
     await withJob(claim, async tx => {
@@ -293,7 +297,16 @@ async function prepareSnapshot(claim: Job) {
     });
     await yieldTurn();
   }
-  await withJob(claim, async tx => {
+  await withJob(claim, async (tx, job, _provider, current) => {
+    if (current.sourceCurrency !== pricing.currency) {
+      await tx.update(providerIntegrations).set({ sourceCurrency: pricing.currency })
+        .where(eq(providerIntegrations.id, current.id));
+      await writeAudit({ actorUserId: job.actorUserId ?? undefined,
+        action: "integration.source_currency.detect", entityType: "provider_integration", entityId: String(current.id),
+        summary: "Read pricing currency from the connected provider account",
+        metadata: { before: current.sourceCurrency, after: pricing.currency, jobId: job.id },
+      }, tx);
+    }
     await tx
       .update(providerSyncJobs)
       .set({
@@ -301,6 +314,7 @@ async function prepareSnapshot(claim: Job) {
         totalCount: rows.length,
         invalidCount: rows.filter(row => row.invalid).length,
         snapshotAt,
+        pricingSnapshot: pricing,
         leaseToken: null,
         leaseUntil: null,
       })
@@ -342,6 +356,7 @@ async function importSnapshotBatch(claim: Job) {
           rows: valid.map(row => row.payload as NormalizedService),
           sourceUrl: job.sourceUrl,
           sourceCurrency: integration.sourceCurrency,
+          pricingSnapshot: job.pricingSnapshot,
           now: job.snapshotAt,
           actorUserId: job.actorUserId ?? undefined,
           jobId: job.id,

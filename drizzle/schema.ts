@@ -1,4 +1,5 @@
 import { bigint, boolean, decimal, index, int, json, mysqlEnum, mysqlTable, primaryKey, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+import type { ProviderPricingSnapshot } from "../shared/providerPricing";
 export * from "./memberSchema";
 
 export const assistantUsageBuckets = mysqlTable("assistant_usage_buckets", {
@@ -103,6 +104,7 @@ export const serviceRecords = mysqlTable("service_records", {
   sourceRate: varchar("sourceRate", { length: 2000 }),
   sourceCurrency: varchar("sourceCurrency", { length: 3 }),
   sourcePriceUnit: mysqlEnum("sourcePriceUnit", ["per_1000", "per_item", "package"]),
+  sourcePricingMode: mysqlEnum("sourcePricingMode", ["auto", "manual", "blocked"]).default("auto").notNull(),
   sourcePackageDescription: varchar("sourcePackageDescription", { length: 300 }),
   sourcePricingEvidenceUrl: varchar("sourcePricingEvidenceUrl", { length: 500 }),
   sourcePricingConfirmedAt: timestamp("sourcePricingConfirmedAt"),
@@ -227,6 +229,7 @@ export const providerSyncJobs = mysqlTable("provider_sync_jobs", {
   leaseToken: varchar("leaseToken", { length: 36 }),
   leaseUntil: timestamp("leaseUntil"),
   snapshotAt: timestamp("snapshotAt"),
+  pricingSnapshot: json("pricingSnapshot").$type<ProviderPricingSnapshot>(),
   startedAt: timestamp("startedAt"),
   finishedAt: timestamp("finishedAt"),
   lastError: varchar("lastError", { length: 500 }),

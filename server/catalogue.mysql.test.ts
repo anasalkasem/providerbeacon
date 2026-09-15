@@ -15,8 +15,13 @@ import { reserveAssistantTurn } from "./assistantUsage";
 import { assistantOffersByIds } from "./assistantCatalogue";
 import { memberAcceptanceCases } from "./memberMysqlAcceptance";
 import { emailAcceptanceCases } from "./emailMysqlAcceptance";
+import type { ProviderPricingSnapshot } from "../shared/providerPricing";
 
-const state = vi.hoisted(() => ({ db: null as any }));
+const state = vi.hoisted(() => ({ db: null as any, pricing: null as ProviderPricingSnapshot | null }));
+vi.mock("./providerPricing", async original => ({
+  ...await original<typeof import("./providerPricing")>(),
+  fetchProviderPricing: async (_url: URL, _key: string, currency: string | null) => state.pricing ?? { currency, perThousandEvidenceUrl: null },
+}));
 vi.mock("./db", () => ({ getDb: async () => state.db }));
 vi.mock("node:dns/promises", () => ({ lookup: async () => [{ address: "93.184.216.34", family: 4 }] }));
 import { getCachedMarketplaceSnapshot, listAdminProviderPage, listAdminProviders, getMarketplaceSnapshot, setProviderCataloguePublication, updateProviderStatus, updateServiceRecord } from "./marketplaceDb";
@@ -46,6 +51,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     actorId = owner.id;
   }, 30_000);
   beforeEach(async () => {
+    state.pricing = null;
     invalidateCatalogueCaches();
     vi.stubEnv("NODE_ENV", "production"); vi.stubEnv("MARKETPLACE_DEMO_MODE", "false");
     vi.stubEnv("VAULT_MASTER_KEY", Buffer.alloc(32, 17).toString("base64url"));
@@ -324,6 +330,45 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   });
 
   const unitEvidence = {unit:"per_1000" as const, evidenceUrl:"https://provider.example/services", confirmed:true as const, reason:"Each selected API rate is per 1000, checked in the source"};
+  it("persists detected pricing through resumable sync and exposes exact comparable source quotes", async () => {
+    const integrationId = await addIntegration("active");
+    await state.db.update(providerIntegrations).set({ baseUrl: "https://smmpanelone.com/api/v2" }).where(eq(providerIntegrations.id, integrationId));
+    state.pricing = { currency: "INR", perThousandEvidenceUrl: "https://smmpanelone.com/services" };
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([{ ...payload[0], type: "Default", rate: "2.60" }]))));
+    await sync();
+    await state.db.update(providerRecords).set({ apiCataloguePublished: true }).where(eq(providerRecords.id, providerId));
+    const [row] = await state.db.select().from(serviceRecords);
+    expect(row).toMatchObject({ sourceCurrency: "INR", sourcePriceUnit: "per_1000", sourcePricingMode: "auto", pricingConfirmed: false, reviewStatus: "pending" });
+    expect(row.sourcePricingIdentity).toHaveLength(64);
+    expect((await state.db.select().from(providerSyncJobs))[0].pricingSnapshot).toEqual(state.pricing);
+    expect((await listProviderIntegrations())[0].sourceCurrency).toBe("INR");
+    const publicRow = (await getMarketplaceSnapshot({ scope: "services" })).services[0]!;
+    expect(publicRow).toMatchObject({ priceCurrency: "INR", priceUnit: "per_1000", sourceRate: "2.60" });
+    expect(quantityQuoteExact(publicRow, 500)).toBe("1.30");
+    expect(await state.db.select().from(auditEntries).where(eq(auditEntries.action, "integration.source_currency.detect"))).toHaveLength(1);
+    await confirmSourcePricing({ ...unitEvidence, unit: null, evidenceUrl: null, items: [{ id: row.id, revision: row.revision }], actorUserId: actorId });
+    await sync();
+    expect((await getServiceReview(row.id)).service).toMatchObject({ sourcePricingMode: "blocked", sourcePriceUnit: null });
+    expect((await getMarketplaceSnapshot({ scope: "services" })).services[0]!.priceUnit).toBeNull();
+  });
+
+  it("refreshes existing unknown pricing without rate changes and honors a manual unit on subsequent syncs", async () => {
+    const integrationId = await addIntegration("active");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([{ ...payload[0], unit: "per_1000" }]))));
+    await sync();
+    const [row] = await state.db.select().from(serviceRecords);
+    expect(row.sourcePriceUnit).toBeNull();
+    state.pricing = { currency: "USD", perThousandEvidenceUrl: null };
+    await sync();
+    let current = (await getServiceReview(row.id)).service;
+    expect(current).toMatchObject({ sourceCurrency: "USD", sourcePriceUnit: "per_1000", sourcePricingMode: "auto" });
+    await confirmSourcePricing({ ...unitEvidence, unit: "per_item", items: [{ id: current.id, revision: current.revision }], actorUserId: actorId });
+    await sync();
+    expect((await getServiceReview(row.id)).service).toMatchObject({ sourcePriceUnit: "per_item", sourcePricingMode: "manual" });
+    await saveProviderIntegration({ id: integrationId, providerId, name: "Changed account", baseUrl: "https://provider.example/api/v2", apiKey: "replacement-synthetic-key", syncIntervalMinutes: 360, enabled: true, actorUserId: actorId });
+    expect((await listProviderIntegrations())[0].sourceCurrency).toBeNull();
+  });
+
   it("confirms source units with permission and audit, invalidates cache and leaves quality approval untouched", async () => {
     const [source] = await importUsdSource();
     expect(source.sourcePriceUnit).toBeNull();

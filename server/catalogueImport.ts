@@ -10,6 +10,8 @@ import { getDb } from "./db";
 import { compareQuoteAmounts, priceCurrencies, type PriceCurrency } from "../shared/pricing";
 import { writeAudit } from "./marketplaceDb";
 import { sourcePricingIdentity } from "./sourcePricing";
+import { automaticSourcePricing } from "./providerPricing";
+import type { ProviderPricingSnapshot } from "../shared/providerPricing";
 import {
   normalizeApiService,
   NORMALIZATION_VERSION,
@@ -28,13 +30,17 @@ export async function applyCatalogueBatch(
     rows: NormalizedService[];
     sourceUrl: string;
     sourceCurrency?: string | null;
+    pricingSnapshot?: ProviderPricingSnapshot | null;
     now: Date;
     actorUserId?: number;
     jobId: number;
   }
 ) {
   const { provider, sourceUrl, now, actorUserId } = input;
-  const sourceCurrency = priceCurrencies.includes(input.sourceCurrency as PriceCurrency) ? input.sourceCurrency! : null;
+  const pricingSnapshot = input.pricingSnapshot ?? {
+    currency: priceCurrencies.includes(input.sourceCurrency as PriceCurrency) ? input.sourceCurrency! : null,
+    perThousandEvidenceUrl: null,
+  };
   // Rebuild from retained source so pre-deployment staged payloads remain resumable.
   const normalized = input.rows.map((row, index) =>
     normalizeApiService(row.sourceData, index)
@@ -64,6 +70,7 @@ export async function applyCatalogueBatch(
       priceAmount: serviceRecords.priceAmount,
       sourceRate: serviceRecords.sourceRate,
       sourceCurrency: serviceRecords.sourceCurrency,
+      sourcePricingMode: serviceRecords.sourcePricingMode,
       sourcePriceUnit: serviceRecords.sourcePriceUnit,
       sourcePackageDescription: serviceRecords.sourcePackageDescription,
       sourcePricingEvidenceUrl: serviceRecords.sourcePricingEvidenceUrl,
@@ -112,10 +119,19 @@ export async function applyCatalogueBatch(
   const changeAudits: (typeof auditEntries.$inferInsert)[] = [];
   for (const item of normalized) {
     const existing = existingById.get(item.externalId.toLowerCase());
+    const automatic = automaticSourcePricing(item.sourceData, sourceUrl, pricingSnapshot);
+    const sourceCurrency = automatic.currency;
+    const manual = existing?.sourcePricingMode === "manual";
+    const keepSourcePricing = manual && existing.sourcePricingIdentity === sourcePricingIdentity(item.sourceData, sourceCurrency, sourceUrl, existing.sourcePriceUnit);
+    const canDetect = !existing || existing.sourcePricingMode === "auto";
+    const unit = keepSourcePricing ? existing.sourcePriceUnit : canDetect ? automatic.unit : null;
+    const evidenceUrl = keepSourcePricing ? existing.sourcePricingEvidenceUrl : unit ? automatic.evidenceUrl : null;
     const changed =
       !existing ||
       existing.sourceHash !== item.sourceHash ||
       existing.sourceCurrency !== sourceCurrency ||
+      existing.sourcePriceUnit !== unit ||
+      existing.sourcePricingEvidenceUrl !== evidenceUrl ||
       (existing.platform === "Unknown" &&
         existing.category === "Website traffic" &&
         existing.reviewStatus === "pending" &&
@@ -133,7 +149,6 @@ export async function applyCatalogueBatch(
       decimalRates ? compareQuoteAmounts(previousRate, item.sourceRate) !== 0 : Number(previousRate) !== Number(item.sourceRate)
     ));
     const { notes, ...data } = item;
-    const keepSourcePricing = existing?.sourcePricingIdentity === sourcePricingIdentity(item.sourceData, sourceCurrency, sourceUrl, existing?.sourcePriceUnit);
     // A later price sync must not undo an operator's withdrawal from a public API catalogue.
     const preserveWithdrawal = provider.apiCataloguePublished && existing?.reviewStatus === "changes_requested";
     const values = {
@@ -149,11 +164,12 @@ export async function applyCatalogueBatch(
       incomplete: true,
       pricingConfirmed: false,
       sourceCurrency,
-      sourcePriceUnit: keepSourcePricing ? existing!.sourcePriceUnit : null,
+      sourcePricingMode: existing?.sourcePricingMode ?? "auto" as const,
+      sourcePriceUnit: unit,
       sourcePackageDescription: keepSourcePricing ? existing!.sourcePackageDescription : null,
-      sourcePricingEvidenceUrl: keepSourcePricing ? existing!.sourcePricingEvidenceUrl : null,
-      sourcePricingConfirmedAt: keepSourcePricing ? existing!.sourcePricingConfirmedAt : null,
-      sourcePricingIdentity: keepSourcePricing ? existing!.sourcePricingIdentity : null,
+      sourcePricingEvidenceUrl: evidenceUrl,
+      sourcePricingConfirmedAt: keepSourcePricing ? existing!.sourcePricingConfirmedAt : unit ? now : null,
+      sourcePricingIdentity: unit ? sourcePricingIdentity(item.sourceData, sourceCurrency, sourceUrl, unit) : null,
       priceCurrency: sourceCurrency,
       priceUnit: null,
       packageDescription: null,
@@ -209,6 +225,7 @@ export async function applyCatalogueBatch(
         "priceAmount",
         "sourceRate",
         "sourceCurrency",
+        "sourcePricingMode",
         "sourcePriceUnit",
         "sourcePackageDescription",
         "sourcePricingEvidenceUrl",
@@ -270,7 +287,8 @@ export async function applyCatalogueBatch(
         serviceId: row.id,
         priceAmount: batch[index]!.priceAmount,
         sourceRate: batch[index]!.sourceRate,
-        priceCurrency: sourceCurrency,
+        priceCurrency: batch[index]!.sourceCurrency,
+        priceUnit: batch[index]!.sourcePriceUnit,
         kind: "source",
       })
     );
