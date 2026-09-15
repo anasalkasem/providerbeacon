@@ -28,3 +28,25 @@ Cleanup removes old abandoned previews and images after at least 30 days, while 
 ## Verification
 
 Regression coverage includes real form events with delayed/out-of-order responses, manual edits and clearing fields, private-link fallbacks, provider creation payloads, source binding, SVG attacks, private DNS/redirects, oversized responses, permissions/origins, database persistence, review state, media response headers and garbage collection. MySQL acceptance runs only against the isolated CI database, never production.
+# Logo import repairs
+
+Website metadata version 2 decodes logo pixels before storing them. Blank,
+transparent, tiny and malformed images are skipped in favour of the next
+source-declared logo or icon. Header branding and lazy-loaded logo sources are
+recognized even when their filenames are opaque. Bounded inline PNG artwork in
+SVG patterns is retained; external image loads and nested SVG remain forbidden.
+Validated logos are stored as PNG, with unused transparent margins removed and
+a dark backing when a light transparent mark would disappear on white.
+
+On deployment, a bounded background upgrade revisits up to 20 legacy website
+imports. It reuses recent homepage screenshots and replaces a saved logo only
+when it still equals the old imported suggestion on the same website. Each
+replacement increments the profile revision and writes an audit atomically.
+Manual images, descriptions, screenshots, provider status and credentials are
+preserved. No provider is created or published by this repair.
+
+Restricted sources (HTTP 401/403 or challenge titles) have a specific message and
+are never bypassed or captured as a normal homepage. Manual retry refreshes
+website metadata after a 30-second cooldown under the existing actor/global
+quotas. The image processor is bounded to 8 megapixels and three seconds per
+logo; external SVG references are removed before decoding.

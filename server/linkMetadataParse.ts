@@ -117,7 +117,27 @@ export function parseWebsite(html: string, url: string) {
       }
   }
   for (const node of nodes.filter(n => n.tagName === "img")) {
+    const identity = [attr(node, "alt"), attr(node, "title")].some(
+      value =>
+        value.toLowerCase().replace(/^www\./, "") ===
+        new URL(url).hostname.replace(/^www\./, "")
+    );
+    let brandedParent = false;
+    let parent: Node | undefined = node.parentNode ?? undefined;
+    for (let depth = 0; parent && depth < 3; depth++) {
+      if (
+        element(parent) &&
+        /(?:logo|brand|site-name)/i.test(
+          `${attr(parent, "class")} ${attr(parent, "id")}`
+        )
+      )
+        brandedParent = true;
+      parent =
+        "parentNode" in parent ? (parent.parentNode ?? undefined) : undefined;
+    }
     if (
+      identity ||
+      brandedParent ||
       /(?:logo|brand)/i.test(
         [
           attr(node, "src"),
@@ -126,8 +146,11 @@ export function parseWebsite(html: string, url: string) {
           attr(node, "id"),
         ].join(" ")
       )
-    )
-      add(attr(node, "src") || attr(node, "data-src"));
+    ) {
+      // Lazy-loaded logos often have a transparent placeholder in src.
+      add(attr(node, "data-src"));
+      add(attr(node, "src"));
+    }
   }
   for (const rel of ["apple-touch-icon", "icon"]) {
     for (const node of nodes.filter(
@@ -227,6 +250,9 @@ const svgTags = new Set([
   "clipPath",
   "mask",
   "use",
+  "pattern",
+  "symbol",
+  "image",
   "title",
   "desc",
 ]);
@@ -273,6 +299,9 @@ const svgAttrs = new Set([
   "mask",
   "maskUnits",
   "maskContentUnits",
+  "patternUnits",
+  "patternContentUnits",
+  "patternTransform",
 ]);
 const escapeXml = (s: string) =>
   s
@@ -319,6 +348,30 @@ export function sanitizeSvg(source: string): Buffer | null {
       const href = attr(node, "href");
       if (/^#[A-Za-z_][\w.-]*$/.test(href))
         attributes.push(`href="${escapeXml(href)}"`);
+    }
+    if (node.tagName === "image") {
+      // Some real logos are PNG artwork embedded in an SVG pattern. Keep only
+      // bounded inline PNG pixels; never fetch an external image or nested SVG.
+      const href = attr(node, "href");
+      if (!/^data:image\/png;base64,[A-Za-z0-9+/=\s]+$/.test(href)) return "";
+      const png = Buffer.from(href.slice(href.indexOf(",") + 1), "base64");
+      if (
+        png.length < 33 ||
+        png.length > 524288 ||
+        png.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a"
+      )
+        return "";
+      const width = png.readUInt32BE(16),
+        height = png.readUInt32BE(20);
+      if (
+        !width ||
+        !height ||
+        width > 4096 ||
+        height > 4096 ||
+        width * height > 4194304
+      )
+        return "";
+      attributes.push(`href="data:image/png;base64,${png.toString("base64")}"`);
     }
     if (node.tagName === "svg")
       attributes.push('xmlns="http://www.w3.org/2000/svg"');

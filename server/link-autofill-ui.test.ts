@@ -7,6 +7,7 @@ const state = vi.hoisted(() => ({
   requests: [] as {
     route: string;
     url: string;
+    refresh?: boolean;
     resolve: (value: unknown) => void;
     reject: (value: unknown) => void;
   }[],
@@ -17,9 +18,9 @@ vi.mock("@/contexts/LocaleContext", () => ({
 vi.mock("@/lib/trpc", () => {
   const route = (name: string) => ({
     useMutation: () => ({
-      mutateAsync: ({ url }: { url: string }) =>
+      mutateAsync: ({ url, refresh }: { url: string; refresh?: boolean }) =>
         new Promise((resolve, reject) => {
-          state.requests.push({ route: name, url, resolve, reject });
+          state.requests.push({ route: name, url, refresh, resolve, reject });
         }),
     }),
   });
@@ -95,6 +96,60 @@ const result = (
   ...patch,
 });
 describe("automatic form filling", () => {
+  it("explains a restricted provider source and explicitly refreshes when the user retries", async () => {
+    await act(async () =>
+      root.render(
+        React.createElement(LinkAutofill, {
+          kind: "website",
+          url: "https://provider.com",
+          onResolved: vi.fn(),
+        })
+      )
+    );
+    await tick();
+    await act(async () =>
+      state.requests[0].resolve(
+        result("https://provider.com/", {
+          kind: "website",
+          name: null,
+          description: null,
+          complete: false,
+          issue: "restricted",
+        })
+      )
+    );
+    expect(container.textContent).toContain("restricts automatic access");
+    await act(async () => container.querySelector("button")!.click());
+    await tick();
+    expect(state.requests[1].refresh).toBe(true);
+  });
+  it("shows a fallback rather than a broken logo image when an imported asset fails to load", async () => {
+    await act(async () =>
+      root.render(
+        React.createElement(LinkAutofill, {
+          kind: "website",
+          url: "https://provider.com",
+          onResolved: vi.fn(),
+        })
+      )
+    );
+    await tick();
+    await act(async () =>
+      state.requests[0].resolve(
+        result("https://provider.com/", {
+          kind: "website",
+          name: "Provider",
+          logoUrl:
+            "https://providerbeacon.com/api/imported-media/" + "a".repeat(64),
+        })
+      )
+    );
+    const logo = container.querySelector('img[alt="Website logo"]')!;
+    expect(logo).not.toBeNull();
+    await act(async () => logo.dispatchEvent(new Event("error")));
+    expect(container.querySelector('img[alt="Website logo"]')).toBeNull();
+    expect(container.textContent).toContain("PR");
+  });
   it("fills group fields from a pasted URL while preserving a name edited during the request", async () => {
     const save = vi.fn();
     await act(async () =>

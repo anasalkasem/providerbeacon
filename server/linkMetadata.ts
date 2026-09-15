@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { eq, gt, and, lt, sql } from "drizzle-orm";
+import { eq, and, lt, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
@@ -18,9 +18,12 @@ import { reserveMemberRequests } from "./memberDb";
 import { memberAuthOrigin } from "./memberSecurity";
 import { fetchPublicMetadata, resolveMetadataUrl } from "./publicMetadataFetch";
 import { parseTelegram, parseWebsite, safeImage } from "./linkMetadataParse";
+import { readableLogo } from "./logoImage";
+import { repairImportedLogo } from "./importedLogoRepair";
 
 const HOUR = 3600000;
 const DAY = 24 * HOUR;
+export const WEBSITE_METADATA_VERSION = 2;
 const inFlight = new Map<string, Promise<LinkMetadata>>();
 const hints = z
   .object({
@@ -50,13 +53,24 @@ export async function metadataBudget(actor: string) {
 }
 export const metadataKey = (kind: LinkMetadata["kind"], source: string) =>
   createHash("sha256").update(`${kind}:${source}`).digest("hex");
-export async function importedImage(raw: string, screenshot = false) {
+export async function importedImage(
+  raw: string,
+  screenshot = false,
+  logo = false
+) {
   try {
     const fetched = await fetchPublicMetadata(raw, {
       maxBytes: screenshot ? 1048576 : 524288,
       timeoutMs: screenshot ? 22000 : 7000,
     });
-    const image = safeImage(fetched.body, fetched.contentType);
+    const logoBody = logo
+      ? await readableLogo(fetched.body, fetched.contentType)
+      : null;
+    const image = logo
+      ? logoBody
+        ? { body: logoBody, mime: "image/png" }
+        : null
+      : safeImage(fetched.body, fetched.contentType);
     // A screenshot must be a final bitmap, never a loading animation or HTML response.
     if (
       !image ||
@@ -99,7 +113,10 @@ async function captureWebsite(source: string) {
     return null;
   }
 }
-async function websiteFields(source: string) {
+async function websiteFields(
+  source: string,
+  previousScreenshot?: string | null
+) {
   const page = await fetchPublicMetadata(source, {
     html: true,
     maxBytes: 1048576,
@@ -111,13 +128,15 @@ async function websiteFields(source: string) {
       parsed.name ?? ""
     )
   )
-    throw new Error("metadata_protected");
-  const screenshot = captureWebsite(source);
+    throw new Error("metadata_restricted");
+  const screenshot = previousScreenshot
+    ? Promise.resolve(previousScreenshot)
+    : captureWebsite(source);
   // Small batches bound latency and request fan-out; retain the source's order.
   let logoUrl: string | null = null;
   for (let i = 0; i < parsed.logos.length && !logoUrl; i += 3) {
     const images = await Promise.all(
-      parsed.logos.slice(i, i + 3).map(url => importedImage(url))
+      parsed.logos.slice(i, i + 3).map(url => importedImage(url, false, true))
     );
     logoUrl = images.find(Boolean) ?? null;
   }
@@ -165,7 +184,8 @@ async function telegramFields(source: string) {
 }
 export async function previewLink(
   kind: LinkMetadata["kind"],
-  raw: string
+  raw: string,
+  options: { refresh?: boolean } = {}
 ): Promise<LinkMetadata> {
   const link = kind === "telegram" ? groupLink(raw) : null;
   const sourceUrl =
@@ -183,14 +203,21 @@ export async function previewLink(
     const [cached] = await db
       .select()
       .from(linkMetadataCache)
-      .where(
-        and(
-          eq(linkMetadataCache.key, key),
-          gt(linkMetadataCache.expiresAt, new Date())
-        )
-      )
+      .where(eq(linkMetadataCache.key, key))
       .limit(1);
-    if (cached) return cached.payload;
+    const age = cached
+      ? Date.now() - Date.parse(cached.payload.fetchedAt)
+      : Infinity;
+    const currentVersion =
+      kind !== "website" ||
+      cached?.payload.version === WEBSITE_METADATA_VERSION;
+    if (
+      cached &&
+      currentVersion &&
+      cached.expiresAt > new Date() &&
+      (!options.refresh || age < 30000)
+    )
+      return cached.payload;
     try {
       await reserveMemberRequests([
         { key: "metadata:fetch", limit: 300, windowMs: DAY },
@@ -199,6 +226,7 @@ export async function previewLink(
       metadataError("TOO_MANY_REQUESTS", "busy");
     }
     const result: LinkMetadata = {
+      ...(kind === "website" ? { version: WEBSITE_METADATA_VERSION } : {}),
       key,
       kind,
       sourceUrl,
@@ -216,7 +244,31 @@ export async function previewLink(
       complete: false,
     };
     if (kind === "website") {
-      Object.assign(result, await websiteFields(sourceUrl).catch(() => null));
+      const previousScreenshot =
+        cached &&
+        age >= 0 &&
+        age < 7 * DAY &&
+        cached.payload.sourceUrl === sourceUrl
+          ? cached.payload.websitePreviewUrl
+          : null;
+      Object.assign(
+        result,
+        await websiteFields(sourceUrl, previousScreenshot).catch(
+          (error: unknown) => {
+            const message = error instanceof Error ? error.message : "";
+            result.issue =
+              message === "metadata_restricted"
+                ? "restricted"
+                : /timeout|ETIMEDOUT/.test(message)
+                  ? "timeout"
+                  : "unavailable";
+            console.warn(
+              `[metadata] Website ${new URL(sourceUrl).hostname}: ${result.issue}`
+            );
+            return null;
+          }
+        )
+      );
       result.complete = Boolean(result.logoUrl && result.websitePreviewUrl);
     } else {
       Object.assign(result, await telegramFields(sourceUrl).catch(() => null));
@@ -230,6 +282,14 @@ export async function previewLink(
         ? 7 * DAY
         : HOUR
       : 5 * 60000;
+    // Upgrade the saved image only while it still matches this source's old
+    // automatic suggestion. Existing screenshots and manual edits are retained.
+    if (
+      kind === "website" &&
+      cached &&
+      cached.payload.version !== WEBSITE_METADATA_VERSION
+    )
+      await repairImportedLogo(cached.payload, result);
     await db
       .insert(linkMetadataCache)
       .values({
@@ -246,6 +306,30 @@ export async function previewLink(
   const promise = work().finally(() => inFlight.delete(key));
   inFlight.set(key, promise);
   return promise;
+}
+
+export async function upgradeImportedProviderLogos() {
+  const db = await getDb();
+  if (!db) return;
+  const old = await db
+    .select()
+    .from(linkMetadataCache)
+    .where(
+      and(
+        eq(linkMetadataCache.kind, "website"),
+        sql`COALESCE(JSON_EXTRACT(${linkMetadataCache.payload}, '$.version'), 0) < ${WEBSITE_METADATA_VERSION}`
+      )
+    )
+    .limit(20);
+  for (const row of old) {
+    try {
+      await previewLink("website", row.payload.sourceUrl);
+    } catch {
+      console.warn("[metadata] Imported logo upgrade deferred");
+    }
+  }
+  if (old.length)
+    console.info(`[metadata] Checked ${old.length} legacy website imports`);
 }
 export async function savedLinkMetadata(
   key: string,

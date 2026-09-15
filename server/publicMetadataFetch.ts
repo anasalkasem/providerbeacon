@@ -142,6 +142,14 @@ export async function fetchPublicMetadata(
             .split(";")[0]
             .trim()
             .toLowerCase();
+          if (status === 401 || status === 403) {
+            req.destroy(new Error("metadata_restricted"));
+            return;
+          }
+          if (status === 429) {
+            req.destroy(new Error("metadata_busy"));
+            return;
+          }
           if (
             status !== 200 ||
             (res.headers["content-encoding"] &&

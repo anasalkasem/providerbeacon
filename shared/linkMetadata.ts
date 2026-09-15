@@ -17,6 +17,7 @@ export const websitePreviewInput = z
       .trim()
       .max(500)
       .refine(value => Boolean(websiteHome(value))),
+    refresh: z.boolean().optional(),
   })
   .strict();
 export const telegramPreviewInput = z
@@ -39,6 +40,8 @@ export type GroupLinkMetadata = {
   fetchedAt: string;
 };
 export type LinkMetadata = {
+  version?: number;
+  issue?: "restricted" | "timeout" | "unavailable";
   key: string;
   kind: "website" | "telegram";
   sourceUrl: string;

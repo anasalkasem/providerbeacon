@@ -2,7 +2,10 @@ import type { Express } from "express";
 import { eq } from "drizzle-orm";
 import { importedMedia } from "../drizzle/linkMetadataSchema";
 import { getDb } from "./db";
-import { cleanupImportedMedia } from "./linkMetadata";
+import {
+  cleanupImportedMedia,
+  upgradeImportedProviderLogos,
+} from "./linkMetadata";
 
 export function registerImportedMediaRoutes(app: Express) {
   app.get("/api/imported-media/:id", async (req, res) => {
@@ -45,6 +48,12 @@ export function registerImportedMediaRoutes(app: Express) {
   });
 }
 export function startImportedMediaCleanup() {
+  const upgrade = setTimeout(() => {
+    void upgradeImportedProviderLogos().catch(() =>
+      console.warn("[metadata] Logo upgrade deferred")
+    );
+  }, 8000);
+  upgrade.unref();
   const run = () => {
     void cleanupImportedMedia().catch(() =>
       console.warn("[metadata] Asset cleanup deferred")
