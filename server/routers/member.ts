@@ -1,3 +1,4 @@
+import { memberPublic, signedIn, safely } from "../memberProcedures";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import {
@@ -12,7 +13,8 @@ import {
 } from "../../shared/memberAuth";
 import { emailTokenInput } from "../../shared/email";
 import { mailConfiguration, unsubscribeMember } from "../emailDb";
-import { consumeMemberEmailToken, requestEmailVerification, requestPasswordEmail, updateMemberEmailPreferences } from "../memberEmail";
+import { consumeMemberEmailToken, requestEmailVerification, requestPasswordEmail, updateMemberEmailPreferences,
+} from "../memberEmail";
 import { publicProcedure, router } from "../_core/trpc";
 import {
   authenticateMemberSession,
@@ -40,34 +42,6 @@ import {
 } from "../memberSecurity";
 import type { Request, Response } from "express";
 
-const memberPublic = publicProcedure.use(async ({ ctx, type, next }) => {
-  ctx.res.setHeader("Cache-Control", "no-store");
-  if (type === "mutation") assertMemberOrigin(ctx.req);
-  try {
-    return await next();
-  } catch (error) {
-    throw publicMemberError(error);
-  }
-});
-const signedIn = memberPublic.use(async ({ ctx, next }) => {
-  const memberAuth = await safely(() =>
-    authenticateMemberSession(memberCookie(ctx.req, "session"))
-  );
-  if (!memberAuth)
-    throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "member_sign_in_required",
-    });
-  return next({ ctx: { ...ctx, memberAuth } });
-});
-// tRPC wraps resolver errors before middleware returns, so sanitize at each operation boundary.
-async function safely<T>(work: () => Promise<T>): Promise<T> {
-  try {
-    return await work();
-  } catch (error) {
-    throw publicMemberError(error);
-  }
-}
 function sessionResult(
   res: Response,
   result: Awaited<ReturnType<typeof loginMember>> & { recoveryCode?: string }
@@ -112,32 +86,63 @@ async function emailLimit(req: Request, email: string) {
   ]);
 }
 export const memberRouter = router({
-  emailPreferences: signedIn.input(z.object({ locale: memberLocale, marketingOptIn: z.boolean() }).strict()).mutation(({ ctx, input }) => safely(async () => {
-    await limit(ctx.req, "security");
-    return updateMemberEmailPreferences(ctx.memberAuth, input);
-  })),
-  requestVerification: signedIn.mutation(({ ctx }) => safely(async () => {
-    await emailLimit(ctx.req, ctx.memberAuth.member.email);
-    return requestEmailVerification(ctx.memberAuth);
-  })),
-  forgotPassword: memberPublic.input(z.object({ email: memberEmail }).strict()).mutation(({ ctx, input }) => safely(async () => {
-    await emailLimit(ctx.req, input.email);
-    return requestPasswordEmail(input.email);
-  })),
-  verifyEmail: memberPublic.input(z.object({ token: emailTokenInput }).strict()).mutation(({ ctx, input }) => safely(async () => {
-    await limit(ctx.req, "security");
-    return consumeMemberEmailToken(input.token, "verify");
-  })),
-  resetPassword: memberPublic.input(z.object({ token: emailTokenInput, newPassword: memberPassword }).strict()).mutation(({ ctx, input }) => safely(async () => {
-    await limit(ctx.req, "security");
-    const result = await consumeMemberEmailToken(input.token, "reset", input.newPassword);
-    clearMemberCookie(ctx.res);
-    return result;
-  })),
-  unsubscribe: memberPublic.input(z.object({ token: z.string().max(160) }).strict()).mutation(({ ctx, input }) => safely(async () => {
-    await limit(ctx.req, "security");
-    await unsubscribeMember(input.token); return { ok: true };
-  })),
+  emailPreferences: signedIn
+    .input(
+      z.object({ locale: memberLocale, marketingOptIn: z.boolean() }).strict()
+    )
+    .mutation(({ ctx, input }) =>
+      safely(async () => {
+        await limit(ctx.req, "security");
+        return updateMemberEmailPreferences(ctx.memberAuth, input);
+      })
+    ),
+  requestVerification: signedIn.mutation(({ ctx }) =>
+    safely(async () => {
+      await emailLimit(ctx.req, ctx.memberAuth.member.email);
+      return requestEmailVerification(ctx.memberAuth);
+    })
+  ),
+  forgotPassword: memberPublic
+    .input(z.object({ email: memberEmail }).strict())
+    .mutation(({ ctx, input }) =>
+      safely(async () => {
+        await emailLimit(ctx.req, input.email);
+        return requestPasswordEmail(input.email);
+      })
+    ),
+  verifyEmail: memberPublic
+    .input(z.object({ token: emailTokenInput }).strict())
+    .mutation(({ ctx, input }) =>
+      safely(async () => {
+        await limit(ctx.req, "security");
+        return consumeMemberEmailToken(input.token, "verify");
+      })
+    ),
+  resetPassword: memberPublic
+    .input(
+      z.object({ token: emailTokenInput, newPassword: memberPassword }).strict()
+    )
+    .mutation(({ ctx, input }) =>
+      safely(async () => {
+        await limit(ctx.req, "security");
+        const result = await consumeMemberEmailToken(
+          input.token,
+          "reset",
+          input.newPassword
+        );
+        clearMemberCookie(ctx.res);
+        return result;
+      })
+    ),
+  unsubscribe: memberPublic
+    .input(z.object({ token: z.string().max(160) }).strict())
+    .mutation(({ ctx, input }) =>
+      safely(async () => {
+        await limit(ctx.req, "security");
+        await unsubscribeMember(input.token);
+        return { ok: true };
+      })
+    ),
   me: memberPublic.query(({ ctx }) =>
     safely(async () => {
       const auth = await authenticateMemberSession(

@@ -1,3 +1,4 @@
+import { priceHistoryKey } from "./priceHistory";
 import { AsyncResultCache, registerCatalogueCache } from "./catalogueCache";
 import { publicOfferMetadata } from "../shared/sourcedOffers";
 import { and, asc, count, desc, eq, gt, inArray, like, lt, ne, notInArray, or, sql } from "drizzle-orm";
@@ -23,6 +24,7 @@ const publicServiceColumns = {
   id: serviceRecords.id, providerId: serviceRecords.providerId, platform: serviceRecords.platform,
   externalId: serviceRecords.externalId, sourceRate: serviceRecords.sourceRate, reviewStatus: serviceRecords.reviewStatus,
   sourceCurrency: serviceRecords.sourceCurrency,
+  sourcePriceUnit: serviceRecords.sourcePriceUnit, sourcePricingIdentity: serviceRecords.sourcePricingIdentity,
   catalogueUnit: cataloguePriceUnit(), sourcePackageDescription: serviceRecords.sourcePackageDescription,
   sourceUrl: serviceRecords.sourceUrl, providerWebsite: providerRecords.websiteUrl,
   apiListing: sql<boolean>`${serviceRecords.reviewStatus} = 'pending'`.mapWith(Boolean),
@@ -71,9 +73,11 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       input.countryCode ? eq(serviceRecords.countryCode, input.countryCode) : undefined,
       input.quantity ? and(sql`${serviceRecords.minOrder} <= ${input.quantity}`, sql`${serviceRecords.maxOrder} >= ${input.quantity}`) : undefined,
       input.refillOnly ? inArray(serviceRecords.refillMode, ["manual", "automatic", "lifetime"]) : undefined,
+      input.minRefillDays ? or(eq(serviceRecords.refillMode, "lifetime"),
+        and(inArray(serviceRecords.refillMode, ["manual", "automatic"]), sql`${serviceRecords.refillDays} >= ${input.minRefillDays}`)) : undefined,
       input.serviceQuery ? or(like(serviceRecords.name, searchPattern(input.serviceQuery)), like(serviceRecords.category, searchPattern(input.serviceQuery)), like(serviceRecords.platform, searchPattern(input.serviceQuery))) : undefined);
     const providerFilter = and(eligible,
-      input.scope === "providers" && (marketFilter || input.platform || input.category || input.countryCode || input.quantity || input.refillOnly || input.serviceQuery)
+      input.scope === "providers" && (marketFilter || input.platform || input.category || input.countryCode || input.quantity || input.refillOnly || input.minRefillDays || input.serviceQuery)
         ? sql`exists (select 1 from ${serviceRecords} where ${serviceRecords.providerId} = ${providerRecords.id} and ${providerServiceFilter})` : undefined,
       input.scope === "provider" ? eq(providerRecords.slug, input.slug ?? "") : undefined,
       input.scope === "providers" && input.q ? or(like(providerRecords.name, searchPattern(input.q)), like(providerRecords.location, searchPattern(input.q))) : undefined);
@@ -96,6 +100,8 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       input.quantity ? and(sql`${serviceRecords.minOrder} <= ${input.quantity}`, sql`${serviceRecords.maxOrder} >= ${input.quantity}`) : undefined,
       input.quality ? eq(serviceRecords.quality, input.quality) : undefined,
       input.refillOnly ? inArray(serviceRecords.refillMode, ["manual", "automatic", "lifetime"]) : undefined,
+      input.minRefillDays ? or(eq(serviceRecords.refillMode, "lifetime"),
+        and(inArray(serviceRecords.refillMode, ["manual", "automatic"]), sql`${serviceRecords.refillDays} >= ${input.minRefillDays}`)) : undefined,
       input.q && input.scope !== "providers" ? or(like(serviceRecords.name, searchPattern(input.q)), like(serviceRecords.category, searchPattern(input.q)),
         like(serviceRecords.platform, searchPattern(input.q)), like(providerRecords.name, searchPattern(input.q)),
         and(eq(serviceRecords.sourceKind, "public_web"), sql`json_unquote(json_extract(${serviceRecords.sourceData}, '$.nameAr')) like ${searchPattern(input.q)}`)) : undefined);
@@ -145,6 +151,7 @@ export async function getMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
     const services = serviceRows.map(row => ({
       // Provider API IDs are only unique within that provider. The database ID is global.
       ...publicOfferMetadata(row),
+      historyKey: priceHistoryKey(row),
       sourceRate: row.apiListing ? row.sourceRate : null,
       catalogueListing: row.apiListing ? "api_source" as const : "reviewed" as const,
       sourceServiceId: row.sourceKind === "provider_api" ? row.externalId : publicOfferMetadata(row).sourceServiceId,

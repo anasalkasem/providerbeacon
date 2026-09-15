@@ -20,7 +20,7 @@ export const assistantTurnInput = z
         path: z
           .string()
           .max(250)
-          .regex(/^\/(?:$|services(?:\/|$)|providers(?:\/|$)|compare$)/)
+          .regex(/^\/(?:$|services(?:\/|$)|providers(?:\/|$)|compare$|find$)/)
           .default("/"),
         offerIds: z.array(serviceId).max(4).default([]),
       })
@@ -57,6 +57,7 @@ export const assistantPlanSchema = z
       .regex(/^\d{1,9}(\.\d{1,4})?$/)
       .nullable(),
     refillOnly: z.boolean(),
+    minRefillDays: z.number().int().min(1).max(3650).nullable(),
     preferLowest: z.boolean(),
     serviceIds: z.array(serviceId).max(4),
     reply: z.string().min(1).max(1200),

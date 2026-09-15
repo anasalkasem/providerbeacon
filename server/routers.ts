@@ -1,3 +1,4 @@
+import { workspaceRouter } from "./routers/workspace";
 import { systemRouter } from "./_core/systemRouter";
 import { router } from "./_core/trpc";
 import { adminRouter } from "./routers/admin";
@@ -10,6 +11,7 @@ export const appRouter = router({
   system: systemRouter,
   auth: authRouter,
   member: memberRouter,
+  workspace: workspaceRouter,
   marketplace: marketplaceRouter,
   assistant: assistantRouter,
   admin: adminRouter,

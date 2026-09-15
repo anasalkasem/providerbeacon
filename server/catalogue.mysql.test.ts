@@ -1,3 +1,4 @@
+import { workspaceAcceptanceCases } from "./workspaceMysqlAcceptance";
 import { readFileSync } from "node:fs";
 import { performance } from "node:perf_hooks";
 import { invalidateCatalogueCaches } from "./catalogueCache";
@@ -66,6 +67,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   });
   afterAll(async () => { if (pool) await pool.end(); });
   memberAcceptanceCases(() => state.db, () => actorId);
+  workspaceAcceptanceCases(() => state.db, () => providerId);
   emailAcceptanceCases(() => state.db, () => actorId);
 
   async function addService(status: "draft" | "active" | "paused" | "archived" = "active", owner = providerId) {
@@ -95,6 +97,65 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     if (!("jobId" in queued)) throw new Error("Expected a queued job");
     return finishJob(queued.jobId);
   }
+
+  it("records comparable source price changes through the real sync worker for a saved watch", async () => {
+    vi.stubEnv("AUTH_PEPPER", "watch-sync-test-pepper");
+    vi.stubEnv("MAIL_ENABLED", "false");
+    const { registerMember, authenticateMemberSession } = await import(
+      "./memberDb"
+    );
+    const { saveWatch, readWorkspace, watchHistory } = await import(
+      "./buyerWorkspace"
+    );
+    const { memberAccounts } = await import("../drizzle/memberSchema");
+    await state.db.delete(memberAccounts);
+    const registration = await registerMember({
+      name: "Sync watch",
+      email: "sync-watch@example.com",
+      password: "a long local sync watch password",
+    });
+    const auth = (await authenticateMemberSession(registration.token))!;
+    const row = {
+      ...payload[0],
+      rate: "2.60",
+      currency: "USD",
+      unit: "per_1000",
+    };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify([row]), { status: 200 }))
+    );
+    await addIntegration("active");
+    await sync();
+    await setProviderCataloguePublication({
+      id: providerId,
+      enabled: true,
+      confirmed: true,
+      reason: "Publish local sync test catalogue",
+      actorUserId: actorId,
+    });
+    const first = (
+      await getMarketplaceSnapshot({ scope: "provider", slug: "test-provider" })
+    ).services[0]!;
+    expect(first.priceUnit).toBe("per_1000");
+    const watch = await saveWatch(auth, {
+      serviceId: first.id,
+      quantity: 1000,
+    });
+    row.rate = "2.40";
+    await sync();
+    invalidateCatalogueCaches();
+    const saved = (await readWorkspace(auth)).watches[0]!;
+    expect(saved.change).toMatchObject({
+      status: "lower",
+      original: "2.60",
+      now: "2.40",
+    });
+    const points = (await watchHistory(auth, watch.id)).points;
+    expect(points.map(p => Number(p.rate))).toContain(2.6);
+    expect(points.map(p => Number(p.rate))).toContain(2.4);
+    expect(points.length).toBeGreaterThanOrEqual(2);
+  });
 
   async function prepareAndPublish(id: number) {
     const detail = await getServiceReview(id);

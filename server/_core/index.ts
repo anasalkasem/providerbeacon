@@ -43,7 +43,7 @@ async function startServer() {
   const assistantJson = express.json({ limit: "32kb" });
   app.use((req, res, next) => {
     const procedures = req.path.startsWith("/api/trpc/") ? req.path.slice("/api/trpc/".length).split(",") : [];
-    return procedures.some(name => name === "assistant.chat" || name.startsWith("member.") || name.startsWith("admin.email.")) ? assistantJson(req, res, next) : next();
+    return procedures.some(name => name === "assistant.chat" || name.startsWith("member.") || name.startsWith("workspace.") || name.startsWith("admin.email.")) ? assistantJson(req, res, next) : next();
   });
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));

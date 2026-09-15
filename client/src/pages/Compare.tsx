@@ -1,3 +1,10 @@
+import { comparisonGroup } from "../../../shared/offerComparison";
+import {
+  ComparisonExplanation,
+  DecisionOffer,
+} from "@/components/DecisionOffer";
+import { SaveComparison } from "@/components/WorkspaceActions";
+import { workspaceCopy } from "@/i18n/workspace";
 import OfferEvidence, {
   serviceName,
   serviceScope,
@@ -53,6 +60,7 @@ import { Link } from "wouter";
 export default function Compare() {
   const { locale } = useLocale();
   const t = pageCopy[locale];
+  const wt = workspaceCopy[locale];
   const ar = locale === "ar";
   const assistantText = assistantCopy[locale];
   const initialQuantity = Number(
@@ -110,6 +118,8 @@ export default function Compare() {
     );
   const nativeComparable =
     comparablePrices(compared) &&
+    !!comparisonGroup(compared[0]!) &&
+    compared.every(s => comparisonGroup(s) === comparisonGroup(compared[0]!)) &&
     compared.every(
       service =>
         service.priceType !== "from" &&
@@ -170,7 +180,7 @@ export default function Compare() {
       <DollarSign />,
       service => (
         <div>
-          <OfferPrice service={service} lowest={isLowest(service)} />
+          <OfferPrice service={service} />
           <p className="mt-1 text-xs text-slate-500">
             {unitLabel(locale, service)}
           </p>
@@ -393,105 +403,144 @@ export default function Compare() {
             {pricingCopy[locale].mixed}
           </p>
         )}
-        <PriceLegend
-          hasUnconfirmed={compared.some(service => !hasPricingBasis(service))}
+        <ComparisonExplanation
+          services={compared}
+          quantity={quantity}
+          comparable={comparable}
         />
-        <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm">
-          <table className="w-full min-w-[960px]">
-            <thead>
-              <tr>
-                <th className="w-[220px] bg-slate-50 p-6 text-start align-bottom">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                    {t.comparison}
-                  </p>
-                  <p className="mt-2 text-lg font-extrabold text-slate-900">
-                    {t.serviceSignals}
-                  </p>
-                </th>
-                {compared.map(service => {
-                  const provider = providerFor(service);
-                  return (
-                    <th
-                      key={service.id}
-                      className="border-s border-slate-100 p-6 text-start align-top"
-                    >
-                      <div className="flex items-center gap-3">
-                        <ProviderAvatar provider={provider} />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <p className="font-extrabold text-slate-950">
-                              {provider.name}
-                            </p>
-                            {provider.verified && <VerifiedBadge compact />}
-                          </div>
-                          <p className="mt-1 text-xs font-medium text-slate-500">
-                            {service.platform} ·{" "}
-                            {localizeData(locale, service.category)}
-                          </p>
-                        </div>
-                      </div>
-                      <h2 className="mt-5 max-w-[250px] text-base font-bold text-slate-800">
-                        {serviceName(locale, service)}
-                      </h2>
-                      {provider.score === bestScore && (
-                        <span className="mt-4 inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-700">
-                          {t.bestOverallScore}
-                        </span>
-                      )}
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(([label, icon, render]) => (
-                <tr key={label} className="border-t border-slate-100">
-                  <th className="bg-slate-50 px-6 py-5 text-start">
-                    <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
-                      <span className="text-cyan-600 [&_svg]:size-4">
-                        {icon}
-                      </span>
-                      {label}
-                    </div>
-                  </th>
-                  {compared.map(service => (
-                    <td
-                      key={service.id}
-                      className="border-s border-slate-100 px-6 py-5"
-                    >
-                      {render(service)}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr className="border-t border-slate-200">
-                <th className="bg-slate-50 p-6 text-start text-sm text-slate-500">
-                  {t.chooseConfidence}
-                </th>
-                {compared.map(service => {
-                  const provider = providerFor(service);
-                  return (
-                    <td
-                      key={service.id}
-                      className="border-s border-slate-100 p-6"
-                    >
-                      <Button
-                        asChild
-                        className="w-full rounded-xl bg-[#0B2A68]"
-                      >
-                        <Link href={`/providers/${provider.slug}`}>
-                          {t.viewProvider}
-                        </Link>
-                      </Button>
-                    </td>
-                  );
-                })}
-              </tr>
-            </tfoot>
-          </table>
+        <div
+          className={`mb-6 grid items-stretch gap-4 md:grid-cols-2 ${compared.length === 3 ? "xl:grid-cols-3" : compared.length > 3 ? "xl:grid-cols-4" : ""}`}
+        >
+          {compared.map(service => {
+            const quote = convertedQuotes.data?.offers.find(
+              o => o.id === service.id
+            );
+            return (
+              <DecisionOffer
+                key={service.id}
+                service={service}
+                provider={providerFor(service)}
+                quantity={quantity}
+                lowest={isLowest(service)}
+                convertedTotal={quote?.convertedTotal}
+                fxAsOf={quote?.fxAsOf}
+                currency={currency}
+              />
+            );
+          })}
         </div>
+        <div className="mb-6">
+          <SaveComparison
+            serviceIds={compared.map(s => s.id)}
+            quantity={quantity}
+            currency={currency}
+            name={compared.map(s => providerFor(s).name).join(" / ")}
+          />
+        </div>
+        <details className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
+          <summary className="mb-4 cursor-pointer font-extrabold text-slate-800">
+            {wt.details}
+          </summary>
+          <PriceLegend
+            hasUnconfirmed={compared.some(service => !hasPricingBasis(service))}
+          />
+          <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm">
+            <table className="w-full min-w-[960px]">
+              <thead>
+                <tr>
+                  <th className="w-[220px] bg-slate-50 p-6 text-start align-bottom">
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                      {t.comparison}
+                    </p>
+                    <p className="mt-2 text-lg font-extrabold text-slate-900">
+                      {t.serviceSignals}
+                    </p>
+                  </th>
+                  {compared.map(service => {
+                    const provider = providerFor(service);
+                    return (
+                      <th
+                        key={service.id}
+                        className="border-s border-slate-100 p-6 text-start align-top"
+                      >
+                        <div className="flex items-center gap-3">
+                          <ProviderAvatar provider={provider} />
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-extrabold text-slate-950">
+                                {provider.name}
+                              </p>
+                              {provider.verified && <VerifiedBadge compact />}
+                            </div>
+                            <p className="mt-1 text-xs font-medium text-slate-500">
+                              {service.platform} ·{" "}
+                              {localizeData(locale, service.category)}
+                            </p>
+                          </div>
+                        </div>
+                        <h2 className="mt-5 max-w-[250px] text-base font-bold text-slate-800">
+                          {serviceName(locale, service)}
+                        </h2>
+                        {provider.score === bestScore && (
+                          <span className="mt-4 inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-700">
+                            {t.bestOverallScore}
+                          </span>
+                        )}
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map(([label, icon, render]) => (
+                  <tr key={label} className="border-t border-slate-100">
+                    <th className="bg-slate-50 px-6 py-5 text-start">
+                      <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
+                        <span className="text-cyan-600 [&_svg]:size-4">
+                          {icon}
+                        </span>
+                        {label}
+                      </div>
+                    </th>
+                    {compared.map(service => (
+                      <td
+                        key={service.id}
+                        className="border-s border-slate-100 px-6 py-5"
+                      >
+                        {render(service)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t border-slate-200">
+                  <th className="bg-slate-50 p-6 text-start text-sm text-slate-500">
+                    {t.chooseConfidence}
+                  </th>
+                  {compared.map(service => {
+                    const provider = providerFor(service);
+                    return (
+                      <td
+                        key={service.id}
+                        className="border-s border-slate-100 p-6"
+                      >
+                        <Button
+                          asChild
+                          className="w-full rounded-xl bg-[#0B2A68]"
+                        >
+                          <Link href={`/providers/${provider.slug}`}>
+                            {t.viewProvider}
+                          </Link>
+                        </Button>
+                      </td>
+                    );
+                  })}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </details>
       </section>
     </PublicLayout>
   );

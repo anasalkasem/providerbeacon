@@ -134,6 +134,13 @@
       "when": 1789392010000,
       "tag": "0018_automatic_source_pricing",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "5",
+      "when": 1789430400000,
+      "tag": "0019_buyer_workspace",
+      "breakpoints": true
     }
   ]
 }
