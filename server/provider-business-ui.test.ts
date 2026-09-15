@@ -196,6 +196,27 @@ describe("provider package interfaces", () => {
     expect(container.textContent).toContain(
       "monthly rates, not a payment total"
     );
+    // A month-four renewal quotes 29 even while today is in the intro window.
+    await render(
+      React.createElement(SubscriptionForm, {
+        key: "renewal",
+        data: {
+          provider: { id: 1, name: "Provider" },
+          owner: null,
+          subscription: {
+            status: "active",
+            startsAt: new Date("2026-04-30T12:45:00Z"),
+            endsAt: new Date("2026-05-31T12:45:00Z"),
+            firstActivatedAt: new Date("2026-01-31T12:45:00Z"),
+            revision: 1,
+          },
+        } as any,
+        manage: true,
+      })
+    );
+    expect(container.querySelector(".text-4xl")?.textContent).toBe("$29");
+    expect(container.textContent).toContain("Jan 31, 2026");
+    expect(container.textContent).toContain("Apr 30, 2026");
   });
   it("keeps unpaid analytics and publishing locked while allowing the owner to view saved tools", async () => {
     state.member = { id: 7, emailVerified: true };

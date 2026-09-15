@@ -73,11 +73,11 @@ const strings = {
     "开通和续订由团队处理，暂未启用自动扣款。",
   ],
   customPeriod: [
-    "These are monthly rates, not a payment total. For a custom period, check its duration and the price change date before recording the payment reference.",
-    "هذه أسعار شهرية وليست إجمالي دفعة. عند اختيار مدة مخصصة، راجع مدتها وتاريخ تغيّر السعر قبل تسجيل مرجع الدفع.",
-    "Son tarifas mensuales, no el total de un pago. Para un periodo personalizado, revisa la duración y el cambio de precio antes de registrar la referencia de pago.",
-    "ये मासिक दरें हैं, भुगतान का कुल नहीं। कस्टम अवधि के लिए भुगतान संदर्भ दर्ज करने से पहले अवधि और मूल्य बदलने की तारीख जाँचें।",
-    "这是月费，并非付款总额。使用自定义期限时，请在记录付款参考前核对期限及价格变更日期。",
+    "For active periods, the monthly rate is shown as of the selected start date. These are monthly rates, not a payment total. Check custom durations and any price change before recording the payment reference.",
+    "للمدد الفعالة، يظهر السعر الشهري حسب تاريخ البداية المختار. هذه أسعار شهرية وليست إجمالي دفعة. راجع المدد المخصصة وتاريخ تغيّر السعر قبل تسجيل مرجع الدفع.",
+    "Para periodos activos, se muestra la tarifa de la fecha de inicio seleccionada. Son tarifas mensuales, no el total de un pago. Revisa las duraciones y los cambios de precio antes de registrar la referencia.",
+    "सक्रिय अवधि के लिए चुनी गई आरंभ तारीख की मासिक दर दिखाई जाती है। ये मासिक दरें हैं, भुगतान का कुल नहीं। भुगतान संदर्भ दर्ज करने से पहले कस्टम अवधि और मूल्य बदलाव जाँचें।",
+    "有效期限的月费按所选开始日期显示。这是月费，并非付款总额。记录付款参考前，请核对自定义期限及价格变更日期。",
   ],
   preview: [
     "Schedule preview for the selected first activation date",

@@ -16,8 +16,10 @@ const usd = (cents: number) =>
 
 export function BusinessPricing({
   firstActivatedAt,
+  at,
 }: {
   firstActivatedAt?: Date | null;
+  at?: Date | null;
 }) {
   const { locale } = useLocale();
   const t = providerPricingText(locale);
@@ -25,7 +27,13 @@ export function BusinessPricing({
   const candidate = firstActivatedAt ? new Date(firstActivatedAt) : null;
   const anchor =
     candidate && Number.isFinite(candidate.getTime()) ? candidate : null;
-  const pricing = providerPlanPricing(anchor, now);
+  const reference = at ? new Date(at) : null;
+  const pricing = providerPlanPricing(
+    anchor,
+    reference && Number.isFinite(reference.getTime())
+      ? reference.getTime()
+      : now
+  );
   const standard = pricing.phase === "standard";
   const date = (value: Date) =>
     new Intl.DateTimeFormat(locale, {
