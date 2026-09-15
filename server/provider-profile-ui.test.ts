@@ -12,7 +12,10 @@ const state = vi.hoisted(() => ({
   invalidate: vi.fn(async () => {}),
   setData: vi.fn(),
 }));
-vi.mock("../client/src/components/LinkAutofill", () => ({ default: () => null, GroupSourceDetails: () => null }));
+vi.mock("../client/src/components/LinkAutofill", () => ({
+  default: () => null,
+  GroupSourceDetails: () => null,
+}));
 vi.mock("@/contexts/LocaleContext", async original => ({
   ...(await original<any>()),
   useLocale: () => ({ locale: state.locale }),
@@ -121,6 +124,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(() => root.unmount());
   container.remove();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 const render = (
@@ -269,6 +273,58 @@ describe("provider profile controls", () => {
 });
 
 describe("provider public media", () => {
+  it("shows a white transparent logo on a dark surface and a dark logo on white", async () => {
+    const pixels = new Uint8ClampedArray([255, 255, 255, 255]);
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      drawImage: vi.fn(),
+      getImageData: () => ({ data: pixels }),
+    } as any);
+    await render(
+      React.createElement(ProviderLogo, {
+        src: "https://providerbeacon.com/logo.png",
+        name: "Provider",
+        initials: "PB",
+      })
+    );
+    await act(() =>
+      container.querySelector("img")!.dispatchEvent(new Event("load"))
+    );
+    expect(
+      container.querySelector("img")!.parentElement!.style.backgroundColor
+    ).toBe("rgb(15, 23, 42)");
+    pixels.set([0, 0, 0, 255]);
+    await render(
+      React.createElement(ProviderLogo, {
+        src: "https://providerbeacon.com/dark.png",
+        name: "Provider",
+        initials: "PB",
+      })
+    );
+    await act(() =>
+      container.querySelector("img")!.dispatchEvent(new Event("load"))
+    );
+    expect(
+      container.querySelector("img")!.parentElement!.style.backgroundColor
+    ).toBe("rgb(255, 255, 255)");
+  });
+  it("uses the provider initials when an image loads but contains no visible artwork", async () => {
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      drawImage: vi.fn(),
+      getImageData: () => ({ data: new Uint8ClampedArray([0, 0, 0, 0]) }),
+    } as any);
+    await render(
+      React.createElement(ProviderLogo, {
+        src: "https://providerbeacon.com/empty.svg",
+        name: "Provider",
+        initials: "PB",
+      })
+    );
+    await act(() =>
+      container.querySelector("img")!.dispatchEvent(new Event("load"))
+    );
+    expect(container.querySelector("img")).toBeNull();
+    expect(container.textContent).toBe("PB");
+  });
   it("falls back to initials for a failed logo and renders a replacement URL", async () => {
     const logo = (src: string) =>
       React.createElement(ProviderLogo, {

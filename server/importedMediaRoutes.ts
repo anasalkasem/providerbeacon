@@ -29,7 +29,10 @@ export function registerImportedMediaRoutes(app: Express) {
       }
       res.setHeader("Content-Type", media.mime);
       res.setHeader("X-Content-Type-Options", "nosniff");
-      res.setHeader("Content-Security-Policy", "sandbox; default-src 'none'");
+      res.setHeader(
+        "Content-Security-Policy",
+        "sandbox; default-src 'none'; img-src data:"
+      );
       res.setHeader("Cross-Origin-Resource-Policy", "same-site");
       res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
       res.setHeader("ETag", `"${id}"`);

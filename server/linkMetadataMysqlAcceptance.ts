@@ -24,6 +24,8 @@ import {
 } from "./communityDb";
 import { registerImportedMediaRoutes } from "./importedMediaRoutes";
 import { appRouter } from "./routers";
+import * as metadataService from "./linkMetadata";
+import { repairImportedProviderLogos } from "./providerLogoRepair";
 
 export function linkMetadataAcceptanceCases(
   database: () => any,
@@ -49,11 +51,57 @@ export function linkMetadataAcceptanceCases(
       await database().delete(importedMedia);
       await database().delete(memberAuthBuckets);
     });
+    it("repairs a stored empty SVG across legacy table collations while preserving the rest of the profile", async () => {
+      const content = Buffer.from(
+        '<svg><rect width="131" height="59" fill="url(#missing)"/></svg>'
+      );
+      await database()
+        .insert(importedMedia)
+        .values({
+          id: "a".repeat(64),
+          mime: "image/svg+xml",
+          content: content.toString("base64"),
+          bytes: content.length,
+        });
+      await database()
+        .update(providerRecords)
+        .set({
+          logoUrl: image(),
+          websiteUrl: "https://provider.com/",
+          websitePreviewUrl: image("c".repeat(64)),
+          profileRevision: 7,
+        })
+        .where(eq(providerRecords.id, providerId()));
+      const [before] = await database()
+        .select()
+        .from(providerRecords)
+        .where(eq(providerRecords.id, providerId()));
+      const fetch = vi
+        .spyOn(metadataService, "fetchWebsiteLogo")
+        .mockResolvedValue(image("b".repeat(64)));
+      try {
+        expect(await repairImportedProviderLogos()).toBe(1);
+        const [after] = await database()
+          .select()
+          .from(providerRecords)
+          .where(eq(providerRecords.id, providerId()));
+        expect(after).toMatchObject({
+          name: before.name,
+          websiteUrl: before.websiteUrl,
+          websitePreviewUrl: before.websitePreviewUrl,
+          logoUrl: image("b".repeat(64)),
+          profileRevision: 8,
+        });
+      } finally {
+        fetch.mockRestore();
+      }
+    });
     async function seed(
       kind: LinkMetadata["kind"] = "website",
       sourceUrl = "https://provider.com/"
     ) {
       const data: LinkMetadata = {
+        parserVersion: 2,
         key: metadataKey(kind, sourceUrl),
         kind,
         sourceUrl,
@@ -308,7 +356,7 @@ export function linkMetadataAcceptanceCases(
       );
       expect(response.setHeader).toHaveBeenCalledWith(
         "Content-Security-Policy",
-        "sandbox; default-src 'none'"
+        "sandbox; default-src 'none'; img-src data:"
       );
       expect(response.setHeader).toHaveBeenCalledWith(
         "X-Content-Type-Options",

@@ -70,6 +70,34 @@ describe("bounded DNS-pinned public metadata transport", () => {
     ).rejects.toThrow("metadata_private_address");
     expect(state.request).not.toHaveBeenCalled();
   });
+  it("uses a validated IPv4 address when DNS lists IPv6 first", async () => {
+    state.lookup.mockResolvedValue([
+      { address: "2606:4700::1111", family: 6 },
+      { address: "93.184.216.34", family: 4 },
+    ]);
+    await fetchPublicMetadata("https://provider.com", {
+      html: true,
+      maxBytes: 1000,
+    });
+    expect(state.calls[0]).toMatchObject({
+      hostname: "93.184.216.34",
+      family: 4,
+    });
+  });
+  it("distinguishes blocked sources and provider rate limits", async () => {
+    for (const [status, reason] of [
+      [403, "metadata_protected"],
+      [429, "metadata_source_busy"],
+    ] as const) {
+      state.replies = [{ status }];
+      await expect(
+        fetchPublicMetadata("https://provider.com", {
+          html: true,
+          maxBytes: 1000,
+        })
+      ).rejects.toThrow(reason);
+    }
+  });
   it("rechecks redirect destinations and prevents rebinding to a private IP", async () => {
     state.replies = [
       { status: 302, headers: { location: "https://redirect.com/logo" } },
