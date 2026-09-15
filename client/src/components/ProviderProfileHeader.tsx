@@ -1,4 +1,8 @@
 import {
+  trackProviderContact,
+  useProviderPageView,
+} from "@/lib/providerAnalytics";
+import {
   ArrowLeft,
   Clock3,
   ExternalLink,
@@ -26,6 +30,7 @@ export default function ProviderProfileHeader({
 }: {
   provider: Provider;
 }) {
+  useProviderPageView(provider.id);
   const { locale } = useLocale();
   const t = providerProfileCopy[locale];
   const pages = pageCopy[locale];
@@ -94,7 +99,17 @@ export default function ProviderProfileHeader({
             <div className="mt-6 flex flex-wrap gap-2.5">
               {website && (
                 <Button asChild className="rounded-xl bg-[#0B2A68]">
-                  <a href={website} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={event =>
+                      trackProviderContact(provider.id, "website", event)
+                    }
+                    onAuxClick={event =>
+                      trackProviderContact(provider.id, "website", event)
+                    }
+                  >
                     {t.visit}
                     <ExternalLink className="size-4" />
                   </a>
@@ -106,7 +121,17 @@ export default function ProviderProfileHeader({
                   variant="outline"
                   className="rounded-xl border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100"
                 >
-                  <a href={telegram} target="_blank" rel="noopener noreferrer">
+                  <a
+                    href={telegram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={event =>
+                      trackProviderContact(provider.id, "telegram", event)
+                    }
+                    onAuxClick={event =>
+                      trackProviderContact(provider.id, "telegram", event)
+                    }
+                  >
                     <Send className="size-4" />
                     {t.telegram}
                   </a>

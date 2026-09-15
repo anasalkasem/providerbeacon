@@ -1,3 +1,5 @@
+import { providerAnalyticsInput } from "../../shared/providerAnalytics";
+import { getProviderAnalytics } from "../providerAnalyticsDb";
 import { assertStaffOrigin } from "../staffOrigin";
 import { providerProfileInput } from "../../shared/providerProfile";
 import { getProviderProfile, saveProviderProfile } from "../providerProfileDb";
@@ -53,6 +55,10 @@ const analysisErrors = {
 };
 
 export const adminRouter = router({
+  analytics: permissionProcedure("providers.read").input(providerAnalyticsInput).query(({ ctx, input }) => {
+    ctx.res.setHeader("Cache-Control", "no-store");
+    return getProviderAnalytics(input);
+  }),
   email: emailAdminRouter,
   groups: communityAdminRouter,
   access: protectedProcedure.query(async ({ ctx }) => {
