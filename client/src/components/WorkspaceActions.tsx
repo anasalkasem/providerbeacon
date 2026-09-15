@@ -9,6 +9,16 @@ import type { PriceCurrency } from "../../../shared/pricing";
 
 const button =
   "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:border-teal-500 hover:text-teal-800 disabled:opacity-40";
+function followReturnPath(quantity: number) {
+  const params = new URLSearchParams(window.location.search);
+  if (
+    ["/compare", "/services"].includes(window.location.pathname) &&
+    Number.isSafeInteger(quantity) &&
+    quantity > 0
+  )
+    params.set("quantity", String(quantity));
+  return window.location.pathname + (params.size ? `?${params}` : "");
+}
 export function FollowPrice({
   serviceId,
   quantity,
@@ -39,7 +49,7 @@ export function FollowPrice({
     return (
       <Link
         className={button}
-        href={`/sign-in?next=${encodeURIComponent(window.location.pathname + window.location.search)}`}
+        href={`/sign-in?next=${encodeURIComponent(followReturnPath(quantity))}`}
       >
         <Bookmark className="size-4" />
         {t.signIn}
@@ -93,7 +103,7 @@ export function SaveComparison({
   if (!member.data?.member)
     return (
       <Link
-        href={`/sign-in?next=${encodeURIComponent(window.location.pathname + window.location.search)}`}
+        href={`/sign-in?next=${encodeURIComponent(`/compare?${new URLSearchParams({ services: serviceIds.join(","), quantity: String(quantity), currency })}`)}`}
         className={button}
       >
         <Bookmark className="size-4" />
