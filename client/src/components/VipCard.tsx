@@ -19,6 +19,7 @@ export type VipCardData = {
   offer: string;
   offerEndsAt: Date | null;
   ownershipVerified: boolean;
+  placement?: "subscription" | "complimentary";
 };
 export function VipCard({
   card,
@@ -33,6 +34,8 @@ export function VipCard({
   const t = vipText(locale);
   const now = useBusinessClock();
   const [failed, setFailed] = useState<string | null>(null);
+  const placementLabel =
+    card.placement === "complimentary" ? t.complimentary : t.paid;
   const ref = useVipImpression(card.providerId, card.revision, !preview);
   const click = (event: MouseEvent<HTMLAnchorElement>) => {
     if (
@@ -58,7 +61,12 @@ export function VipCard({
       ) : (
         <div className="grid size-full place-items-center bg-[radial-gradient(ellipse_at_top_right,#526c31,transparent)] p-5 text-center text-white">
           <div>
-            <Diamond className="mx-auto mb-3 size-10 text-brand" />
+            <ProviderLogo
+              src={card.logoUrl}
+              name={card.name}
+              initials={card.name.slice(0, 2).toUpperCase()}
+              className="mx-auto mb-4 size-24 text-3xl"
+            />
             <span className="text-xl font-bold" dir="auto">
               {card.name}
             </span>
@@ -88,7 +96,7 @@ export function VipCard({
           {artwork}
           <div className="flex flex-1 flex-col p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
-              <span>{t.paid}</span>
+              <span>{placementLabel}</span>
               {card.ownershipVerified && (
                 <span className="inline-flex items-center gap-1">
                   <ShieldCheck className="size-3.5" />
@@ -146,7 +154,7 @@ export function VipCard({
       {artwork}
       <div className="flex flex-1 flex-col p-5">
         <p className="mb-3 text-[11px] font-semibold text-slate-500">
-          {t.paid}
+          {placementLabel}
         </p>
         <div className="flex items-center gap-3">
           <ProviderLogo

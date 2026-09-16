@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
-import { providerRecords, teamMembers, users } from "../drizzle/schema";
+import {
+  providerRecords,
+  teamMembers,
+  users,
+  auditEntries,
+} from "../drizzle/schema";
 import { memberAccounts, memberAuthBuckets } from "../drizzle/memberSchema";
 import { providerBusinessAccounts as accounts } from "../drizzle/businessSchema";
 import {
@@ -20,6 +25,9 @@ import {
   recordVipEvent,
   vipAnalytics,
   cleanupVipAnalytics,
+  grantComplimentaryVip,
+  revokeComplimentaryVip,
+  vipGrantState,
 } from "./providerVipDb";
 import { cleanupImportedMedia } from "./linkMetadata";
 import { createContext } from "./_core/context";
@@ -114,6 +122,14 @@ export function providerVipAcceptanceCases(
       visitorId: "550e8400-e29b-41d4-a716-446655440000",
     });
     const keys = { visitorKey: "a".repeat(64), clientKey: "b".repeat(64) };
+    const grantInput = (revision = 0) => ({
+      providerId: providerId(),
+      revision,
+      durationDays: 30 as const,
+      tagline: "Explore this real provider's services and terms",
+      contentConfirmed: true as const,
+      note: "Platform owner complimentary placement",
+    });
     async function caller(
       token?: string,
       origin = "https://providerbeacon.com",
@@ -450,6 +466,228 @@ export function providerVipAcceptanceCases(
       await cleanupVipAnalytics(Date.now() + 3 * 86400000);
       expect(await database().select().from(providerVipDedupe)).toHaveLength(0);
       expect(await database().select().from(providerVipDaily)).toHaveLength(1);
+    });
+
+    it("grants an unowned real provider VIP without creating billing, payments or verified ownership", async () => {
+      const started = Date.now();
+      const grant = await grantComplimentaryVip(actorId(), grantInput());
+      expect(grant.endsAt.getTime()).toBeGreaterThanOrEqual(
+        started + 30 * 86400000
+      );
+      expect(await database().select().from(accounts)).toEqual([]);
+      const result = await list();
+      expect(result.items).toHaveLength(1);
+      expect(result.items[0]).toMatchObject({
+        placement: "complimentary",
+        ownershipVerified: false,
+        coverUrl: "",
+        revision: 1,
+      });
+      expect(result.items[0].endsAt).toEqual(grant.endsAt);
+      expect(JSON.stringify(result)).not.toMatch(
+        /ownerMemberId|reviewNote|complimentaryEndsAt/
+      );
+      expect(
+        (await database().select().from(providerRecords))[0].verified
+      ).toBe(false);
+      expect((await database().select().from(auditEntries))[0]).toMatchObject({
+        actorUserId: actorId(),
+        action: "business.vip.complimentary.granted",
+      });
+      expect(await recordVipEvent(event(1), keys)).toBe("counted");
+    });
+
+    it("restricts grants and revocation to the platform owner and rejects cross-origin writes", async () => {
+      const user = await member();
+      const [staffUser] = await database()
+        .select()
+        .from(users)
+        .where(eq(users.id, actorId()));
+      await expect(
+        (await caller()).admin.business.vip.grant(grantInput())
+      ).rejects.toThrow();
+      await expect(
+        (await caller(user.token)).admin.business.vip.grant(grantInput())
+      ).rejects.toThrow();
+      for (const role of [
+        "administrator",
+        "auditor",
+        "provider_reviewer",
+      ] as const) {
+        await database()
+          .update(teamMembers)
+          .set({ role })
+          .where(eq(teamMembers.userId, actorId()));
+        const api = await caller(undefined, undefined, staffUser);
+        await expect(
+          api.admin.business.vip.grantState({ providerId: providerId() })
+        ).rejects.toThrow();
+        await expect(
+          api.admin.business.vip.grant(grantInput())
+        ).rejects.toThrow();
+        await expect(
+          api.admin.business.vip.revokeGrant({
+            providerId: providerId(),
+            revision: 1,
+            note: "Unauthorized staff revocation",
+          })
+        ).rejects.toThrow();
+      }
+      await database()
+        .update(teamMembers)
+        .set({ role: "owner" })
+        .where(eq(teamMembers.userId, actorId()));
+      const api = await caller(undefined, undefined, staffUser);
+      await expect(
+        (
+          await caller(undefined, "https://evil.example", staffUser)
+        ).admin.business.vip.grant(grantInput())
+      ).rejects.toThrow();
+      await api.admin.business.vip.grant(grantInput());
+      expect(
+        (await api.admin.business.vip.grantState({ providerId: providerId() }))
+          .card?.placement
+      ).toBe("complimentary");
+      await expect(
+        (
+          await caller(undefined, "https://evil.example", staffUser)
+        ).admin.business.vip.revokeGrant({
+          providerId: providerId(),
+          revision: 1,
+          note: "Cross-origin revocation attempt",
+        })
+      ).rejects.toThrow();
+      await api.admin.business.vip.revokeGrant({
+        providerId: providerId(),
+        revision: 1,
+        note: "Owner ended the promotion",
+      });
+      expect((await list()).items).toEqual([]);
+      // Existing sessions must lose this permission immediately after a role change.
+      await database()
+        .update(teamMembers)
+        .set({ role: "administrator" })
+        .where(eq(teamMembers.userId, actorId()));
+      await expect(
+        api.admin.business.vip.grant(grantInput(2))
+      ).rejects.toThrow();
+    });
+
+    it("does not replace active subscriber artwork or change subscription dates and pricing", async () => {
+      await published();
+      const [before] = await database().select().from(accounts);
+      const oldCard = (await vipGrantState(providerId())).card;
+      await expect(
+        grantComplimentaryVip(actorId(), grantInput(2))
+      ).rejects.toThrow("business_vip_paid_card");
+      expect((await vipGrantState(providerId())).card).toEqual(oldCard);
+      expect((await database().select().from(accounts))[0]).toEqual(before);
+      await database()
+        .update(accounts)
+        .set({ endsAt: new Date(Date.now() - 1000) })
+        .where(eq(accounts.providerId, providerId()));
+      const [expired] = await database().select().from(accounts);
+      await grantComplimentaryVip(actorId(), grantInput(2));
+      await revokeComplimentaryVip(actorId(), {
+        providerId: providerId(),
+        revision: 3,
+        note: "End the complimentary period",
+      });
+      expect((await database().select().from(accounts))[0]).toEqual(expired);
+    });
+
+    it("expires grants immediately for reads and analytics and rejects suspended or changed-domain providers", async () => {
+      await grantComplimentaryVip(actorId(), { ...grantInput(), cover });
+      for (const patch of [
+        { complimentaryEndsAt: new Date(Date.now() - 1000) },
+        { status: "hidden" },
+      ]) {
+        await database()
+          .update(cards)
+          .set(patch)
+          .where(eq(cards.providerId, providerId()));
+        expect((await list()).items).toEqual([]);
+        expect(await recordVipEvent(event(1), keys)).toBe("ignored");
+        await database()
+          .update(cards)
+          .set({
+            status: "approved",
+            complimentaryEndsAt: new Date(Date.now() + 86400000),
+          })
+          .where(eq(cards.providerId, providerId()));
+      }
+      for (const patch of [
+        { status: "suspended" },
+        { websiteUrl: "https://changed.example/" },
+      ]) {
+        await database()
+          .update(providerRecords)
+          .set(patch)
+          .where(eq(providerRecords.id, providerId()));
+        expect((await list()).items).toEqual([]);
+        expect(await recordVipEvent(event(1), keys)).toBe("ignored");
+        if (patch.status)
+          await expect(
+            grantComplimentaryVip(actorId(), grantInput(1))
+          ).rejects.toThrow("business_provider_unavailable");
+        await database()
+          .update(providerRecords)
+          .set({ status: "active", websiteUrl: "https://provider.example/" })
+          .where(eq(providerRecords.id, providerId()));
+      }
+      expect((await list()).items).toHaveLength(1);
+    });
+
+    it("serializes complimentary grants, renews once, rejects stale revocation and allows only the owner route to manage them", async () => {
+      const results = await Promise.allSettled([
+        grantComplimentaryVip(actorId(), grantInput()),
+        grantComplimentaryVip(actorId(), grantInput()),
+      ]);
+      expect(results.filter(r => r.status === "fulfilled")).toHaveLength(1);
+      await expect(review(1, "hidden")).rejects.toThrow(
+        "business_vip_owner_only"
+      );
+      await grantComplimentaryVip(actorId(), {
+        ...grantInput(1),
+        durationDays: 90,
+      });
+      await expect(
+        revokeComplimentaryVip(actorId(), {
+          providerId: providerId(),
+          revision: 1,
+          note: "Stale revocation is rejected",
+        })
+      ).rejects.toThrow("business_stale");
+      await revokeComplimentaryVip(actorId(), {
+        providerId: providerId(),
+        revision: 2,
+        note: "Owner ended the free placement",
+      });
+      expect((await list()).items).toEqual([]);
+      expect(await recordVipEvent(event(3), keys)).toBe("ignored");
+      await grantComplimentaryVip(actorId(), grantInput(3));
+      expect((await list()).items).toHaveLength(1);
+      expect(await database().select().from(cards)).toHaveLength(1);
+    });
+
+    it("lets a subscribed verified provider submit its own reviewed card after a platform promotion", async () => {
+      const user = await owner();
+      await grantComplimentaryVip(actorId(), grantInput());
+      expect(await ownVipCard(user.auth, providerId())).toBeNull();
+      await saveVipCard(user.auth, input());
+      expect((await list()).items).toEqual([]);
+      const card = (await ownVipCard(user.auth, providerId()))!;
+      expect(card).toMatchObject({
+        placement: "subscription",
+        complimentaryEndsAt: null,
+        status: "pending",
+        revision: 2,
+      });
+      await review(2);
+      expect((await list()).items[0]).toMatchObject({
+        placement: "subscription",
+        ownershipVerified: true,
+      });
     });
   });
 }

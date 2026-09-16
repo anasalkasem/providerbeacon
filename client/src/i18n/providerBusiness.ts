@@ -1,6 +1,7 @@
 import type { Locale } from "@/contexts/LocaleContext";
 import { providerPricingText } from "./providerPricing";
 import { vipText } from "./providerVip";
+import { vipGrantText } from "./vipGrants";
 
 const strings = {
   title: [
@@ -523,6 +524,9 @@ export function businessError(message: string, locale: Locale) {
     business_changed: t.changed,
     business_stale: t.changed,
     business_vip_cover: vipText(locale).imageError,
+    business_vip_paid_card: vipGrantText(locale).paidCard,
+    business_vip_owner_only: vipGrantText(locale).ownerOnly,
+    business_provider_unavailable: vipGrantText(locale).unavailable,
     business_claimed: t.claimed,
     business_already_owner: t.claimed,
     business_claim_expired: t.expiredCode,

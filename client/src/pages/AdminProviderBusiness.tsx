@@ -4,6 +4,8 @@ import { Building2, ExternalLink } from "lucide-react";
 import { BusinessPricing } from "@/components/BusinessPricing";
 import { AdminPayments } from "@/components/AdminPayments";
 import { AdminVip } from "@/components/AdminVip";
+import { AdminVipGrants } from "@/components/AdminVipGrants";
+import { vipGrantText } from "@/i18n/vipGrants";
 import { vipText } from "@/i18n/providerVip";
 import { paymentText } from "@/i18n/providerPayments";
 import { providerPricingText } from "@/i18n/providerPricing";
@@ -48,8 +50,9 @@ export function AdminBusinessPanel() {
   const access = trpc.admin.access.useQuery();
   const allowed = access.data?.permissions.includes("business.read") ?? false;
   const manage = access.data?.permissions.includes("business.manage") ?? false;
+  const owner = access.data?.role === "owner";
   const [tab, setTab] = useState<
-    "subscription" | "claims" | "offers" | "payments" | "vip"
+    "subscription" | "claims" | "offers" | "payments" | "vip" | "complimentary"
   >("subscription");
   if (access.isError || (access.data && !allowed)) return <BusinessError />;
   if (!allowed) return <p role="status">{t.loading}</p>;
@@ -57,9 +60,7 @@ export function AdminBusinessPanel() {
     <div className="space-y-6">
       <header className="flex items-center gap-3">
         <Building2 className="size-7 text-beacon-700" />
-        <h1 className="text-2xl font-extrabold text-ink">
-          {t.adminTitle}
-        </h1>
+        <h1 className="text-2xl font-extrabold text-ink">{t.adminTitle}</h1>
       </header>
       <nav className="flex flex-wrap gap-2" aria-label={t.adminTitle}>
         {[
@@ -67,6 +68,9 @@ export function AdminBusinessPanel() {
           { key: "claims", title: t.requests },
           { key: "offers", title: t.reviewOffers },
           { key: "vip", title: vipText(locale).reviewTitle },
+          ...(owner
+            ? [{ key: "complimentary", title: vipGrantText(locale).title }]
+            : []),
           { key: "payments", title: paymentText(locale).gates },
         ].map(item => (
           <button
@@ -83,6 +87,7 @@ export function AdminBusinessPanel() {
       {tab === "claims" && <ClaimsQueue manage={manage} />}{" "}
       {tab === "offers" && <OffersQueue manage={manage} />}
       {tab === "vip" && <AdminVip manage={manage} />}
+      {tab === "complimentary" && owner && <AdminVipGrants />}
       {tab === "payments" && <AdminPayments manage={manage} />}
     </div>
   );

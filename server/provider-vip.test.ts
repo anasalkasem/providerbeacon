@@ -6,10 +6,34 @@ import {
   vipEventInput,
 } from "../shared/providerVip";
 import { decodeVipCover } from "./providerVipDb";
+import { vipGrantInput } from "../shared/providerVip";
 
 export const vipTestCover =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aK2sAAAAASUVORK5CYII=";
 describe("VIP album inputs and rotation", () => {
+  it("bounds free grants and rejects billing, ownership and unreviewed content supplied by callers", () => {
+    const valid = {
+      providerId: 1,
+      revision: 0,
+      durationDays: 30,
+      tagline: "Explore this provider's services",
+      note: "Owner complimentary placement",
+      contentConfirmed: true,
+    };
+    expect(vipGrantInput.safeParse(valid).success).toBe(true);
+    for (const patch of [
+      { durationDays: 0 },
+      { durationDays: 3650 },
+      { contentConfirmed: false },
+      { ownershipVerified: true },
+      { price: 0 },
+      { endsAt: new Date() },
+      { cover: "x".repeat(800000) },
+    ])
+      expect(vipGrantInput.safeParse({ ...valid, ...patch }).success).toBe(
+        false
+      );
+  });
   it("gives every card every position and stable, non-overlapping pages", () => {
     const ids = Array.from({ length: 13 }, (_, i) => i + 1);
     const exposures = new Map<number, number>();

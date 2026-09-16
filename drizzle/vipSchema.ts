@@ -26,6 +26,10 @@ export const providerVipCards = mysqlTable(
     tagline: varchar("tagline", { length: 140 }).notNull(),
     specialties: json("specialties").$type<string[]>().notNull(),
     coverId: varchar("cover_id", { length: 64 }).notNull(),
+    placement: mysqlEnum("placement", ["subscription", "complimentary"])
+      .default("subscription")
+      .notNull(),
+    complimentaryEndsAt: timestamp("complimentary_ends_at", { fsp: 3 }),
     offer: varchar("offer", { length: 80 }).notNull(),
     offerEndsAt: timestamp("offer_ends_at", { fsp: 3 }),
     status: mysqlEnum("status", vipStatuses).default("pending").notNull(),

@@ -29,8 +29,35 @@ trust scores, verification fields, catalogue ordering, or subscription prices.
   position buttons, and touch dragging provide manual navigation. One provider is
   centered without motion. No duplicate advertisement nodes are created; a small
   collection returns smoothly to the start if there is not enough content to loop.
-- Each card discloses **Paid placement**. **Ownership verified** is a separate
+- Subscription cards disclose **Paid placement**; owner-granted cards disclose
+  **Platform-sponsored placement**. **Ownership verified** is a separate
   indication and is not a service-quality endorsement. Expired offers disappear.
+
+## Owner-granted complimentary VIP
+
+The platform owner can open **Complimentary VIP** at `/admin/subscriptions`,
+choose a real, public, active provider, review its card, and grant 7, 30 or 90 days
+of placement without checkout. Existing provider logos work without an upload;
+the owner may supply a cover and short introduction, with an immediate preview.
+Saving an existing grant renews its chosen duration from the time of saving.
+The owner can stop a grant immediately. Both actions record an internal note,
+actor, revision and expiry in the audit trail. Revision checks prevent stale or
+concurrent actions from silently replacing each other.
+
+These are platform-managed promotional cards, including providers without a
+claimed account. They do not grant the provider dashboard's subscription benefits,
+alter billing or introductory pricing, or imply verified ownership. No payment,
+business account, trust score, or claim is created. A currently subscribed card
+cannot be replaced by this feature. A verified subscriber may later submit their
+own card through the normal review flow, replacing a platform promotion.
+
+Only the current platform `owner` role can read or change grants through the API;
+administrators and provider members cannot activate them. Same-origin validation
+also applies. Public reads and measurement recheck expiry, approved status,
+provider visibility and the bound website domain. Expired, revoked, hidden or
+domain-mismatched cards immediately lose eligibility. The grants never seed fake
+providers. Migration `0031_complimentary_vip.sql` leaves existing cards classified
+as subscription placements.
 
 ## Measurement
 

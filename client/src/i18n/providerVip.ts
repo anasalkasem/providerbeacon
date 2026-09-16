@@ -10,11 +10,12 @@ const en = {
   kicker: "THE PROVIDER EDIT",
   intro: "Meet the providers. Explore what they offer.",
   disclosure:
-    "Paid placement · VIP membership does not change trust scores or service rankings.",
+    "Promotional placements · Each card identifies paid or platform-sponsored placement. VIP does not change trust scores or service rankings.",
   all: "View all VIP providers",
   explore: "Explore provider",
   verified: "Ownership verified",
   paid: "Paid placement",
+  complimentary: "Platform-sponsored placement",
   join: "Add your VIP card",
   empty: "A new space for providers",
   emptyBody:
@@ -58,7 +59,7 @@ const en = {
   page: "Page",
   reviewNote: "Review note",
   liveHelp:
-    "Approved cards are shown only with an active subscription and valid ownership.",
+    "Subscription cards require an active plan and valid ownership. Platform-sponsored cards appear until their grant expires.",
 };
 type Copy = typeof en;
 const ar: Copy = {
@@ -71,11 +72,13 @@ const ar: Copy = {
   title: "ألبوم مزودي VIP",
   kicker: "مساحة للمزودين",
   intro: "تعرّف على المزودين، واستكشف ما يقدّمونه.",
-  disclosure: "ظهور مدفوع · اشتراك VIP لا يغيّر درجات الثقة أو ترتيب الخدمات.",
+  disclosure:
+    "مساحة ترويجية · نوع الظهور موضح بكل بطاقة. VIP لا يغيّر درجات الثقة أو ترتيب الخدمات.",
   all: "شاهد جميع مزودي VIP",
   explore: "استكشف المزود",
   verified: "ملكية موثّقة",
   paid: "ظهور مدفوع",
+  complimentary: "ظهور برعاية المنصة",
   join: "أضف بطاقتك إلى الألبوم",
   empty: "مساحة جديدة للتعريف بمزودك",
   emptyBody:
@@ -116,7 +119,8 @@ const ar: Copy = {
   next: "البطاقات التالية",
   page: "الصفحة",
   reviewNote: "ملاحظة المراجعة",
-  liveHelp: "تظهر البطاقة المعتمدة فقط عند سريان الاشتراك وصحة إثبات الملكية.",
+  liveHelp:
+    "بطاقات الاشتراك تتطلب اشتراكًا ساريًا وملكية صحيحة. بطاقات رعاية المنصة تظهر حتى انتهاء مدة المنحة.",
 };
 const es: Copy = {
   carousel: "Carrusel de proveedores",
@@ -129,11 +133,12 @@ const es: Copy = {
   kicker: "ESPACIO DE PROVEEDORES",
   intro: "Conoce a los proveedores y descubre su oferta.",
   disclosure:
-    "Espacio de pago · VIP no modifica las puntuaciones de confianza ni el orden de servicios.",
+    "Espacios promocionales · Cada tarjeta indica si es de pago o patrocinada por la plataforma. VIP no cambia la confianza ni el orden de servicios.",
   all: "Ver todos los proveedores VIP",
   explore: "Explorar proveedor",
   verified: "Propiedad verificada",
   paid: "Espacio de pago",
+  complimentary: "Patrocinado por la plataforma",
   join: "Añadir mi tarjeta VIP",
   empty: "Un nuevo espacio para proveedores",
   emptyBody:
@@ -177,7 +182,7 @@ const es: Copy = {
   page: "Página",
   reviewNote: "Nota de revisión",
   liveHelp:
-    "Las tarjetas aprobadas se muestran con suscripción activa y propiedad válida.",
+    "Las tarjetas de suscripción requieren un plan activo y propiedad válida. Las patrocinadas se muestran hasta que vence la concesión.",
 };
 const hi: Copy = {
   carousel: "प्रदाता कैरोसेल",
@@ -189,11 +194,13 @@ const hi: Copy = {
   title: "VIP प्रदाता एल्बम",
   kicker: "प्रदाता परिचय",
   intro: "प्रदाताओं और उनकी सेवाओं को जानें।",
-  disclosure: "सशुल्क स्थान · VIP सदस्यता भरोसा स्कोर या सेवा क्रम नहीं बदलती।",
+  disclosure:
+    "प्रचार स्थान · हर कार्ड सशुल्क या प्लेटफ़ॉर्म-प्रायोजित स्थान दर्शाता है। VIP भरोसा स्कोर या सेवा क्रम नहीं बदलता।",
   all: "सभी VIP प्रदाता देखें",
   explore: "प्रदाता देखें",
   verified: "स्वामित्व सत्यापित",
   paid: "सशुल्क स्थान",
+  complimentary: "प्लेटफ़ॉर्म-प्रायोजित स्थान",
   join: "अपना VIP कार्ड जोड़ें",
   empty: "प्रदाताओं के लिए नया स्थान",
   emptyBody:
@@ -236,7 +243,8 @@ const hi: Copy = {
   next: "अगले कार्ड",
   page: "पृष्ठ",
   reviewNote: "समीक्षा टिप्पणी",
-  liveHelp: "स्वीकृत कार्ड सक्रिय सदस्यता और वैध स्वामित्व होने पर दिखते हैं।",
+  liveHelp:
+    "सदस्यता कार्ड के लिए सक्रिय योजना और वैध स्वामित्व आवश्यक है। प्रायोजित कार्ड अनुदान समाप्त होने तक दिखते हैं।",
 };
 const zh: Copy = {
   carousel: "服务商轮播",
@@ -248,11 +256,13 @@ const zh: Copy = {
   title: "VIP 服务商相册",
   kicker: "服务商展示",
   intro: "认识服务商，了解他们的服务。",
-  disclosure: "付费展示 · VIP 会员不会改变信任评分或服务排名。",
+  disclosure:
+    "推广展示 · 每张卡片标明付费或平台赞助。VIP 不会改变信任评分或服务排名。",
   all: "查看所有 VIP 服务商",
   explore: "了解服务商",
   verified: "所有权已验证",
   paid: "付费展示",
+  complimentary: "平台赞助展示",
   join: "添加我的 VIP 卡片",
   empty: "服务商的新展示空间",
   emptyBody: "卡片审核后将在此显示。请从控制台提交封面和简介。",
@@ -291,7 +301,7 @@ const zh: Copy = {
   next: "下一组卡片",
   page: "页",
   reviewNote: "审核备注",
-  liveHelp: "已批准卡片仅在订阅有效且所有权有效时展示。",
+  liveHelp: "订阅卡片需有有效订阅和所有权。平台赞助卡片在授权到期前展示。",
 };
 export const vipText = (locale: Locale): Copy =>
   ({ en, ar, es, hi, zh })[locale];
