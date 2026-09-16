@@ -101,6 +101,7 @@ export async function businessWorkspace(auth: MemberAuth) {
           id: providerRecords.id,
           name: providerRecords.name,
           slug: providerRecords.slug,
+          logoUrl: providerRecords.logoUrl,
           websiteUrl: providerRecords.websiteUrl,
           status: providerRecords.status,
         },
@@ -585,6 +586,96 @@ export async function businessGroups(auth: MemberAuth, providerId: number) {
       .where(eq(communityGroups.providerId, providerId))
       .orderBy(desc(communityGroups.id))
       .limit(20);
+  });
+}
+
+// Owner-scoped operational totals, independent of list pagination. Analytics
+// remain behind their separate paid entitlement; this response contains none.
+export async function businessOverview(auth: MemberAuth, providerId: number) {
+  const db = await businessDatabase();
+  return db.transaction(async tx => {
+    const { provider } = await lockedProviderOwner(tx, auth, providerId, false);
+    const now = new Date();
+    const [visibility] = await tx
+      .select({ id: providerRecords.id })
+      .from(providerRecords)
+      .where(
+        and(
+          eq(providerRecords.id, providerId),
+          visibleCatalogueProvider(),
+          activeProviderPlan(providerRecords.id)
+        )
+      );
+    const groupRows = await tx
+      .select({
+        status: communityGroups.status,
+        reviewedAt: communityGroups.reviewedAt,
+      })
+      .from(communityGroups)
+      .where(eq(communityGroups.providerId, providerId));
+    const [offerCounts] = await tx
+      .select({
+        total: count(),
+        pending:
+          sql<number>`coalesce(sum(${promotions.status} = 'pending'), 0)`.mapWith(
+            Number
+          ),
+        rejected:
+          sql<number>`coalesce(sum(${promotions.status} = 'rejected'), 0)`.mapWith(
+            Number
+          ),
+      })
+      .from(promotions)
+      .where(eq(promotions.providerId, providerId));
+    const currentOffers = visibility
+      ? await tx
+          .select({
+            id: promotions.id,
+            title: promotions.title,
+            destinationUrl: promotions.destinationUrl,
+            endsAt: promotions.endsAt,
+          })
+          .from(promotions)
+          .where(
+            and(
+              eq(promotions.providerId, providerId),
+              eq(promotions.status, "approved"),
+              isNotNull(promotions.reviewedAt),
+              lte(promotions.startsAt, now),
+              gte(promotions.endsAt, now)
+            )
+          )
+          .orderBy(promotions.endsAt)
+      : [];
+    const liveOffers = currentOffers.filter(
+      offer =>
+        offer.endsAt > now &&
+        providerOwnedUrl(offer.destinationUrl, provider.websiteUrl)
+    );
+    const expiring = liveOffers.filter(
+      offer => offer.endsAt.getTime() <= now.getTime() + 7 * BUSINESS_DAY_MS
+    );
+    return {
+      groups: {
+        total: groupRows.length,
+        live: visibility
+          ? groupRows.filter(g => g.status === "approved" && g.reviewedAt)
+              .length
+          : 0,
+        pending: groupRows.filter(g => g.status === "pending").length,
+        rejected: groupRows.filter(g => g.status === "rejected").length,
+      },
+      offers: {
+        ...offerCounts,
+        live: liveOffers.length,
+        expiring: expiring.length,
+        nextExpiry: expiring[0]
+          ? { title: expiring[0].title, endsAt: expiring[0].endsAt }
+          : null,
+      },
+      usage: await promotionUsage(tx, providerId),
+      now,
+    };
   });
 }
 

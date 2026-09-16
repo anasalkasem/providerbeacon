@@ -23,6 +23,7 @@ import { groupInput, groupEditInput } from "../../shared/community";
 import {
   adminBusinessAccount,
   businessAnalytics,
+  businessOverview,
   businessGroups,
   businessWorkspace,
   ownPromotions,
@@ -118,6 +119,11 @@ export const businessRouter = router({
   mine: ownRead.query(({ ctx }) =>
     safely(() => businessWorkspace(ctx.memberAuth))
   ),
+  overview: ownRead
+    .input(businessOwnedInput)
+    .query(({ ctx, input }) =>
+      safely(() => businessOverview(ctx.memberAuth, input.providerId))
+    ),
   prepareClaim: write("claim", 5)
     .input(businessProviderInput)
     .mutation(({ ctx, input }) =>

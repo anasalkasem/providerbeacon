@@ -30,6 +30,7 @@ import { appRouter } from "./routers";
 import {
   adminBusinessAccount,
   businessAnalytics,
+  businessOverview,
   businessWorkspace,
   ownPromotions,
   prepareOwnershipClaim,
@@ -509,6 +510,109 @@ export function providerBusinessAcceptanceCases(
           days: 7,
         })
       ).rejects.toThrow("business_subscription_required");
+    });
+
+    it("scopes dashboard totals to the owner and counts beyond pagination without publishing expired, foreign-domain or unpaid offers", async () => {
+      const owner = await approvedOwner();
+      await activate();
+      const now = Date.now();
+      await database()
+        .insert(promotions)
+        .values([
+          ...Array.from({ length: 30 }, (_, i) => ({
+            ...offerInput(),
+            title: `Pending offer ${i}`,
+            status: "pending",
+          })),
+          {
+            ...offerInput(),
+            title: "Visible offer",
+            status: "approved",
+            reviewedAt: new Date(),
+            endsAt: new Date(now + BUSINESS_DAY_MS),
+          },
+          {
+            ...offerInput(),
+            title: "Old domain",
+            status: "approved",
+            reviewedAt: new Date(),
+            destinationUrl: "https://old.example/offer",
+          },
+          {
+            ...offerInput(),
+            title: "Expired",
+            status: "approved",
+            reviewedAt: new Date(),
+            endsAt: new Date(now - 1000),
+          },
+          {
+            ...offerInput(),
+            title: "Scheduled",
+            status: "approved",
+            reviewedAt: new Date(),
+            startsAt: new Date(now + BUSINESS_DAY_MS),
+          },
+        ]);
+      await database()
+        .insert(groups)
+        .values(
+          [
+            { status: "approved", reviewedAt: new Date() },
+            { status: "approved", reviewedAt: null },
+            { status: "pending", reviewedAt: null },
+          ].map((state, index) => ({
+            ...state,
+            providerId: providerId(),
+            submittedBy: owner.auth.member.id,
+            name: `Dashboard group ${index}`,
+            description: "Local dashboard acceptance fixture",
+            url: `https://t.me/dashboard_fixture_${index}`,
+            urlKey: `dashboard-fixture-${index}`,
+            platform: "telegram",
+            topic: "support",
+            language: "en",
+            requiresSubscription: true,
+          }))
+        );
+      const report = await businessOverview(owner.auth, providerId());
+      expect(report.groups).toMatchObject({ total: 3, live: 1, pending: 1 });
+      expect(report.offers).toMatchObject({
+        total: 34,
+        pending: 30,
+        live: 1,
+        expiring: 1,
+        nextExpiry: { title: "Visible offer" },
+      });
+      expect(report.usage).toMatchObject({ used: 34, limit: 5 });
+      expect(report).not.toHaveProperty("analytics");
+      const stranger = await member("dashboard-stranger@example.com");
+      await expect(
+        businessOverview(stranger.auth, providerId())
+      ).rejects.toThrow("business_owner_required");
+      const { api } = await caller(owner.result.token);
+      await expect(
+        api.business.overview({
+          accountId: stranger.auth.member.id,
+          providerId: providerId(),
+        })
+      ).rejects.toThrow("business_owner_required");
+      await activate("suspended");
+      expect(
+        (await businessOverview(owner.auth, providerId())).groups.live
+      ).toBe(0);
+      expect(
+        (await businessOverview(owner.auth, providerId())).offers
+      ).toMatchObject({ total: 34, live: 0, expiring: 0, nextExpiry: null });
+      await expect(
+        businessAnalytics(owner.auth, providerId(), 7)
+      ).rejects.toThrow("business_subscription_required");
+      await database()
+        .update(providerRecords)
+        .set({ websiteUrl: "https://changed.example/" })
+        .where(eq(providerRecords.id, providerId()));
+      await expect(businessOverview(owner.auth, providerId())).rejects.toThrow(
+        "business_owner_required"
+      );
     });
 
     it("publishes only reviewed, current paid offers and sends edits back to review", async () => {

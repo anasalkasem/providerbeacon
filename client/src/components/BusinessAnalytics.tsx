@@ -1,23 +1,36 @@
 import { useState } from "react";
-import { ExternalLink, Eye, Send } from "lucide-react";
-import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { ExternalLink, Eye, Send, TrendingUp } from "lucide-react";
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { useLocale } from "@/contexts/LocaleContext";
 import { trpc } from "@/lib/trpc";
 import { businessText } from "@/i18n/providerBusiness";
 import { providerAnalyticsCopy } from "@/i18n/providerAnalytics";
+import { dashboardText } from "@/i18n/providerDashboard";
 import { formatNumber } from "@/i18n/messages";
 import { BusinessCard, BusinessError, businessField } from "./BusinessUi";
 
 export function BusinessAnalytics({
   accountId,
   providerId,
+  compact = false,
 }: {
   accountId: number;
   providerId: number;
+  compact?: boolean;
 }) {
   const { locale } = useLocale();
   const t = businessText(locale);
   const a = providerAnalyticsCopy[locale];
+  const d = dashboardText(locale);
   const [days, setDays] = useState<7 | 30 | 90>(30);
   const query = trpc.business.analytics.useQuery(
     { accountId, providerId, days },
@@ -30,9 +43,11 @@ export function BusinessAnalytics({
     { key: "telegram", label: a.telegram, icon: Send, color: "#0284c7" },
   ] as const;
   return (
-    <BusinessCard>
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-extrabold text-[#0B2A68]">{t.analytics}</h2>
+        <h2 className="text-xl font-extrabold text-[#0B2A68]">
+          {compact ? d.performance : t.analytics}
+        </h2>
         <label className="text-sm font-medium">
           {a.period}
           <select
@@ -63,26 +78,46 @@ export function BusinessAnalytics({
               {a.unavailable}
             </p>
           )}
-          <p className="mt-4 text-xs text-slate-500">
+          <p className="text-xs text-slate-500">
             <bdi>
               {data.from} — {data.to}
             </bdi>{" "}
             · {t.utc}
           </p>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             {metrics.map(m => (
-              <article key={m.key} className="rounded-xl bg-slate-50 p-4">
+              <article
+                key={m.key}
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+              >
                 <div className="flex justify-between gap-3 text-sm text-slate-600">
                   <span>{m.label}</span>
-                  <m.icon className="size-4" />
+                  <span className="rounded-lg bg-slate-50 p-2">
+                    <m.icon className="size-4" style={{ color: m.color }} />
+                  </span>
                 </div>
                 <p className="mt-3 text-3xl font-extrabold text-[#0B2A68]">
                   <bdi>{formatNumber(locale, data.totals[m.key])}</bdi>
                 </p>
                 <p className="mt-2 text-xs leading-6 text-slate-500">
-                  {data.previous.fullyMeasured ? (
+                  {data.previous.fullyMeasured &&
+                  data.daily.every(row => row.measured) ? (
                     <>
-                      {t.previous}:{" "}
+                      {data.previous.totals[m.key] > 0 ? (
+                        <bdi
+                          className={`me-1 font-bold ${data.totals[m.key] >= data.previous.totals[m.key] ? "text-teal-700" : "text-amber-800"}`}
+                        >
+                          {new Intl.NumberFormat(locale, {
+                            style: "percent",
+                            maximumFractionDigits: 1,
+                            signDisplay: "exceptZero",
+                          }).format(
+                            (data.totals[m.key] - data.previous.totals[m.key]) /
+                              data.previous.totals[m.key]
+                          )}
+                        </bdi>
+                      ) : null}
+                      {d.comparisonHelp}:{" "}
                       <bdi>
                         {formatNumber(locale, data.previous.totals[m.key])}
                       </bdi>
@@ -102,76 +137,106 @@ export function BusinessAnalytics({
               </bdi>
             </p>
           )}
-          <div className="mt-6 h-60 min-w-0" dir="ltr" aria-hidden="true">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={data.daily.map(row =>
-                  row.measured
-                    ? row
-                    : { ...row, views: null, website: null, telegram: null }
-                )}
-                margin={{ left: -18, right: 10, top: 8, bottom: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="day" tick={{ fontSize: 10 }} minTickGap={40} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Legend wrapperStyle={{ fontSize: 11 }} />
-                {metrics.map(m => (
-                  <Line
-                    key={m.key}
-                    dataKey={m.key}
-                    name={m.label}
-                    stroke={m.color}
-                    strokeWidth={2}
-                    dot={false}
-                    isAnimationActive={false}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-          <details className="mt-5">
-            <summary className="cursor-pointer text-sm font-semibold text-[#0B2A68]">
-              {a.trend}
-            </summary>
-            <div className="mt-3 overflow-x-auto">
-              <table className="w-full text-start text-xs">
-                <thead>
-                  <tr>
-                    <th className="p-2 text-start">UTC</th>
+          <BusinessCard>
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="text-sm font-bold text-[#0B2A68]">{a.trend}</h3>
+              <TrendingUp className="size-4 text-teal-600" />
+            </div>
+            {data.totals.views + data.totals.website + data.totals.telegram ===
+            0 ? (
+              <div className="grid min-h-52 place-items-center rounded-xl bg-slate-50 px-6 py-8 text-center">
+                <div>
+                  <span className="mx-auto grid size-12 place-items-center rounded-xl border border-slate-200 bg-white text-teal-600">
+                    <Eye className="size-5" />
+                  </span>
+                  <h4 className="mt-4 text-sm font-bold text-slate-700">
+                    {d.noActivity}
+                  </h4>
+                  <p className="mx-auto mt-2 max-w-sm text-xs leading-6 text-slate-500">
+                    {d.noActivityHelp}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="h-60 min-w-0" dir="ltr" aria-hidden="true">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={data.daily.map(row =>
+                      row.measured
+                        ? row
+                        : { ...row, views: null, website: null, telegram: null }
+                    )}
+                    margin={{ left: -18, right: 10, top: 8, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                      dataKey="day"
+                      tick={{ fontSize: 10 }}
+                      minTickGap={40}
+                    />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
+                    <Tooltip />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
                     {metrics.map(m => (
-                      <th className="p-2 text-start" key={m.key}>
-                        {m.label}
-                      </th>
+                      <Line
+                        key={m.key}
+                        dataKey={m.key}
+                        name={m.label}
+                        stroke={m.color}
+                        strokeWidth={2}
+                        dot={false}
+                        isAnimationActive={false}
+                      />
                     ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.daily.map(row => (
-                    <tr key={row.day} className="border-t border-slate-100">
-                      <th className="p-2 text-start font-normal">
-                        <bdi>{row.day}</bdi>
-                      </th>
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            <details className="mt-5">
+              <summary className="cursor-pointer text-sm font-semibold text-[#0B2A68]">
+                {a.dailyTable}
+              </summary>
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full text-start text-xs">
+                  <thead>
+                    <tr>
+                      <th className="p-2 text-start">UTC</th>
                       {metrics.map(m => (
-                        <td className="p-2" key={m.key}>
-                          {row.measured
-                            ? formatNumber(locale, row[m.key])
-                            : "—"}
-                        </td>
+                        <th className="p-2 text-start" key={m.key}>
+                          {m.label}
+                        </th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </details>
-          <p className="mt-5 text-xs leading-6 text-slate-500">
-            {a.methodBody}
-          </p>
+                  </thead>
+                  <tbody>
+                    {data.daily.map(row => (
+                      <tr key={row.day} className="border-t border-slate-100">
+                        <th className="p-2 text-start font-normal">
+                          <bdi>{row.day}</bdi>
+                        </th>
+                        {metrics.map(m => (
+                          <td className="p-2" key={m.key}>
+                            {row.measured
+                              ? formatNumber(locale, row[m.key])
+                              : "—"}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+            <details className="mt-4 border-t border-slate-100 pt-4 text-xs leading-6 text-slate-500">
+              <summary className="cursor-pointer font-semibold">
+                {a.method}
+              </summary>
+              <p className="mt-2">{a.methodBody}</p>
+              <p className="mt-2">{a.utc}</p>
+            </details>
+          </BusinessCard>
         </>
       )}
-    </BusinessCard>
+    </div>
   );
 }
-

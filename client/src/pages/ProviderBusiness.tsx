@@ -6,16 +6,9 @@ import {
   ProviderCheckout,
 } from "@/components/ProviderPayments";
 import { useEffect, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
-import {
-  BarChart3,
-  Building2,
-  LockKeyhole,
-  Plus,
-  Users,
-  Tag,
-} from "lucide-react";
+import { BarChart3, Building2, Plus, Users, Tag } from "lucide-react";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../server/routers";
 import { type GroupInput } from "../../../shared/community";
@@ -24,6 +17,14 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useMember } from "@/hooks/useMember";
 import { trpc } from "@/lib/trpc";
 import { businessError, businessText } from "@/i18n/providerBusiness";
+import { dashboardText } from "@/i18n/providerDashboard";
+import {
+  ProviderDashboardShell,
+  ProviderOverview,
+  ProviderPlanLock,
+  providerSections,
+  type ProviderSection,
+} from "@/components/ProviderDashboard";
 import { communityError } from "@/i18n/community";
 import { formatNumber } from "@/i18n/messages";
 import { PublicLayout } from "@/components/SiteChrome";
@@ -52,6 +53,14 @@ export default function ProviderBusiness() {
   const member = useMember();
   const { locale } = useLocale();
   const t = businessText(locale);
+  if (member.data?.member && !member.isError)
+    return (
+      <ProviderWorkspace
+        key={member.data.member.id}
+        accountId={member.data.member.id}
+        verified={member.data.member.emailVerified}
+      />
+    );
   return (
     <PublicLayout showCatalogueNotice={false}>
       <section className="container py-10">
@@ -68,14 +77,11 @@ export default function ProviderBusiness() {
             </p>
           </div>
         </header>
-        {member.data?.member && (
-          <PaymentReturn accountId={member.data.member.id} />
-        )}
         {member.isLoading ? (
           <p role="status">{t.loading}</p>
         ) : member.isError ? (
           <BusinessError />
-        ) : !member.data?.member ? (
+        ) : (
           <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
             <BusinessCard>
               <h2 className="text-2xl font-bold text-[#0B2A68]">{t.plan}</h2>
@@ -114,12 +120,6 @@ export default function ProviderBusiness() {
               ))}
             </div>
           </div>
-        ) : (
-          <ProviderWorkspace
-            key={member.data.member.id}
-            accountId={member.data.member.id}
-            verified={member.data.member.emailVerified}
-          />
         )}
       </section>
     </PublicLayout>
@@ -135,23 +135,65 @@ function ProviderWorkspace({
 }) {
   const { locale } = useLocale();
   const t = businessText(locale);
+  const d = dashboardText(locale);
+  const [, navigate] = useLocation();
+  const search = useSearch();
+  const now = useBusinessClock();
+  const params = new URLSearchParams(search);
   const query = trpc.business.mine.useQuery(
     { accountId },
     { retry: false, staleTime: 0, refetchInterval: 30_000 }
   );
-  const [selected, setSelected] = useState<number | undefined>(() => {
-    const id = Number(
-      new URLSearchParams(window.location.search).get("provider")
-    );
-    return Number.isSafeInteger(id) && id > 0 ? id : undefined;
-  });
+  // Do not render cached private tools when an ownership/session refresh fails.
+  const workspace = query.isError ? undefined : query.data;
+  const selected = Number(params.get("provider"));
   const owned =
-    query.data?.providers.find(p => p.provider.id === selected) ??
-    query.data?.providers[0];
+    workspace?.providers.find(p => p.provider.id === selected) ??
+    workspace?.providers[0];
+  const requested = params.get("tab") as ProviderSection;
+  const section: ProviderSection =
+    !owned && workspace
+      ? requested === "billing"
+        ? "billing"
+        : "ownership"
+      : providerSections.includes(requested)
+        ? requested
+        : params.has("payment")
+          ? "billing"
+          : "overview";
+  const go = (
+    tab: ProviderSection,
+    create = false,
+    providerId = owned?.provider.id
+  ) => {
+    const next = new URLSearchParams(window.location.search);
+    if (providerId !== owned?.provider.id) {
+      next.delete("payment");
+      next.delete("cancelled");
+      next.delete("token");
+      next.delete("PayerID");
+    }
+    next.set("tab", tab);
+    if (create && (tab === "groups" || tab === "offers"))
+      next.set("action", "create");
+    else next.delete("action");
+    if (providerId) next.set("provider", String(providerId));
+    navigate(`/account/provider?${next.toString()}`);
+  };
+  const active = Boolean(
+    owned?.ownershipValid && planState(owned.subscription, now) === "active"
+  );
   return (
-    <div className="space-y-6">
+    <ProviderDashboardShell
+      owned={owned}
+      providers={workspace?.providers ?? []}
+      section={section}
+      onNavigate={go}
+      onSelect={id => go(section, false, id)}
+    >
+      <PaymentReturn accountId={accountId} />
       {!verified && (
-        <p className="rounded-xl bg-amber-50 p-4 text-sm leading-7 text-amber-900">
+        <p className="mb-6 rounded-xl bg-amber-50 p-4 text-sm leading-7 text-amber-900">
           {t.verify}{" "}
           <Link href="/account/settings" className="font-bold underline">
             {t.settings}
@@ -159,56 +201,33 @@ function ProviderWorkspace({
         </p>
       )}
       {query.isError ? (
-        <>
+        <div className="space-y-4">
           <BusinessError message={query.error.message} />
           <button className={businessSecondary} onClick={() => query.refetch()}>
             {t.retry}
           </button>
-        </>
-      ) : !query.data ? (
-        <p role="status">{t.loading}</p>
-      ) : (
-        <>
-          {query.data.providers.length > 1 && (
-            <label className="block max-w-sm text-sm font-semibold">
-              {t.provider}
-              <select
-                className={businessField}
-                value={owned?.provider.id}
-                onChange={e => setSelected(Number(e.target.value))}
-              >
-                {query.data.providers.map(p => (
-                  <option key={p.provider.id} value={p.provider.id}>
-                    {p.provider.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {owned ? (
-            <ProviderTools
-              key={owned.provider.id}
-              accountId={accountId}
-              owned={owned}
-            />
-          ) : (
-            <BusinessCard>
-              <h2 className="text-xl font-bold text-[#0B2A68]">{t.plan}</h2>
-              <BusinessPricing />
-              <PaymentMethods />
-              <p className="mt-4 text-sm leading-7 text-slate-600">
-                {t.planHelp}
+        </div>
+      ) : !workspace ? (
+        <BusinessCard>
+          <p role="status">{t.loading}</p>
+        </BusinessCard>
+      ) : section === "ownership" ? (
+        <div className="space-y-6">
+          {!owned && (
+            <BusinessCard className="border-teal-200 bg-teal-50/50">
+              <h2 className="text-xl font-bold text-[#0B2A68]">{d.start}</h2>
+              <p className="mt-3 text-sm leading-7 text-slate-600">
+                {d.startHelp}
               </p>
-              <p className="mt-4 text-sm text-slate-500">{t.noProviders}</p>
             </BusinessCard>
           )}
-          <div className="grid items-start gap-6 lg:grid-cols-2">
+          <div className="grid items-start gap-6 xl:grid-cols-2">
             <ClaimPicker verified={verified} />
             <BusinessCard>
               <h2 className="text-lg font-bold text-[#0B2A68]">{t.requests}</h2>
               <div className="mt-5 space-y-5">
-                {query.data.claims.length ? (
-                  query.data.claims.map(claim => (
+                {workspace.claims.length ? (
+                  workspace.claims.map(claim => (
                     <ClaimItem
                       key={`${claim.id}:${claim.revision}`}
                       claim={claim}
@@ -220,9 +239,81 @@ function ProviderWorkspace({
               </div>
             </BusinessCard>
           </div>
-        </>
-      )}
-    </div>
+        </div>
+      ) : section === "billing" ? (
+        owned ? (
+          <ProviderBilling
+            key={owned.provider.id}
+            accountId={accountId}
+            owned={owned}
+          />
+        ) : (
+          <BusinessCard>
+            <h2 className="text-xl font-bold text-[#0B2A68]">{t.plan}</h2>
+            <BusinessPricing />
+            <PaymentMethods />
+            <p className="mt-4 text-sm leading-7 text-slate-600">
+              {t.planHelp}
+            </p>
+            <button
+              className={`${businessPrimary} mt-5`}
+              onClick={() => go("ownership")}
+            >
+              {d.start}
+            </button>
+          </BusinessCard>
+        )
+      ) : owned && !owned.ownershipValid ? (
+        <BusinessCard>
+          <p role="alert" className="text-sm leading-7 text-amber-900">
+            {t.ownerChanged}
+          </p>
+          <button
+            className={`${businessSecondary} mt-4`}
+            onClick={() => go("ownership")}
+          >
+            {d.ownership}
+          </button>
+        </BusinessCard>
+      ) : owned ? (
+        <div key={owned.provider.id} className="space-y-6">
+          {section === "overview" ? (
+            <ProviderOverview
+              accountId={accountId}
+              owned={owned}
+              active={active}
+              onNavigate={go}
+            />
+          ) : (
+            <>
+              {!active && <ProviderPlanLock onNavigate={go} />}
+              {section === "analytics" && active && (
+                <BusinessAnalytics
+                  accountId={accountId}
+                  providerId={owned.provider.id}
+                />
+              )}
+              {section === "groups" && (
+                <ProviderGroups
+                  accountId={accountId}
+                  provider={owned.provider}
+                  active={active}
+                  startCreating={params.get("action") === "create"}
+                />
+              )}
+              {section === "offers" && (
+                <ProviderPromotions
+                  accountId={accountId}
+                  providerId={owned.provider.id}
+                  active={active}
+                  startCreating={params.get("action") === "create"}
+                />
+              )}
+            </>
+          )}
+        </div>
+      ) : null}
+    </ProviderDashboardShell>
   );
 }
 function ClaimPicker({ verified }: { verified: boolean }) {
@@ -378,7 +469,7 @@ function ClaimItem({ claim }: { claim: Claim }) {
     </article>
   );
 }
-function ProviderTools({
+function ProviderBilling({
   accountId,
   owned,
 }: {
@@ -388,26 +479,12 @@ function ProviderTools({
   const { locale } = useLocale();
   const t = businessText(locale);
   const now = useBusinessClock();
-  const state = planState(owned.subscription, now);
-  const active = state === "active" && owned.ownershipValid;
-  const [tab, setTab] = useState<"analytics" | "groups" | "offers">(
-    "analytics"
-  );
   return (
-    <div className="space-y-6">
+    <div className="grid items-start gap-6 xl:grid-cols-2">
       <BusinessCard>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <Link
-              href={`/providers/${owned.provider.slug}`}
-              className="text-2xl font-extrabold text-[#0B2A68]"
-              dir="auto"
-            >
-              {owned.provider.name}
-            </Link>
-            <p className="mt-2 text-sm font-medium text-slate-500">{t.plan}</p>
-          </div>
-          <BusinessStatus value={state} />
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-xl font-bold text-[#0B2A68]">{t.plan}</h2>
+          <BusinessStatus value={planState(owned.subscription, now)} />
         </div>
         <BusinessPricing
           firstActivatedAt={owned.subscription.firstActivatedAt}
@@ -426,68 +503,29 @@ function ProviderTools({
             </bdi>
           </p>
         )}
-        {owned.ownershipValid && (
+        <a
+          className={`${businessSecondary} mt-5`}
+          href={`mailto:soporte@providerbeacon.com?subject=${encodeURIComponent(`Provider plan: ${owned.provider.name}`)}`}
+        >
+          {dashboardText(locale).support}
+        </a>
+      </BusinessCard>
+      <BusinessCard>
+        <h2 className="text-xl font-bold text-[#0B2A68]">
+          {dashboardText(locale).billing}
+        </h2>
+        {owned.ownershipValid ? (
           <ProviderCheckout
             accountId={accountId}
             providerId={owned.provider.id}
+            showHistory
           />
+        ) : (
+          <p role="alert" className="mt-4 text-sm leading-7 text-amber-900">
+            {t.ownerChanged}
+          </p>
         )}
-        <a
-          className={`${businessSecondary} mt-4`}
-          href={`mailto:soporte@providerbeacon.com?subject=${encodeURIComponent(`Provider plan: ${owned.provider.name}`)}`}
-        >
-          {t.renew}
-        </a>
       </BusinessCard>
-      {!owned.ownershipValid ? (
-        <p
-          role="alert"
-          className="rounded-xl bg-amber-50 p-5 leading-7 text-amber-900"
-        >
-          {t.ownerChanged}
-        </p>
-      ) : (
-        <>
-          {!active && (
-            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm leading-7 text-amber-900">
-              <LockKeyhole className="mt-1 size-5 shrink-0" />
-              <p>{t.locked}</p>
-            </div>
-          )}
-          <nav className="flex flex-wrap gap-2" aria-label={t.title}>
-            {(["analytics", "groups", "offers"] as const).map(value => (
-              <button
-                key={value}
-                aria-pressed={tab === value}
-                className={tab === value ? businessPrimary : businessSecondary}
-                onClick={() => setTab(value)}
-              >
-                {value === "offers" ? t.myOffers : t[value]}
-              </button>
-            ))}
-          </nav>
-          {tab === "analytics" && active && (
-            <BusinessAnalytics
-              accountId={accountId}
-              providerId={owned.provider.id}
-            />
-          )}
-          {tab === "groups" && (
-            <ProviderGroups
-              accountId={accountId}
-              provider={owned.provider}
-              active={active}
-            />
-          )}
-          {tab === "offers" && (
-            <ProviderPromotions
-              accountId={accountId}
-              providerId={owned.provider.id}
-              active={active}
-            />
-          )}
-        </>
-      )}
     </div>
   );
 }
@@ -495,10 +533,12 @@ function ProviderGroups({
   accountId,
   provider,
   active,
+  startCreating = false,
 }: {
   accountId: number;
   provider: Owned["provider"];
   active: boolean;
+  startCreating?: boolean;
 }) {
   const { locale } = useLocale();
   const t = businessText(locale);
@@ -507,11 +547,14 @@ function ProviderGroups({
     { accountId, providerId: provider.id },
     { retry: false, staleTime: 0 }
   );
-  const [editing, setEditing] = useState<OwnedGroup | "new" | null>(null);
+  const [editing, setEditing] = useState<OwnedGroup | "new" | null>(
+    startCreating && active ? "new" : null
+  );
   const refresh = async () => {
     setEditing(null);
     await Promise.all([
       utils.business.groups.mine.invalidate(),
+      utils.business.overview.invalidate(),
       utils.community.list.invalidate(),
       utils.community.mine.invalidate(),
     ]);
@@ -548,7 +591,9 @@ function ProviderGroups({
         <h2 className="text-xl font-bold text-[#0B2A68]">{t.groups}</h2>
         <button
           className={businessPrimary}
-          disabled={!active || (query.data?.length ?? 0) >= 20}
+          disabled={
+            !active || !query.data || query.isError || query.data.length >= 20
+          }
           onClick={() => {
             submit.reset();
             edit.reset();
@@ -560,32 +605,38 @@ function ProviderGroups({
         </button>
       </div>
       <p className="mt-3 text-sm leading-7 text-slate-500">{t.groupHelp}</p>
-      {active && editing && (
-        <div className="mt-6">
-          <GroupForm
-            key={
-              editing === "new" ? "new" : `${editing.id}:${editing.revision}`
-            }
-            fixedProvider={provider}
-            initial={
-              editing === "new"
-                ? {
-                    providerId: provider.id,
-                    evidenceUrl: provider.websiteUrl ?? "",
-                  }
-                : { ...editing, evidenceUrl: editing.evidenceUrl ?? "" }
-            }
-            pending={submit.isPending || edit.isPending}
-            onSave={save}
-            onCancel={() => setEditing(null)}
-            error={
-              submit.error || edit.error
-                ? communityError((submit.error ?? edit.error)!.message, locale)
-                : undefined
-            }
-          />
-        </div>
-      )}
+      {active &&
+        !query.isError &&
+        editing &&
+        (editing !== "new" || (query.data && query.data.length < 20)) && (
+          <div className="mt-6">
+            <GroupForm
+              key={
+                editing === "new" ? "new" : `${editing.id}:${editing.revision}`
+              }
+              fixedProvider={provider}
+              initial={
+                editing === "new"
+                  ? {
+                      providerId: provider.id,
+                      evidenceUrl: provider.websiteUrl ?? "",
+                    }
+                  : { ...editing, evidenceUrl: editing.evidenceUrl ?? "" }
+              }
+              pending={submit.isPending || edit.isPending}
+              onSave={save}
+              onCancel={() => setEditing(null)}
+              error={
+                submit.error || edit.error
+                  ? communityError(
+                      (submit.error ?? edit.error)!.message,
+                      locale
+                    )
+                  : undefined
+              }
+            />
+          </div>
+        )}
       {query.isError ? (
         <BusinessError message={query.error.message} />
       ) : !query.data ? (
@@ -663,17 +714,21 @@ function ProviderPromotions({
   accountId,
   providerId,
   active,
+  startCreating = false,
 }: {
   accountId: number;
   providerId: number;
   active: boolean;
+  startCreating?: boolean;
 }) {
   const { locale } = useLocale();
   const t = businessText(locale);
   const utils = trpc.useUtils();
   const now = useBusinessClock();
   const [cursor, setCursor] = useState<number>();
-  const [editing, setEditing] = useState<Promotion | "new" | null>(null);
+  const [editing, setEditing] = useState<Promotion | "new" | null>(
+    startCreating && active ? "new" : null
+  );
   const query = trpc.business.promotions.mine.useQuery(
     { accountId, providerId, cursor },
     { retry: false, staleTime: 0 }
@@ -683,6 +738,7 @@ function ProviderPromotions({
     setCursor(undefined);
     await Promise.all([
       utils.business.promotions.mine.invalidate(),
+      utils.business.overview.invalidate(),
       utils.business.promotions.list.invalidate(),
     ]);
   };
@@ -710,6 +766,7 @@ function ProviderPromotions({
           className={businessPrimary}
           disabled={
             !active ||
+            query.isError ||
             !query.data ||
             query.data.usage.used >= query.data.usage.limit
           }
@@ -733,25 +790,31 @@ function ProviderPromotions({
           </bdi>
         </p>
       )}
-      {active && editing && (
-        <PromotionForm
-          key={editing === "new" ? "new" : `${editing.id}:${editing.revision}`}
-          providerId={providerId}
-          initial={editing === "new" ? undefined : editing}
-          pending={submit.isPending || edit.isPending}
-          error={(submit.error ?? edit.error)?.message}
-          onCancel={() => setEditing(null)}
-          onSave={input =>
-            editing !== "new"
-              ? edit.mutate({
-                  ...input,
-                  id: editing.id,
-                  revision: editing.revision,
-                })
-              : submit.mutate(input)
-          }
-        />
-      )}
+      {active &&
+        !query.isError &&
+        editing &&
+        (editing !== "new" ||
+          (query.data && query.data.usage.used < query.data.usage.limit)) && (
+          <PromotionForm
+            key={
+              editing === "new" ? "new" : `${editing.id}:${editing.revision}`
+            }
+            providerId={providerId}
+            initial={editing === "new" ? undefined : editing}
+            pending={submit.isPending || edit.isPending}
+            error={(submit.error ?? edit.error)?.message}
+            onCancel={() => setEditing(null)}
+            onSave={input =>
+              editing !== "new"
+                ? edit.mutate({
+                    ...input,
+                    id: editing.id,
+                    revision: editing.revision,
+                  })
+                : submit.mutate(input)
+            }
+          />
+        )}
       {query.isError ? (
         <BusinessError message={query.error.message} />
       ) : !query.data ? (
