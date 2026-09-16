@@ -1,5 +1,6 @@
 import type { Locale } from "@/contexts/LocaleContext";
 import { providerPricingText } from "./providerPricing";
+import { vipText } from "./providerVip";
 
 const strings = {
   title: [
@@ -160,11 +161,11 @@ const strings = {
     "供应商套餐",
   ],
   planHelp: [
-    "Includes group listings, private analytics and up to five new offers per UTC calendar month.",
-    "تشمل نشر الجروبات والإحصائيات الخاصة وحتى خمسة عروض جديدة في الشهر الميلادي بتوقيت UTC.",
-    "Incluye grupos, estadísticas privadas y hasta cinco ofertas nuevas por mes natural UTC.",
-    "समूह लिस्टिंग, निजी आँकड़े और प्रति UTC कैलेंडर माह पाँच नए ऑफ़र शामिल हैं।",
-    "包含群组展示、私人统计和每个 UTC 自然月最多五条新优惠。",
+    "Includes a reviewed VIP album card, group listings, private analytics and up to five new offers per UTC calendar month.",
+    "تشمل بطاقة في ألبوم VIP بعد المراجعة، ونشر الجروبات والإحصائيات الخاصة وحتى خمسة عروض جديدة في الشهر الميلادي بتوقيت UTC.",
+    "Incluye una tarjeta VIP revisada, grupos, estadísticas privadas y hasta cinco ofertas nuevas por mes natural UTC.",
+    "समीक्षित VIP कार्ड, समूह लिस्टिंग, निजी आँकड़े और प्रति UTC कैलेंडर माह पाँच नए ऑफ़र शामिल हैं।",
+    "包含审核后的 VIP 相册卡片、群组展示、私人统计和每个 UTC 自然月最多五条新优惠。",
   ],
   renew: [
     "Request activation or renewal",
@@ -520,6 +521,8 @@ export function businessError(message: string, locale: Locale) {
     business_verify_email: t.verify,
     business_owner_required: t.ownerChanged,
     business_changed: t.changed,
+    business_stale: t.changed,
+    business_vip_cover: vipText(locale).imageError,
     business_claimed: t.claimed,
     business_already_owner: t.claimed,
     business_claim_expired: t.expiredCode,

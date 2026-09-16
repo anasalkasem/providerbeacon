@@ -316,6 +316,7 @@ export async function cleanupImportedMedia() {
   await db.execute(sql`DELETE FROM imported_media WHERE created_at < DATE_SUB(NOW(), INTERVAL 30 DAY)
     AND NOT EXISTS (SELECT 1 FROM provider_records p WHERE CAST(p.logoUrl AS BINARY) LIKE CAST(CONCAT('%/api/imported-media/', imported_media.id) AS BINARY)
       OR CAST(p.websitePreviewUrl AS BINARY) LIKE CAST(CONCAT('%/api/imported-media/', imported_media.id) AS BINARY))
+    AND NOT EXISTS (SELECT 1 FROM provider_vip_cards vip WHERE CAST(vip.cover_id AS BINARY) = CAST(imported_media.id AS BINARY))
     AND NOT EXISTS (SELECT 1 FROM community_groups g WHERE CAST(JSON_UNQUOTE(JSON_EXTRACT(g.link_metadata, '$.avatarUrl')) AS BINARY) LIKE CAST(CONCAT('%/api/imported-media/', imported_media.id) AS BINARY))
     AND NOT EXISTS (SELECT 1 FROM link_metadata_cache c WHERE
       CAST(JSON_UNQUOTE(JSON_EXTRACT(c.payload, '$.logoUrl')) AS BINARY) LIKE CAST(CONCAT('%/api/imported-media/', imported_media.id) AS BINARY)

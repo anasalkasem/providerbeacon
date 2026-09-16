@@ -47,7 +47,7 @@ export const discoveryEn = {
     "Identity checks, source freshness, documented delivery, customer evidence and confirmed complaints are the signals we intend to assess. No numerical score is published without enough evidence. Profiles based on public sources are labeled separately from reviewed offers.",
   independence: "Editorial independence",
   independenceBody:
-    "Reference profiles are informational. This selection contains no paid placements or affiliate links. Any future sponsored position will be identified beside the result.",
+    "Reference profiles are informational. VIP cards are paid placements, clearly identified beside each card. Membership never changes trust scores or the independent order of service results.",
   about: "Built for a clearer choice.",
   aboutBody:
     "ProviderBeacon is an independent discovery and comparison platform. This first release includes service guides, source-linked profiles and a working quote calculator. Reviewed provider offers will join the catalogue as evidence becomes available.",
@@ -147,7 +147,7 @@ export const discoveryAr: typeof discoveryEn = {
     "توثيق الهوية وحداثة المصدر والتنفيذ المثبت وأدلة العملاء والشكاوى المؤكدة هي الإشارات التي نسعى إلى تقييمها. لا ننشر درجة رقمية بلا أدلة كافية، ونميّز ملفات المصادر العامة عن العروض التي خضعت للمراجعة.",
   independence: "الاستقلال التحريري",
   independenceBody:
-    "الملفات المرجعية للمعلومات. هذه المجموعة لا تتضمن ترتيبًا مدفوعًا أو روابط عمولة. أي ظهور مدفوع مستقبلًا سيُذكر بجوار النتيجة.",
+    "الملفات المرجعية للمعلومات. بطاقات VIP مواضع ظهور مدفوعة ومعلنة بجوار كل بطاقة. الاشتراك لا يغيّر درجات الثقة أو الترتيب المستقل لنتائج الخدمات.",
   about: "من أجل اختيار أوضح.",
   aboutBody:
     "ProviderBeacon منصة مستقلة للاكتشاف والمقارنة. تتضمن هذه النسخة أدلة خدمات وملفات مرتبطة بمصادرها وحاسبة عروض تعمل فعليًا. تضاف عروض المزودين إلى الدليل بعد اكتمال أدلتها.",

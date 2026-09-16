@@ -1,4 +1,12 @@
 @import "tailwindcss";
+
+@layer components {
+  .vip-card { box-shadow: 0 4px 18px rgb(32 36 31 / 4%); transition: border-color .2s, box-shadow .2s, transform .2s; }
+  .vip-card:hover { border-color: #a5cd49; box-shadow: 0 14px 36px rgb(32 36 31 / 9%); transform: translateY(-3px); }
+  .vip-rail { scrollbar-color: #a5cd49 #eef0e9; scrollbar-width: thin; padding-top: 4px; }
+  .vip-empty { background-image: radial-gradient(ellipse at 100% 0%, #f1f7e6, transparent 65%); }
+  @media (prefers-reduced-motion: reduce) { .vip-card { transition: none; } .vip-card:hover { transform: none; } }
+}
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));

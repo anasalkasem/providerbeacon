@@ -1,5 +1,6 @@
 import { workspaceCopy } from "@/i18n/workspace";
 import { businessText } from "@/i18n/providerBusiness";
+import { vipText } from "@/i18n/providerVip";
 import { communityCopy } from "@/i18n/community";
 import { discoveryText } from "@/i18n/discovery";
 import { CatalogueNotice } from "@/components/CatalogueState";
@@ -168,6 +169,7 @@ export function SiteFooter() {
             [t.navServices, "/services"],
             [t.navCompare, "/compare"],
             [t.navProviders, "/providers"],
+            [vipText(locale).title, "/vip"],
             [communityCopy[locale].nav, "/groups"],
             [businessText(locale).offers, "/offers"],
             [p.trustScores, "/#methodology"],

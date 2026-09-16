@@ -29,6 +29,7 @@ const AdminProviderAnalytics = lazy(() => import("@/pages/AdminProviderAnalytics
 const ProviderBusiness = lazy(() => import("@/pages/ProviderBusiness"));
 const AdminProviderBusiness = lazy(() => import("@/pages/AdminProviderBusiness"));
 const ProviderOffers = lazy(() => import("@/pages/ProviderOffers"));
+const VipProviders = lazy(() => import("@/pages/VipProviders"));
 const AdminModule = lazy(() => import("@/pages/AdminModule"));
 const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
 const Login = lazy(() => import("@/pages/Login"));
@@ -70,6 +71,7 @@ function Router() {
         <Route path="/find" component={Find} />
         <Route path="/groups" component={Groups} />
         <Route path="/offers" component={ProviderOffers} />
+        <Route path="/vip" component={VipProviders} />
         <Route path="/services" component={Services} />
         <Route path="/services/:slug" component={ServiceGuide} />
         <Route path="/directory/:slug" component={DirectoryProfile} />

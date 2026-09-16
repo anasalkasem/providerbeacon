@@ -15,6 +15,7 @@ import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
 import { discoveryText } from "@/i18n/discovery";
 import { workspaceCopy } from "@/i18n/workspace";
 import { DecisionOffer } from "@/components/DecisionOffer";
+import { VipAlbum } from "@/components/VipAlbum";
 
 export default function Home() {
   const { locale } = useLocale();
@@ -132,6 +133,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      <VipAlbum />
       {services.length > 0 && (
         <section className="container py-10 sm:py-14">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">

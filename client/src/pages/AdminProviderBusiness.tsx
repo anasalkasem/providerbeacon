@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { Building2, ExternalLink } from "lucide-react";
 import { BusinessPricing } from "@/components/BusinessPricing";
 import { AdminPayments } from "@/components/AdminPayments";
+import { AdminVip } from "@/components/AdminVip";
+import { vipText } from "@/i18n/providerVip";
 import { paymentText } from "@/i18n/providerPayments";
 import { providerPricingText } from "@/i18n/providerPricing";
 import { providerMonthAnniversary } from "../../../shared/providerBusinessPricing";
@@ -47,7 +49,7 @@ export function AdminBusinessPanel() {
   const allowed = access.data?.permissions.includes("business.read") ?? false;
   const manage = access.data?.permissions.includes("business.manage") ?? false;
   const [tab, setTab] = useState<
-    "subscription" | "claims" | "offers" | "payments"
+    "subscription" | "claims" | "offers" | "payments" | "vip"
   >("subscription");
   if (access.isError || (access.data && !allowed)) return <BusinessError />;
   if (!allowed) return <p role="status">{t.loading}</p>;
@@ -64,6 +66,7 @@ export function AdminBusinessPanel() {
           { key: "subscription", title: t.plan },
           { key: "claims", title: t.requests },
           { key: "offers", title: t.reviewOffers },
+          { key: "vip", title: vipText(locale).reviewTitle },
           { key: "payments", title: paymentText(locale).gates },
         ].map(item => (
           <button
@@ -79,6 +82,7 @@ export function AdminBusinessPanel() {
       {tab === "subscription" && <SubscriptionPicker manage={manage} />}{" "}
       {tab === "claims" && <ClaimsQueue manage={manage} />}{" "}
       {tab === "offers" && <OffersQueue manage={manage} />}
+      {tab === "vip" && <AdminVip manage={manage} />}
       {tab === "payments" && <AdminPayments manage={manage} />}
     </div>
   );
