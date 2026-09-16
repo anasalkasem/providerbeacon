@@ -43,11 +43,11 @@ const strings = {
     "每笔付款涵盖一个自然月，每次续订均由您确认，不会自动扣款。付款确认后开通，或延长现有有效期。",
   ],
   cryptoHelp: [
-    "Choose the coin and network on NOWPayments. Follow its amount, address, network and expiry instructions exactly. Network fees may apply.",
-    "اختر العملة والشبكة بصفحة NOWPayments، والتزم بالمبلغ والعنوان والشبكة والمهلة الظاهرة فيها. قد تُضاف رسوم شبكة.",
-    "Elige moneda y red en NOWPayments. Respeta el importe, dirección, red y plazo indicados. Puede haber comisiones de red.",
-    "NOWPayments पर मुद्रा और नेटवर्क चुनें। राशि, पता, नेटवर्क और समय सीमा के निर्देश मानें। नेटवर्क शुल्क लग सकता है।",
-    "在 NOWPayments 选择币种和网络，请严格遵循金额、地址、网络及有效期说明。可能产生网络费用。",
+    "New crypto checkouts start with USDT on BNB Smart Chain (BEP20). Send the exact amount using the address and network shown on NOWPayments, before the deadline. Network fees may apply.",
+    "تبدأ فواتير العملات الرقمية الجديدة بعملة USDT على شبكة BNB Smart Chain ‏(BEP20). أرسل المبلغ المحدد إلى العنوان وعلى الشبكة الظاهرين في NOWPayments قبل انتهاء المهلة. قد تُضاف رسوم شبكة.",
+    "Los nuevos pagos cripto comienzan con USDT en BNB Smart Chain (BEP20). Envía el importe exacto a la dirección y por la red indicadas en NOWPayments antes del vencimiento. Puede haber comisiones de red.",
+    "नए क्रिप्टो भुगतान BNB Smart Chain (BEP20) पर USDT से शुरू होते हैं। समय सीमा से पहले NOWPayments पर दिखाए गए पते और नेटवर्क से सही राशि भेजें। नेटवर्क शुल्क लग सकता है।",
+    "新加密货币付款默认使用 BNB Smart Chain（BEP20）上的 USDT。请在到期前，按 NOWPayments 显示的地址和网络支付准确金额。可能产生网络费用。",
   ],
   use: [
     "Pay with",

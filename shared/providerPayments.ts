@@ -5,6 +5,10 @@ import {
 } from "./providerBusinessPricing";
 
 export const paymentGateways = ["paypal", "nowpayments"] as const;
+export const nowpaymentsCheckoutAsset = {
+  code: "usdtbsc",
+  label: "USDT (BEP20)",
+} as const;
 export type PaymentGateway = (typeof paymentGateways)[number];
 export const paymentStates = [
   "creating",
