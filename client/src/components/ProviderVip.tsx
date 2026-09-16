@@ -71,10 +71,12 @@ export function ProviderVip({
   accountId,
   owned,
   active,
+  savedOnly = false,
 }: {
   accountId: number;
   owned: OwnedProvider;
   active: boolean;
+  savedOnly?: boolean;
 }) {
   const { locale } = useLocale();
   const t = vipText(locale),
@@ -83,6 +85,7 @@ export function ProviderVip({
     { accountId, providerId: owned.provider.id },
     { retry: false, staleTime: 0 }
   );
+  if (savedOnly && !query.isError && !query.data) return null;
   return (
     <div className="space-y-6">
       <BusinessCard>

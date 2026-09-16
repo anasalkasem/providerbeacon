@@ -13,10 +13,14 @@ const state = vi.hoisted(() => ({
   analytics: undefined as any,
   analyticsError: false,
   offers: [] as any[],
+  savedGroups: [] as any[],
+  savedOffers: [] as any[],
   permissions: [] as string[],
   analyticsCalls: vi.fn(),
   accountCalls: vi.fn(),
   paymentCalls: vi.fn(),
+  savedCalls: vi.fn(),
+  overviewCalls: vi.fn(),
 }));
 vi.mock("@/contexts/LocaleContext", async original => ({
   ...(await original<any>()),
@@ -60,11 +64,14 @@ vi.mock("@/lib/trpc", () => {
           }),
         },
         overview: {
-          useQuery: () => ({
-            data: state.overview,
-            isError: state.overviewError,
-            error: { message: "business_owner_required" },
-          }),
+          useQuery: () => {
+            state.overviewCalls();
+            return {
+              data: state.overview,
+              isError: state.overviewError,
+              error: { message: "business_owner_required" },
+            };
+          },
         },
         payments: {
           methods: {
@@ -101,17 +108,39 @@ vi.mock("@/lib/trpc", () => {
           },
         },
         groups: {
-          mine: { useQuery: () => ({ data: [] }) },
+          mine: {
+            useQuery: () => {
+              state.savedCalls("groups");
+              return { data: state.savedGroups };
+            },
+          },
           submit: mutation,
           edit: mutation,
           withdraw: mutation,
         },
+        vip: {
+          mine: {
+            useQuery: () => {
+              state.savedCalls("vip");
+              return { data: null };
+            },
+          },
+          submit: mutation,
+          withdraw: mutation,
+          analytics: { useQuery: () => ({}) },
+        },
         promotions: {
           list: { useQuery: () => ({ data: { items: state.offers } }) },
           mine: {
-            useQuery: () => ({
-              data: { items: [], usage: { used: 0, limit: 5 } },
-            }),
+            useQuery: () => {
+              state.savedCalls("offers");
+              return {
+                data: {
+                  items: state.savedOffers,
+                  usage: { used: 0, limit: 5 },
+                },
+              };
+            },
           },
           submit: mutation,
           edit: mutation,
@@ -171,6 +200,8 @@ beforeEach(() => {
   state.analytics = undefined;
   state.analyticsError = false;
   state.offers = [];
+  state.savedGroups = [];
+  state.savedOffers = [];
   state.permissions = [];
   container = document.createElement("div");
   document.body.append(container);
@@ -226,6 +257,220 @@ function paidWorkspace() {
 }
 const button = (text: string) =>
   [...container.querySelectorAll("button")].find(b => b.textContent === text)!;
+const navButton = (label: string) =>
+  [...container.querySelectorAll<HTMLButtonElement>("nav button")].find(b =>
+    b.textContent?.startsWith(label)
+  )!;
+
+describe("discoverable provider tools before payment", () => {
+  it("preserves the claim entry from a public provider profile without hiding the other tools", async () => {
+    state.locale = "en";
+    state.member = { id: 7, emailVerified: true };
+    state.workspace = { providers: [], claims: [] };
+    window.history.replaceState({}, "", "/account/provider?provider=4");
+    await render(React.createElement(ProviderBusiness));
+    expect(container.querySelector("h1")?.textContent).toBe(
+      "Provider ownership"
+    );
+    await act(() => navButton("Your analytics").click());
+    expect(container.querySelector("h1")?.textContent).toBe("Your analytics");
+    expect(state.analyticsCalls).not.toHaveBeenCalled();
+  });
+  it("lets an unlinked member navigate all four previews without private queries, and starts free ownership verification", async () => {
+    state.locale = "en";
+    state.member = { id: 7, emailVerified: true };
+    state.workspace = { providers: [], claims: [] };
+    await render(React.createElement(ProviderBusiness));
+    expect(container.querySelector("h1")?.textContent).toBe("Overview");
+    expect(container.querySelectorAll("nav button")).toHaveLength(7);
+    expect(
+      container.querySelectorAll('nav button[aria-label*="Locked"]')
+    ).toHaveLength(4);
+    for (const [label, section, benefit] of [
+      ["Your analytics", "analytics", "Understand how visitors reach you"],
+      ["VIP provider album", "vip", "Showcase your provider in the VIP album"],
+      [
+        "Your provider groups",
+        "groups",
+        "Bring your provider community together",
+      ],
+      [
+        "Your offers and coupons",
+        "offers",
+        "Publish offers visitors can act on",
+      ],
+    ]) {
+      expect(navButton(label).disabled).toBe(false);
+      await act(() => navButton(label).click());
+      expect(window.location.search).toContain(`tab=${section}`);
+      expect(container.textContent).toContain(benefit);
+      expect(container.textContent).toContain(
+        "No activity or results are shown here"
+      );
+      expect(container.textContent).toContain(
+        "Paying does not verify ownership"
+      );
+      expect(container.querySelector("form")).toBeNull();
+    }
+    expect(state.analyticsCalls).not.toHaveBeenCalled();
+    expect(state.savedCalls).not.toHaveBeenCalled();
+    expect(state.overviewCalls).not.toHaveBeenCalled();
+    const ownership = [
+      ...container.querySelectorAll<HTMLButtonElement>("main button"),
+    ].find(b => b.textContent === "Provider ownership")!;
+    await act(() => ownership.click());
+    expect(window.location.search).toContain("tab=ownership");
+    expect(state.paymentCalls).not.toHaveBeenCalled();
+  });
+
+  it("opens a deep-linked free analytics preview, then unlocks that same tab after subscription refresh", async () => {
+    state.locale = "en";
+    paidWorkspace();
+    const activePlan = { ...state.workspace.providers[0].subscription };
+    state.workspace.providers[0].subscription.status = "inactive";
+    window.history.replaceState(
+      {},
+      "",
+      "/account/provider?provider=4&tab=analytics"
+    );
+    await render(React.createElement(ProviderBusiness));
+    expect(container.querySelector("h1")?.textContent).toBe("Your analytics");
+    expect(state.analyticsCalls).not.toHaveBeenCalled();
+    expect(container.textContent).not.toContain("27");
+    expect(button("View plan & activate")).toBeDefined();
+    state.workspace.providers[0].subscription = activePlan;
+    await render(React.createElement(ProviderBusiness));
+    expect(window.location.search).toContain("tab=analytics");
+    expect(container.textContent).toContain("27");
+    expect(container.textContent).not.toContain("Feature preview");
+    expect(
+      container.querySelectorAll('nav button[aria-label*="Locked"]')
+    ).toHaveLength(0);
+    expect(state.analyticsCalls).toHaveBeenLastCalledWith({
+      accountId: 7,
+      providerId: 4,
+      days: 30,
+    });
+  });
+
+  it("retains expired owners' saved offers and groups with editing locked and withdrawal available", async () => {
+    state.locale = "en";
+    paidWorkspace();
+    state.workspace.providers[0].subscription.endsAt = new Date(
+      Date.now() - 1000
+    );
+    state.savedOffers = [
+      {
+        id: 1,
+        revision: 1,
+        title: "Saved September offer",
+        description: "Existing terms",
+        status: "approved",
+        endsAt: new Date(Date.now() + 86400000),
+      },
+    ];
+    state.savedGroups = [
+      {
+        id: 2,
+        revision: 1,
+        name: "Saved provider community",
+        description: "Existing group",
+        status: "approved",
+        url: "https://t.me/provider",
+      },
+    ];
+    window.history.replaceState(
+      {},
+      "",
+      "/account/provider?provider=4&tab=offers&action=create"
+    );
+    await render(React.createElement(ProviderBusiness));
+    expect(container.textContent).toContain("Saved September offer");
+    expect(container.textContent).toContain("Your plan has ended");
+    expect(button("New offer").disabled).toBe(true);
+    expect(button("Edit").disabled).toBe(true);
+    expect(button("Hide").disabled).toBe(false);
+    expect(container.querySelector('input[maxlength="120"]')).toBeNull();
+    await act(() => navButton("Your provider groups").click());
+    expect(container.textContent).toContain("Saved provider community");
+    expect(button("Add a group").disabled).toBe(true);
+    expect(button("Edit").disabled).toBe(true);
+    expect(state.analyticsCalls).not.toHaveBeenCalled();
+  });
+
+  it.each(["email", "ownership"])(
+    "keeps previews accessible but blocks saved data when %s verification is missing",
+    async reason => {
+      state.locale = "en";
+      paidWorkspace();
+      if (reason === "email") state.member.emailVerified = false;
+      else state.workspace.providers[0].ownershipValid = false;
+      window.history.replaceState(
+        {},
+        "",
+        "/account/provider?provider=4&tab=groups&action=create"
+      );
+      await render(React.createElement(ProviderBusiness));
+      expect(container.textContent).toContain(
+        "Bring your provider community together"
+      );
+      expect(container.textContent).toContain(
+        reason === "email"
+          ? "Verify your email to continue"
+          : "Paying does not verify ownership"
+      );
+      expect(state.savedCalls).not.toHaveBeenCalled();
+      expect(state.analyticsCalls).not.toHaveBeenCalled();
+      expect(container.querySelector("form")).toBeNull();
+      if (reason === "email")
+        expect(
+          container.querySelector('main a[href="/account/settings"]')
+        ).not.toBeNull();
+    }
+  );
+
+  it.each(["suspended", "scheduled"])(
+    "explains a %s plan without requesting a new activation payment",
+    async status => {
+      state.locale = "en";
+      paidWorkspace();
+      if (status === "suspended")
+        state.workspace.providers[0].subscription.status = status;
+      else
+        state.workspace.providers[0].subscription.startsAt = new Date(
+          Date.now() + 86400000
+        );
+      window.history.replaceState({}, "", "/account/provider?tab=analytics");
+      await render(React.createElement(ProviderBusiness));
+      expect(container.textContent).toContain(
+        status === "suspended" ? "Your plan is paused" : "Your plan starts soon"
+      );
+      expect(button("View plan & activate")).toBeUndefined();
+      expect(state.analyticsCalls).not.toHaveBeenCalled();
+    }
+  );
+
+  it("keeps sponsored VIP placement separate from paid tools and preserves free mobile navigation", async () => {
+    paidWorkspace();
+    state.workspace.providers[0].subscription.status = "inactive";
+    state.workspace.providers[0].placement = "complimentary";
+    await render(React.createElement(ProviderBusiness));
+    const menu = container.querySelector<HTMLButtonElement>(
+      'button[aria-controls="provider-navigation"]'
+    )!;
+    await act(() => menu.click());
+    await act(() => navButton("عروضك وكوبوناتك").click());
+    expect(menu.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(container.querySelector("h1"));
+    expect(
+      container.querySelector(".provider-dashboard")?.getAttribute("dir")
+    ).toBe("rtl");
+    expect(container.textContent).toContain("باقة مدفوعة");
+    expect(container.textContent).toContain("عرض الباقة والتفعيل");
+    expect(state.analyticsCalls).not.toHaveBeenCalled();
+    expect(container.querySelector("form")).toBeNull();
+  });
+});
 
 describe("provider dashboard navigation and entitlements", () => {
   it("opens the offer form from a quick action while keeping creation unavailable without a plan", async () => {
@@ -238,7 +483,11 @@ describe("provider dashboard navigation and entitlements", () => {
     state.workspace.providers[0].subscription.status = "inactive";
     await render(React.createElement(ProviderBusiness));
     expect(container.querySelector('input[maxlength="120"]')).toBeNull();
-    expect(button("New offer").disabled).toBe(true);
+    expect(button("New offer")).toBeUndefined();
+    expect(container.textContent).toContain(
+      "Publish offers visitors can act on"
+    );
+    expect(button("View plan & activate")).toBeDefined();
   });
   it("opens with performance and operational tools, keeps billing separate, and restores linked sections", async () => {
     state.locale = "en";
@@ -299,7 +548,7 @@ describe("provider dashboard navigation and entitlements", () => {
     expect(container.textContent).not.toContain("27");
     expect(container.querySelector('[role="alert"]')).not.toBeNull();
   });
-  it("removes paid analytics and disables quick actions when a plan expires while the page stays open", async () => {
+  it("replaces analytics and quick actions with previews and renewal when a plan expires in place", async () => {
     state.locale = "en";
     vi.useFakeTimers();
     paidWorkspace();
@@ -310,9 +559,11 @@ describe("provider dashboard navigation and entitlements", () => {
     expect(container.textContent).toContain("Your performance");
     await act(() => vi.advanceTimersByTime(5000));
     expect(container.textContent).not.toContain("Your performance");
-    expect(container.textContent).toContain("Activate your provider tools");
-    expect(button("New offer").disabled).toBe(true);
-    expect(button("Add a group").disabled).toBe(true);
+    expect(container.textContent).toContain("Your plan has ended");
+    expect(button("New offer")).toBeUndefined();
+    expect(button("Add a group")).toBeUndefined();
+    await act(() => button("Renew plan").click());
+    expect(window.location.search).toContain("tab=billing");
   });
   it("supports Arabic mobile navigation and focuses the selected section", async () => {
     paidWorkspace();
@@ -461,14 +712,15 @@ describe("provider package interfaces", () => {
     await render(React.createElement(ProviderBusiness));
     expect(container.textContent).toContain("فعّل أدوات مزوّدك");
     expect(state.analyticsCalls).not.toHaveBeenCalled();
-    const button = [...container.querySelectorAll("button")].find(
-      b => b.textContent === "عروضك وكوبوناتك"
+    const button = [...container.querySelectorAll("button")].find(b =>
+      b.getAttribute("aria-label")?.startsWith("عروضك وكوبوناتك")
     )!;
     await act(() => button.click());
     const create = [...container.querySelectorAll("button")].find(b =>
       b.textContent?.includes("عرض جديد")
     )!;
-    expect(create.disabled).toBe(true);
+    expect(create).toBeUndefined();
+    expect(container.textContent).toContain("انشر عروضًا واضحة للزوار");
   });
   it("does not show stale analytics after subscription access is denied", async () => {
     state.analyticsError = true;

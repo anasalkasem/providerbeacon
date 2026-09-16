@@ -27,6 +27,11 @@ import { localeNames, useLocale, type Locale } from "@/contexts/LocaleContext";
 import { businessText } from "@/i18n/providerBusiness";
 import { dashboardText } from "@/i18n/providerDashboard";
 import { vipText } from "@/i18n/providerVip";
+import { previewText } from "@/i18n/providerPreviews";
+import {
+  isPremiumProviderSection,
+  type ProviderToolAccess,
+} from "@/lib/providerToolAccess";
 import { formatNumber } from "@/i18n/messages";
 import { trpc } from "@/lib/trpc";
 import { Brand } from "./SiteChrome";
@@ -61,6 +66,7 @@ export type DashboardNavigate = (
 
 export function ProviderDashboardShell({
   owned,
+  access,
   providers,
   section,
   onNavigate,
@@ -68,6 +74,7 @@ export function ProviderDashboardShell({
   children,
 }: {
   owned?: OwnedProvider;
+  access: ProviderToolAccess;
   providers: OwnedProvider[];
   section: ProviderSection;
   onNavigate: DashboardNavigate;
@@ -77,6 +84,7 @@ export function ProviderDashboardShell({
   const { locale, setLocale } = useLocale();
   const t = dashboardText(locale);
   const b = businessText(locale);
+  const p = previewText(locale);
   const now = useBusinessClock();
   const [mobileOpen, setMobileOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -95,7 +103,12 @@ export function ProviderDashboardShell({
       icon: BarChart3,
       help: t.analyticsHelp,
     },
-    { id: "vip", label: vipText(locale).title, icon: Diamond, help: vipText(locale).ownerHelp },
+    {
+      id: "vip",
+      label: vipText(locale).title,
+      icon: Diamond,
+      help: vipText(locale).ownerHelp,
+    },
     { id: "groups", label: b.groups, icon: Users, help: b.groupHelp },
     { id: "offers", label: b.myOffers, icon: Tag, help: b.offerHelp },
     { id: "billing", label: t.billing, icon: CreditCard, help: t.billingHelp },
@@ -234,28 +247,37 @@ export function ProviderDashboardShell({
             <p className="px-3 pb-2 pt-3 text-[11px] font-bold uppercase tracking-wider text-slate-300">
               {t.manage}
             </p>
-            {items
-              .filter(
-                item =>
-                  owned || item.id === "ownership" || item.id === "billing"
-              )
-              .map(item => (
-                <button
-                  key={item.id}
-                  aria-current={section === item.id ? "page" : undefined}
-                  onClick={() => {
-                    setMobileOpen(false);
-                    onNavigate(item.id);
-                  }}
-                  className="provider-nav-item flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-start text-sm font-semibold transition-colors"
-                >
-                  <item.icon
-                    className="size-[18px] shrink-0"
+            {items.map(item => (
+              <button
+                key={item.id}
+                aria-current={section === item.id ? "page" : undefined}
+                aria-label={
+                  access !== "active" && isPremiumProviderSection(item.id)
+                    ? `${item.label} — ${p.locked}: ${p.paid}`
+                    : undefined
+                }
+                onClick={() => {
+                  setMobileOpen(false);
+                  onNavigate(item.id);
+                }}
+                className="provider-nav-item flex min-h-12 items-center gap-3 rounded-xl px-3 py-3 text-start text-sm font-semibold transition-colors"
+              >
+                <item.icon
+                  className="size-[18px] shrink-0"
+                  aria-hidden="true"
+                />
+                <span className="min-w-0 flex-1">{item.label}</span>
+                {access !== "active" && isPremiumProviderSection(item.id) && (
+                  <span
+                    className="flex shrink-0 items-center gap-1 text-[11px]"
                     aria-hidden="true"
-                  />
-                  {item.label}
-                </button>
-              ))}
+                  >
+                    <LockKeyhole className="size-3.5" />
+                    {p.paid}
+                  </span>
+                )}
+              </button>
+            ))}
             <Link
               href="/account/settings"
               className="mt-3 flex min-h-12 items-center gap-3 rounded-xl border-t border-sidebar-border px-3 py-3 text-sm font-semibold text-slate-300 hover:bg-sidebar-accent"
@@ -265,7 +287,7 @@ export function ProviderDashboardShell({
             </Link>
           </nav>
           <div className="mt-auto space-y-5 p-5">
-            {owned && (
+            {owned ? (
               <div className="provider-sidebar-plan rounded-2xl p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs font-bold text-slate-300">
@@ -285,6 +307,18 @@ export function ProviderDashboardShell({
                   {t.managePlan}
                 </button>
               </div>
+            ) : (
+              <div className="provider-sidebar-plan rounded-2xl p-4">
+                <p className="text-sm font-bold text-sidebar-foreground">
+                  {p.explore}
+                </p>
+                <button
+                  onClick={() => onNavigate("billing")}
+                  className="mt-3 text-xs font-bold text-brand underline underline-offset-4"
+                >
+                  {t.managePlan}
+                </button>
+              </div>
             )}
             <a
               href="mailto:soporte@providerbeacon.com"
@@ -292,7 +326,9 @@ export function ProviderDashboardShell({
             >
               <LifeBuoy className="size-5 shrink-0" />
               <span className="text-xs leading-5">
-                <strong className="block text-sidebar-foreground">{t.support}</strong>
+                <strong className="block text-sidebar-foreground">
+                  {t.support}
+                </strong>
                 {t.supportHelp}
               </span>
             </a>
@@ -659,7 +695,9 @@ export function ProviderOverview({
           <div className="rounded-2xl bg-ink p-5 text-white">
             <ShieldCheck className="size-6 text-beacon-300" />
             <h2 className="mt-3 font-bold">{active ? t.ready : t.unlock}</h2>
-            <p className="mt-2 text-xs leading-6 text-slate-300">{b.planHelp}</p>
+            <p className="mt-2 text-xs leading-6 text-slate-300">
+              {b.planHelp}
+            </p>
             <button
               onClick={() => onNavigate("billing")}
               className="mt-4 flex items-center gap-2 text-xs font-bold text-beacon-200"
