@@ -28,12 +28,14 @@ import {
 import { randomToken } from "./security";
 import { createContext } from "./_core/context";
 import { appRouter } from "./routers";
+import { staffAuthAcceptanceCases } from "./staffAuthMysqlAcceptance";
 
 // Registered inside the existing MySQL suite to share its serialized migrations and local-only guard.
 export function memberAcceptanceCases(
   database: () => any,
   actorId: () => number
 ) {
+  staffAuthAcceptanceCases(database, actorId);
   describe("independent visitor accounts", () => {
     const input = {
       name: "Visitor test",

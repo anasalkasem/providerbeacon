@@ -1,6 +1,10 @@
 import { assertStaffOrigin } from "../staffOrigin";
 import { memberClientKey } from "../memberSecurity";
 import { reserveMemberRequests } from "../memberDb";
+import { memberCredentials } from "../../shared/memberAuth";
+import { memberPublic, safely } from "../memberProcedures";
+import { setMemberCookie, withMemberPasswordWork } from "../memberSecurity";
+import { reservePasswordSignIn, reserveStaffVerification, signInWithPassword } from "../siteSignIn";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
@@ -12,6 +16,7 @@ import {
   changePassword,
   confirmMfaSetup,
   destroyStaffSession,
+  disableMfa,
   getBootstrapStatus,
   getSecuritySummary,
   loginWithPassword,
@@ -23,10 +28,7 @@ import {
 import { PENDING_MFA_MINUTES, STAFF_SESSION_COOKIE, STAFF_SESSION_HOURS } from "../security";
 import { writeAudit } from "../marketplaceDb";
 
-const credentials = z.object({
-  email: z.string().email().max(320),
-  password: z.string().min(1).max(128),
-});
+const credentials = memberCredentials;
 const registration = credentials.extend({
   name: z.string().trim().min(2).max(160),
 });
@@ -44,7 +46,20 @@ function authError(error: unknown, fallback = "Authentication failed") {
 }
 
 export const authRouter = router({
-  me: publicProcedure.query(({ ctx }) => ctx.user ? { ...ctx.user, authMode: ctx.authMode ?? null } : null),
+  me: publicProcedure.query(({ ctx }) => {
+    ctx.res.setHeader("Cache-Control", "no-store");
+    return ctx.user ? { ...ctx.user, authMode: ctx.authMode ?? null } : null;
+  }),
+  signIn: memberPublic.input(credentials).mutation(({ ctx, input }) => safely(async () => {
+    await reservePasswordSignIn(ctx.req, input.email);
+    const result = await signInWithPassword({ ...input, req: ctx.req });
+    if (result.kind === "staff") {
+      setStaffCookie(ctx, result.token, !result.mfaRequired);
+      return { kind: "staff" as const, mfaRequired: result.mfaRequired };
+    }
+    setMemberCookie(ctx.res, result.token);
+    return { kind: "member" as const, member: result.member };
+  })),
   bootstrapStatus: publicProcedure.query(() => getBootstrapStatus()),
   bootstrapOwner: publicProcedure.input(registration.extend({ token: z.string().min(20).max(300) })).mutation(async ({ ctx, input }) => {
     try {
@@ -71,14 +86,20 @@ export const authRouter = router({
     } catch (error) { throw authError(error); }
   }),
   login: publicProcedure.input(credentials).mutation(async ({ ctx, input }) => {
+    assertStaffOrigin(ctx.req);
+    ctx.res.setHeader("Cache-Control", "no-store");
+    await safely(() => reservePasswordSignIn(ctx.req, input.email));
     try {
-      const result = await loginWithPassword({ ...input, req: ctx.req });
+      const result = await withMemberPasswordWork(() => loginWithPassword({ ...input, req: ctx.req }));
       setStaffCookie(ctx, result.token, !result.mfaRequired);
       return { success: true, mfaRequired: result.mfaRequired };
     } catch (error) { throw authError(error); }
   }),
   verifyMfa: publicProcedure.input(z.object({ code: z.string().min(6).max(32) })).mutation(async ({ ctx, input }) => {
+    assertStaffOrigin(ctx.req);
+    ctx.res.setHeader("Cache-Control", "no-store");
     if (!ctx.staffSessionToken) throw authError(new Error("MFA session is missing or expired"));
+    await safely(() => reserveStaffVerification(ctx.req, ctx.staffSessionToken!));
     try {
       await verifyMfaSession({ token: ctx.staffSessionToken, code: input.code, req: ctx.req });
       setStaffCookie(ctx, ctx.staffSessionToken, true);
@@ -108,6 +129,24 @@ export const authRouter = router({
     confirmMfa: protectedProcedure.input(z.object({ code: z.string().min(6).max(12) })).mutation(async ({ ctx, input }) => {
       try { return await confirmMfaSetup({ userId: ctx.user!.id, code: input.code, currentSessionToken: ctx.staffSessionToken }); }
       catch (error) { throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error ? error.message : "MFA setup failed" }); }
+    }),
+    disableMfa: protectedProcedure.input(z.object({
+      currentPassword: z.string().min(1).max(128),
+      code: z.string().trim().min(6).max(32),
+      confirm: z.literal(true),
+    }).strict()).mutation(async ({ ctx, input }) => {
+      assertStaffOrigin(ctx.req);
+      ctx.res.setHeader("Cache-Control", "no-store");
+      if (ctx.authMode !== "staff" || !ctx.staffSessionToken)
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "auth_mfa_session_required" });
+      await safely(() => reserveStaffVerification(ctx.req, `disable:${ctx.user!.id}`));
+      try {
+        return await withMemberPasswordWork(() => disableMfa({
+          ...input, userId: ctx.user!.id, currentSessionToken: ctx.staffSessionToken!, req: ctx.req,
+        }));
+      } catch (error) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: error instanceof Error && error.message.startsWith("auth_mfa_") ? error.message : "auth_mfa_unavailable" });
+      }
     }),
     revokeOtherSessions: protectedProcedure.mutation(({ ctx }) => revokeOtherSessions({ userId: ctx.user!.id, currentSessionToken: ctx.staffSessionToken })),
   }),

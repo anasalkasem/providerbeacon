@@ -1,7 +1,7 @@
 # Visitor accounts and Google sign-in
 
 Public pages: `/sign-in`, `/sign-up`, `/account`, `/recover-account`, `/privacy`.
-The existing `/login` and `/admin` pages continue to use independent staff authentication.
+The public `/sign-in` password form accepts member credentials and existing staff credentials. Staff sign-in continues to use its own session, roles, lockout and MFA; it never merges accounts by email. `/login` remains the dedicated staff entry, including when both account types have the same password. The public header recognizes active staff sessions and links to `/admin`.
 Browsing, comparison and Beacon Assistant remain available without registration.
 
 ## Railway activation
@@ -30,6 +30,9 @@ In Google Cloud / Google Auth Platform:
 Official references: [Google OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect), [OAuth web server flow](https://developers.google.com/identity/protocols/oauth2/web-server), [button branding](https://developers.google.com/identity/branding-guidelines).
 
 ## Identity and recovery behavior
+
+- The shared password entry tries member authentication first; valid member credentials never affect staff lockout counters. Only an invalid member credential result falls through to staff password verification. Infrastructure errors fail closed. Both entry points share request budgets, and pending staff MFA continues at `/login?mfa=1` without resending the password.
+- Staff can turn off their authenticator in `/admin/security` using an active, MFA-verified staff session, their current password, and a valid authenticator or recovery code. Confirmation clears the factor secrets and recovery codes, revokes other staff sessions, and writes an audit entry in one transaction. Passwords and member/Google accounts are unaffected. The authenticator can be enabled again with a fresh setup.
 
 - Visitors use `member_accounts` and a separate `__Host-pb_member_session` HttpOnly, Secure, SameSite=Lax cookie. A visitor identity is never assigned to the staff `ctx.user`. Matching a staff email grants no administrative permissions.
 - Passwords accept 15–128 characters, including Unicode passphrases, and are salted with scrypt. A missing account still incurs a password verification cost. Password work is capped at two concurrent jobs per process; shared MySQL limits apply by client, email hash and global action budget.
