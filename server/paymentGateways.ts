@@ -3,7 +3,10 @@ import { TRPCError } from "@trpc/server";
 import type { IncomingHttpHeaders } from "node:http";
 import { z } from "zod";
 import type { ProviderPayment } from "../drizzle/paymentSchema";
-import type { PaymentGateway } from "../shared/providerPayments";
+import {
+  nowpaymentsCheckoutAsset,
+  type PaymentGateway,
+} from "../shared/providerPayments";
 import { memberAuthOrigin } from "./memberSecurity";
 
 export const gatewaySecrets = z.discriminatedUnion("gateway", [
@@ -189,6 +192,7 @@ export async function createGatewayCheckout(
   const invoice = await nowRequest(config, "/invoice", {
     price_amount: payment.amountCents / 100,
     price_currency: "usd",
+    pay_currency: nowpaymentsCheckoutAsset.code,
     order_id: payment.id,
     order_description: description,
     ipn_callback_url: `${origin}/api/payments/nowpayments/webhook`,

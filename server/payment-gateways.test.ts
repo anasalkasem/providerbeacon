@@ -306,6 +306,53 @@ describe("payment verification and monthly checkout", () => {
       `https://providerbeacon.com/account/provider?payment=${id}&provider=1`
     );
   });
+  it.each([1900, 2900])(
+    "starts a %i-cent hosted invoice in USDT BEP20 with the USD quote and verified return paths",
+    async amountCents => {
+      vi.stubEnv("PUBLIC_APP_URL", "https://providerbeacon.com");
+      const fetcher = vi.fn(async (_url: string, _init: RequestInit) =>
+        json({
+          id: 123456,
+          invoice_url: "https://nowpayments.io/payment/?iid=123456",
+        })
+      );
+      vi.stubGlobal("fetch", fetcher);
+      const result = await createGatewayCheckout(
+        { ...crypto, amountCents },
+        {
+          id: "crypto-config",
+          environment: "live",
+          secrets: {
+            gateway: "nowpayments",
+            apiKey: "test-api-key-value",
+            ipnSecret: "test-ipn-secret-value",
+          },
+        }
+      );
+      expect(result).toEqual({
+        gatewayOrderId: "123456",
+        checkoutUrl: "https://nowpayments.io/payment/?iid=123456",
+      });
+      expect(fetcher).toHaveBeenCalledTimes(1);
+      const [url, request] = fetcher.mock.calls[0];
+      expect(url).toBe("https://api.nowpayments.io/v1/invoice");
+      expect(request.method).toBe("POST");
+      expect(JSON.parse(request.body as string)).toEqual({
+        price_amount: amountCents / 100,
+        price_currency: "usd",
+        pay_currency: "usdtbsc",
+        order_id: id,
+        order_description:
+          "ProviderBeacon provider package — one calendar month",
+        ipn_callback_url:
+          "https://providerbeacon.com/api/payments/nowpayments/webhook",
+        success_url: `https://providerbeacon.com/account/provider?payment=${id}&provider=1`,
+        cancel_url: `https://providerbeacon.com/account/provider?payment=${id}&provider=1&cancelled=1`,
+        is_fixed_rate: true,
+        is_fee_paid_by_user: false,
+      });
+    }
+  );
   it("rejects unsafe redirects, wrong environments and misleading gateway errors", async () => {
     for (const url of [
       "http://www.paypal.com",

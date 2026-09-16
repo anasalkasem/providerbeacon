@@ -100,7 +100,7 @@ it("shows the next period price and submits only the gateway and provider", asyn
     b.textContent?.includes("PayPal")
   )!;
   const crypto = [...container.querySelectorAll("button")].find(b =>
-    b.textContent?.includes("عملات رقمية")
+    b.textContent?.includes("USDT (BEP20)")
   )!;
   expect(paypal.disabled).toBe(false);
   expect(crypto.disabled).toBe(true);

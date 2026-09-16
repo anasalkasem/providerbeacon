@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { CreditCard, Coins } from "lucide-react";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../server/routers";
+import { nowpaymentsCheckoutAsset } from "../../../shared/providerPayments";
 import { useLocale } from "@/contexts/LocaleContext";
 import { trpc } from "@/lib/trpc";
 import { paymentText, paymentError } from "@/i18n/providerPayments";
@@ -46,7 +47,9 @@ export function PaymentMethods() {
               <Coins className="size-4" />
             )}
             <bdi>
-              {gateway === "paypal" ? "PayPal" : `${t.crypto} · NOWPayments`}
+              {gateway === "paypal"
+                ? "PayPal"
+                : `${nowpaymentsCheckoutAsset.label} · NOWPayments`}
             </bdi>
             {!query.data?.find(m => m.gateway === gateway)?.available && (
               <span className="text-xs text-slate-500">{t.unavailable}</span>
@@ -266,7 +269,10 @@ export function ProviderCheckout({
             ) : (
               <Coins className="size-4" />
             )}
-            {t.use} {method.gateway === "paypal" ? "PayPal" : t.crypto}
+            {t.use}{" "}
+            {method.gateway === "paypal"
+              ? "PayPal"
+              : nowpaymentsCheckoutAsset.label}
             {!method.available && (
               <span className="text-xs">({t.unavailable})</span>
             )}
