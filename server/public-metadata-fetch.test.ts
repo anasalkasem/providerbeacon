@@ -39,6 +39,31 @@ beforeEach(() => {
   });
 });
 describe("bounded DNS-pinned public metadata transport", () => {
+  it("requests JSON without authentication and refuses HTML from a public invite API", async () => {
+    const url =
+      "https://discord.com/api/v10/invites/Beacon_Test?with_counts=true";
+    state.replies = [
+      {
+        headers: { "content-type": "application/json; charset=utf-8" },
+        body: '{"type":0}',
+      },
+    ];
+    expect(
+      (
+        await fetchPublicMetadata(url, { json: true, maxBytes: 1000 })
+      ).body.toString()
+    ).toBe('{"type":0}');
+    expect(state.calls[0]).toMatchObject({
+      servername: "discord.com",
+      path: "/api/v10/invites/Beacon_Test?with_counts=true",
+      headers: { Accept: "application/json" },
+    });
+    expect(state.calls[0].headers).not.toHaveProperty("Authorization");
+    expect(state.calls[0].headers).not.toHaveProperty("Cookie");
+    await expect(
+      fetchPublicMetadata(url, { json: true, maxBytes: 1000 })
+    ).rejects.toThrow("metadata_response");
+  });
   it("pins the checked IP while validating TLS for the original hostname, with no credentials", async () => {
     const result = await fetchPublicMetadata("https://provider.com/home", {
       html: true,

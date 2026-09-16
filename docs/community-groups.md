@@ -26,10 +26,12 @@ Submission, editing, withdrawal and reporting use shared database rate limits, r
 ## Supported links
 
 - Telegram: HTTPS `t.me` or `telegram.me` username links, `+` invites and legacy `joinchat` invites. Personal phone links, bot suffixes, action links, message links, queries and fragments are excluded by the initial format policy. A human check still determines whether the target is a group. See [Telegram link formats](https://core.telegram.org/api/links).
-- WhatsApp: HTTPS `chat.whatsapp.com` group invitations. Personal `wa.me` links are excluded. See [WhatsApp group invitations](https://faq.whatsapp.com/3242937609289432/).
+- WhatsApp: HTTPS `chat.whatsapp.com` group invitations, including the optional share parameter such as `?mode=ac_t`, which is stripped from the canonical URL. Other query actions and personal `wa.me` links are excluded. See [WhatsApp group invitations](https://faq.whatsapp.com/3242937609289432/).
 - Discord: HTTPS `discord.gg` and `discord.com/invite` invitations. See [Discord server invitations](https://support.discord.com/hc/en-us/articles/204155938-How-do-I-invite-friends-to-my-server).
 
 The UI supports Arabic, English, Spanish, Hindi and Chinese. Group language is independent of the interface language. Beacon AI knows the navigation and submission workflow but cannot retrieve, invent, join or moderate groups.
+
+Group forms can retrieve public details for all three platforms through the [automatic details importer](automatic-public-details.md). An unavailable or private invitation remains eligible for manual entry and staff review; automatic metadata does not establish ownership or publication eligibility.
 
 ## Deployment and verification
 

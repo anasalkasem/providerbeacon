@@ -1,5 +1,8 @@
-import { telegramPreviewInput } from "../../shared/linkMetadata";
-import { metadataBudget, previewLink } from "../linkMetadata";
+import {
+  telegramPreviewInput,
+  groupPreviewInput,
+} from "../../shared/linkMetadata";
+import { metadataBudget, previewLink, previewGroupLink } from "../linkMetadata";
 import { z } from "zod";
 import { permissionProcedure, router } from "../_core/trpc";
 import { assertStaffOrigin } from "../staffOrigin";
@@ -26,9 +29,18 @@ const guard = (permission: "groups.read" | "groups.review") =>
     return next();
   });
 export const communityAdminRouter = router({
-  previewTelegram: guard("groups.review").input(telegramPreviewInput).mutation(async ({ ctx, input }) => {
-    await metadataBudget(`staff:${ctx.user!.id}`); return previewLink("telegram", input.url);
-  }),
+  previewGroup: guard("groups.review")
+    .input(groupPreviewInput)
+    .mutation(async ({ ctx, input }) => {
+      await metadataBudget(`staff:${ctx.user!.id}`);
+      return previewGroupLink(input.url);
+    }),
+  previewTelegram: guard("groups.review")
+    .input(telegramPreviewInput)
+    .mutation(async ({ ctx, input }) => {
+      await metadataBudget(`staff:${ctx.user!.id}`);
+      return previewLink("telegram", input.url);
+    }),
   list: guard("groups.read")
     .input(
       z.object({

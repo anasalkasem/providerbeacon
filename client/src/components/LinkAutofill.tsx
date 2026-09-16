@@ -57,7 +57,7 @@ export default function LinkAutofill({
   onPending,
   onUseImage,
 }: {
-  kind: LinkMetadata["kind"];
+  kind: "website" | "group" | "telegram";
   url: string;
   admin?: boolean;
   automatic?: boolean;
@@ -68,15 +68,17 @@ export default function LinkAutofill({
   const { locale } = useLocale();
   const t = linkMetadataCopy[locale];
   const website = trpc.admin.providers.previewWebsite.useMutation();
-  const staffGroup = trpc.admin.groups.previewTelegram.useMutation();
-  const memberGroup = trpc.community.previewTelegram.useMutation();
-  const telegram = groupLink(url);
+  const staffGroup = trpc.admin.groups.previewGroup.useMutation();
+  const memberGroup = trpc.community.previewGroup.useMutation();
+  const group = groupLink(url);
   const source =
     kind === "website"
       ? websiteHome(url)
-      : telegram?.platform === "telegram"
-        ? telegram.url
+      : group && (kind === "group" || group.platform === "telegram")
+        ? group.url
         : null;
+  const title =
+    kind === "website" ? t.website : group ? t[group.platform] : t.group;
   const [manual, setManual] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<{
@@ -140,13 +142,13 @@ export default function LinkAutofill({
   );
   return (
     <section
-      aria-label={t[kind]}
+      aria-label={title}
       className="col-span-full min-w-0 rounded-xl border border-beacon-100 bg-beacon-50/60 p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <span className="flex items-center gap-2 text-sm font-bold text-beacon-900">
           <WandSparkles className="size-4" />
-          {t[kind]}
+          {title}
         </span>
         <button
           type="button"
@@ -177,10 +179,14 @@ export default function LinkAutofill({
           : visible?.error
             ? visible.error === "metadata_busy"
               ? t.busy
-              : t.unavailable
+              : kind === "website"
+                ? t.unavailable
+                : t.groupUnavailable
             : data
               ? data.issue === "protected"
-                ? t.protected
+                ? kind === "website"
+                  ? t.protected
+                  : t.groupProtected
                 : data.issue === "source_busy"
                   ? t.sourceBusy
                   : data.issue === "timeout"
@@ -189,8 +195,14 @@ export default function LinkAutofill({
                       ? data.complete
                         ? t.ready
                         : t.partial
-                      : t.unavailable
-              : t.hint}
+                      : kind === "website"
+                        ? t.unavailable
+                        : t.groupUnavailable
+              : kind !== "website" && url.trim() && !source
+                ? t.invalidGroup
+                : kind === "website"
+                  ? t.hint
+                  : t.groupHint}
       </p>
       {data && (
         <div className="mt-3 min-w-0">

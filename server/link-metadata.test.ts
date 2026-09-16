@@ -3,18 +3,109 @@ import {
   fillSuggested,
   websiteHome,
   telegramPreviewInput,
+  groupPreviewInput,
 } from "../shared/linkMetadata";
 import { groupInput } from "../shared/community";
 import { metadataUrl, publicAddress } from "./publicMetadataFetch";
 import {
   parseAudience,
   parseTelegram,
+  parseWhatsApp,
+  parseDiscordInvite,
   parseWebsite,
   safeImage,
   sanitizeSvg,
 } from "./linkMetadataParse";
 
 describe("source metadata extraction", () => {
+  it("reads WhatsApp's public invitation facts without inventing a member count or copying generic instructions", () => {
+    const source = "https://chat.whatsapp.com/AbCdEf1234567890123456";
+    expect(
+      parseWhatsApp(
+        '<meta property="og:title" content="Provider &amp; Friends"><meta property="og:description" content="A public description of our provider community"><meta property="og:image" content="https://pps.whatsapp.net/avatar.jpg?token=public">',
+        source
+      )
+    ).toEqual({
+      name: "Provider & Friends",
+      description: "A public description of our provider community",
+      avatar: "https://pps.whatsapp.net/avatar.jpg?token=public",
+      audience: null,
+    });
+    expect(
+      parseWhatsApp(
+        '<meta property="og:title" content="Provider group"><meta property="og:description" content="Follow this link to join my WhatsApp group">',
+        source
+      )
+    ).toMatchObject({
+      name: "Provider group",
+      description: null,
+      audience: null,
+    });
+    for (const html of [
+      "",
+      "<title>Invalid invitation</title>",
+      '<meta property="og:title" content="WhatsApp Group Invite"><meta property="og:description" content="Follow this link to join"><meta property="og:image" content="/generic.png">',
+    ])
+      expect(parseWhatsApp(html, source)).toEqual({
+        name: null,
+        description: null,
+        avatar: null,
+        audience: null,
+      });
+    expect(() =>
+      parseWhatsApp("<title>Just a moment…</title>", source)
+    ).toThrow("metadata_protected");
+  });
+  it("uses Discord's matching guild invitation and marks its member count as approximate", () => {
+    const invite = {
+      type: 0,
+      code: "Beacon_Test",
+      guild: {
+        id: "123456789012345678",
+        name: "Provider community",
+        description: "Discuss provider services here",
+        icon: "a_" + "b".repeat(32),
+      },
+      approximate_member_count: 1200,
+      approximate_presence_count: 30,
+    };
+    expect(parseDiscordInvite(invite, "Beacon_Test")).toEqual({
+      name: "Provider community",
+      description: "Discuss provider services here",
+      avatar:
+        "https://cdn.discordapp.com/icons/123456789012345678/a_" +
+        "b".repeat(32) +
+        ".png?size=256",
+      audience: { count: 1200, kind: "members", approximate: true },
+    });
+    for (const invalid of [
+      null,
+      { message: "Unknown Invite", code: 10006 },
+      { ...invite, type: 1 },
+      { ...invite, type: 2 },
+      { ...invite, code: "another" },
+    ])
+      expect(parseDiscordInvite(invalid, "Beacon_Test")).toEqual({
+        name: null,
+        description: null,
+        avatar: null,
+        audience: null,
+      });
+    expect(
+      parseDiscordInvite(
+        {
+          ...invite,
+          approximate_member_count: "9000",
+          guild: { ...invite.guild, icon: "https://evil.com/pixel" },
+        },
+        "Beacon_Test"
+      )
+    ).toMatchObject({
+      name: "Provider community",
+      avatar: null,
+      audience: null,
+    });
+  });
   it("uses explicit logo sources and never mislabels a social banner as a screenshot", () => {
     const page = parseWebsite(
       `<html><head><title>Provider Home</title>
@@ -157,6 +248,26 @@ describe("source metadata extraction", () => {
 });
 
 describe("metadata boundaries", () => {
+  it("accepts all supported invitation platforms on the group preview endpoint, excluding personal chats and extra fields", () => {
+    for (const url of [
+      "https://t.me/provider_group",
+      "https://chat.whatsapp.com/AbCdEf1234567890123456?mode=ac_t",
+      "https://discord.com/invite/Beacon_Test",
+    ])
+      expect(groupPreviewInput.safeParse({ url }).success, url).toBe(true);
+    for (const url of [
+      "https://wa.me/1234567890",
+      "https://discord.com/users/123",
+      "https://example.com/group",
+    ])
+      expect(groupPreviewInput.safeParse({ url }).success, url).toBe(false);
+    expect(
+      groupPreviewInput.safeParse({
+        url: "https://discord.gg/Beacon_Test",
+        token: "secret",
+      }).success
+    ).toBe(false);
+  });
   it("accepts only public HTTPS source URLs and globally routable DNS answers", () => {
     for (const ip of [
       "127.0.0.1",

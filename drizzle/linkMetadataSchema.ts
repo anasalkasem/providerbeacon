@@ -14,7 +14,12 @@ export const linkMetadataCache = mysqlTable(
   "link_metadata_cache",
   {
     key: varchar("cache_key", { length: 64 }).primaryKey(),
-    kind: mysqlEnum("kind", ["website", "telegram"]).notNull(),
+    kind: mysqlEnum("kind", [
+      "website",
+      "telegram",
+      "whatsapp",
+      "discord",
+    ]).notNull(),
     payload: json("payload").$type<LinkMetadata>().notNull(),
     expiresAt: timestamp("expires_at").notNull(),
   },

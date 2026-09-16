@@ -35,7 +35,7 @@ import {
   importedMedia,
   linkMetadataCache,
 } from "../drizzle/linkMetadataSchema";
-import { previewLink } from "./linkMetadata";
+import { previewLink, previewGroupLink } from "./linkMetadata";
 
 const png = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6YwAAAABJRU5ErkJggg==",
@@ -64,6 +64,124 @@ beforeEach(() => {
   );
 });
 describe("automatic import orchestration", () => {
+  it("imports WhatsApp public invitation metadata and preserves signed images only in server storage", async () => {
+    const source = "https://chat.whatsapp.com/AbCdEf1234567890123456";
+    state.fetch.mockImplementation(
+      async (url: string, options: { html?: boolean }) => ({
+        url,
+        body: options.html
+          ? Buffer.from(
+              '<meta property="og:title" content="Provider community"><meta property="og:description" content="Discuss comparing service providers here"><meta property="og:image" content="https://pps.whatsapp.net/photo.jpg?token=public">'
+            )
+          : png,
+        contentType: options.html ? "text/html" : "image/png",
+      })
+    );
+    const result = await previewGroupLink(source + "?mode=ac_t");
+    expect(result).toMatchObject({
+      kind: "whatsapp",
+      sourceUrl: source,
+      name: "Provider community",
+      audience: null,
+      complete: true,
+    });
+    expect(state.fetch.mock.calls[0][0]).toBe(source);
+    expect(result.avatarUrl).toContain("/api/imported-media/");
+    expect(result.avatarUrl).not.toContain("token=");
+    expect(
+      state.fetch.mock.calls.some(([url]) => String(url).includes("thum.io"))
+    ).toBe(false);
+    state.cached = [{ payload: result }];
+    state.fetch.mockClear();
+    expect(await previewGroupLink(source)).toEqual(result);
+    expect(state.fetch).not.toHaveBeenCalled();
+  });
+  it("imports Discord from the public invite API and retains approximate guild counts", async () => {
+    state.fetch.mockImplementation(
+      async (url: string, options: { json?: boolean }) => ({
+        url,
+        body: options.json
+          ? Buffer.from(
+              JSON.stringify({
+                type: 0,
+                code: "Beacon_Test",
+                guild: {
+                  id: "123456789012345678",
+                  name: "Provider community",
+                  description: "Discuss provider services in this community",
+                  icon: "b".repeat(32),
+                },
+                approximate_member_count: 1200,
+              })
+            )
+          : png,
+        contentType: options.json ? "application/json" : "image/png",
+      })
+    );
+    const result = await previewGroupLink(
+      "https://discord.com/invite/Beacon_Test"
+    );
+    expect(result).toMatchObject({
+      kind: "discord",
+      sourceUrl: "https://discord.gg/Beacon_Test",
+      name: "Provider community",
+      audience: { count: 1200, kind: "members", approximate: true },
+    });
+    expect(state.fetch.mock.calls[0]).toEqual([
+      "https://discord.com/api/v10/invites/Beacon_Test?with_counts=true",
+      { json: true, maxBytes: 131072, timeoutMs: 10000 },
+    ]);
+    expect(result.avatarUrl).toContain("/api/imported-media/");
+    expect(state.fetch).toHaveBeenCalledTimes(2);
+    state.cached = [{ payload: result }];
+    state.fetch.mockClear();
+    expect(await previewGroupLink("https://discord.gg/Beacon_Test")).toEqual(
+      result
+    );
+    expect(state.fetch).not.toHaveBeenCalled();
+  });
+  it("leaves protected, expired and redirected invitations editable without importing another destination's facts", async () => {
+    const source = "https://chat.whatsapp.com/AbCdEf1234567890123456";
+    for (const [error, issue] of [
+      ["metadata_protected", "protected"],
+      ["metadata_source_busy", "source_busy"],
+      ["metadata_timeout", "timeout"],
+      ["metadata_response", "unavailable"],
+    ]) {
+      state.fetch.mockRejectedValue(new Error(error));
+      expect(await previewGroupLink(source)).toMatchObject({
+        kind: "whatsapp",
+        issue,
+        complete: false,
+        name: null,
+        audience: null,
+      });
+    }
+    state.fetch.mockResolvedValue({
+      url: "https://t.me/another_group",
+      contentType: "text/html",
+      body: Buffer.from(telegram),
+    });
+    expect(await previewGroupLink(source)).toMatchObject({
+      issue: "unavailable",
+      name: null,
+      audience: null,
+    });
+    state.fetch.mockResolvedValue({
+      url: "https://discord.com/api/v10/invites/another?with_counts=true",
+      contentType: "application/json",
+      body: Buffer.from("{}"),
+    });
+    expect(
+      await previewGroupLink("https://discord.gg/Beacon_Test")
+    ).toMatchObject({ issue: "unavailable", name: null, audience: null });
+    state.fetch.mockClear();
+    await expect(previewLink("telegram", source)).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+    });
+    expect(state.fetch).not.toHaveBeenCalled();
+    expect(state.model).not.toHaveBeenCalled();
+  });
   it("captures the real homepage and serves durable content-addressed media instead of provider query URLs", async () => {
     const result = await previewLink(
       "website",

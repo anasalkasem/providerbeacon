@@ -101,7 +101,7 @@ export function linkMetadataAcceptanceCases(
       sourceUrl = "https://provider.com/"
     ) {
       const data: LinkMetadata = {
-        parserVersion: 2,
+        parserVersion: 3,
         key: metadataKey(kind, sourceUrl),
         kind,
         sourceUrl,
@@ -111,10 +111,10 @@ export function linkMetadataAcceptanceCases(
         logoUrl: kind === "website" ? image() : null,
         websitePreviewUrl: kind === "website" ? image("b".repeat(64)) : null,
         telegramUrl: null,
-        avatarUrl: kind === "telegram" ? image() : null,
+        avatarUrl: kind !== "website" ? image() : null,
         audience:
-          kind === "telegram"
-            ? { count: 1234, kind: "members", approximate: false }
+          kind === "telegram" || kind === "discord"
+            ? { count: 1234, kind: "members", approximate: kind === "discord" }
             : null,
         language: "en",
         topic: "providers",
@@ -249,6 +249,70 @@ export function linkMetadataAcceptanceCases(
         .where(eq(communityGroups.id, created.id));
       expect(row.linkMetadata).toBeNull();
     });
+    it.each([
+      {
+        kind: "whatsapp" as const,
+        url: "https://chat.whatsapp.com/AbCdEf1234567890123456",
+        shared: "https://chat.whatsapp.com/AbCdEf1234567890123456?mode=ac_t",
+      },
+      {
+        kind: "discord" as const,
+        url: "https://discord.gg/Beacon_Test",
+        shared: "https://discord.com/invite/Beacon_Test",
+      },
+    ])(
+      "saves and reviews $kind metadata with canonical source binding",
+      async scenario => {
+        const data = await seed(scenario.kind, scenario.url);
+        expect(
+          await (
+            await caller()
+          ).admin.groups.previewGroup({ url: scenario.shared })
+        ).toEqual(data);
+        const created = await createGroup(
+          { actorId: actorId() },
+          input({ url: scenario.shared, metadataKey: data.key })
+        );
+        const [row] = await database()
+          .select()
+          .from(communityGroups)
+          .where(eq(communityGroups.id, created.id));
+        expect(row).toMatchObject({
+          platform: scenario.kind,
+          url: scenario.url,
+          status: "pending",
+          linkMetadata: {
+            avatarUrl: data.avatarUrl,
+            audience: data.audience,
+            fetchedAt: data.fetchedAt,
+          },
+        });
+        expect(
+          (await publicGroups(groupListInput.parse({}))).items
+        ).toHaveLength(0);
+        await expect(
+          createGroup(
+            { actorId: actorId() },
+            input({ url: "https://t.me/another_group", metadataKey: data.key })
+          )
+        ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+        await reviewGroup(actorId(), {
+          id: created.id,
+          revision: 1,
+          decision: "approved",
+          note: "Reviewed the actual group invitation",
+          groupConfirmed: true,
+          providerConfirmed: false,
+        });
+        const group = (await publicGroups(groupListInput.parse({}))).items[0];
+        expect(group).toMatchObject({
+          url: scenario.url,
+          platform: scenario.kind,
+          linkMetadata: { avatarUrl: data.avatarUrl, audience: data.audience },
+        });
+        expect(group).not.toHaveProperty("metadataKey");
+      }
+    );
     it("requires write permission and trusted origins for previews, including the www staff origin", async () => {
       const website = await seed();
       const telegram = await seed("telegram", "https://t.me/provider_group");
@@ -268,7 +332,7 @@ export function linkMetadataAcceptanceCases(
         })
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
       await expect(
-        (await caller("https://evil.com")).admin.groups.previewTelegram({
+        (await caller("https://evil.com")).admin.groups.previewGroup({
           url: telegram.sourceUrl,
         })
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -282,7 +346,7 @@ export function linkMetadataAcceptanceCases(
         })
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
       await expect(
-        (await caller()).admin.groups.previewTelegram({
+        (await caller()).admin.groups.previewGroup({
           url: telegram.sourceUrl,
         })
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -292,7 +356,7 @@ export function linkMetadataAcceptanceCases(
         res: { setHeader: vi.fn() },
       } as any);
       await expect(
-        anonymous.community.previewTelegram({ url: telegram.sourceUrl })
+        anonymous.community.previewGroup({ url: telegram.sourceUrl })
       ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
     });
     it("enforces shared request budgets across calls", async () => {

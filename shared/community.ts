@@ -34,13 +34,16 @@ export function groupLink(
   if (value.length > 500 || /[\s\\%]/.test(value)) return null;
   try {
     const u = new URL(value);
+    if (u.protocol !== "https:" || u.username || u.password || u.port || u.hash)
+      return null;
+    // WhatsApp's share sheet appends mode=ac_t (and related share modes).
+    // It is not part of the invite identity. Reject all other query actions.
     if (
-      u.protocol !== "https:" ||
-      u.username ||
-      u.password ||
-      u.port ||
-      u.search ||
-      u.hash
+      u.search &&
+      !(
+        u.hostname === "chat.whatsapp.com" &&
+        /^\?mode=[A-Za-z0-9_-]{1,32}$/.test(u.search)
+      )
     )
       return null;
     const path = u.pathname.replace(/\/$/, "");
@@ -124,7 +127,10 @@ export function providerGroupEvidence(
 
 export const groupInput = z
   .object({
-    metadataKey: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+    metadataKey: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
     name: z.string().trim().min(3).max(100),
     description: z.string().trim().min(20).max(600),
     url: z

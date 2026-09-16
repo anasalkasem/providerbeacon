@@ -225,6 +225,13 @@
       "when": 1789574400000,
       "tag": "0031_complimentary_vip",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "5",
+      "when": 1789581600000,
+      "tag": "0032_group_link_metadata",
+      "breakpoints": true
     }
   ]
 }
