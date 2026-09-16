@@ -252,7 +252,7 @@ export function providerVipAcceptanceCases(
       }
       await database()
         .update(providerRecords)
-        .set({ status: "paused" })
+        .set({ status: "suspended" })
         .where(eq(providerRecords.id, providerId()));
       expect((await list()).items).toEqual([]);
       await database()

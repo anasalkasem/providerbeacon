@@ -7,6 +7,19 @@ import {
   directoryProfiles,
 } from "../client/src/data/discovery";
 const state = vi.hoisted(() => ({ locale: "en", slug: "fiverr" }));
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    business: {
+      vip: {
+        list: {
+          useQuery: () => ({
+            data: { items: [], total: 0, page: 1, pages: 1, rotation: 0 },
+          }),
+        },
+      },
+    },
+  },
+}));
 vi.mock("@/contexts/LocaleContext", () => ({
   useLocale: () => ({ locale: state.locale }),
 }));
