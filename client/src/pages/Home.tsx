@@ -11,11 +11,10 @@ import {
 import { PublicLayout } from "@/components/SiteChrome";
 import { GuideGrid } from "@/components/Discovery";
 import { useLocale } from "@/contexts/LocaleContext";
-import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
 import { discoveryText } from "@/i18n/discovery";
 import { workspaceCopy } from "@/i18n/workspace";
-import { DecisionOffer } from "@/components/DecisionOffer";
 import { VipAlbum } from "@/components/VipAlbum";
+import { vipText } from "@/i18n/providerVip";
 
 export default function Home() {
   const { locale } = useLocale();
@@ -23,7 +22,6 @@ export default function Home() {
   const d = discoveryText(locale);
   const [, navigate] = useLocation();
   const [query, setQuery] = useState("");
-  const { services, providerFor } = useMarketplaceData();
   const steps = [
     { icon: Sparkles, title: t.oneStep, body: t.oneBody },
     { icon: SlidersHorizontal, title: t.twoStep, body: t.twoBody },
@@ -100,7 +98,9 @@ export default function Home() {
           </div>
           <div className="beacon-guide rounded-3xl p-5 lg:p-7">
             <div className="mb-5 hidden lg:block" aria-hidden="true">
-              <div className="beacon-radar"><RadioTower className="size-7 text-brand" /></div>
+              <div className="beacon-radar">
+                <RadioTower className="size-7 text-brand" />
+              </div>
             </div>
             <p
               dir="ltr"
@@ -134,39 +134,16 @@ export default function Home() {
         </div>
       </section>
       <VipAlbum />
-      {services.length > 0 && (
-        <section className="container py-10 sm:py-14">
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <p className="section-kicker">{t.browse}</p>
-              <h2 className="mt-2 text-2xl font-extrabold">
-                {locale === "ar"
-                  ? "ابدأ من خدمة، وافهم تفاصيلها."
-                  : locale === "es"
-                    ? "Empieza por un servicio y conoce sus condiciones."
-                    : locale === "zh"
-                      ? "从一项服务开始，了解其条款。"
-                      : locale === "hi"
-                        ? "एक सेवा से शुरू करें और उसकी शर्तें समझें।"
-                        : "Start with a service. Understand its terms."}
-              </h2>
-            </div>
-            <Link className="font-bold text-beacon-800" href="/services">
-              {t.browse} →
-            </Link>
-          </div>
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {services.slice(0, 3).map(service => (
-              <DecisionOffer
-                key={service.id}
-                service={service}
-                provider={providerFor(service)}
-                quantity={1000}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+      <div className="container flex justify-center pb-4">
+        <Link
+          href="/services"
+          className="inline-flex min-h-12 items-center gap-3 rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-ink hover:border-beacon-600"
+        >
+          <Search className="size-4" />
+          {vipText(locale).browseServices}
+          <ArrowRight className="size-4 rtl:rotate-180" />
+        </Link>
+      </div>
       <section id="methodology" className="container scroll-mt-24 py-12">
         <div className="beacon-surface grid gap-7 rounded-3xl border bg-white p-6 lg:grid-cols-2 sm:p-9">
           <div>

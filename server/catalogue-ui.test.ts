@@ -146,10 +146,9 @@ describe("public catalogue rendering", () => {
     const b = {...a, id:"service-41", sourceRate:"0.12555", priceAmount:0.12555,
     };
     state.data = {...state.data, ...catalogueIndex([provider], [a,b])};
-    const home=render(Home);
-    expect(home).toContain("1.0123456"); expect(home).toContain("API connected");
-    expect(home).toContain("currency unspecified"); expect(home).not.toContain("Outside order limits");
-    expect(home).not.toContain("/directory/fiverr");
+    const offer=render(DecisionOffer, { service: a, provider, quantity: 1000 });
+    expect(offer).toContain("1.0123456"); expect(offer).toContain("API connected");
+    expect(offer).toContain("currency unspecified"); expect(offer).not.toContain("Outside order limits");
     vi.stubGlobal("window",{location:{search:"?services=service-40,service-41"},
     });
     const comparison=render(Compare);
@@ -185,10 +184,13 @@ describe("public catalogue rendering", () => {
     });
     expect(html).toContain("Independent provider"); expect(html).not.toContain("Northstar");
   });
-  it("shows an available unfeatured service on the homepage without a verification badge", () => {
+  it("keeps homepage provider advertising separate from the service catalogue", () => {
     const html = render(Home);
-    expect(html).toContain("Independent provider"); expect(html).not.toContain("No published services yet");
-    expect(html).not.toContain("Tier 1 Direct Source</span>");
+    expect(html).not.toContain("Independent provider");
+    expect(html).not.toContain("Available real offer");
+    expect(html).toContain("Explore services and compare prices");
+    expect(html).toContain('href="/services"');
+    expect(render(ServiceRow, { service: state.data.services[0], selected: false, onToggle: () => {} })).toContain("Independent provider");
   });
   it("does not show identity verification claims for an unverified provider", () => {
     const html = render(Provider);
