@@ -44,7 +44,7 @@ export const groupPreviewInput = z
   .strict();
 export type Audience = {
   count: number;
-  kind: "members" | "subscribers";
+  kind: "members" | "subscribers" | "followers";
   approximate: boolean;
 };
 export type GroupLinkMetadata = {

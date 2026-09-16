@@ -2,12 +2,57 @@ import { describe, expect, it } from "vitest";
 import {
   groupInput,
   groupLink,
+  communityKind,
   groupReviewInput,
   providerGroupEvidence,
 } from "../shared/community";
 import { hasPermission } from "./authorization";
 
 describe("community link and publication boundaries", () => {
+  it("canonicalizes WhatsApp channel aliases without mixing them with group invitations", () => {
+    const code = "0029Va4K0PZ5a245NkngBA2M";
+    const channel = {
+      platform: "whatsapp",
+      url: `https://www.whatsapp.com/channel/${code}`,
+    };
+    for (const url of [
+      channel.url,
+      `${channel.url}/`,
+      `https://whatsapp.com/channel/${code}`,
+      `${channel.url}/?lang=bs_BA`,
+    ]) {
+      expect(groupLink(url)).toEqual(channel);
+      expect(communityKind(url)).toBe("channel");
+    }
+    const invite = `https://chat.whatsapp.com/${code}`;
+    expect(groupLink(invite)).not.toEqual(channel);
+    expect(communityKind(invite, "subscribers")).toBe("group");
+    expect(groupLink(channel.url.toLowerCase())).not.toEqual(channel);
+    for (const url of [
+      `${channel.url}/123`,
+      `${channel.url}?mode=ac_t`,
+      `${channel.url}?lang=en&redirect=evil`,
+      `${channel.url}?lang=`,
+      `${channel.url}#post`,
+      "https://www.whatsapp.com/channel/short",
+      `https://www.whatsapp.com.evil.test/channel/${code}`,
+      `https://user:password@www.whatsapp.com/channel/${code}`,
+      `https://www.whatsapp.com:8443/channel/${code}`,
+      `https://chat.whatsapp.com/channel/${code}`,
+    ])
+      expect(groupLink(url), url).toBeNull();
+  });
+  it("labels Telegram destinations only when audience evidence establishes their type", () => {
+    expect(communityKind("https://t.me/provider_community")).toBeNull();
+    expect(
+      communityKind("https://t.me/provider_community", "subscribers")
+    ).toBe("channel");
+    expect(communityKind("https://t.me/provider_community", "members")).toBe(
+      "group"
+    );
+    expect(communityKind("https://discord.gg/Beacon_Test")).toBe("server");
+    expect(communityKind("https://wa.me/1234567890", "subscribers")).toBeNull();
+  });
   it("canonicalizes supported invitations without changing case-sensitive invite codes", () => {
     expect(groupLink("https://telegram.me/Example_Group/")).toEqual({
       platform: "telegram",

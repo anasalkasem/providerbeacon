@@ -9,6 +9,7 @@ import { communityCopy, communityError } from "@/i18n/community";
 import { useMember } from "@/hooks/useMember";
 import { trpc } from "@/lib/trpc";
 import { PublicLayout } from "@/components/SiteChrome";
+import { CommunityKindBadge } from "@/components/CommunityKindBadge";
 import {
   GroupForm,
   primaryClass,
@@ -154,10 +155,13 @@ function MyGroups({
                   {t.statuses[group.status]}
                 </span>
               </div>
-              <p className="mt-3 text-xs text-slate-500">
-                {t.platforms[group.platform]} · {t.topics[group.topic]} ·{" "}
-                {t.languages[group.language]}
-              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                <CommunityKindBadge url={group.url} data={group.linkMetadata} />
+                <span>
+                  {t.platforms[group.platform]} · {t.topics[group.topic]} ·{" "}
+                  {t.languages[group.language]}
+                </span>
+              </div>
               <a
                 href={group.url}
                 target="_blank"
@@ -231,9 +235,7 @@ function MyGroups({
           />
         ) : (
           <div className="rounded-2xl border border-beacon-100 bg-beacon-50/50 p-7">
-            <h2 className="text-xl font-extrabold text-ink">
-              {t.formTitle}
-            </h2>
+            <h2 className="text-xl font-extrabold text-ink">{t.formTitle}</h2>
             <p className="mt-3 text-sm leading-7 text-slate-600">
               {t.formHint}
             </p>

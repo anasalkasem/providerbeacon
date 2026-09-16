@@ -113,9 +113,15 @@ export function linkMetadataAcceptanceCases(
         telegramUrl: null,
         avatarUrl: kind !== "website" ? image() : null,
         audience:
-          kind === "telegram" || kind === "discord"
-            ? { count: 1234, kind: "members", approximate: kind === "discord" }
-            : null,
+          kind === "whatsapp" && sourceUrl.includes("/channel/")
+            ? { count: 4300000, kind: "followers", approximate: true }
+            : kind === "telegram" || kind === "discord"
+              ? {
+                  count: 1234,
+                  kind: "members",
+                  approximate: kind === "discord",
+                }
+              : null,
         language: "en",
         topic: "providers",
         aiSuggested: false,
@@ -252,6 +258,12 @@ export function linkMetadataAcceptanceCases(
     it.each([
       {
         kind: "whatsapp" as const,
+        url: "https://www.whatsapp.com/channel/0029Va4K0PZ5a245NkngBA2M",
+        shared:
+          "https://whatsapp.com/channel/0029Va4K0PZ5a245NkngBA2M/?lang=es",
+      },
+      {
+        kind: "whatsapp" as const,
         url: "https://chat.whatsapp.com/AbCdEf1234567890123456",
         shared: "https://chat.whatsapp.com/AbCdEf1234567890123456?mode=ac_t",
       },
@@ -296,6 +308,18 @@ export function linkMetadataAcceptanceCases(
             input({ url: "https://t.me/another_group", metadataKey: data.key })
           )
         ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+        if (scenario.url.includes("/channel/")) {
+          // The same code on the group-invite host is a different source.
+          await expect(
+            createGroup(
+              { actorId: actorId() },
+              input({
+                url: "https://chat.whatsapp.com/0029Va4K0PZ5a245NkngBA2M",
+                metadataKey: data.key,
+              })
+            )
+          ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+        }
         await reviewGroup(actorId(), {
           id: created.id,
           revision: 1,

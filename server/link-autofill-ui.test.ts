@@ -39,6 +39,7 @@ vi.mock("@/lib/trpc", () => {
 import { GroupForm } from "../client/src/components/CommunityUi";
 import ProviderDraftFields from "../client/src/components/ProviderDraftFields";
 import LinkAutofill from "../client/src/components/LinkAutofill";
+import { linkMetadataCopy } from "../client/src/i18n/linkMetadata";
 
 let container: HTMLDivElement, root: Root;
 beforeEach(() => {
@@ -98,6 +99,17 @@ describe("automatic form filling", () => {
   it.each([
     {
       kind: "whatsapp" as const,
+      input: "https://whatsapp.com/channel/0029Va4K0PZ5a245NkngBA2M/?lang=es",
+      source: "https://www.whatsapp.com/channel/0029Va4K0PZ5a245NkngBA2M",
+      title: "WhatsApp channel details",
+      audience: {
+        count: 4300000,
+        kind: "followers" as const,
+        approximate: true,
+      },
+    },
+    {
+      kind: "whatsapp" as const,
       input: "https://chat.whatsapp.com/AbCdEf1234567890123456?mode=ac_t",
       source: "https://chat.whatsapp.com/AbCdEf1234567890123456",
       title: "WhatsApp details",
@@ -130,7 +142,7 @@ describe("automatic form filling", () => {
           result(scenario.source, {
             kind: scenario.kind,
             description: "Public community details from the invitation",
-            audience: null,
+            audience: scenario.audience ?? null,
           })
         )
       );
@@ -138,6 +150,11 @@ describe("automatic form filling", () => {
         (container.querySelector('input[minlength="3"]') as HTMLInputElement)
           .value
       ).toBe("Suggested group name");
+      if (scenario.audience) {
+        expect(container.textContent).toContain("≈ 4,300,000 followers");
+        expect(container.textContent).toContain("Channel");
+        expect(container.textContent).not.toContain("4,300,000 members");
+      }
       await act(async () =>
         container
           .querySelector("form")!
@@ -164,9 +181,7 @@ describe("automatic form filling", () => {
     await input('input[type="url"]', "https://wa.me/1234567890");
     await tick();
     expect(state.requests).toHaveLength(0);
-    expect(container.textContent).toContain(
-      "Personal chat links are not group invitations"
-    );
+    expect(container.textContent).toContain(linkMetadataCopy.en.invalidGroup);
     await input(
       'input[type="url"]',
       "https://chat.whatsapp.com/AbCdEf1234567890123456"
@@ -189,7 +204,7 @@ describe("automatic form filling", () => {
     );
     expect(container.textContent).toContain("did not allow automatic access");
     expect(container.textContent).not.toContain(
-      "Personal chat links are not group invitations"
+      linkMetadataCopy.en.invalidGroup
     );
     await input('input[minlength="3"]', "My WhatsApp group");
     await input(

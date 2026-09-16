@@ -18,6 +18,68 @@ import {
 } from "./linkMetadataParse";
 
 describe("source metadata extraction", () => {
+  it("reads WhatsApp channel headings and follower counts without scraping the update feed", () => {
+    const source = "https://www.whatsapp.com/channel/0029Va4K0PZ5a245NkngBA2M";
+    const html = `<meta property="og:url" content="${source}/?lang=en">
+      <meta property="og:title" content="WhatsApp - WhatsApp channel"><meta property="og:image" content="https://pps.whatsapp.net/channel.jpg">
+      <meta property="og:description" content="Follow WhatsApp channel on WhatsApp">
+      <h1>WhatsApp</h1><h5>Feature launches &amp; updates<script>do not copy</script></h5>
+      <h5>Channel • 234M followers</h5><h2>Latest updates</h2><h5>Channel • 999M followers</h5>`;
+    expect(parseWhatsApp(html, source)).toEqual({
+      name: "WhatsApp",
+      description: "Feature launches & updates",
+      avatar: "https://pps.whatsapp.net/channel.jpg",
+      audience: { count: 234000000, kind: "followers", approximate: true },
+    });
+    expect(
+      parseWhatsApp(
+        `<meta property="og:url" content="${source}"><h1>Provider updates</h1><h5></h5><h5>Channel · 1,234 followers</h5>`,
+        source
+      )
+    ).toMatchObject({
+      name: "Provider updates",
+      description: null,
+      audience: { count: 1234, kind: "followers", approximate: false },
+    });
+    expect(
+      parseWhatsApp(
+        `<meta property="og:url" content="${source}"><h1>Provider updates</h1><h5>News for providers</h5><h2>Latest updates</h2><h5>Channel • 9M followers</h5>`,
+        source
+      )
+    ).toMatchObject({
+      name: "Provider updates",
+      description: "News for providers",
+      audience: null,
+    });
+  });
+  it("keeps unavailable channels empty and accepts only identified channel metadata as fallback", () => {
+    const source = "https://www.whatsapp.com/channel/0029Va4K0PZ5a245NkngBA2M";
+    for (const html of [
+      "",
+      "<h1>WhatsApp Channels</h1><h5>Download WhatsApp</h5>",
+      `<meta property="og:url" content="${source}"><h1>This channel is not available</h1>`,
+      "<h1>Something went wrong</h1><h5>Try again later</h5>",
+    ])
+      expect(parseWhatsApp(html, source)).toEqual({
+        name: null,
+        description: null,
+        avatar: null,
+        audience: null,
+      });
+    expect(
+      parseWhatsApp(
+        '<meta property="og:title" content="Provider updates – WhatsApp channel"><meta property="og:description" content="Follow Provider updates WhatsApp channel">',
+        source
+      )
+    ).toMatchObject({
+      name: "Provider updates",
+      description: null,
+      audience: null,
+    });
+    expect(() =>
+      parseWhatsApp("<title>Just a moment…</title>", source)
+    ).toThrow("metadata_protected");
+  });
   it("reads WhatsApp's public invitation facts without inventing a member count or copying generic instructions", () => {
     const source = "https://chat.whatsapp.com/AbCdEf1234567890123456";
     expect(
@@ -138,6 +200,11 @@ describe("source metadata extraction", () => {
     });
   });
   it("distinguishes subscribers and rounded counts from exact member counts", () => {
+    expect(parseAudience("4.3M followers")).toEqual({
+      count: 4300000,
+      kind: "followers",
+      approximate: true,
+    });
     expect(parseAudience("1.2M subscribers")).toEqual({
       count: 1200000,
       kind: "subscribers",
@@ -252,6 +319,7 @@ describe("metadata boundaries", () => {
     for (const url of [
       "https://t.me/provider_group",
       "https://chat.whatsapp.com/AbCdEf1234567890123456?mode=ac_t",
+      "https://whatsapp.com/channel/0029Va4K0PZ5a245NkngBA2M/?lang=en",
       "https://discord.com/invite/Beacon_Test",
     ])
       expect(groupPreviewInput.safeParse({ url }).success, url).toBe(true);

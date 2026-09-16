@@ -2,6 +2,7 @@ import { parse, type DefaultTreeAdapterMap } from "parse5";
 import type { Audience } from "../shared/linkMetadata";
 import { providerTelegramUrl } from "../shared/providerProfile";
 import { metadataUrl } from "./publicMetadataFetch";
+import { communityKind, groupLink } from "../shared/community";
 
 type Node = DefaultTreeAdapterMap["node"];
 type Element = DefaultTreeAdapterMap["element"];
@@ -198,7 +199,7 @@ export function parseWebsite(html: string, url: string) {
 
 export function parseAudience(value: string): Audience | null {
   const match = value.match(
-    /([\d][\d\s\u00a0,.]*[KM]?)\s+(members?|subscribers?)\b/i
+    /([\d][\d\s\u00a0,.]*[KM]?)\s+(members?|subscribers?|followers?)\b/i
   );
   if (!match) return null;
   const token = match[1].replace(/[\s\u00a0,]/g, "");
@@ -215,7 +216,11 @@ export function parseAudience(value: string): Audience | null {
     return null;
   return {
     count,
-    kind: /^member/i.test(match[2]) ? "members" : "subscribers",
+    kind: /^member/i.test(match[2])
+      ? "members"
+      : /^follower/i.test(match[2])
+        ? "followers"
+        : "subscribers",
     approximate: Boolean(suffix),
   };
 }
@@ -266,6 +271,59 @@ export function parseWhatsApp(html: string, url: string) {
     )
   )
     throw new Error("metadata_protected");
+  if (communityKind(url) === "channel") {
+    // Public channel previews expose a heading, description and audience before
+    // their update feed. Never scrape post text, reaction counts or scripts.
+    const h1 = nodes.find(n => n.tagName === "h1");
+    const start = h1 ? nodes.indexOf(h1) + 1 : -1;
+    const header: Element[] = [];
+    if (start >= 0) {
+      for (const node of nodes.slice(start)) {
+        if (["h1", "h2"].includes(node.tagName)) break;
+        if (node.tagName === "h5") header.push(node);
+      }
+    }
+    const audienceLine = header
+      .map(n => textOf(n))
+      .find(value =>
+        /^Channel\s*[•·]\s*[\d][\d\s\u00a0,.]*[KM]?\s+followers?$/i.test(
+          value ?? ""
+        )
+      );
+    const brandedTitle = meta("og:title", 200)?.match(
+      /^(.+?)\s+[-–—]\s+WhatsApp channel$/i
+    )?.[1];
+    const channelName = textOf(h1, 100) ?? clean(brandedTitle, 100);
+    const sameChannel =
+      groupLink(meta("og:url", 2048) ?? "")?.url === groupLink(url)?.url;
+    const generic =
+      /^(?:whatsapp channels?|channels?|page not found|not found|this channel (?:isn't|is not) available|channel unavailable|download whatsapp)$/i;
+    const known = Boolean(
+      channelName &&
+        !generic.test(channelName) &&
+        (audienceLine || brandedTitle || (h1 && sameChannel))
+    );
+    const firstDescription = header[0] ? textOf(header[0], 600) : null;
+    // OG descriptions can contain WhatsApp's generated invitation, not the
+    // channel's own description. Prefer the visible channel header.
+    const description = header.length
+      ? firstDescription
+      : meta("og:description", 600);
+    return {
+      name: known ? channelName : null,
+      description:
+        known &&
+        description &&
+        !/^Channel\s*[•·]/i.test(description) &&
+        !/^(?:follow .+whatsapp channel|join [\d.,KM]+ followers|download whatsapp|view in whatsapp)/i.test(
+          description
+        )
+          ? description
+          : null,
+      avatar: known ? imageUrl(meta("og:image", 2048), url) : null,
+      audience: known && audienceLine ? parseAudience(audienceLine) : null,
+    };
+  }
   const name = meta("og:title", 100);
   const generic =
     /^(?:whatsapp(?: group invite)?|group invite|join (?:a |the )?(?:group|chat)|دعوة (?:إلى )?مجموعة واتساب|دعوة للانضمام إلى مجموعة واتساب|invitación (?:a un grupo|de grupo) de whatsapp)$/i;

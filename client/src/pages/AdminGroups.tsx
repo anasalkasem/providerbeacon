@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { groupStatuses } from "@shared/community";
 import { useLocale } from "@/contexts/LocaleContext";
 import { communityCopy, communityError } from "@/i18n/community";
+import { CommunityKindBadge } from "@/components/CommunityKindBadge";
 import { useAdminText } from "@/i18n/admin";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
@@ -198,6 +199,10 @@ function GroupModeration() {
                   </span>
                 </div>
                 <p className="mt-3 text-xs text-slate-500">
+                  <CommunityKindBadge
+                    url={group.url}
+                    data={group.linkMetadata}
+                  />{" "}
                   {t.platforms[group.platform]} · {t.topics[group.topic]} ·{" "}
                   {t.languages[group.language]}
                 </p>

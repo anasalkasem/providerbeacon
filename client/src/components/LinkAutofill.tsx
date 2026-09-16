@@ -4,7 +4,8 @@ import { trpc } from "@/lib/trpc";
 import { useLocale } from "@/contexts/LocaleContext";
 import { linkMetadataCopy } from "@/i18n/linkMetadata";
 import { ProviderImage } from "./ProviderMedia";
-import { groupLink } from "@shared/community";
+import { groupLink, communityKind } from "@shared/community";
+import { CommunityKindBadge } from "./CommunityKindBadge";
 import {
   websiteHome,
   type GroupLinkMetadata,
@@ -78,7 +79,13 @@ export default function LinkAutofill({
         ? group.url
         : null;
   const title =
-    kind === "website" ? t.website : group ? t[group.platform] : t.group;
+    kind === "website"
+      ? t.website
+      : group?.platform === "whatsapp" && communityKind(group.url) === "channel"
+        ? t.whatsappChannel
+        : group
+          ? t[group.platform]
+          : t.group;
   const [manual, setManual] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState<{
@@ -146,10 +153,13 @@ export default function LinkAutofill({
       className="col-span-full min-w-0 rounded-xl border border-beacon-100 bg-beacon-50/60 p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="flex items-center gap-2 text-sm font-bold text-beacon-900">
-          <WandSparkles className="size-4" />
-          {title}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="flex items-center gap-2 text-sm font-bold text-beacon-900">
+            <WandSparkles className="size-4" />
+            {title}
+          </span>
+          {kind !== "website" && <CommunityKindBadge url={url} data={data} />}
+        </div>
         <button
           type="button"
           disabled={!source || visible?.pending}
