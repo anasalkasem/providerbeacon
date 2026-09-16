@@ -56,7 +56,7 @@ export default function Providers() {
             <button
               key={value}
               aria-pressed={value === market}
-              className={`rounded-xl border px-4 py-3 font-bold ${market === value ? "bg-[#0B2A48] text-white" : "bg-white"}`}
+              className={`rounded-xl border px-4 py-3 font-bold ${market === value ? "bg-ink text-white" : "bg-white"}`}
               onClick={() => setMarket(value)}
             >
               {value === "smm"
@@ -81,7 +81,7 @@ export default function Providers() {
         )}
         <section
           id="join"
-          className="mt-14 scroll-mt-24 rounded-2xl bg-[#0B2A48] p-8 text-white"
+          className="mt-14 scroll-mt-24 rounded-2xl bg-ink p-8 text-white"
         >
           <h2 className="text-2xl font-extrabold">{t.join}</h2>
           <p className="mt-4 max-w-3xl leading-8 text-slate-300">

@@ -68,7 +68,7 @@ export default function OfferPrice({
       )}
       {unconfirmed && (
         <details className="mt-2 max-w-64 text-xs leading-5 text-slate-600">
-          <summary className="cursor-pointer font-semibold text-teal-800">
+          <summary className="cursor-pointer font-semibold text-beacon-800">
             {t.unconfirmed}
           </summary>
           <p className="mt-2">
@@ -81,7 +81,7 @@ export default function OfferPrice({
           <p className="mt-1">{t.unconfirmedHint}</p>
           {service.sourceUrl && (
             <a
-              className="mt-2 inline-block font-semibold text-teal-800 underline underline-offset-4"
+              className="mt-2 inline-block font-semibold text-beacon-800 underline underline-offset-4"
               href={service.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"

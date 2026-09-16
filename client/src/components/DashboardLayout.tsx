@@ -29,6 +29,7 @@ import { CSSProperties, useEffect, useLayoutEffect, useRef, useState } from "rea
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
+import { Brand } from "./SiteChrome";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "overview" as AdminTextKey, path: "/admin", permission: null },
@@ -137,6 +138,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider
+      className="admin-workspace"
       style={
         {
           "--sidebar-width": `${sidebarWidth}px`,
@@ -215,21 +217,21 @@ function DashboardLayoutContent({
         <Sidebar
           collapsible="icon"
           side={dir === "rtl" ? "right" : "left"}
-          className="border-e border-slate-200"
+          className="border-e border-sidebar-border"
           disableTransition={isResizing}
         >
-          <SidebarHeader className="h-16 justify-center">
+          <SidebarHeader className="h-[72px] justify-center border-b border-sidebar-border">
             <div className="flex items-center gap-3 px-2 transition-all w-full">
               <button
                 onClick={toggleSidebar}
-                className="h-8 w-8 flex items-center justify-center hover:bg-accent rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
+                className="h-8 w-8 flex items-center justify-center hover:bg-sidebar-accent rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring shrink-0"
                 aria-label={text("toggleNavigation")}
               >
-                <PanelLeft className="h-4 w-4 text-muted-foreground" />
+                <PanelLeft className="h-4 w-4 text-brand" />
               </button>
               {!isCollapsed ? (
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="font-semibold tracking-tight truncate">
+                  <span className="font-semibold tracking-tight truncate text-sidebar-foreground">
                     {text("controlCenter")}
                   </span>
                 </div>
@@ -237,7 +239,7 @@ function DashboardLayoutContent({
             </div>
           </SidebarHeader>
 
-          <SidebarContent className="gap-0">
+          <SidebarContent className="admin-navigation gap-0 py-3">
             <SidebarMenu className="px-2 py-1">
               {menuItems.filter(item => !item.permission || permissions.includes(item.permission)).map(item => {
                 const isActive = location === item.path;
@@ -247,10 +249,10 @@ function DashboardLayoutContent({
                       isActive={isActive}
                       onClick={() => { setLocation(item.path); if (isMobile) setOpenMobile(false); }}
                       tooltip={text(item.label)}
-                      className={`h-10 transition-all font-normal`}
+                      className="h-11 rounded-xl font-semibold text-slate-300 hover:bg-sidebar-accent hover:text-sidebar-foreground data-[active=true]:bg-brand data-[active=true]:text-ink data-[active=true]:hover:bg-beacon-300"
                     >
                       <item.icon
-                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                        className="h-4 w-4"
                       />
                       <span>{text(item.label)}</span>
                     </SidebarMenuButton>
@@ -260,12 +262,12 @@ function DashboardLayoutContent({
             </SidebarMenu>
           </SidebarContent>
 
-          <SidebarFooter className="p-3">
+          <SidebarFooter className="border-t border-sidebar-border p-3">
             <DropdownMenu dir={dir}>
               <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-accent/50 transition-colors w-full text-start group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                <button className="flex items-center gap-3 rounded-lg px-1 py-1 hover:bg-sidebar-accent transition-colors w-full text-start group-data-[collapsible=icon]:justify-center focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                   <Avatar className="h-9 w-9 border shrink-0">
-                    <AvatarFallback className="text-xs font-medium">
+                    <AvatarFallback className="bg-sidebar-accent text-brand text-xs font-bold">
                       {user?.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -273,7 +275,7 @@ function DashboardLayoutContent({
                     <p className="text-sm font-medium truncate leading-none">
                       {user?.name || "-"}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate mt-1.5">
+                    <p className="text-xs text-slate-300 truncate mt-1.5">
                       {user?.email || "-"}
                     </p>
                   </div>
@@ -305,9 +307,9 @@ function DashboardLayoutContent({
         />
       </div>
 
-      <SidebarInset className="min-w-0 bg-slate-50">
-        <div className="flex min-h-14 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4">
-          <span className="text-sm font-semibold text-slate-600">{text("controlCenter")}</span>
+      <SidebarInset className="min-w-0 bg-background">
+        <div className="workspace-header flex min-h-[72px] items-center justify-between gap-3 px-4 lg:px-7">
+          <Brand compact />
           <label className="flex items-center gap-2 text-sm text-slate-600"><Languages className="size-4"/><span className="sr-only">{text("language")}</span><select aria-label={text("language")} className="h-9 rounded-lg border border-slate-200 bg-white px-2" value={locale} onChange={event => setLocale(event.target.value as Locale)}>{(Object.keys(localeNames) as Locale[]).map(value => <option key={value} value={value}>{localeNames[value]}</option>)}</select></label>
         </div>
         {isMobile && (
@@ -324,7 +326,7 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
-        <main className="min-w-0 flex-1 p-4">{children}</main>
+        <main className="min-w-0 flex-1 p-4 lg:p-6">{children}</main>
       </SidebarInset>
     </>
   );

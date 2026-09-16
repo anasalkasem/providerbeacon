@@ -54,8 +54,8 @@ export function AdminBusinessPanel() {
   return (
     <div className="space-y-6">
       <header className="flex items-center gap-3">
-        <Building2 className="size-7 text-teal-700" />
-        <h1 className="text-2xl font-extrabold text-[#0B2A68]">
+        <Building2 className="size-7 text-beacon-700" />
+        <h1 className="text-2xl font-extrabold text-ink">
           {t.adminTitle}
         </h1>
       </header>
@@ -158,7 +158,7 @@ export function SubscriptionForm({
   return (
     <BusinessCard>
       <div className="flex flex-wrap justify-between gap-4">
-        <h2 className="text-xl font-bold text-[#0B2A68]" dir="auto">
+        <h2 className="text-xl font-bold text-ink" dir="auto">
           {data.provider.name}
         </h2>
         <BusinessStatus value={data.subscription.state} />
@@ -380,7 +380,7 @@ function ClaimReview({ claim, manage }: { claim: Claim; manage: boolean }) {
         {claim.memberEmail}
       </p>
       <p
-        className="mt-3 break-all text-sm font-semibold text-teal-700"
+        className="mt-3 break-all text-sm font-semibold text-beacon-700"
         dir="ltr"
       >
         {claim.websiteHost}
@@ -396,7 +396,7 @@ function ClaimReview({ claim, manage }: { claim: Claim; manage: boolean }) {
           href={claim.proofUrl}
           target="_blank"
           rel="noopener noreferrer nofollow"
-          className="mt-4 inline-flex max-w-full items-start gap-2 break-all text-sm text-teal-700 underline"
+          className="mt-4 inline-flex max-w-full items-start gap-2 break-all text-sm text-beacon-700 underline"
           dir="ltr"
         >
           {claim.proofUrl}
@@ -562,7 +562,7 @@ function OfferReview({ offer, manage }: { offer: Offer; manage: boolean }) {
         href={row.destinationUrl}
         target="_blank"
         rel="noopener noreferrer nofollow"
-        className="mt-4 block break-all text-sm text-teal-700 underline"
+        className="mt-4 block break-all text-sm text-beacon-700 underline"
         dir="ltr"
       >
         {row.destinationUrl}

@@ -63,8 +63,8 @@ export function ProviderAnalyticsPanel() {
       key: "website" as const,
       title: t.website,
       icon: ExternalLink,
-      color: "text-teal-700",
-      background: "bg-teal-50",
+      color: "text-beacon-700",
+      background: "bg-beacon-50",
     },
     {
       key: "telegram" as const,
@@ -82,7 +82,7 @@ export function ProviderAnalyticsPanel() {
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <BarChart3 className="size-7 text-teal-700" />
+            <BarChart3 className="size-7 text-beacon-700" />
             <h1 className="text-2xl font-extrabold text-slate-950">
               {t.title}
             </h1>
@@ -218,7 +218,7 @@ export function ProviderAnalyticsPanel() {
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
-                    stroke="#e2e8f0"
+                    stroke="var(--border)"
                   />
                   <XAxis
                     dataKey="day"
@@ -246,7 +246,7 @@ export function ProviderAnalyticsPanel() {
                     type="linear"
                     dataKey="views"
                     name={t.views}
-                    stroke="#4338ca"
+                    stroke="var(--chart-1)"
                     strokeWidth={2}
                     dot={data.daily.filter(row => row.measured).length < 8}
                     isAnimationActive={false}
@@ -255,7 +255,7 @@ export function ProviderAnalyticsPanel() {
                     type="linear"
                     dataKey="website"
                     name={t.website}
-                    stroke="#0f766e"
+                    stroke="var(--chart-2)"
                     strokeWidth={2}
                     strokeDasharray="6 3"
                     dot={false}
@@ -265,7 +265,7 @@ export function ProviderAnalyticsPanel() {
                     type="linear"
                     dataKey="telegram"
                     name={t.telegram}
-                    stroke="#0284c7"
+                    stroke="var(--chart-3)"
                     strokeWidth={2}
                     strokeDasharray="2 3"
                     dot={false}
@@ -343,7 +343,7 @@ export function ProviderAnalyticsPanel() {
                       <th scope="row" className="max-w-60 p-4 text-start">
                         <button
                           type="button"
-                          className="break-words text-start font-bold text-[#0B2A68] underline-offset-4 hover:underline"
+                          className="break-words text-start font-bold text-ink underline-offset-4 hover:underline"
                           onClick={() => selectProvider(String(row.id))}
                           aria-label={`${t.details}: ${row.name}`}
                         >
@@ -358,7 +358,7 @@ export function ProviderAnalyticsPanel() {
                           <bdi>{n(row[metric.key])}</bdi>
                         </td>
                       ))}
-                      <td className="p-4 text-end font-bold tabular-nums text-teal-800">
+                      <td className="p-4 text-end font-bold tabular-nums text-beacon-800">
                         <bdi>{n(row.website + row.telegram)}</bdi>
                       </td>
                     </tr>

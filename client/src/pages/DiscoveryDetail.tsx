@@ -42,7 +42,7 @@ export function ServiceGuide() {
               <ol className="mt-6 space-y-5">
                 {checks.map((c, i) => (
                   <li key={c} className="flex items-start gap-4">
-                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-teal-50 text-sm font-bold text-teal-700">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-beacon-50 text-sm font-bold text-beacon-700">
                       {i + 1}
                     </span>
                     <span className="leading-7 text-slate-600">{c}</span>
@@ -52,14 +52,14 @@ export function ServiceGuide() {
             </section>
           </div>
           <aside className="space-y-5">
-            <div className="rounded-2xl bg-[#0B2A48] p-6 text-white">
+            <div className="rounded-2xl bg-ink p-6 text-white">
               <h2 className="font-extrabold">{t.scope}</h2>
-              <p className="mt-3 text-lg leading-8 text-teal-200">
+              <p className="mt-3 text-lg leading-8 text-beacon-200">
                 {local(guide.unit, locale)}
               </p>
               <Link
                 href="/compare"
-                className="mt-6 flex items-center justify-between rounded-xl bg-[#53E1C0] p-4 text-sm font-extrabold text-slate-950"
+                className="mt-6 flex items-center justify-between rounded-xl bg-brand p-4 text-sm font-extrabold text-slate-950"
               >
                 {t.compare}
                 <ArrowRight className="size-4 rtl:rotate-180" />
@@ -84,7 +84,7 @@ export function ServiceGuide() {
                 <Copy className="size-4" />
                 {t.copyBrief}
               </button>
-              <p role="status" className="mt-2 text-xs text-teal-700">
+              <p role="status" className="mt-2 text-xs text-beacon-700">
                 {copyState}
               </p>
             </section>
@@ -177,7 +177,7 @@ export function DirectoryProfile() {
             </p>
             <Link
               href="/#methodology"
-              className="mt-4 inline-block text-sm font-bold text-teal-700 underline"
+              className="mt-4 inline-block text-sm font-bold text-beacon-700 underline"
             >
               {t.methodLink}
             </Link>
@@ -185,7 +185,7 @@ export function DirectoryProfile() {
         </div>
         <Link
           href="/compare"
-          className="mt-8 inline-flex items-center gap-3 rounded-xl bg-[#0B2A48] px-6 py-4 font-bold text-white"
+          className="mt-8 inline-flex items-center gap-3 rounded-xl bg-ink px-6 py-4 font-bold text-white"
         >
           {t.compare}
           <ArrowRight className="size-4 rtl:rotate-180" />

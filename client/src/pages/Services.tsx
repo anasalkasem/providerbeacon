@@ -134,7 +134,7 @@ function ServicesPage() {
         </p>
         <Link
           href="/find"
-          className="mt-5 inline-flex rounded-xl bg-[#0B2A48] px-5 py-3 text-sm font-bold text-white"
+          className="mt-5 inline-flex rounded-xl bg-ink px-5 py-3 text-sm font-bold text-white"
         >
           {wt.search} ✦
         </Link>
@@ -157,7 +157,7 @@ function ServicesPage() {
                 setSelected([]);
                 setSort("recommended");
               }}
-              className={`rounded-xl border px-5 py-3 text-sm font-bold ${market === value ? "border-[#0B2A48] bg-[#0B2A48] text-white" : "border-slate-200 bg-white text-slate-600"}`}
+              className={`rounded-xl border px-5 py-3 text-sm font-bold ${market === value ? "border-ink bg-ink text-white" : "border-slate-200 bg-white text-slate-600"}`}
             >
               {value === "smm"
                 ? ar
@@ -172,7 +172,7 @@ function ServicesPage() {
         {market === "smm" && (
           <section
             aria-label={ar ? "حاسبة تكلفة الخدمات" : "Service cost calculator"}
-            className="mb-6 rounded-2xl border border-teal-200 bg-teal-50/50 p-5"
+            className="mb-6 rounded-2xl border border-beacon-200 bg-beacon-50/50 p-5"
           >
             <h2 className="text-lg font-extrabold text-slate-950">
               {ar
@@ -205,7 +205,7 @@ function ServicesPage() {
                     type="button"
                     aria-pressed={quantity === q}
                     onClick={() => setQuantity(q)}
-                    className={`rounded-lg border px-4 py-3 text-sm font-bold ${quantity === q ? "border-teal-700 bg-teal-700 text-white" : "border-teal-200 bg-white text-teal-900"}`}
+                    className={`rounded-lg border px-4 py-3 text-sm font-bold ${quantity === q ? "border-beacon-700 bg-beacon-700 text-white" : "border-beacon-200 bg-white text-beacon-900"}`}
                   >
                     {q.toLocaleString(locale)}
                   </button>
@@ -224,7 +224,7 @@ function ServicesPage() {
                 type="checkbox"
                 checked={onlyMatching}
                 onChange={e => setOnlyMatching(e.target.checked)}
-                className="size-4 accent-teal-700"
+                className="size-4 accent-beacon-700"
               />
               {ar
                 ? "اعرض فقط العروض التي تقبل هذه الكمية"
@@ -375,7 +375,7 @@ function ServicesPage() {
                   type="checkbox"
                   checked={refillOnly}
                   onChange={e => setRefillOnly(e.target.checked)}
-                  className="size-5 accent-teal-700"
+                  className="size-5 accent-beacon-700"
                 />
                 {ar ? "عروض مع تعويض فقط" : "Refill available only"}
               </label>
@@ -445,7 +445,7 @@ function ServicesPage() {
           </p>
           <button
             type="button"
-            className="text-sm font-bold text-teal-700"
+            className="text-sm font-bold text-beacon-700"
             onClick={() => {
               setQuery("");
               setCountryCode("");
@@ -494,7 +494,7 @@ function ServicesPage() {
             <GuideGrid query={query} />
             <Link
               href="/compare?manual=1"
-              className="mt-5 inline-block font-bold text-teal-700"
+              className="mt-5 inline-block font-bold text-beacon-700"
             >
               {ar
                 ? "مقارنة عروض أسعار مخصصة يدويًا"
@@ -505,7 +505,7 @@ function ServicesPage() {
         {selected.length > 0 && (
           <div
             data-compare-tray
-            className="sticky bottom-4 z-20 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#0B2A48] p-4 text-white shadow-xl"
+            className="sticky bottom-4 z-20 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-ink p-4 text-white shadow-xl"
           >
             <p>
               {ar
@@ -523,7 +523,7 @@ function ServicesPage() {
                     `/compare?services=${selected.map(s => s.id).join(",")}&quantity=${Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1000}`
                   )
                 }
-                className="rounded-xl bg-teal-300 px-5 py-3 font-bold text-slate-950 disabled:opacity-40"
+                className="rounded-xl bg-beacon-300 px-5 py-3 font-bold text-slate-950 disabled:opacity-40"
               >
                 {ar ? "افتح المقارنة" : "Open comparison"}
               </button>

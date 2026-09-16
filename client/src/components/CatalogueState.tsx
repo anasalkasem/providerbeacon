@@ -21,7 +21,7 @@ export function CatalogueState({ kind = "empty" }: { kind?: "empty" | "providerM
     <h1 className="max-w-3xl text-3xl font-extrabold text-slate-900">{title}</h1>
     {!isLoading && source !== "unavailable" && <>
       {kind === "empty" && <p className="max-w-xl text-slate-600">{t.emptyBody}</p>}
-      {kind !== "empty" && <Link href="/services" className="rounded-xl bg-[#0B2A68] px-6 py-3 font-bold text-white">{t.latestCatalogue}</Link>}
+      {kind !== "empty" && <Link href="/services" className="rounded-xl bg-ink px-6 py-3 font-bold text-white">{t.latestCatalogue}</Link>}
     </>}
   </section>;
 }

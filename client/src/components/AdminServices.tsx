@@ -295,7 +295,7 @@ export default function AdminServices({
         <p>{text("publicationHint")}</p>
       </div>
       {canReview && (
-        <div className="rounded-2xl border border-cyan-200 bg-cyan-50/50 p-4">
+        <div className="rounded-2xl border border-beacon-200 bg-beacon-50/50 p-4">
           <p className="text-sm leading-6 text-slate-600">
             {text("reviewHint")}
           </p>
@@ -433,7 +433,7 @@ export default function AdminServices({
                     <tr
                       key={service.id}
                       className={
-                        checked ? "bg-cyan-50/70" : "hover:bg-slate-50/70"
+                        checked ? "bg-beacon-50/70" : "hover:bg-slate-50/70"
                       }
                     >
                       {canReview && (
@@ -476,7 +476,7 @@ export default function AdminServices({
                             {service.externalId ?? service.id}
                           </bdi>
                         </p>
-                        <p className="mt-2 text-xs text-cyan-800">
+                        <p className="mt-2 text-xs text-beacon-800">
                           <bdi>
                             {catalogueLabel(locale, service.platform)} ·{" "}
                             {catalogueLabel(locale, service.category)} ·{" "}

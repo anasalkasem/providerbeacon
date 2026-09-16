@@ -83,7 +83,7 @@ export default function CatalogueHealth() {
           <Link
             key={metric.key}
             href={`/admin/review?view=${metric.key}&lang=${locale}`}
-            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-cyan-500"
+            className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-beacon-500"
           >
             <div className="flex items-center justify-between">
               <span
@@ -107,7 +107,7 @@ export default function CatalogueHealth() {
       {Boolean(data?.normalizationPending) && (
         <p
           role="status"
-          className="rounded-xl border border-cyan-200 bg-cyan-50 p-4 text-sm text-cyan-900"
+          className="rounded-xl border border-beacon-200 bg-beacon-50 p-4 text-sm text-beacon-900"
         >
           {text("classificationRunning")} {text("normalizationPending")}:{" "}
           {new Intl.NumberFormat(locale).format(data!.normalizationPending)}

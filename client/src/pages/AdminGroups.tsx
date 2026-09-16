@@ -184,16 +184,16 @@ function GroupModeration() {
               <button
                 key={group.id}
                 onClick={() => select(group)}
-                className={`rounded-2xl border bg-white p-5 text-start ${selected !== "new" && selected?.id === group.id ? "border-teal-500 ring-2 ring-teal-50" : "border-slate-200"}`}
+                className={`rounded-2xl border bg-white p-5 text-start ${selected !== "new" && selected?.id === group.id ? "border-beacon-500 ring-2 ring-beacon-50" : "border-slate-200"}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span
                     dir="auto"
-                    className="break-words text-lg font-bold text-[#0B2A48]"
+                    className="break-words text-lg font-bold text-ink"
                   >
                     {group.name}
                   </span>
-                  <span className="text-xs font-semibold text-teal-700">
+                  <span className="text-xs font-semibold text-beacon-700">
                     {t.statuses[group.status]}
                   </span>
                 </div>
@@ -323,12 +323,12 @@ function ReviewPanel({
         target="_blank"
         rel="noopener noreferrer nofollow"
         dir="ltr"
-        className="break-all text-sm text-teal-700 underline"
+        className="break-all text-sm text-beacon-700 underline"
       >
         {group.url}
       </a>
       {group.providerId && (
-        <div className="rounded-xl bg-teal-50 p-4 text-sm">
+        <div className="rounded-xl bg-beacon-50 p-4 text-sm">
           <p className="font-bold">{t.evidence}</p>
           {group.evidenceUrl && (
             <a
@@ -336,7 +336,7 @@ function ReviewPanel({
               target="_blank"
               rel="noopener noreferrer"
               dir="ltr"
-              className="mt-2 block break-all text-teal-800 underline"
+              className="mt-2 block break-all text-beacon-800 underline"
             >
               {group.evidenceUrl}
             </a>

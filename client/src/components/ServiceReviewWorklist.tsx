@@ -70,7 +70,7 @@ export default function ServiceReviewWorklist({
             aria-pressed={filters.need === need}
             disabled={!summary.data || summary.isError}
             onClick={() => onSelect(need)}
-            className={`min-w-0 rounded-xl border px-3 py-3 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-600 disabled:opacity-50 ${filters.need === need ? "border-cyan-600 bg-cyan-50" : "border-slate-200 hover:border-cyan-400"}`}
+            className={`min-w-0 rounded-xl border px-3 py-3 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-beacon-600 disabled:opacity-50 ${filters.need === need ? "border-beacon-600 bg-beacon-50" : "border-slate-200 hover:border-beacon-400"}`}
           >
             <span
               className={`block text-xl font-extrabold ${need === "ready" ? "text-emerald-700" : "text-slate-950"}`}
@@ -86,7 +86,7 @@ export default function ServiceReviewWorklist({
       {filters.need && (
         <p
           role="status"
-          className="mt-4 rounded-xl bg-cyan-50 px-4 py-3 text-sm leading-6 text-cyan-950"
+          className="mt-4 rounded-xl bg-beacon-50 px-4 py-3 text-sm leading-6 text-beacon-950"
         >
           {text(`needHelp_${filters.need}`)}
         </p>

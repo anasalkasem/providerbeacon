@@ -52,10 +52,10 @@ export default function PriceTargetForm(props: PriceTargetProps) {
   return (
     <section className="mt-5 border-t border-slate-100 pt-5">
       {props.emailAlert.enabled && (
-        <div className="mb-4 rounded-xl bg-teal-50 p-3">
+        <div className="mb-4 rounded-xl bg-beacon-50 p-3">
           <p
             role="status"
-            className="flex items-start gap-2 text-xs font-semibold leading-6 text-teal-900"
+            className="flex items-start gap-2 text-xs font-semibold leading-6 text-beacon-900"
           >
             <Mail className="mt-1 size-4 shrink-0" />
             {priceAlertStatus(props.emailAlert.status, locale)}
@@ -70,7 +70,7 @@ export default function PriceTargetForm(props: PriceTargetProps) {
                 emailAlert: false,
               })
             }
-            className="mt-2 min-h-10 text-xs font-bold text-teal-900 underline disabled:opacity-50"
+            className="mt-2 min-h-10 text-xs font-bold text-beacon-900 underline disabled:opacity-50"
           >
             {t.stop}
           </button>
@@ -114,7 +114,7 @@ export default function PriceTargetForm(props: PriceTargetProps) {
           <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-3 text-sm leading-6">
             <input
               type="checkbox"
-              className="mt-1 size-4 shrink-0 accent-teal-700"
+              className="mt-1 size-4 shrink-0 accent-beacon-700"
               checked={email}
               disabled={
                 !email &&
@@ -143,7 +143,7 @@ export default function PriceTargetForm(props: PriceTargetProps) {
           )}
           <button
             disabled={save.isPending}
-            className="mt-4 min-h-11 w-full rounded-xl bg-teal-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+            className="mt-4 min-h-11 w-full rounded-xl bg-beacon-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
           >
             {t.save}
           </button>

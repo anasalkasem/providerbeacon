@@ -51,7 +51,7 @@ export default function SmmOfferTable({
                 onClick={() => toggle(service)}
                 disabled={!chosen && selected.length >= 4}
                 aria-pressed={chosen}
-                className={`mt-2 w-full rounded-xl border px-4 py-3 text-sm font-bold ${chosen ? "border-teal-500 bg-teal-50 text-teal-900" : "border-slate-200 bg-white text-slate-700"} disabled:opacity-40`}
+                className={`mt-2 w-full rounded-xl border px-4 py-3 text-sm font-bold ${chosen ? "border-beacon-500 bg-beacon-50 text-beacon-900" : "border-slate-200 bg-white text-slate-700"} disabled:opacity-40`}
               >
                 {chosen ? "✓ " : "+ "}
                 {ar
@@ -94,14 +94,14 @@ export default function SmmOfferTable({
                   key={service.id}
                   className={
                     chosen
-                      ? "border-t border-teal-100 bg-teal-50/50"
+                      ? "border-t border-beacon-100 bg-beacon-50/50"
                       : "border-t border-slate-100"
                   }
                 >
                   <td className="max-w-sm p-4 align-top">
                     <Link
                       href={`/providers/${provider.slug}`}
-                      className="font-bold text-teal-700 hover:underline"
+                      className="font-bold text-beacon-700 hover:underline"
                     >
                       {provider.name}
                     </Link>
@@ -166,7 +166,7 @@ export default function SmmOfferTable({
                   </td>
                   <td className="p-4 align-top">
                     <p>{localizeDuration(locale, service.startTime)}</p>
-                    <p className="mt-2 text-teal-700">
+                    <p className="mt-2 text-beacon-700">
                       {localizeData(locale, service.refill)}
                     </p>
                   </td>
@@ -177,7 +177,7 @@ export default function SmmOfferTable({
                       aria-label={`${ar ? "قارن" : "Compare"} ${provider.name}: ${serviceName(locale, service)}`}
                       disabled={!chosen && selected.length >= 4}
                       onClick={() => toggle(service)}
-                      className="rounded-xl border border-[#0B2A48] px-4 py-2 font-bold text-[#0B2A48] hover:bg-slate-100 disabled:opacity-40"
+                      className="rounded-xl border border-ink px-4 py-2 font-bold text-ink hover:bg-slate-100 disabled:opacity-40"
                     >
                       {chosen
                         ? ar

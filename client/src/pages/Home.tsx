@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Bookmark,
   Search,
+  RadioTower,
   SlidersHorizontal,
   Sparkles,
 } from "lucide-react";
@@ -29,27 +30,23 @@ export default function Home() {
   ];
   return (
     <PublicLayout>
-      <section className="relative overflow-hidden bg-[#081B30] text-white">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -end-32 -top-32 size-[500px] rounded-full bg-teal-400/10 blur-3xl"
-        />
-        <div className="container relative grid items-center gap-10 py-12 lg:grid-cols-[1.4fr_.7fr] lg:py-20">
+      <section className="beacon-hero mx-3 mt-3 rounded-[1.75rem] sm:mx-5 sm:rounded-[2rem]">
+        <div className="container relative grid items-center gap-10 py-10 lg:grid-cols-[1.4fr_.7fr] lg:gap-14 lg:py-16">
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-teal-300/20 bg-teal-300/5 px-3 py-2 text-[11px] font-bold tracking-wide text-teal-200">
+            <p className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand/5 px-3 py-2 text-[11px] font-bold tracking-wide text-brand">
               <Sparkles className="size-4" />
               {t.eyebrow}
             </p>
-            <h1 className="mt-6 text-[clamp(2rem,4.3vw,4.3rem)] font-extrabold leading-[1.25] tracking-tight">
+            <h1 className="beacon-hero-title mt-6 text-[clamp(2rem,4.3vw,4.1rem)] font-extrabold leading-[1.3] tracking-tight">
               {t.title}
               <br />
-              <span className="text-[#53E1C0]">{t.accent}</span>
+              <span className="text-brand">{t.accent}</span>
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300">
               {t.intro}
             </p>
             <form
-              className="mt-7 rounded-2xl border border-white/15 bg-white p-2 shadow-2xl"
+              className="beacon-search mt-7 rounded-2xl p-2"
               onSubmit={e => {
                 e.preventDefault();
                 if (query.trim())
@@ -64,7 +61,7 @@ export default function Home() {
                 rows={2}
                 maxLength={1200}
                 dir="auto"
-                className="w-full resize-none rounded-xl bg-white p-4 text-base leading-7 text-slate-950 outline-none focus:ring-2 focus:ring-teal-400"
+                className="w-full resize-none rounded-xl bg-transparent p-4 text-base leading-7 text-ink placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-beacon-600"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder={t.ask}
@@ -72,13 +69,13 @@ export default function Home() {
               <div className="flex flex-wrap items-center justify-between gap-3 px-2 pb-2">
                 <Link
                   href="/services"
-                  className="px-2 text-xs font-bold text-slate-500 hover:text-teal-800"
+                  className="px-2 text-xs font-bold text-slate-500 hover:text-beacon-800"
                 >
                   {t.browse}
                 </Link>
                 <button
                   disabled={!query.trim()}
-                  className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-bold text-white hover:bg-teal-800 disabled:opacity-50"
+                  className="beacon-button inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold"
                 >
                   <Search className="size-4" />
                   {t.search}
@@ -93,29 +90,32 @@ export default function Home() {
                   onClick={() =>
                     navigate(`/find?q=${encodeURIComponent(example)}`)
                   }
-                  className="rounded-full border border-white/15 px-3 py-2 text-xs text-slate-300 hover:border-teal-300 hover:text-teal-200"
+                  className="rounded-full border border-white/15 px-3 py-2 text-xs text-slate-300 hover:border-beacon-300 hover:text-beacon-200"
                 >
                   {example}
                 </button>
               ))}
             </div>
           </div>
-          <div className="rounded-2xl border border-white/10 bg-white/[.03] p-5 lg:p-6">
+          <div className="beacon-guide rounded-3xl p-5 lg:p-7">
+            <div className="mb-5 hidden lg:block" aria-hidden="true">
+              <div className="beacon-radar"><RadioTower className="size-7 text-brand" /></div>
+            </div>
             <p
               dir="ltr"
-              className="mb-6 text-xs font-bold tracking-[.2em] text-teal-300"
+              className="mb-6 text-xs font-bold tracking-[.2em] text-brand lg:text-center"
             >
               PROVIDERBEACON
             </p>
             <div className="space-y-6">
               {steps.map(({ icon: Icon, title, body }) => (
                 <div key={title} className="flex gap-4">
-                  <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-teal-300/10 text-teal-200">
+                  <div className="grid size-10 shrink-0 place-items-center rounded-xl border border-brand/15 bg-brand/10 text-brand">
                     <Icon className="size-5" />
                   </div>
                   <div>
                     <h2 className="text-sm font-bold">{title}</h2>
-                    <p className="mt-2 text-xs leading-6 text-slate-400">
+                    <p className="mt-2 text-xs leading-6 text-slate-300">
                       {body}
                     </p>
                   </div>
@@ -124,7 +124,7 @@ export default function Home() {
             </div>
             <Link
               href="/account"
-              className="mt-7 flex items-center justify-between gap-3 border-t border-white/10 pt-5 text-sm font-bold text-teal-200"
+              className="mt-7 flex items-center justify-between gap-3 border-t border-white/10 pt-5 text-sm font-bold text-beacon-200"
             >
               {t.workspace}
               <ArrowRight className="size-4 rtl:rotate-180" />
@@ -149,7 +149,7 @@ export default function Home() {
                         : "Start with a service. Understand its terms."}
               </h2>
             </div>
-            <Link className="font-bold text-teal-800" href="/services">
+            <Link className="font-bold text-beacon-800" href="/services">
               {t.browse} →
             </Link>
           </div>
@@ -166,7 +166,7 @@ export default function Home() {
         </section>
       )}
       <section id="methodology" className="container scroll-mt-24 py-12">
-        <div className="grid gap-7 rounded-2xl border border-slate-200 bg-white p-6 lg:grid-cols-2 sm:p-9">
+        <div className="beacon-surface grid gap-7 rounded-3xl border bg-white p-6 lg:grid-cols-2 sm:p-9">
           <div>
             <p className="section-kicker">{d.method}</p>
             <h2 className="mt-3 text-2xl font-extrabold leading-relaxed">

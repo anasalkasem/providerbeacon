@@ -57,9 +57,9 @@ function Router() {
   return (
     <Suspense
       fallback={
-        <div className="grid min-h-screen place-items-center bg-[#F6F8FC]">
+        <div className="grid min-h-screen place-items-center bg-background">
           <div
-            className="size-10 animate-spin rounded-full border-4 border-slate-200 border-t-cyan-500"
+            className="size-10 animate-spin rounded-full border-4 border-slate-200 border-t-beacon-500"
             aria-label="Loading page"
           />
         </div>

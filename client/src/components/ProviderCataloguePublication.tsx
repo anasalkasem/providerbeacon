@@ -56,7 +56,7 @@ export default function ProviderCataloguePublication({
   return (
     <div className="min-w-52 max-w-xs space-y-2">
       <p
-        className={`text-sm font-bold ${published ? "text-teal-700" : "text-slate-600"}`}
+        className={`text-sm font-bold ${published ? "text-beacon-700" : "text-slate-600"}`}
       >
         {published
           ? ar

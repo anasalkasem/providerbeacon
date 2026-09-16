@@ -68,7 +68,7 @@ export function ProviderLogo({
     <div
       dir="ltr"
       style={visible ? media.style : undefined}
-      className={`grid shrink-0 place-items-center overflow-hidden rounded-2xl font-extrabold shadow-sm ${visible ? "border border-slate-200 bg-white" : "bg-gradient-to-br from-[#0B2A68] via-[#103E99] to-[#0D9488] text-white"} ${className}`}
+      className={`grid shrink-0 place-items-center overflow-hidden rounded-2xl font-extrabold shadow-sm ${visible ? "border border-slate-200 bg-white" : "bg-brand text-ink"} ${className}`}
     >
       {visible ? (
         <img
@@ -145,7 +145,7 @@ export function ProviderWebsitePreview({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`${title} · ${openLabel}`}
-      className="block w-full overflow-hidden rounded-2xl lg:w-80 lg:shrink-0 border border-slate-200 bg-white shadow-sm transition hover:border-cyan-400 focus-visible:outline-2 focus-visible:outline-cyan-700"
+      className="block w-full overflow-hidden rounded-2xl lg:w-80 lg:shrink-0 border border-slate-200 bg-white shadow-sm transition hover:border-beacon-400 focus-visible:outline-2 focus-visible:outline-beacon-700"
     >
       <div className="flex items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3">
         <span className="text-xs font-bold text-slate-600">{title}</span>
