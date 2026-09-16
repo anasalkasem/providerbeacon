@@ -7,10 +7,10 @@ import { trpc } from "@/lib/trpc";
 import { KeyRound, Loader2, LockKeyhole, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
+import { safeStaffNext } from "@shared/signIn";
 
 function safeNext() {
-  const value = new URLSearchParams(window.location.search).get("next") ?? "/admin";
-  return value.startsWith("/") && !value.startsWith("//") ? value : "/admin";
+  return safeStaffNext(new URLSearchParams(window.location.search).get("next"));
 }
 
 export default function Login() {
@@ -21,7 +21,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
-  const [mfaRequired, setMfaRequired] = useState(false);
+  const [mfaRequired, setMfaRequired] = useState(() => new URLSearchParams(window.location.search).get("mfa") === "1");
   const oauthConfigured = Boolean(import.meta.env.VITE_OAUTH_PORTAL_URL && import.meta.env.VITE_APP_ID);
 
   useEffect(() => {

@@ -318,6 +318,36 @@ export async function confirmMfaSetup(input: { userId: number; code: string; cur
   return { success: true, recoveryCodes };
 }
 
+export async function disableMfa(input: {
+  userId: number; currentPassword: string; code: string; currentSessionToken: string;
+  req: { headers: Record<string, unknown>; ip?: string };
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  return db.transaction(async tx => {
+    const [account] = await tx.select().from(staffAccounts).where(eq(staffAccounts.userId, input.userId)).for("update");
+    const [session] = await tx.select({ id: staffSessions.id }).from(staffSessions)
+      .where(and(eq(staffSessions.userId, input.userId), eq(staffSessions.tokenHash, hashToken(input.currentSessionToken)),
+        eq(staffSessions.mfaVerified, true), gt(staffSessions.expiresAt, new Date()))).for("update");
+    const [membership] = await tx.select({ status: teamMembers.status }).from(teamMembers)
+      .where(eq(teamMembers.userId, input.userId)).for("update");
+    if (!account || !session || membership?.status !== "active") throw new Error("auth_mfa_session_required");
+    if (!account.mfaEnabled) throw new Error("auth_mfa_not_enabled");
+    const passwordValid = await verifyPassword(input.currentPassword, account.passwordHash);
+    const secret = accountMfaValue(account);
+    const totpValid = secret && totpFor(account.email, secret).validate({ token: input.code.replace(/\s/g, ""), window: 1 }) != null;
+    const recoveryValid = (account.recoveryCodeHashes ?? []).includes(hashRecoveryCode(input.code));
+    if (!passwordValid || (!totpValid && !recoveryValid)) throw new Error("auth_mfa_invalid_proof");
+    await tx.update(staffAccounts).set({
+      mfaEnabled: false, mfaSecretCiphertext: null, mfaSecretIv: null, mfaSecretTag: null,
+      recoveryCodeHashes: null,
+    }).where(eq(staffAccounts.id, account.id));
+    await tx.delete(staffSessions).where(and(eq(staffSessions.userId, input.userId), ne(staffSessions.id, session.id)));
+    await writeAuthAudit({ actorUserId: input.userId, action: "auth.mfa.disable", summary: "Disabled TOTP after password and factor verification; revoked other staff sessions", req: input.req }, tx);
+    return { success: true };
+  });
+}
+
 export async function revokeOtherSessions(input: { userId: number; currentSessionToken?: string }) {
   const db = await getDb();
   if (!db) throw new Error("Database unavailable");

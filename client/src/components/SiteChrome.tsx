@@ -5,6 +5,7 @@ import { communityCopy } from "@/i18n/community";
 import { discoveryText } from "@/i18n/discovery";
 import { CatalogueNotice } from "@/components/CatalogueState";
 import { useMember } from "@/hooks/useMember";
+import { trpc } from "@/lib/trpc";
 import { useMemberText } from "@/i18n/memberAuth";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
@@ -37,6 +38,8 @@ export function SiteHeader() {
   const t = copy[locale];
   const p = pageCopy[locale];
   const member = useMember();
+  const staff = trpc.auth.me.useQuery(undefined, { retry: false });
+  const accountHref = staff.data ? "/admin" : member.data?.member ? "/account" : "/sign-in";
   const mt = useMemberText();
   const [open, setOpen] = useState(false);
   const [location] = useLocation();
@@ -92,9 +95,9 @@ export function SiteHeader() {
             asChild
             className="beacon-button rounded-xl"
           >
-            <a href={member.data?.member ? "/account" : "/sign-in"}>
+            <a href={accountHref}>
               <UserRound className="size-4" />
-              {member.data?.member
+              {staff.data ? t.admin : member.data?.member
                 ? workspaceCopy[locale].workspace
                 : mt.signIn}
             </a>
@@ -122,12 +125,12 @@ export function SiteHeader() {
               </Link>
             ))}
             <a
-              href={member.data?.member ? "/account" : "/sign-in"}
+              href={accountHref}
               onClick={() => setOpen(false)}
               className="beacon-button flex items-center gap-2 rounded-xl px-3 py-3 font-semibold"
             >
               <UserRound className="size-4" />
-              {member.data?.member
+              {staff.data ? t.admin : member.data?.member
                 ? workspaceCopy[locale].workspace
                 : mt.signIn}
             </a>
@@ -192,6 +195,7 @@ export function SiteFooter() {
             [p.editorialPolicy, "/#methodology"],
             [discoveryText(locale).contactLabel, "/providers#join"],
             [mt.privacy, "/privacy"],
+            [t.admin, "/login"],
           ]}
         />
       </div>

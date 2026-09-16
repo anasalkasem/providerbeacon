@@ -21,6 +21,7 @@ import { useEmailText } from "@/i18n/email";
 import { EmailPreferences } from "./MemberEmail";
 import { memberErrorText, useMemberText } from "@/i18n/memberAuth";
 import { trpc } from "@/lib/trpc";
+import { useAuthText } from "@/i18n/auth";
 import {
   memberPassword,
   memberRegistration,
@@ -203,6 +204,8 @@ export function MemberSignUp() {
   return <CredentialsPage mode="register" />;
 }
 function CredentialsPage({ mode }: { mode: "login" | "register" }) {
+  const staffText = useAuthText();
+  const staff = trpc.auth.me.useQuery(undefined, { retry: false });
   const emailText = useEmailText();
   const [marketingOptIn, setMarketingOptIn] = useState(false);
   const t = useMemberText(),
@@ -230,8 +233,14 @@ function CredentialsPage({ mode }: { mode: "login" | "register" }) {
     await utils.member.me.invalidate();
     if (!data.recoveryCode) navigate(next, { replace: true });
   };
-  const login = trpc.member.login.useMutation({
-    onSuccess,
+  const login = trpc.auth.signIn.useMutation({
+    onSuccess: async data => {
+      if (data.kind === "member") return onSuccess(data);
+      setPassword("");
+      setError("");
+      await utils.auth.me.invalidate();
+      navigate(data.mfaRequired ? "/login?mfa=1" : "/admin", { replace: true });
+    },
     onError: e => setError(memberErrorText(e, t)),
   });
   const register = trpc.member.register.useMutation({
@@ -244,9 +253,13 @@ function CredentialsPage({ mode }: { mode: "login" | "register" }) {
   });
   const busy = login.isPending || register.isPending || google.isPending;
   useEffect(() => {
+    if (mode === "login" && staff.data && !busy) {
+      navigate("/admin", { replace: true });
+      return;
+    }
     if (me.data?.member && !recovery && !busy)
       navigate(next, { replace: true });
-  }, [me.data?.member, recovery, busy, next, navigate]);
+  }, [mode, staff.data, me.data?.member, recovery, busy, next, navigate]);
   return (
     <AuthFrame title={mode === "login" ? t.welcome : t.join}>
       {recovery ? (
@@ -368,6 +381,11 @@ function CredentialsPage({ mode }: { mode: "login" | "register" }) {
               {mode === "login" ? t.signIn : t.signUp}
             </Button>
           </form>
+          {mode === "login" && (
+            <Link href="/login" className="block text-center text-sm font-medium text-blue-800 hover:underline">
+              {staffText("signIn")}
+            </Link>
+          )}
           {mode === "login" && (
             <Link
               href={me.data?.emailEnabled ? "/forgot-password" : "/recover-account"}
