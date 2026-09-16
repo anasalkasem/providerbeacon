@@ -22,6 +22,12 @@ describe("community link and publication boundaries", () => {
     expect(
       groupLink("https://chat.whatsapp.com/AbCdEf1234567890123456")
     ).toMatchObject({ platform: "whatsapp" });
+    expect(
+      groupLink("https://chat.whatsapp.com/AbCdEf1234567890123456?mode=ac_t")
+    ).toEqual({
+      platform: "whatsapp",
+      url: "https://chat.whatsapp.com/AbCdEf1234567890123456",
+    });
     expect(groupLink("https://discord.com/invite/Beacon_Test")).toEqual({
       platform: "discord",
       url: "https://discord.gg/Beacon_Test",
@@ -46,6 +52,9 @@ describe("community link and publication boundaries", () => {
       "https://t.me/%65xample_group",
       "https://wa.me/1234567890",
       "https://whatsapp.com/AbCdEf1234567890123456",
+      "https://chat.whatsapp.com/AbCdEf1234567890123456?mode=ac_t&redirect=evil",
+      "https://chat.whatsapp.com/AbCdEf1234567890123456?redirect=evil",
+      "https://chat.whatsapp.com/AbCdEf1234567890123456?mode=",
       "https://discord.com/users/123",
       "https://discord.gg/test?redirect=evil",
       "https://t.me\\@evil.example/example_group",

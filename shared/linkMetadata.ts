@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { groupLink, groupLanguages, groupTopics } from "./community";
+import {
+  groupLink,
+  groupLanguages,
+  groupTopics,
+  type GroupPlatform,
+} from "./community";
 import { publicProfileUrl } from "./providerProfile";
 
 export function websiteHome(raw: string): string | null {
@@ -28,6 +33,15 @@ export const telegramPreviewInput = z
       .refine(value => groupLink(value)?.platform === "telegram"),
   })
   .strict();
+export const groupPreviewInput = z
+  .object({
+    url: z
+      .string()
+      .trim()
+      .max(500)
+      .refine(value => Boolean(groupLink(value))),
+  })
+  .strict();
 export type Audience = {
   count: number;
   kind: "members" | "subscribers";
@@ -42,7 +56,7 @@ export type LinkMetadata = {
   parserVersion?: number;
   issue?: "protected" | "source_busy" | "timeout" | "unavailable";
   key: string;
-  kind: "website" | "telegram";
+  kind: "website" | GroupPlatform;
   sourceUrl: string;
   fetchedAt: string;
   name: string | null;

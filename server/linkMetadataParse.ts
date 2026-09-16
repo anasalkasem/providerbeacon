@@ -249,6 +249,90 @@ export function parseTelegram(html: string, url: string) {
   };
 }
 
+export function parseWhatsApp(html: string, url: string) {
+  const nodes = allNodes(parse(html));
+  const meta = (key: string, maximum: number) => {
+    const node = nodes.find(
+      n =>
+        n.tagName === "meta" &&
+        (attr(n, "property") === key || attr(n, "name") === key)
+    );
+    return node ? clean(attr(node, "content"), maximum) : null;
+  };
+  const title = textOf(nodes.find(n => n.tagName === "title"));
+  if (
+    /^(?:just a moment|access denied|security check|attention required|checking your browser|verify you are human)/i.test(
+      title ?? ""
+    )
+  )
+    throw new Error("metadata_protected");
+  const name = meta("og:title", 100);
+  const generic =
+    /^(?:whatsapp(?: group invite)?|group invite|join (?:a |the )?(?:group|chat)|دعوة (?:إلى )?مجموعة واتساب|دعوة للانضمام إلى مجموعة واتساب|invitación (?:a un grupo|de grupo) de whatsapp)$/i;
+  const known = Boolean(name && !generic.test(name));
+  const description = meta("og:description", 600);
+  return {
+    name: known ? name : null,
+    description:
+      known &&
+      description &&
+      !generic.test(description) &&
+      !/^(?:follow this link to join|open this link to join|join my whatsapp|افتح هذا الرابط|اتبع هذا الرابط|sigue este enlace|abre este enlace)/i.test(
+        description
+      )
+        ? description
+        : null,
+    avatar: known ? imageUrl(meta("og:image", 2048), url) : null,
+    // Invite pages don't reliably expose a public member count. Never infer one.
+    audience: null as Audience | null,
+  };
+}
+
+// Public invite lookup only; no accepting invitations, joining servers or bot token.
+// https://docs.discord.com/developers/resources/invite#get-invite
+export function parseDiscordInvite(value: unknown, code: string) {
+  const empty = { name: null, description: null, avatar: null, audience: null };
+  if (!value || typeof value !== "object") return empty;
+  const data = value as Record<string, unknown>;
+  if (
+    data.type !== 0 ||
+    data.code !== code ||
+    !data.guild ||
+    typeof data.guild !== "object"
+  )
+    return empty;
+  const guild = data.guild as Record<string, unknown>;
+  if (
+    typeof guild.id !== "string" ||
+    !/^\d{1,20}$/.test(guild.id) ||
+    typeof guild.name !== "string"
+  )
+    return empty;
+  const name = clean(guild.name, 100);
+  if (!name) return empty;
+  const count = data.approximate_member_count;
+  const audience: Audience | null =
+    typeof count === "number" &&
+    Number.isSafeInteger(count) &&
+    count >= 0 &&
+    count <= 2000000000
+      ? { count, kind: "members", approximate: true }
+      : null;
+  return {
+    name,
+    description:
+      typeof guild.description === "string"
+        ? clean(guild.description, 600)
+        : null,
+    avatar:
+      typeof guild.icon === "string" &&
+      /^(?:a_)?[a-f0-9]{32}$/i.test(guild.icon)
+        ? `https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png?size=256`
+        : null,
+    audience,
+  };
+}
+
 const svgTags = new Set([
   "svg",
   "g",

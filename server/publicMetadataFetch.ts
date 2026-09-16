@@ -92,7 +92,12 @@ export type PublicFetchResult = {
 // API credentials, proxy environment variables, or browser sessions are forwarded.
 export async function fetchPublicMetadata(
   raw: string,
-  options: { maxBytes: number; timeoutMs?: number; html?: boolean }
+  options: {
+    maxBytes: number;
+    timeoutMs?: number;
+    html?: boolean;
+    json?: boolean;
+  }
 ): Promise<PublicFetchResult> {
   const deadline = Date.now() + (options.timeoutMs ?? 12000);
   let target = raw;
@@ -118,9 +123,11 @@ export async function fetchPublicMetadata(
             Host: pinned.url.host,
             "User-Agent":
               "ProviderBeaconMetadata/1.0 (+https://providerbeacon.com)",
-            Accept: options.html
-              ? "text/html,application/xhtml+xml"
-              : "image/png,image/jpeg,image/webp,image/gif,image/svg+xml,image/x-icon",
+            Accept: options.json
+              ? "application/json"
+              : options.html
+                ? "text/html,application/xhtml+xml"
+                : "image/png,image/jpeg,image/webp,image/gif,image/svg+xml,image/x-icon",
             "Accept-Encoding": "identity",
           },
         },
@@ -159,6 +166,7 @@ export async function fetchPublicMetadata(
               res.headers["content-encoding"] !== "identity") ||
             (options.html &&
               !["text/html", "application/xhtml+xml"].includes(contentType)) ||
+            (options.json && contentType !== "application/json") ||
             Number(res.headers["content-length"] ?? 0) > options.maxBytes
           ) {
             req.destroy(new Error("metadata_response"));

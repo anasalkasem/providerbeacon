@@ -27,10 +27,10 @@ vi.mock("@/lib/trpc", () => {
     trpc: {
       admin: {
         providers: { previewWebsite: route("website") },
-        groups: { previewTelegram: route("staff") },
+        groups: { previewGroup: route("staff") },
       },
       community: {
-        previewTelegram: route("member"),
+        previewGroup: route("member"),
         providers: { useQuery: () => ({ data: [] }) },
       },
     },
@@ -95,6 +95,116 @@ const result = (
   ...patch,
 });
 describe("automatic form filling", () => {
+  it.each([
+    {
+      kind: "whatsapp" as const,
+      input: "https://chat.whatsapp.com/AbCdEf1234567890123456?mode=ac_t",
+      source: "https://chat.whatsapp.com/AbCdEf1234567890123456",
+      title: "WhatsApp details",
+    },
+    {
+      kind: "discord" as const,
+      input: "https://discord.com/invite/Beacon_Test",
+      source: "https://discord.gg/Beacon_Test",
+      title: "Discord details",
+    },
+  ])(
+    "fills and submits $kind invitations through the group importer",
+    async scenario => {
+      const save = vi.fn();
+      await act(async () =>
+        root.render(
+          React.createElement(GroupForm, { onSave: save, pending: false })
+        )
+      );
+      await input('input[type="url"]', scenario.input);
+      await tick();
+      expect(state.requests).toHaveLength(1);
+      expect(state.requests[0]).toMatchObject({
+        route: "member",
+        url: scenario.source,
+      });
+      expect(container.textContent).toContain(scenario.title);
+      await act(async () =>
+        state.requests[0].resolve(
+          result(scenario.source, {
+            kind: scenario.kind,
+            description: "Public community details from the invitation",
+            audience: null,
+          })
+        )
+      );
+      expect(
+        (container.querySelector('input[minlength="3"]') as HTMLInputElement)
+          .value
+      ).toBe("Suggested group name");
+      await act(async () =>
+        container
+          .querySelector("form")!
+          .dispatchEvent(
+            new Event("submit", { bubbles: true, cancelable: true })
+          )
+      );
+      expect(save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: scenario.input,
+          metadataKey: "a".repeat(64),
+          description: "Public community details from the invitation",
+        })
+      );
+    }
+  );
+  it("distinguishes unsupported personal links from valid invitations whose source blocks the preview", async () => {
+    const save = vi.fn();
+    await act(async () =>
+      root.render(
+        React.createElement(GroupForm, { onSave: save, pending: false })
+      )
+    );
+    await input('input[type="url"]', "https://wa.me/1234567890");
+    await tick();
+    expect(state.requests).toHaveLength(0);
+    expect(container.textContent).toContain(
+      "Personal chat links are not group invitations"
+    );
+    await input(
+      'input[type="url"]',
+      "https://chat.whatsapp.com/AbCdEf1234567890123456"
+    );
+    await tick();
+    await act(async () =>
+      state.requests[0].resolve(
+        result(state.requests[0].url, {
+          kind: "whatsapp",
+          name: null,
+          description: null,
+          audience: null,
+          topic: null,
+          language: null,
+          aiSuggested: false,
+          complete: false,
+          issue: "protected",
+        })
+      )
+    );
+    expect(container.textContent).toContain("did not allow automatic access");
+    expect(container.textContent).not.toContain(
+      "Personal chat links are not group invitations"
+    );
+    await input('input[minlength="3"]', "My WhatsApp group");
+    await input(
+      "textarea",
+      "My manually entered description of the provider community"
+    );
+    await act(async () =>
+      container
+        .querySelector("form")!
+        .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
+    );
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "My WhatsApp group" })
+    );
+  });
   it("fills group fields from a pasted URL while preserving a name edited during the request", async () => {
     const save = vi.fn();
     await act(async () =>
@@ -147,7 +257,7 @@ describe("automatic form filling", () => {
     );
     await input('input[type="url"]', "https://t.me/first_group");
     await tick();
-    await input('input[type="url"]', "https://t.me/second_group");
+    await input('input[type="url"]', "https://discord.gg/Beacon_Test");
     await tick();
     expect(state.requests.map(r => r.route)).toEqual(["staff", "staff"]);
     await act(async () =>
@@ -162,7 +272,10 @@ describe("automatic form filling", () => {
     expect(container.textContent).not.toContain("Wrong group");
     await act(async () =>
       state.requests[1].resolve(
-        result(state.requests[1].url, { name: "Correct group" })
+        result(state.requests[1].url, {
+          kind: "discord",
+          name: "Correct group",
+        })
       )
     );
     expect(
@@ -232,7 +345,7 @@ describe("automatic form filling", () => {
       (container.querySelector('button[type="submit"]') as HTMLButtonElement)
         .disabled
     ).toBe(false);
-    expect(container.textContent).toContain("enter them manually");
+    expect(container.textContent).toContain("enter the details manually");
   });
   it("submits the provider's source-bound metadata key and never renders a screenshot as a logo", async () => {
     const create = vi.fn();

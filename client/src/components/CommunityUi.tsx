@@ -269,7 +269,7 @@ export function GroupForm({
           </span>
         </GroupField>
         <LinkAutofill
-          kind="telegram"
+          kind="group"
           url={values.url}
           admin={admin}
           automatic={!initial || values.url !== initial.url}
