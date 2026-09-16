@@ -308,9 +308,9 @@ function DashboardLayoutContent({
       </div>
 
       <SidebarInset className="min-w-0 bg-background">
-        <div className="workspace-header flex min-h-[72px] items-center justify-between gap-3 px-4 lg:px-7">
+        <div className="workspace-header flex min-h-[72px] flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-7">
           <Brand compact />
-          <label className="flex items-center gap-2 text-sm text-slate-600"><Languages className="size-4"/><span className="sr-only">{text("language")}</span><select aria-label={text("language")} className="h-9 rounded-lg border border-slate-200 bg-white px-2" value={locale} onChange={event => setLocale(event.target.value as Locale)}>{(Object.keys(localeNames) as Locale[]).map(value => <option key={value} value={value}>{localeNames[value]}</option>)}</select></label>
+          <label className="flex items-center gap-2 text-sm text-slate-600"><Languages className="hidden size-4 sm:block"/><span className="sr-only">{text("language")}</span><select aria-label={text("language")} className="h-9 max-w-24 rounded-lg border border-slate-200 bg-white px-2 sm:max-w-none" value={locale} onChange={event => setLocale(event.target.value as Locale)}>{(Object.keys(localeNames) as Locale[]).map(value => <option key={value} value={value}>{localeNames[value]}</option>)}</select></label>
         </div>
         {isMobile && (
           <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">

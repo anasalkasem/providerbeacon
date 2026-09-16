@@ -125,7 +125,7 @@ export function ProviderDashboardShell({
         <a href="#main-content" className="skip-link">
           {current.label}
         </a>
-        <div className="mx-auto flex h-[72px] max-w-[1600px] items-center justify-between gap-3 px-4 lg:px-6">
+        <div className="mx-auto flex min-h-[72px] max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-3 lg:flex-nowrap lg:px-6 lg:py-0">
           <div className="flex items-center gap-4">
             <Brand compact />
             <span className="hidden border-s border-slate-200 ps-4 text-sm text-slate-500 xl:block">

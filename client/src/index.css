@@ -157,8 +157,8 @@
   .provider-offer-progress::-webkit-progress-value { background: #647f24; border-radius: 99px; }
   .provider-offer-progress::-moz-progress-bar { background: #647f24; border-radius: 99px; }
   @media (max-width: 380px) {
-    .provider-dashboard .brand-link > span { font-size: 14px; }
-    .provider-dashboard .brand-link > svg { width: 30px; height: 30px; }
+    .provider-dashboard .brand-link > span, .admin-workspace .brand-link > span { font-size: 14px; }
+    .provider-dashboard .brand-link > svg, .admin-workspace .brand-link > svg { width: 30px; height: 30px; }
   }
   .beacon-assistant-launcher { bottom: 1.25rem; }
   /* Leave the comparison actions reachable, including when the tray wraps. */
