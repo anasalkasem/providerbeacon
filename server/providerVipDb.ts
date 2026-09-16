@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { and, eq, gte, isNotNull, lt, lte, sql } from "drizzle-orm";
+import { and, eq, gt, gte, isNotNull, lt, lte, or, sql } from "drizzle-orm";
 import type { z } from "zod";
 import {
   providerVipCards as cards,
@@ -18,6 +18,8 @@ import {
   type vipReviewInput,
   type vipListInput,
   type VipEvent,
+  type vipGrantInput,
+  type vipRevokeGrantInput,
 } from "../shared/providerVip";
 import { planIsActive, providerHost } from "../shared/providerBusiness";
 import {
@@ -117,7 +119,7 @@ const coverUrl = (id: string) =>
   `${memberAuthOrigin()}/api/imported-media/${id}`;
 const withCover = <T extends { coverId: string }>(row: T) => ({
   ...row,
-  coverUrl: coverUrl(row.coverId),
+  coverUrl: row.coverId ? coverUrl(row.coverId) : "",
 });
 async function audit(
   tx: BusinessTransaction,
@@ -125,7 +127,8 @@ async function audit(
   providerId: number,
   action: string,
   note: string,
-  revision: number
+  revision: number,
+  metadata: Record<string, unknown> = {}
 ) {
   await writeAudit(
     {
@@ -134,7 +137,7 @@ async function audit(
       entityType: "provider",
       entityId: String(providerId),
       summary: note,
-      metadata: { revision },
+      metadata: { ...metadata, revision },
     },
     tx
   );
@@ -192,6 +195,8 @@ export async function saveVipCard(
       tagline: input.tagline,
       specialties: input.specialties,
       coverId: image?.id ?? own!.coverId,
+      placement: "subscription" as const,
+      complimentaryEndsAt: null,
       offer: input.offer,
       offerEndsAt: input.offer ? input.offerEndsAt : null,
       status: "pending" as const,
@@ -283,6 +288,8 @@ export async function reviewVipCard(
     const [row] = await currentCard(tx, input.providerId);
     if (!row || row.revision !== input.revision)
       businessFail("stale", "CONFLICT");
+    if (row.placement === "complimentary")
+      businessFail("vip_owner_only", "FORBIDDEN");
     if (input.decision === "approved") {
       if (row.status !== "pending" || !input.contentConfirmed)
         businessFail("review_required");
@@ -335,8 +342,142 @@ export async function reviewVipCard(
   });
 }
 
-// Every public read and measurement rechecks the subscription and current owner.
-// The paid display never writes provider scores or catalogue sorting fields.
+export async function vipGrantState(providerId: number) {
+  const db = await businessDatabase();
+  const [provider] = await db
+    .select({
+      id: providerRecords.id,
+      name: providerRecords.name,
+      slug: providerRecords.slug,
+      logoUrl: providerRecords.logoUrl,
+      websiteUrl: providerRecords.websiteUrl,
+      status: providerRecords.status,
+    })
+    .from(providerRecords)
+    .where(eq(providerRecords.id, providerId));
+  if (!provider) businessFail("missing", "NOT_FOUND");
+  const [card] = await db
+    .select()
+    .from(cards)
+    .where(eq(cards.providerId, providerId));
+  const [account] = await db
+    .select()
+    .from(accounts)
+    .where(eq(accounts.providerId, providerId));
+  return {
+    provider,
+    card: card ? withCover(card) : null,
+    paidCardActive: card?.placement === "subscription" && planIsActive(account),
+  };
+}
+
+export async function grantComplimentaryVip(
+  actorId: number,
+  input: z.infer<typeof vipGrantInput>
+) {
+  const db = await businessDatabase();
+  return db.transaction(async tx => {
+    const provider = await lockedBusinessProvider(tx, input.providerId);
+    const [visible] = await tx
+      .select({ id: providerRecords.id })
+      .from(providerRecords)
+      .where(
+        and(eq(providerRecords.id, provider.id), visibleCatalogueProvider())
+      );
+    const host = providerHost(provider.websiteUrl);
+    if (!visible || !host) businessFail("provider_unavailable");
+    // Read existing billing data only. A grant creates neither an account nor a
+    // payment, and cannot replace a current subscriber's card.
+    const [account] = await tx
+      .select()
+      .from(accounts)
+      .where(eq(accounts.providerId, provider.id))
+      .for("update");
+    const [previous] = await currentCard(tx, provider.id);
+    if ((previous?.revision ?? 0) !== input.revision)
+      businessFail("stale", "CONFLICT");
+    if (previous?.placement === "subscription" && planIsActive(account))
+      businessFail("vip_paid_card", "CONFLICT");
+    if (!input.contentConfirmed) businessFail("review_required");
+    const image = input.cover ? decodeVipCover(input.cover) : null;
+    if (image)
+      await tx
+        .insert(importedMedia)
+        .values(image)
+        .onDuplicateKeyUpdate({ set: { id: image.id } });
+    const now = new Date();
+    const endsAt = new Date(now.getTime() + input.durationDays * 86400000);
+    const revision = (previous?.revision ?? 0) + 1;
+    const value = {
+      providerId: provider.id,
+      ownerMemberId: null,
+      websiteHost: host,
+      tagline: input.tagline,
+      specialties: [],
+      coverId:
+        image?.id ?? (previous?.websiteHost === host ? previous.coverId : ""),
+      offer: "",
+      offerEndsAt: null,
+      placement: "complimentary" as const,
+      complimentaryEndsAt: endsAt,
+      status: "approved" as const,
+      revision,
+      reviewNote: input.note,
+      reviewedAt: now,
+    };
+    await tx.insert(cards).values(value).onDuplicateKeyUpdate({ set: value });
+    await audit(
+      tx,
+      actorId,
+      provider.id,
+      "complimentary.granted",
+      input.note,
+      revision,
+      {
+        endsAt: endsAt.toISOString(),
+        durationDays: input.durationDays,
+        previousPlacement: previous?.placement ?? null,
+      }
+    );
+    return { providerId: provider.id, endsAt, revision };
+  });
+}
+
+export async function revokeComplimentaryVip(
+  actorId: number,
+  input: z.infer<typeof vipRevokeGrantInput>
+) {
+  const db = await businessDatabase();
+  return db.transaction(async tx => {
+    await lockedBusinessProvider(tx, input.providerId);
+    const [row] = await currentCard(tx, input.providerId);
+    if (!row || row.revision !== input.revision)
+      businessFail("stale", "CONFLICT");
+    if (row.placement !== "complimentary")
+      businessFail("vip_paid_card", "CONFLICT");
+    await tx
+      .update(cards)
+      .set({
+        status: "hidden",
+        reviewedAt: null,
+        complimentaryEndsAt: new Date(),
+        revision: row.revision + 1,
+      })
+      .where(eq(cards.providerId, input.providerId));
+    await audit(
+      tx,
+      actorId,
+      input.providerId,
+      "complimentary.revoked",
+      input.note,
+      row.revision + 1
+    );
+    return { providerId: input.providerId };
+  });
+}
+
+// Paid cards recheck the subscription and owner; platform grants recheck their
+// explicit expiry. Neither kind changes provider scores or catalogue ordering.
 export async function eligibleVipCards(
   tx: BusinessTransaction,
   providerId?: number
@@ -354,31 +495,43 @@ export async function eligibleVipCards(
       offer: cards.offer,
       offerEndsAt: cards.offerEndsAt,
       endsAt: accounts.endsAt,
+      placement: cards.placement,
+      complimentaryEndsAt: cards.complimentaryEndsAt,
       websiteUrl: providerRecords.websiteUrl,
       websiteHost: cards.websiteHost,
       ownerHost: accounts.ownerHost,
     })
     .from(cards)
     .innerJoin(providerRecords, eq(providerRecords.id, cards.providerId))
-    .innerJoin(accounts, eq(accounts.providerId, cards.providerId))
-    .innerJoin(memberAccounts, eq(memberAccounts.id, cards.ownerMemberId))
+    .leftJoin(accounts, eq(accounts.providerId, cards.providerId))
+    .leftJoin(memberAccounts, eq(memberAccounts.id, cards.ownerMemberId))
     .where(
       and(
         providerId ? eq(cards.providerId, providerId) : undefined,
         eq(cards.status, "approved"),
         isNotNull(cards.reviewedAt),
         visibleCatalogueProvider(),
-        activeProviderPlan(cards.providerId),
-        eq(accounts.ownerMemberId, cards.ownerMemberId),
-        isNotNull(accounts.ownershipVerifiedAt),
-        eq(memberAccounts.status, "active"),
-        isNotNull(memberAccounts.emailVerifiedAt)
+        or(
+          and(
+            eq(cards.placement, "complimentary"),
+            gt(cards.complimentaryEndsAt, sql`current_timestamp(3)`)
+          ),
+          and(
+            eq(cards.placement, "subscription"),
+            activeProviderPlan(cards.providerId),
+            eq(accounts.ownerMemberId, cards.ownerMemberId),
+            isNotNull(accounts.ownershipVerifiedAt),
+            eq(memberAccounts.status, "active"),
+            isNotNull(memberAccounts.emailVerifiedAt)
+          )
+        )
       )
     )
     .orderBy(cards.providerId);
   return rows.filter(
     row =>
-      row.websiteHost === row.ownerHost &&
+      (row.placement === "complimentary" ||
+        row.websiteHost === row.ownerHost) &&
       row.websiteHost === providerHost(row.websiteUrl)
   );
 }
@@ -401,9 +554,12 @@ export async function publicVipCards(input: z.infer<typeof vipListInput>) {
           logoUrl: row.logoUrl,
           tagline: row.tagline,
           specialties: row.specialties,
-          coverUrl: coverUrl(row.coverId),
-          ownershipVerified: true as const,
-          endsAt: row.endsAt!,
+          coverUrl: row.coverId ? coverUrl(row.coverId) : "",
+          placement: row.placement,
+          ownershipVerified: row.placement === "subscription",
+          endsAt: (row.placement === "complimentary"
+            ? row.complimentaryEndsAt
+            : row.endsAt)!,
           offer:
             row.offerEndsAt && row.offerEndsAt.getTime() > now ? row.offer : "",
           offerEndsAt: row.offerEndsAt,

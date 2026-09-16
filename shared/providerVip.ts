@@ -48,6 +48,25 @@ export const vipIdentityInput = z
     revision: z.number().int().positive(),
   })
   .strict();
+export const vipGrantInput = z
+  .object({
+    providerId: z.number().int().positive(),
+    revision: z.number().int().nonnegative(),
+    durationDays: z.union([z.literal(7), z.literal(30), z.literal(90)]),
+    tagline: z.string().trim().min(12).max(140),
+    cover: z
+      .string()
+      .max(Math.ceil(VIP_COVER_BYTES / 3) * 4 + 40)
+      .optional(),
+    contentConfirmed: z.literal(true),
+    note: z.string().trim().min(8).max(600),
+  })
+  .strict();
+export const vipRevokeGrantInput = vipIdentityInput
+  .extend({
+    note: z.string().trim().min(8).max(600),
+  })
+  .strict();
 export const vipReviewInput = vipIdentityInput
   .extend({
     decision: z.enum(["approved", "rejected", "hidden"]),

@@ -4,6 +4,7 @@ import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../server/routers";
 import { useLocale } from "@/contexts/LocaleContext";
 import { vipText } from "@/i18n/providerVip";
+import { vipGrantText } from "@/i18n/vipGrants";
 import { businessText } from "@/i18n/providerBusiness";
 import { trpc } from "@/lib/trpc";
 import {
@@ -121,58 +122,64 @@ function Review({ item, manage }: { item: Item; manage: boolean }) {
               {card.reviewNote}
             </p>
           )}
-          <fieldset
-            disabled={!manage || review.isPending}
-            className="space-y-4"
-          >
-            <label className="flex items-start gap-3 text-sm leading-7">
-              <input
-                type="checkbox"
-                className="mt-2"
-                checked={confirmed}
-                onChange={e => setConfirmed(e.target.checked)}
-              />
-              {t.reviewConfirm}
-            </label>
-            <label className="block text-sm font-semibold">
-              {t.reviewNote}
-              <textarea
-                className={businessField}
-                minLength={8}
-                maxLength={600}
-                rows={3}
-                value={note}
-                onChange={e => setNote(e.target.value)}
-              />
-            </label>
-            <div className="flex flex-wrap gap-3">
-              <button
-                className={businessPrimary}
-                disabled={
-                  !confirmed ||
-                  note.trim().length < 8 ||
-                  card.status !== "pending"
-                }
-                onClick={() => save("approved")}
-              >
-                {b.approve}
-              </button>
-              <button
-                className={businessSecondary}
-                disabled={note.trim().length < 8}
-                onClick={() => save("rejected")}
-              >
-                {b.reject}
-              </button>
-              <button
-                className={businessSecondary}
-                disabled={note.trim().length < 8}
-                onClick={() => save("hidden")}
-              >
-                {b.hide}
-              </button>
-            </div>
-          </fieldset>
+          {card.placement === "complimentary" ? (
+            <p className="text-sm leading-7 text-slate-600">
+              {vipGrantText(locale).managed}
+            </p>
+          ) : (
+            <fieldset
+              disabled={!manage || review.isPending}
+              className="space-y-4"
+            >
+              <label className="flex items-start gap-3 text-sm leading-7">
+                <input
+                  type="checkbox"
+                  className="mt-2"
+                  checked={confirmed}
+                  onChange={e => setConfirmed(e.target.checked)}
+                />
+                {t.reviewConfirm}
+              </label>
+              <label className="block text-sm font-semibold">
+                {t.reviewNote}
+                <textarea
+                  className={businessField}
+                  minLength={8}
+                  maxLength={600}
+                  rows={3}
+                  value={note}
+                  onChange={e => setNote(e.target.value)}
+                />
+              </label>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  className={businessPrimary}
+                  disabled={
+                    !confirmed ||
+                    note.trim().length < 8 ||
+                    card.status !== "pending"
+                  }
+                  onClick={() => save("approved")}
+                >
+                  {b.approve}
+                </button>
+                <button
+                  className={businessSecondary}
+                  disabled={note.trim().length < 8}
+                  onClick={() => save("rejected")}
+                >
+                  {b.reject}
+                </button>
+                <button
+                  className={businessSecondary}
+                  disabled={note.trim().length < 8}
+                  onClick={() => save("hidden")}
+                >
+                  {b.hide}
+                </button>
+              </div>
+            </fieldset>
+          )}
           {review.isError && <BusinessError message={review.error.message} />}
         </div>
       </div>

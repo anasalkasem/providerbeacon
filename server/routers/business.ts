@@ -8,6 +8,8 @@ import {
   vipListInput,
   vipReviewInput,
   vipSaveInput,
+  vipGrantInput,
+  vipRevokeGrantInput,
 } from "../../shared/providerVip";
 import {
   ownVipCard,
@@ -17,6 +19,9 @@ import {
   vipAnalytics,
   vipReviewQueue,
   withdrawVipCard,
+  vipGrantState,
+  grantComplimentaryVip,
+  revokeComplimentaryVip,
 } from "../providerVipDb";
 import { businessFail } from "../providerEntitlements";
 import {
@@ -271,6 +276,34 @@ const staff = (permission: "business.read" | "business.manage") =>
   });
 export const businessAdminRouter = router({
   vip: router({
+    grantState: staff("business.read")
+      .use(({ ctx, next }) => {
+        if (ctx.teamRole !== "owner")
+          businessFail("vip_owner_only", "FORBIDDEN");
+        return next();
+      })
+      .input(businessProviderInput)
+      .query(({ input }) => safely(() => vipGrantState(input.providerId))),
+    grant: staff("business.manage")
+      .use(({ ctx, next }) => {
+        if (ctx.teamRole !== "owner")
+          businessFail("vip_owner_only", "FORBIDDEN");
+        return next();
+      })
+      .input(vipGrantInput)
+      .mutation(({ ctx, input }) =>
+        safely(() => grantComplimentaryVip(ctx.user!.id, input))
+      ),
+    revokeGrant: staff("business.manage")
+      .use(({ ctx, next }) => {
+        if (ctx.teamRole !== "owner")
+          businessFail("vip_owner_only", "FORBIDDEN");
+        return next();
+      })
+      .input(vipRevokeGrantInput)
+      .mutation(({ ctx, input }) =>
+        safely(() => revokeComplimentaryVip(ctx.user!.id, input))
+      ),
     list: staff("business.read")
       .input(businessQueueInput)
       .query(({ input }) => safely(() => vipReviewQueue(input))),
