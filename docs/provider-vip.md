@@ -23,12 +23,15 @@ trust scores, verification fields, catalogue ordering, or subscription prices.
   subscription expires. New owners cannot inherit a previous owner's approval.
 - New visits rotate eligible cards by a server minute bucket. Each card gets
   each position once per complete cycle. A visit retains its rotation across
-  refreshes and album pages. The homepage advances one position every five seconds
+  refreshes and album pages. The homepage moves continuously at 42 CSS pixels/second
   while the ribbon is visible. Hover, keyboard focus, dragging, a pause control,
   background tabs, and reduced-motion settings stop automatic movement. Arrows,
   position buttons, and touch dragging provide manual navigation. One provider is
-  centered without motion. No duplicate advertisement nodes are created; a small
-  collection returns smoothly to the start if there is not enough content to loop.
+  centered without motion. Each original card is recycled only after leaving the
+  viewport, keeping the same travel direction through every loop. Responsive card
+  widths reserve an offscreen slot even with two or three providers. No duplicate
+  advertisements, focus targets, or analytics observers are created. Resize and
+  pause/resume preserve progress; hidden tabs do not accumulate catch-up movement.
 - Subscription cards disclose **Paid placement**; owner-granted cards disclose
   **Platform-sponsored placement**. **Ownership verified** is a separate
   indication and is not a service-quality endorsement. Expired offers disappear.
