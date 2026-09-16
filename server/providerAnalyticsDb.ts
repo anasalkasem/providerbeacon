@@ -22,7 +22,42 @@ import {
 } from "../shared/providerProfile";
 import { visibleCatalogueProvider } from "./apiCatalogue";
 import { getDb } from "./db";
-import { activeProviderPlan, type BusinessTransaction } from "./providerEntitlements";
+import {
+  activeProviderPlan,
+  type BusinessTransaction,
+} from "./providerEntitlements";
+
+export async function reserveAnalyticsBudget(
+  tx: BusinessTransaction,
+  keys: { clientKey: string },
+  now: number
+) {
+  const day = Math.floor(now / ANALYTICS_DAY_MS);
+  // Database limits and row locks also apply across replicas and restarts.
+  for (const bucket of [
+    {
+      key: `day:${keys.clientKey}`,
+      max: 1000,
+      expiry: (day + 2) * ANALYTICS_DAY_MS,
+    },
+    {
+      key: `minute:${Math.floor(now / 60_000)}:${keys.clientKey}`,
+      max: 60,
+      expiry: now + 120_000,
+    },
+  ]) {
+    await tx
+      .insert(limits)
+      .values({ key: bucket.key, expiresAt: new Date(bucket.expiry) })
+      .onDuplicateKeyUpdate({ set: { key: bucket.key } });
+    const [result] = await tx
+      .update(limits)
+      .set({ used: sql`${limits.used} + 1` })
+      .where(and(eq(limits.key, bucket.key), lt(limits.used, bucket.max)));
+    if (result.affectedRows !== 1) return false;
+  }
+  return true;
+}
 
 export async function recordProviderEvent(
   input: ProviderEvent,
@@ -33,29 +68,7 @@ export async function recordProviderEvent(
   if (!db) return "ignored";
   const day = Math.floor(now / ANALYTICS_DAY_MS);
   return db.transaction(async tx => {
-    // Database limits and row locks also apply across replicas and restarts.
-    for (const bucket of [
-      {
-        key: `day:${keys.clientKey}`,
-        max: 1000,
-        expiry: (day + 2) * ANALYTICS_DAY_MS,
-      },
-      {
-        key: `minute:${Math.floor(now / 60_000)}:${keys.clientKey}`,
-        max: 60,
-        expiry: now + 120_000,
-      },
-    ]) {
-      await tx
-        .insert(limits)
-        .values({ key: bucket.key, expiresAt: new Date(bucket.expiry) })
-        .onDuplicateKeyUpdate({ set: { key: bucket.key } });
-      const [result] = await tx
-        .update(limits)
-        .set({ used: sql`${limits.used} + 1` })
-        .where(and(eq(limits.key, bucket.key), lt(limits.used, bucket.max)));
-      if (result.affectedRows !== 1) return "limited";
-    }
+    if (!(await reserveAnalyticsBudget(tx, keys, now))) return "limited";
     const [provider] = await tx
       .select({
         websiteUrl: providerRecords.websiteUrl,
@@ -66,7 +79,9 @@ export async function recordProviderEvent(
         and(
           eq(providerRecords.id, input.providerId),
           visibleCatalogueProvider(),
-          input.kind === "telegram" ? activeProviderPlan(providerRecords.id) : undefined
+          input.kind === "telegram"
+            ? activeProviderPlan(providerRecords.id)
+            : undefined
         )
       )
       .limit(1);
@@ -156,80 +171,78 @@ export async function getProviderAnalytics(
   const dates = and(gte(daily.day, period.start), lte(daily.day, period.end));
   // One repeatable-read snapshot keeps the cards, chart, pagination and rows consistent.
   const read = async (tx: BusinessTransaction) => {
-      const [state] = await tx
-        .select()
-        .from(providerAnalyticsState)
-        .where(eq(providerAnalyticsState.id, 1));
-      const [totals] = await tx
-        .select(sums())
-        .from(daily)
-        .where(
-          and(
-            dates,
-            input.providerId
-              ? eq(daily.providerId, input.providerId)
-              : undefined
-          )
-        );
-      const series = await tx
-        .select({ day: daily.day, ...sums() })
-        .from(daily)
-        .where(
-          and(
-            dates,
-            input.providerId
-              ? eq(daily.providerId, input.providerId)
-              : undefined
-          )
+    const [state] = await tx
+      .select()
+      .from(providerAnalyticsState)
+      .where(eq(providerAnalyticsState.id, 1));
+    const [totals] = await tx
+      .select(sums())
+      .from(daily)
+      .where(
+        and(
+          dates,
+          input.providerId ? eq(daily.providerId, input.providerId) : undefined
         )
-        .groupBy(daily.day)
-        .orderBy(daily.day);
-      const [count] = await tx
-        .select({ total: sql<number>`count(*)`.mapWith(Number) })
-        .from(providerRecords)
-        .where(filter);
-      const pageSize = 25;
-      const pageCount = Math.max(1, Math.ceil(count.total / pageSize));
-      const page = Math.min(input.page, pageCount);
-      const rows = await tx
-        .select({
-          id: providerRecords.id,
-          name: providerRecords.name,
-          slug: providerRecords.slug,
-          ...sums(),
-        })
-        .from(providerRecords)
-        .leftJoin(daily, and(eq(daily.providerId, providerRecords.id), dates))
-        .where(filter)
-        .groupBy(providerRecords.id, providerRecords.name, providerRecords.slug)
-        .orderBy(
-          desc(sql`coalesce(sum(${daily.website} + ${daily.telegram}), 0)`),
-          desc(sql`coalesce(sum(${daily.views}), 0)`),
-          providerRecords.id
+      );
+    const series = await tx
+      .select({ day: daily.day, ...sums() })
+      .from(daily)
+      .where(
+        and(
+          dates,
+          input.providerId ? eq(daily.providerId, input.providerId) : undefined
         )
-        .limit(pageSize)
-        .offset((page - 1) * pageSize);
-      const byDate = new Map(series.map(row => [row.day, row]));
-      return {
-        startedAt: state?.startedAt ?? null,
-        collectionEnabled: Boolean(process.env.AUTH_PEPPER),
-        generatedAt: new Date(now),
-        from: period.start,
-        to: period.end,
-        totals,
-        daily: period.dates.map(day => ({
-          measured: Boolean(
-            state && day >= analyticsDate(state.startedAt.getTime())
-          ),
-          ...(byDate.get(day) ?? { day, views: 0, website: 0, telegram: 0 }),
-        })),
-        providers: rows,
-        totalProviders: count.total,
-        page,
-        pageCount,
-      };
+      )
+      .groupBy(daily.day)
+      .orderBy(daily.day);
+    const [count] = await tx
+      .select({ total: sql<number>`count(*)`.mapWith(Number) })
+      .from(providerRecords)
+      .where(filter);
+    const pageSize = 25;
+    const pageCount = Math.max(1, Math.ceil(count.total / pageSize));
+    const page = Math.min(input.page, pageCount);
+    const rows = await tx
+      .select({
+        id: providerRecords.id,
+        name: providerRecords.name,
+        slug: providerRecords.slug,
+        ...sums(),
+      })
+      .from(providerRecords)
+      .leftJoin(daily, and(eq(daily.providerId, providerRecords.id), dates))
+      .where(filter)
+      .groupBy(providerRecords.id, providerRecords.name, providerRecords.slug)
+      .orderBy(
+        desc(sql`coalesce(sum(${daily.website} + ${daily.telegram}), 0)`),
+        desc(sql`coalesce(sum(${daily.views}), 0)`),
+        providerRecords.id
+      )
+      .limit(pageSize)
+      .offset((page - 1) * pageSize);
+    const byDate = new Map(series.map(row => [row.day, row]));
+    return {
+      startedAt: state?.startedAt ?? null,
+      collectionEnabled: Boolean(process.env.AUTH_PEPPER),
+      generatedAt: new Date(now),
+      from: period.start,
+      to: period.end,
+      totals,
+      daily: period.dates.map(day => ({
+        measured: Boolean(
+          state && day >= analyticsDate(state.startedAt.getTime())
+        ),
+        ...(byDate.get(day) ?? { day, views: 0, website: 0, telegram: 0 }),
+      })),
+      providers: rows,
+      totalProviders: count.total,
+      page,
+      pageCount,
     };
-  return transaction ? read(transaction) : db.transaction(read, { isolationLevel: "repeatable read" });
+  };
+  return transaction
+    ? read(transaction)
+    : db.transaction(read, { isolationLevel: "repeatable read" });
 }
 
 export async function cleanupProviderAnalytics(now = Date.now()) {
@@ -249,6 +262,8 @@ export async function cleanupProviderAnalytics(now = Date.now()) {
     .delete(daily)
     .where(lt(daily.day, analyticsDate(now - 400 * ANALYTICS_DAY_MS)))
     .limit(10_000);
+  const { cleanupVipAnalytics } = await import("./providerVipDb");
+  await cleanupVipAnalytics(now);
 }
 
 export function startProviderAnalyticsCleanup() {

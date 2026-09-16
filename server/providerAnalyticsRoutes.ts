@@ -7,6 +7,8 @@ import { analyticsDate, providerEventInput } from "../shared/providerAnalytics";
 import { memberAuthOrigin } from "./memberSecurity";
 import { STAFF_SESSION_COOKIE } from "./security";
 import { recordProviderEvent } from "./providerAnalyticsDb";
+import { vipEventInput } from "../shared/providerVip";
+import { recordVipEvent } from "./providerVipDb";
 
 export function analyticsRequestKeys(
   req: Pick<Request, "headers" | "socket">,
@@ -76,6 +78,24 @@ export function analyticsRequestKeys(
 }
 
 export function registerProviderAnalyticsRoutes(app: Express) {
+  app.post(
+    "/api/vip-analytics",
+    express.json({ limit: "1kb" }),
+    async (req, res) => {
+      res.setHeader("Cache-Control", "no-store");
+      try {
+        const input = vipEventInput.safeParse(req.body);
+        if (input.success) {
+          const now = Date.now();
+          const keys = analyticsRequestKeys(req, input.data.visitorId, now);
+          if (keys) await recordVipEvent(input.data, keys, now);
+        }
+      } catch {
+        console.warn("[VIP analytics] Event could not be recorded");
+      }
+      res.status(204).end();
+    }
+  );
   // Register before the application's large upload parser. Never reflect event payloads.
   app.post(
     "/api/provider-analytics",

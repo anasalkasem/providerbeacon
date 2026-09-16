@@ -7,7 +7,7 @@ import {
 const storageKey = "pb_provider_metrics_v1";
 const uuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 
-function visitorId() {
+export function providerVisitorId() {
   // First-party, random, day-scoped ID; never use a member ID or email.
   // If privacy settings or storage block measurement, leave navigation unaffected.
   const privacy = navigator as Navigator & { globalPrivacyControl?: boolean };
@@ -46,7 +46,7 @@ export function trackProviderEvent(
   try {
     const id = /^provider-([1-9]\d{0,9})$/.exec(publicId)?.[1];
     if (!id || Number(id) > 2_147_483_647) return;
-    const visitor = visitorId();
+    const visitor = providerVisitorId();
     if (!visitor) return;
     void fetch("/api/provider-analytics", {
       method: "POST",

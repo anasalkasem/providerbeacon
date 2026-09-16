@@ -50,6 +50,8 @@ async function startServer() {
   registerEmailRoutes(app);
   registerPaymentRoutes(app);
   const assistantJson = express.json({ limit: "32kb" });
+  // Cover uploads have one bounded endpoint. Batches retain the normal body limit.
+  app.use("/api/trpc/business.vip.submit", express.json({ limit: "720kb" }));
   app.use((req, res, next) => {
     const procedures = req.path.startsWith("/api/trpc/") ? req.path.slice("/api/trpc/".length).split(",") : [];
     return procedures.some(name => name === "assistant.chat" || name.startsWith("member.") || name.startsWith("business.") || name.startsWith("admin.business.") || name.startsWith("workspace.") || name.startsWith("admin.email.") || name.startsWith("community.") || name.startsWith("admin.groups.") || ["admin.providers.previewWebsite", "admin.providers.createDraft", "admin.providers.saveProfile"].includes(name)) ? assistantJson(req, res, next) : next();

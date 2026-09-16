@@ -8,7 +8,9 @@ import {
 import { useEffect, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { toast } from "sonner";
-import { BarChart3, Building2, Plus, Users, Tag } from "lucide-react";
+import { BarChart3, Building2, Plus, Users, Tag, Diamond } from "lucide-react";
+import { ProviderVip } from "@/components/ProviderVip";
+import { vipText } from "@/i18n/providerVip";
 import type { inferRouterOutputs } from "@trpc/server";
 import type { AppRouter } from "../../../server/routers";
 import { type GroupInput } from "../../../shared/community";
@@ -105,6 +107,7 @@ export default function ProviderBusiness() {
             </BusinessCard>
             <div className="grid gap-3">
               {[
+                { icon: Diamond, title: vipText(locale).title },
                 { icon: Users, title: t.groups },
                 { icon: BarChart3, title: t.analytics },
                 { icon: Tag, title: t.myOffers },
@@ -287,6 +290,7 @@ function ProviderWorkspace({
           ) : (
             <>
               {!active && <ProviderPlanLock onNavigate={go} />}
+              {section === "vip" && <ProviderVip accountId={accountId} owned={owned} active={active} />}
               {section === "analytics" && active && (
                 <BusinessAnalytics
                   accountId={accountId}

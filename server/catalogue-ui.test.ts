@@ -8,7 +8,10 @@ const state = vi.hoisted(() => ({ data: null as any, slug: "real-provider", sear
 }));
 vi.mock("@/lib/trpc", () => ({trpc:{assistant:{quotes:{useQuery:()=>({data:state.quotes})}},
     member: { me: { useQuery: () => ({ data: { member: null } }) } },
-    business: { promotions: { list: { useQuery: () => ({ data: { items: [] } }) } } },
+    business: {
+      promotions: { list: { useQuery: () => ({ data: { items: [] } }) } },
+      vip: { list: { useQuery: () => ({ data: { items: [], total: 0, page: 1, pages: 1, rotation: 0 } }) } },
+    },
     workspace: {
       ids: { useQuery: () => ({ data: [] }) },
       watch: { useMutation: () => ({}) },

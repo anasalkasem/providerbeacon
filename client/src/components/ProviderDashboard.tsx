@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   Clock3,
   CreditCard,
+  Diamond,
   ExternalLink,
   Globe2,
   LayoutDashboard,
@@ -25,6 +26,7 @@ import { BUSINESS_DAY_MS, planState } from "../../../shared/providerBusiness";
 import { localeNames, useLocale, type Locale } from "@/contexts/LocaleContext";
 import { businessText } from "@/i18n/providerBusiness";
 import { dashboardText } from "@/i18n/providerDashboard";
+import { vipText } from "@/i18n/providerVip";
 import { formatNumber } from "@/i18n/messages";
 import { trpc } from "@/lib/trpc";
 import { Brand } from "./SiteChrome";
@@ -45,6 +47,7 @@ export type OwnedProvider = ProviderWorkspaceData["providers"][number];
 export const providerSections = [
   "overview",
   "analytics",
+  "vip",
   "groups",
   "offers",
   "billing",
@@ -92,6 +95,7 @@ export function ProviderDashboardShell({
       icon: BarChart3,
       help: t.analyticsHelp,
     },
+    { id: "vip", label: vipText(locale).title, icon: Diamond, help: vipText(locale).ownerHelp },
     { id: "groups", label: b.groups, icon: Users, help: b.groupHelp },
     { id: "offers", label: b.myOffers, icon: Tag, help: b.offerHelp },
     { id: "billing", label: t.billing, icon: CreditCard, help: t.billingHelp },

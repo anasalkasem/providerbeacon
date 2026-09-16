@@ -3,6 +3,21 @@ import { router, publicProcedure, permissionProcedure } from "../_core/trpc";
 import { signedIn, safely } from "../memberProcedures";
 import { reserveMemberRequests } from "../memberDb";
 import { assertStaffOrigin } from "../staffOrigin";
+import {
+  vipIdentityInput,
+  vipListInput,
+  vipReviewInput,
+  vipSaveInput,
+} from "../../shared/providerVip";
+import {
+  ownVipCard,
+  publicVipCards,
+  reviewVipCard,
+  saveVipCard,
+  vipAnalytics,
+  vipReviewQueue,
+  withdrawVipCard,
+} from "../providerVipDb";
 import { businessFail } from "../providerEntitlements";
 import {
   businessMineInput,
@@ -84,6 +99,37 @@ const publicRead = publicProcedure.use(({ ctx, next }) => {
   return next();
 });
 export const businessRouter = router({
+  vip: router({
+    list: publicRead
+      .input(vipListInput)
+      .query(({ input }) => safely(() => publicVipCards(input))),
+    mine: ownRead
+      .input(businessOwnedInput)
+      .query(({ ctx, input }) =>
+        safely(() => ownVipCard(ctx.memberAuth, input.providerId))
+      ),
+    submit: write("vip-submit", 10)
+      .input(vipSaveInput)
+      .mutation(({ ctx, input }) =>
+        safely(() => saveVipCard(ctx.memberAuth, input))
+      ),
+    withdraw: write("vip-withdraw")
+      .input(vipIdentityInput)
+      .mutation(({ ctx, input }) =>
+        safely(() => withdrawVipCard(ctx.memberAuth, input))
+      ),
+    analytics: ownRead
+      .input(
+        businessOwnedInput.extend({
+          days: z
+            .union([z.literal(7), z.literal(30), z.literal(90)])
+            .default(30),
+        })
+      )
+      .query(({ ctx, input }) =>
+        safely(() => vipAnalytics(ctx.memberAuth, input.providerId, input.days))
+      ),
+  }),
   payments: router({
     methods: publicRead.query(() => safely(publicPaymentMethods)),
     list: ownRead
@@ -224,6 +270,16 @@ const staff = (permission: "business.read" | "business.manage") =>
     return next();
   });
 export const businessAdminRouter = router({
+  vip: router({
+    list: staff("business.read")
+      .input(businessQueueInput)
+      .query(({ input }) => safely(() => vipReviewQueue(input))),
+    review: staff("business.manage")
+      .input(vipReviewInput)
+      .mutation(({ ctx, input }) =>
+        safely(() => reviewVipCard(ctx.user!.id, input))
+      ),
+  }),
   payments: router({
     settings: staff("business.manage").query(() => safely(gatewaySettings)),
     saveSettings: staff("business.manage")
