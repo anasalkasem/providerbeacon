@@ -4,8 +4,8 @@
   "description": "Compare providers with confidence.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F6F8FC",
-  "theme_color": "#08172A",
+  "background_color": "#f4f5ef",
+  "theme_color": "#20241f",
   "lang": "en",
   "icons": [
     {

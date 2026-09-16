@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 import { ExternalLink, Eye, Send, TrendingUp } from "lucide-react";
 import {
   CartesianGrid,
@@ -38,14 +38,14 @@ export function BusinessAnalytics({
   );
   const data = query.data;
   const metrics = [
-    { key: "views", label: a.views, icon: Eye, color: "#4338ca" },
-    { key: "website", label: a.website, icon: ExternalLink, color: "#0f766e" },
-    { key: "telegram", label: a.telegram, icon: Send, color: "#0284c7" },
+    { key: "views", label: a.views, icon: Eye, color: "var(--chart-1)" },
+    { key: "website", label: a.website, icon: ExternalLink, color: "var(--chart-2)" },
+    { key: "telegram", label: a.telegram, icon: Send, color: "var(--chart-3)" },
   ] as const;
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-extrabold text-[#0B2A68]">
+        <h2 className="text-xl font-extrabold text-ink">
           {compact ? d.performance : t.analytics}
         </h2>
         <label className="text-sm font-medium">
@@ -88,15 +88,16 @@ export function BusinessAnalytics({
             {metrics.map(m => (
               <article
                 key={m.key}
-                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+                className="beacon-metric p-5"
+                style={{ "--metric-color": m.color } as CSSProperties}
               >
                 <div className="flex justify-between gap-3 text-sm text-slate-600">
                   <span>{m.label}</span>
-                  <span className="rounded-lg bg-slate-50 p-2">
+                  <span className="rounded-xl bg-slate-50 p-2.5">
                     <m.icon className="size-4" style={{ color: m.color }} />
                   </span>
                 </div>
-                <p className="mt-3 text-3xl font-extrabold text-[#0B2A68]">
+                <p className="mt-3 text-3xl font-extrabold text-ink">
                   <bdi>{formatNumber(locale, data.totals[m.key])}</bdi>
                 </p>
                 <p className="mt-2 text-xs leading-6 text-slate-500">
@@ -105,7 +106,7 @@ export function BusinessAnalytics({
                     <>
                       {data.previous.totals[m.key] > 0 ? (
                         <bdi
-                          className={`me-1 font-bold ${data.totals[m.key] >= data.previous.totals[m.key] ? "text-teal-700" : "text-amber-800"}`}
+                          className={`me-1 font-bold ${data.totals[m.key] >= data.previous.totals[m.key] ? "text-beacon-700" : "text-amber-800"}`}
                         >
                           {new Intl.NumberFormat(locale, {
                             style: "percent",
@@ -139,14 +140,14 @@ export function BusinessAnalytics({
           )}
           <BusinessCard>
             <div className="mb-4 flex items-center justify-between gap-3">
-              <h3 className="text-sm font-bold text-[#0B2A68]">{a.trend}</h3>
-              <TrendingUp className="size-4 text-teal-600" />
+              <h3 className="text-sm font-bold text-ink">{a.trend}</h3>
+              <TrendingUp className="size-4 text-beacon-600" />
             </div>
             {data.totals.views + data.totals.website + data.totals.telegram ===
             0 ? (
               <div className="grid min-h-52 place-items-center rounded-xl bg-slate-50 px-6 py-8 text-center">
                 <div>
-                  <span className="mx-auto grid size-12 place-items-center rounded-xl border border-slate-200 bg-white text-teal-600">
+                  <span className="mx-auto grid size-12 place-items-center rounded-xl border border-slate-200 bg-white text-beacon-600">
                     <Eye className="size-5" />
                   </span>
                   <h4 className="mt-4 text-sm font-bold text-slate-700">
@@ -168,14 +169,14 @@ export function BusinessAnalytics({
                     )}
                     margin={{ left: -18, right: 10, top: 8, bottom: 0 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <CartesianGrid stroke="var(--border)" strokeDasharray="3 5" vertical={false} />
                     <XAxis
                       dataKey="day"
                       tick={{ fontSize: 10 }}
                       minTickGap={40}
                     />
                     <YAxis allowDecimals={false} tick={{ fontSize: 10 }} />
-                    <Tooltip />
+                    <Tooltip contentStyle={{ borderRadius: 14, border: "1px solid var(--border)", boxShadow: "0 8px 24px rgb(32 36 31 / 8%)", fontFamily: "var(--font-sans)" }} />
                     <Legend wrapperStyle={{ fontSize: 11 }} />
                     {metrics.map(m => (
                       <Line
@@ -183,7 +184,7 @@ export function BusinessAnalytics({
                         dataKey={m.key}
                         name={m.label}
                         stroke={m.color}
-                        strokeWidth={2}
+                        strokeWidth={2.5}
                         dot={false}
                         isAnimationActive={false}
                       />
@@ -193,7 +194,7 @@ export function BusinessAnalytics({
               </div>
             )}
             <details className="mt-5">
-              <summary className="cursor-pointer text-sm font-semibold text-[#0B2A68]">
+              <summary className="cursor-pointer text-sm font-semibold text-ink">
                 {a.dailyTable}
               </summary>
               <div className="mt-3 overflow-x-auto">

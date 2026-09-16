@@ -92,7 +92,7 @@ export function EmailPreferences({ member }: { member: MemberProfile }) {
       {notice && (
         <p
           role="status"
-          className="rounded-lg bg-teal-50 p-3 text-sm text-teal-900"
+          className="rounded-lg bg-beacon-50 p-3 text-sm text-beacon-900"
         >
           {notice}
         </p>
@@ -182,7 +182,7 @@ export default function MemberEmailPage() {
     <PublicLayout showCatalogueNotice={false}>
       <div className="container py-14">
         <section className="mx-auto max-w-lg space-y-6 rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-10">
-          <div className="grid size-12 place-items-center rounded-2xl bg-teal-50 text-teal-700">
+          <div className="grid size-12 place-items-center rounded-2xl bg-beacon-50 text-beacon-700">
             <MailCheck />
           </div>
           <p className="text-sm font-semibold text-blue-800">ProviderBeacon</p>
@@ -190,7 +190,7 @@ export default function MemberEmailPage() {
           {done ? (
             <p
               role="status"
-              className="rounded-xl bg-teal-50 p-4 leading-7 text-teal-900"
+              className="rounded-xl bg-beacon-50 p-4 leading-7 text-beacon-900"
             >
               {mode === "verify"
                 ? t.verified

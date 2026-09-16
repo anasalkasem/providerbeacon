@@ -5,7 +5,11 @@ const state = vi.hoisted(() => ({ locale: "ar" as "ar" | "en" }));
 vi.mock("@/contexts/LocaleContext", async original => ({ ...await original<any>(), useLocale: () => ({ locale: state.locale, dir: state.locale === "ar" ? "rtl" : "ltr", setLocale: () => {} }) }));
 vi.mock("@/_core/hooks/useAuth", () => ({ useAuth: () => ({ user: { name: "Test operator" }, loading: false, logout: () => {} }) }));
 vi.mock("@/hooks/useMobile", () => ({ useIsMobile: () => false }));
-vi.mock("wouter", () => ({ useLocation: () => ["/admin", () => {}] }));
+vi.mock("wouter", () => ({
+  useLocation: () => ["/admin", () => {}],
+  Link: ({ children, ...props }: React.ComponentProps<"a">) =>
+    React.createElement("a", props, children),
+}));
 vi.mock("@/lib/trpc", () => ({ trpc: { admin: { access: { useQuery: () => ({ data: { role: "owner", permissions: ["services.read"] } }) } } } }));
 import DashboardLayout from "../client/src/components/DashboardLayout";
 

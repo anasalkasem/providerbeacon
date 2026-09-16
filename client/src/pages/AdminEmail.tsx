@@ -132,11 +132,11 @@ export default function AdminEmail() {
     <DashboardLayout>
       <div className="mx-auto w-full min-w-0 max-w-6xl space-y-5 p-1 sm:space-y-7 sm:p-7">
         <header className="flex items-center gap-4">
-          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-cyan-50 text-cyan-800 sm:size-14">
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-beacon-50 text-beacon-800 sm:size-14">
             <Mail />
           </span>
           <div className="min-w-0">
-            <p className="text-xs font-bold tracking-wider text-cyan-700">
+            <p className="text-xs font-bold tracking-wider text-beacon-700">
               ProviderBeacon
             </p>
             <h1 className="text-2xl font-extrabold sm:text-3xl">
@@ -170,7 +170,7 @@ export default function AdminEmail() {
               </p>
             )}
             <section
-              className={`rounded-2xl border p-4 sm:p-6 ${status.data?.enabled ? "border-teal-200 bg-teal-50" : "border-amber-200 bg-amber-50"}`}
+              className={`rounded-2xl border p-4 sm:p-6 ${status.data?.enabled ? "border-beacon-200 bg-beacon-50" : "border-amber-200 bg-amber-50"}`}
             >
               <h2 className="flex items-center gap-2 font-bold">
                 {status.data?.enabled ? (
@@ -523,7 +523,7 @@ export default function AdminEmail() {
                 {notice && (
                   <p
                     role="status"
-                    className="rounded-lg bg-teal-50 p-3 text-teal-900"
+                    className="rounded-lg bg-beacon-50 p-3 text-beacon-900"
                   >
                     {notice}
                   </p>
@@ -573,7 +573,7 @@ export default function AdminEmail() {
                         </td>
                         <td className="p-4">
                           <span
-                            className={`rounded-lg px-2 py-1 ${row.status === "delivered" ? "bg-teal-50 text-teal-800" : ["failed", "bounced", "complained"].includes(row.status) ? "bg-red-50 text-red-700" : "bg-slate-100 text-slate-700"}`}
+                            className={`rounded-lg px-2 py-1 ${row.status === "delivered" ? "bg-beacon-50 text-beacon-800" : ["failed", "bounced", "complained"].includes(row.status) ? "bg-red-50 text-red-700" : "bg-slate-100 text-slate-700"}`}
                           >
                             {statusText[row.status] || row.status}
                           </span>

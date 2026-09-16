@@ -112,11 +112,11 @@ function AuthFrame({
     <PublicLayout showCatalogueNotice={false}>
       <div className="container py-10 sm:py-16">
         <div className="mx-auto grid max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/40 lg:grid-cols-[.85fr_1fr]">
-          <aside className="bg-[#071A35] p-7 text-white sm:p-10 lg:flex lg:flex-col lg:justify-center">
-            <div className="mb-6 grid size-12 place-items-center rounded-2xl bg-cyan-300/10 text-cyan-300">
+          <aside className="bg-ink p-7 text-white sm:p-10 lg:flex lg:flex-col lg:justify-center">
+            <div className="mb-6 grid size-12 place-items-center rounded-2xl bg-beacon-300/10 text-beacon-300">
               <UserRound />
             </div>
-            <p className="text-sm font-semibold tracking-wide text-cyan-300">
+            <p className="text-sm font-semibold tracking-wide text-beacon-300">
               ProviderBeacon
             </p>
             <h1 className="mt-3 text-3xl font-extrabold leading-snug">
@@ -153,14 +153,14 @@ function RecoverySaved({
     [copied, setCopied] = useState(false);
   return (
     <section className="space-y-5">
-      <div className="grid size-12 place-items-center rounded-xl bg-teal-50 text-teal-700">
+      <div className="grid size-12 place-items-center rounded-xl bg-beacon-50 text-beacon-700">
         <KeyRound />
       </div>
       <h2 className="text-2xl font-bold">{t.recoveryTitle}</h2>
       <p className="text-sm leading-7 text-slate-600">{t.recoveryBody}</p>
       <code
         dir="ltr"
-        className="block break-all rounded-xl border border-teal-200 bg-teal-50 p-4 text-center text-lg font-semibold text-teal-950 select-all"
+        className="block break-all rounded-xl border border-beacon-200 bg-beacon-50 p-4 text-center text-lg font-semibold text-beacon-950 select-all"
       >
         {code}
       </code>
@@ -357,7 +357,7 @@ function CredentialsPage({ mode }: { mode: "login" | "register" }) {
               }
             />
             <Button
-              className="h-12 w-full rounded-xl bg-[#0B2A68] hover:bg-[#0E347F]"
+              className="h-12 w-full rounded-xl"
               disabled={busy}
             >
               {busy ? (
@@ -607,7 +607,7 @@ function AccountDetails({
         </div>
       </div>
       {recovery ? (
-        <div className="rounded-2xl border border-teal-200 bg-white p-6 sm:p-8">
+        <div className="rounded-2xl border border-beacon-200 bg-white p-6 sm:p-8">
           <RecoverySaved
             key={recovery}
             code={recovery}
@@ -620,7 +620,7 @@ function AccountDetails({
           {notice && (
             <p
               role="status"
-              className="flex items-center gap-2 rounded-xl bg-teal-50 p-4 text-sm text-teal-800"
+              className="flex items-center gap-2 rounded-xl bg-beacon-50 p-4 text-sm text-beacon-800"
             >
               <Check className="size-4" />
               {notice}
@@ -652,7 +652,7 @@ function AccountDetails({
                 {member.email}
               </p>
               <span
-                className={`mt-2 inline-block rounded-full px-3 py-1 text-xs ${member.emailVerified ? "bg-teal-50 text-teal-800" : "bg-amber-50 text-amber-800"}`}
+                className={`mt-2 inline-block rounded-full px-3 py-1 text-xs ${member.emailVerified ? "bg-beacon-50 text-beacon-800" : "bg-amber-50 text-amber-800"}`}
               >
                 {member.emailVerified ? t.verified : t.unverified}
               </span>

@@ -99,7 +99,7 @@ export function PaymentStatusCard({
       <div className="flex flex-wrap justify-between gap-3">
         <p
           role="status"
-          className={`font-bold ${state === "paid" ? "text-teal-700" : "text-slate-800"}`}
+          className={`font-bold ${state === "paid" ? "text-beacon-700" : "text-slate-800"}`}
         >
           {t[state]}
         </p>
@@ -244,7 +244,7 @@ export function ProviderCheckout({
   );
   return (
     <div className="mt-6 border-t border-slate-100 pt-5">
-      <h3 className="font-bold text-[#0B2A68]">{t.checkout}</h3>
+      <h3 className="font-bold text-ink">{t.checkout}</h3>
       <p className="mt-3 text-sm leading-7 text-slate-600">{t.terms}</p>
       <p className="mt-4 font-semibold">
         {t.renewal}: <bdi>{paymentUsd(query.data.quote.amountCents)}</bdi>

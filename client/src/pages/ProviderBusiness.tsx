@@ -65,11 +65,11 @@ export default function ProviderBusiness() {
     <PublicLayout showCatalogueNotice={false}>
       <section className="container py-10">
         <header className="mb-8 flex items-start gap-4">
-          <span className="rounded-2xl bg-teal-50 p-3 text-teal-700">
+          <span className="rounded-2xl bg-beacon-50 p-3 text-beacon-700">
             <Building2 className="size-8" />
           </span>
           <div>
-            <h1 className="text-3xl font-extrabold text-[#0B2A68]">
+            <h1 className="text-3xl font-extrabold text-ink">
               {t.title}
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
@@ -84,7 +84,7 @@ export default function ProviderBusiness() {
         ) : (
           <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
             <BusinessCard>
-              <h2 className="text-2xl font-bold text-[#0B2A68]">{t.plan}</h2>
+              <h2 className="text-2xl font-bold text-ink">{t.plan}</h2>
               <BusinessPricing />
               <p className="mt-4 leading-8 text-slate-600">{t.planHelp}</p>
               <PaymentMethods />
@@ -111,7 +111,7 @@ export default function ProviderBusiness() {
               ].map(feature => (
                 <BusinessCard key={feature.title}>
                   <div className="flex items-center gap-4">
-                    <feature.icon className="size-6 text-teal-600" />
+                    <feature.icon className="size-6 text-beacon-600" />
                     <h2 className="font-bold text-slate-800">
                       {feature.title}
                     </h2>
@@ -214,8 +214,8 @@ function ProviderWorkspace({
       ) : section === "ownership" ? (
         <div className="space-y-6">
           {!owned && (
-            <BusinessCard className="border-teal-200 bg-teal-50/50">
-              <h2 className="text-xl font-bold text-[#0B2A68]">{d.start}</h2>
+            <BusinessCard className="border-beacon-200 bg-beacon-50/50">
+              <h2 className="text-xl font-bold text-ink">{d.start}</h2>
               <p className="mt-3 text-sm leading-7 text-slate-600">
                 {d.startHelp}
               </p>
@@ -224,7 +224,7 @@ function ProviderWorkspace({
           <div className="grid items-start gap-6 xl:grid-cols-2">
             <ClaimPicker verified={verified} />
             <BusinessCard>
-              <h2 className="text-lg font-bold text-[#0B2A68]">{t.requests}</h2>
+              <h2 className="text-lg font-bold text-ink">{t.requests}</h2>
               <div className="mt-5 space-y-5">
                 {workspace.claims.length ? (
                   workspace.claims.map(claim => (
@@ -249,7 +249,7 @@ function ProviderWorkspace({
           />
         ) : (
           <BusinessCard>
-            <h2 className="text-xl font-bold text-[#0B2A68]">{t.plan}</h2>
+            <h2 className="text-xl font-bold text-ink">{t.plan}</h2>
             <BusinessPricing />
             <PaymentMethods />
             <p className="mt-4 text-sm leading-7 text-slate-600">
@@ -345,7 +345,7 @@ function ClaimPicker({ verified }: { verified: boolean }) {
   });
   return (
     <BusinessCard>
-      <h2 className="text-lg font-bold text-[#0B2A68]">{t.claim}</h2>
+      <h2 className="text-lg font-bold text-ink">{t.claim}</h2>
       <label className="mt-4 block text-sm font-semibold">
         {t.search}
         <input
@@ -483,7 +483,7 @@ function ProviderBilling({
     <div className="grid items-start gap-6 xl:grid-cols-2">
       <BusinessCard>
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xl font-bold text-[#0B2A68]">{t.plan}</h2>
+          <h2 className="text-xl font-bold text-ink">{t.plan}</h2>
           <BusinessStatus value={planState(owned.subscription, now)} />
         </div>
         <BusinessPricing
@@ -511,7 +511,7 @@ function ProviderBilling({
         </a>
       </BusinessCard>
       <BusinessCard>
-        <h2 className="text-xl font-bold text-[#0B2A68]">
+        <h2 className="text-xl font-bold text-ink">
           {dashboardText(locale).billing}
         </h2>
         {owned.ownershipValid ? (
@@ -588,7 +588,7 @@ function ProviderGroups({
   return (
     <BusinessCard>
       <div className="flex flex-wrap justify-between gap-3">
-        <h2 className="text-xl font-bold text-[#0B2A68]">{t.groups}</h2>
+        <h2 className="text-xl font-bold text-ink">{t.groups}</h2>
         <button
           className={businessPrimary}
           disabled={
@@ -667,7 +667,7 @@ function ProviderGroups({
                 href={group.url}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
-                className="mt-2 block break-all text-xs text-teal-700 underline"
+                className="mt-2 block break-all text-xs text-beacon-700 underline"
                 dir="ltr"
               >
                 {group.url}
@@ -761,7 +761,7 @@ function ProviderPromotions({
   return (
     <BusinessCard>
       <div className="flex flex-wrap justify-between gap-3">
-        <h2 className="text-xl font-bold text-[#0B2A68]">{t.myOffers}</h2>
+        <h2 className="text-xl font-bold text-ink">{t.myOffers}</h2>
         <button
           className={businessPrimary}
           disabled={
@@ -782,7 +782,7 @@ function ProviderPromotions({
       </div>
       <p className="mt-3 text-sm leading-7 text-slate-500">{t.offerHelp}</p>
       {query.data && (
-        <p className="mt-3 text-xs font-semibold text-teal-700">
+        <p className="mt-3 text-xs font-semibold text-beacon-700">
           {t.usage}:{" "}
           <bdi>
             {formatNumber(locale, query.data.usage.used)} /{" "}

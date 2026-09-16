@@ -28,7 +28,7 @@ export default function QuoteWorkbench() {
       current.map((q, j) => (i === j ? { ...q, ...patch } : q))
     );
   const field =
-    "mt-2 h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-teal-400";
+    "mt-2 h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-beacon-400";
   return (
     <PublicLayout>
       <div className="container py-12" lang={locale === "ar" ? "ar" : "en"}>
@@ -87,13 +87,13 @@ export default function QuoteWorkbench() {
             <section
               key={i}
               aria-label={`${t.quote} ${i + 1}`}
-              className={`rounded-2xl border bg-white p-6 ${lowest !== null && totals[i] === lowest ? "border-teal-400 ring-1 ring-teal-200" : "border-slate-200"}`}
+              className={`rounded-2xl border bg-white p-6 ${lowest !== null && totals[i] === lowest ? "border-beacon-400 ring-1 ring-beacon-200" : "border-slate-200"}`}
             >
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-lg font-extrabold">
                   {t.quote} {i + 1}
                 </h2>
-                <Calculator className="size-5 text-teal-600" />
+                <Calculator className="size-5 text-beacon-600" />
               </div>
               <label className="block text-sm font-semibold text-slate-600">
                 {t.quoteName}
@@ -130,7 +130,7 @@ export default function QuoteWorkbench() {
                     ? "—"
                     : `${currency} ${totals[i]!.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 7 })}`}
                 </output>
-                <p className="mt-2 min-h-5 text-xs font-bold text-teal-700">
+                <p className="mt-2 min-h-5 text-xs font-bold text-beacon-700">
                   {lowest !== null && totals[i] === lowest ? t.lowest : ""}
                 </p>
               </div>
@@ -140,7 +140,7 @@ export default function QuoteWorkbench() {
         <label className="mt-6 flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-5 text-sm font-bold leading-7">
           <input
             type="checkbox"
-            className="mt-1.5 size-4 shrink-0 accent-teal-600"
+            className="mt-1.5 size-4 shrink-0 accent-beacon-600"
             checked={matched}
             onChange={e => setMatched(e.target.checked)}
           />
@@ -166,7 +166,7 @@ export default function QuoteWorkbench() {
             <RotateCcw className="size-4" />
             {t.reset}
           </button>
-          <Link href="/services" className="text-sm font-bold text-teal-700">
+          <Link href="/services" className="text-sm font-bold text-beacon-700">
             {t.explore}
             <ArrowRight className="ms-2 inline size-4 rtl:rotate-180" />
           </Link>

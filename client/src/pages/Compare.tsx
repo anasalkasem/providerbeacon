@@ -226,7 +226,7 @@ export default function Compare() {
           </bdi>
           <div className="mt-2 h-1.5 w-32 overflow-hidden rounded-full bg-slate-100">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-600 to-teal-400"
+              className="h-full rounded-full bg-gradient-to-r from-blue-600 to-beacon-400"
               style={{ width: `${service.retention ?? 0}%` }}
             />
           </div>
@@ -493,7 +493,7 @@ export default function Compare() {
                   <tr key={label} className="border-t border-slate-100">
                     <th className="bg-slate-50 px-6 py-5 text-start">
                       <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
-                        <span className="text-cyan-600 [&_svg]:size-4">
+                        <span className="text-beacon-600 [&_svg]:size-4">
                           {icon}
                         </span>
                         {label}
@@ -524,7 +524,7 @@ export default function Compare() {
                       >
                         <Button
                           asChild
-                          className="w-full rounded-xl bg-[#0B2A68]"
+                          className="w-full rounded-xl"
                         >
                           <Link href={`/providers/${provider.slug}`}>
                             {t.viewProvider}

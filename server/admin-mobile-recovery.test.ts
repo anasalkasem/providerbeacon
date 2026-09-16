@@ -10,7 +10,11 @@ vi.mock("@/_core/hooks/useAuth", () => ({
   }),
 }));
 vi.mock("@/hooks/useMobile", () => ({ useIsMobile: () => true }));
-vi.mock("wouter", () => ({ useLocation: () => ["/admin/email", vi.fn()] }));
+vi.mock("wouter", () => ({
+  useLocation: () => ["/admin/email", vi.fn()],
+  Link: ({ children, ...props }: React.ComponentProps<"a">) =>
+    React.createElement("a", props, children),
+}));
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     admin: {

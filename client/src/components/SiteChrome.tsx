@@ -15,18 +15,17 @@ import { ChevronDown, Globe2, Menu, UserRound, X } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 
-export function Brand({ compact = false }: { compact?: boolean }) {
+export function Brand({ compact = false, inverse = false }: { compact?: boolean; inverse?: boolean }) {
   return (
-    <Link href="/" className="brand-link" aria-label="ProviderBeacon">
-      <svg aria-hidden="true" viewBox="0 0 64 64" className={compact ? "size-10" : "size-11"}>
-        <defs><linearGradient id="pb-mark" x1="8" y1="8" x2="54" y2="52"><stop stopColor="#0B2A68"/><stop offset=".58" stopColor="#175AC8"/><stop offset="1" stopColor="#14B8A6"/></linearGradient></defs>
-        <path fill="url(#pb-mark)" d="M10 6h21.5C46.7 6 56 14.7 56 28.3 56 42 46.4 50 31.5 50H22v8H10V6Zm12 11v22h9.4C39 39 44 35.3 44 28.4 44 21.2 39 17 31.4 17H22Z"/>
-        <path fill="#2DE0C5" d="m28 28 17-8v16l-17-8Z"/>
-        <circle cx="22" cy="28" r="3.5" fill="#fff"/>
+    <Link href="/" className={`brand-link ${inverse ? "brand-inverse" : ""}`} aria-label="ProviderBeacon">
+      <svg aria-hidden="true" viewBox="0 0 64 64" className={`brand-mark ${compact ? "size-10" : "size-11"}`}>
+        <path fill="currentColor" d="M10 6h21.5C46.7 6 56 14.7 56 28.3 56 42 46.4 50 31.5 50H22v8H10V6Zm12 11v22h9.4C39 39 44 35.3 44 28.4 44 21.2 39 17 31.4 17H22Z"/>
+        <path fill="#a5cd49" d="m28 28 17-8v16l-17-8Z"/>
+        <circle cx="22" cy="28" r="3.5" fill="#d4f77d"/>
       </svg>
-      <span dir="ltr" className={`${compact ? "text-[17px]" : "text-xl"} font-extrabold tracking-[-.045em] text-[#0B2A68]`}
+      <span dir="ltr" className={`brand-wordmark ${compact ? "text-[17px]" : "text-xl"} font-extrabold tracking-[-.045em]`}
       >
-        Provider<span className="text-[#12AFA7]">Beacon</span>
+        Provider<span className="brand-wordmark-accent">Beacon</span>
       </span>
     </Link>
   );
@@ -51,7 +50,7 @@ export function SiteHeader() {
   ];
 
   return (
-    <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">
+    <header className="site-header sticky top-0 z-50 border-b border-slate-200/70 backdrop-blur-xl">
       <a href="#main-content" className="skip-link">
         {p.skipMain}
       </a>
@@ -90,7 +89,7 @@ export function SiteHeader() {
           </DropdownMenu>
           <Button
             asChild
-            className="rounded-xl bg-[#0B2A68] hover:bg-[#0E347F]"
+            className="beacon-button rounded-xl"
           >
             <a href={member.data?.member ? "/account" : "/sign-in"}>
               <UserRound className="size-4" />
@@ -124,7 +123,7 @@ export function SiteHeader() {
             <a
               href={member.data?.member ? "/account" : "/sign-in"}
               onClick={() => setOpen(false)}
-              className="flex items-center gap-2 rounded-lg bg-[#0B2A68] px-3 py-3 font-semibold text-white"
+              className="beacon-button flex items-center gap-2 rounded-xl px-3 py-3 font-semibold"
             >
               <UserRound className="size-4" />
               {member.data?.member
@@ -136,7 +135,7 @@ export function SiteHeader() {
                 <button
                   key={value}
                   onClick={() => setLocale(value)}
-                  className={`rounded-lg border px-3 py-2 text-sm ${locale === value ? "border-cyan-500 bg-cyan-50 text-cyan-800" : "border-slate-200"}`}
+                  className={`rounded-lg border px-3 py-2 text-sm ${locale === value ? "border-beacon-500 bg-beacon-50 text-beacon-800" : "border-slate-200"}`}
                 >
                   {localeNames[value]}
                 </button>
@@ -155,7 +154,7 @@ export function SiteFooter() {
   const p = pageCopy[locale];
   const mt = useMemberText();
   return (
-    <footer className="border-t border-slate-200 bg-white">
+    <footer className="site-footer">
       <div className="container grid gap-10 py-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
           <Brand compact />
@@ -217,7 +216,7 @@ function FooterColumn({
       <ul className="mt-4 grid gap-3 text-sm text-slate-500">
         {links.map(([label, href]) => (
           <li key={`${label}-${href}`}>
-            <a href={href} className="hover:text-[#0B2A68]">
+            <a href={href} className="hover:text-ink">
               {label}
             </a>
           </li>
@@ -235,7 +234,7 @@ export function PublicLayout({
   showCatalogueNotice?: boolean;
 }) {
   return (
-    <div className="min-h-screen bg-[#F6F8FC] text-slate-950">
+    <div className="min-h-screen bg-background text-slate-950">
       <SiteHeader />
       <main id="main-content">
         {showCatalogueNotice && <CatalogueNotice />}

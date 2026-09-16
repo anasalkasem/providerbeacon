@@ -141,17 +141,17 @@ export default function LinkAutofill({
   return (
     <section
       aria-label={t[kind]}
-      className="col-span-full min-w-0 rounded-xl border border-teal-100 bg-teal-50/60 p-4"
+      className="col-span-full min-w-0 rounded-xl border border-beacon-100 bg-beacon-50/60 p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <span className="flex items-center gap-2 text-sm font-bold text-teal-900">
+        <span className="flex items-center gap-2 text-sm font-bold text-beacon-900">
           <WandSparkles className="size-4" />
           {t[kind]}
         </span>
         <button
           type="button"
           disabled={!source || visible?.pending}
-          className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-teal-200 bg-white px-3 text-xs font-semibold text-teal-800 disabled:opacity-50"
+          className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-beacon-200 bg-white px-3 text-xs font-semibold text-beacon-800 disabled:opacity-50"
           onClick={() => {
             setManual(source);
             setAttempt(v => v + 1);
@@ -211,7 +211,7 @@ export default function LinkAutofill({
                   {onUseImage && (
                     <button
                       type="button"
-                      className="mt-2 text-xs font-semibold text-teal-800 underline"
+                      className="mt-2 text-xs font-semibold text-beacon-800 underline"
                       onClick={() => onUseImage("logoUrl", data.logoUrl!)}
                     >
                       {t.useLogo}
@@ -233,7 +233,7 @@ export default function LinkAutofill({
                   {onUseImage && (
                     <button
                       type="button"
-                      className="mt-2 text-xs font-semibold text-teal-800 underline"
+                      className="mt-2 text-xs font-semibold text-beacon-800 underline"
                       onClick={() =>
                         onUseImage("websitePreviewUrl", data.websitePreviewUrl!)
                       }

@@ -150,9 +150,9 @@ function AssistantChat({ path }: { path: string }) {
         onClick={() => setOpen(true)}
         aria-expanded={open}
         aria-controls="beacon-assistant"
-        className={`beacon-assistant-launcher fixed end-5 z-[60] items-center gap-2 rounded-full bg-[#0B2A68] px-5 py-3.5 text-sm font-bold text-white shadow-xl ring-1 ring-white/30 hover:bg-blue-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-teal-600 ${open ? "hidden" : "inline-flex"}`}
+        className={`beacon-assistant-launcher fixed end-5 z-[60] items-center gap-2 rounded-full bg-ink px-5 py-3.5 text-sm font-bold text-white shadow-xl ring-1 ring-white/30 hover:bg-beacon-900 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-beacon-600 ${open ? "hidden" : "inline-flex"}`}
       >
-        <Sparkles aria-hidden="true" className="size-5 text-teal-300" />
+        <Sparkles aria-hidden="true" className="size-5 text-beacon-300" />
         {t.launcher}
       </button>
       {open && (
@@ -168,8 +168,8 @@ function AssistantChat({ path }: { path: string }) {
           }}
           className="fixed inset-x-3 bottom-3 z-[70] flex h-[min(720px,calc(100dvh-24px))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl sm:inset-x-auto sm:bottom-5 sm:end-5 sm:w-[430px]"
         >
-          <header className="flex shrink-0 items-center gap-3 bg-[#0B2A68] p-4 text-white">
-            <Sparkles aria-hidden="true" className="size-6 text-teal-300" />
+          <header className="flex shrink-0 items-center gap-3 bg-ink p-4 text-white">
+            <Sparkles aria-hidden="true" className="size-6 text-beacon-300" />
             <div className="flex-1">
               <h2 className="font-extrabold" dir="ltr">
                 {t.title}
@@ -219,14 +219,14 @@ function AssistantChat({ path }: { path: string }) {
                 <Link
                   href="/services"
                   onClick={close}
-                  className="font-bold text-teal-700 underline"
+                  className="font-bold text-beacon-700 underline"
                 >
                   {t.more}
                 </Link>
                 {status.isError && (
                   <button
                     onClick={() => void status.refetch()}
-                    className="ms-3 font-bold text-teal-700"
+                    className="ms-3 font-bold text-beacon-700"
                   >
                     {t.retry}
                   </button>
@@ -237,7 +237,7 @@ function AssistantChat({ path }: { path: string }) {
               <div className="space-y-4 py-3">
                 <MessageCircle
                   aria-hidden="true"
-                  className="size-8 text-teal-700"
+                  className="size-8 text-beacon-700"
                 />
                 <p className="text-sm leading-7">{t.welcome}</p>
                 <div className="flex flex-col gap-2">
@@ -246,7 +246,7 @@ function AssistantChat({ path }: { path: string }) {
                       key={example}
                       disabled={chat.isPending}
                       onClick={() => send(example)}
-                      className="rounded-xl border border-slate-200 p-3 text-start text-sm font-medium hover:border-teal-400 hover:bg-teal-50 disabled:opacity-50"
+                      className="rounded-xl border border-slate-200 p-3 text-start text-sm font-medium hover:border-beacon-400 hover:bg-beacon-50 disabled:opacity-50"
                     >
                       {example}
                     </button>
@@ -259,7 +259,7 @@ function AssistantChat({ path }: { path: string }) {
                 key={turn.id}
                 className={
                   turn.role === "user"
-                    ? "ms-8 rounded-2xl bg-[#0B2A68] px-4 py-3 text-sm leading-7 text-white"
+                    ? "ms-8 rounded-2xl bg-ink px-4 py-3 text-sm leading-7 text-white"
                     : "space-y-3 text-sm leading-7"
                 }
               >
@@ -295,7 +295,7 @@ function AssistantChat({ path }: { path: string }) {
                             <Link
                               href={`/providers/${offer.provider.slug}`}
                               onClick={close}
-                              className="font-bold text-teal-700 hover:underline"
+                              className="font-bold text-beacon-700 hover:underline"
                             >
                               {offer.provider.name}
                             </Link>
@@ -353,7 +353,7 @@ function AssistantChat({ path }: { path: string }) {
                             <Link
                               href={`/providers/${offer.provider.slug}`}
                               onClick={close}
-                              className="inline-block text-xs font-bold text-teal-700 underline"
+                              className="inline-block text-xs font-bold text-beacon-700 underline"
                             >
                               {t.provider}
                             </Link>
@@ -363,7 +363,7 @@ function AssistantChat({ path }: { path: string }) {
                           <Link
                             onClick={close}
                             href={`/compare?services=${turn.result.offers.map(offer => offer.service.id).join(",")}${turn.result.quantity != null ? `&quantity=${turn.result.quantity}` : ""}&currency=${turn.result.displayCurrency}`}
-                            className="block rounded-xl bg-[#0B2A68] p-3 text-center text-sm font-bold text-white"
+                            className="block rounded-xl bg-ink p-3 text-center text-sm font-bold text-white"
                           >
                             {t.compare}
                           </Link>
@@ -379,7 +379,7 @@ function AssistantChat({ path }: { path: string }) {
                     <Link
                       href={turn.result.catalogueUrl}
                       onClick={close}
-                      className="inline-block text-xs font-bold text-teal-700 underline"
+                      className="inline-block text-xs font-bold text-beacon-700 underline"
                     >
                       {t.more}
                     </Link>
@@ -390,7 +390,7 @@ function AssistantChat({ path }: { path: string }) {
             {chat.isPending && (
               <p
                 role="status"
-                className="flex items-center gap-2 text-sm text-teal-800"
+                className="flex items-center gap-2 text-sm text-beacon-800"
               >
                 <Loader2 aria-hidden="true" className="size-4 animate-spin" />
                 {t.thinking}
@@ -443,13 +443,13 @@ function AssistantChat({ path }: { path: string }) {
                     send(draft);
                   }
                 }}
-                className="max-h-32 min-h-16 flex-1 resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm focus:border-teal-500 focus:outline-none disabled:opacity-60"
+                className="max-h-32 min-h-16 flex-1 resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm focus:border-beacon-500 focus:outline-none disabled:opacity-60"
               />
               <button
                 type="submit"
                 aria-label={t.send}
                 disabled={!ready || chat.isPending || !draft.trim()}
-                className="mb-1 rounded-xl bg-teal-700 p-3 text-white hover:bg-teal-800 disabled:opacity-40"
+                className="mb-1 rounded-xl bg-beacon-700 p-3 text-white hover:bg-beacon-800 disabled:opacity-40"
               >
                 <Send aria-hidden="true" className="size-5 rtl:-scale-x-100" />
               </button>

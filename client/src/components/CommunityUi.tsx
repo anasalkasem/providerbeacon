@@ -26,9 +26,9 @@ import { communityCopy, communityError } from "@/i18n/community";
 import { trpc } from "@/lib/trpc";
 
 export const fieldClass =
-  "w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-100 disabled:opacity-60";
+  "w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 focus:border-beacon-500 focus:outline-none focus:ring-2 focus:ring-beacon-100 disabled:opacity-60";
 export const primaryClass =
-  "inline-flex items-center justify-center gap-2 rounded-xl bg-[#0B2A48] px-5 py-3 text-sm font-bold text-white hover:bg-[#174365] disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-xl beacon-button px-5 py-3 text-sm font-bold disabled:opacity-50";
 export const secondaryClass =
   "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50";
 export function GroupField({
@@ -83,7 +83,7 @@ export function CommunityCard({
       <GroupSourceDetails data={group.linkMetadata} />
       <h2
         dir="auto"
-        className="mt-5 break-words text-xl font-extrabold leading-8 text-[#0B2A48]"
+        className="mt-5 break-words text-xl font-extrabold leading-8 text-ink"
       >
         {group.name}
       </h2>
@@ -104,7 +104,7 @@ export function CommunityCard({
               {t.association}:{" "}
               <Link
                 href={`/providers/${group.provider.slug}`}
-                className="font-bold text-teal-800 underline underline-offset-4"
+                className="font-bold text-beacon-800 underline underline-offset-4"
               >
                 {group.provider.name}
               </Link>
@@ -114,7 +114,7 @@ export function CommunityCard({
                 href={group.evidenceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-teal-700 underline underline-offset-4"
+                className="text-beacon-700 underline underline-offset-4"
               >
                 {t.source}
               </a>
@@ -125,7 +125,7 @@ export function CommunityCard({
         )}
         {group.reviewedAt && (
           <p className="mt-2 flex flex-wrap items-center gap-1.5">
-            <CheckCircle2 className="size-3.5 text-teal-600" />
+            <CheckCircle2 className="size-3.5 text-beacon-600" />
             {t.reviewed}
             <span>
               · {new Date(group.reviewedAt).toLocaleDateString(locale)}
@@ -247,7 +247,7 @@ export function GroupForm({
       className="grid gap-5 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7"
     >
       <div>
-        <h2 className="text-xl font-extrabold text-[#0B2A48]">{t.formTitle}</h2>
+        <h2 className="text-xl font-extrabold text-ink">{t.formTitle}</h2>
         <p className="mt-2 text-sm leading-7 text-slate-500">
           {initial ? t.editHint : t.formHint}
         </p>

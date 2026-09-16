@@ -37,7 +37,7 @@ export default function ProviderProfileHeader({
   const website = publicProfileUrl(provider.websiteUrl);
   const telegram = providerTelegramUrl(provider.telegramUrl);
   return (
-    <section className="border-b border-slate-200 bg-gradient-to-br from-white via-white to-cyan-50/60">
+    <section className="border-b border-slate-200 bg-gradient-to-br from-white via-white to-beacon-50/60">
       <div className="container py-8 sm:py-10">
         <Button variant="ghost" asChild className="mb-6 -ms-3 text-slate-500">
           <Link href="/providers">
@@ -98,7 +98,7 @@ export default function ProviderProfileHeader({
             </div>
             <div className="mt-6 flex flex-wrap gap-2.5">
               {website && (
-                <Button asChild className="rounded-xl bg-[#0B2A68]">
+                <Button asChild className="rounded-xl">
                   <a
                     href={website}
                     target="_blank"

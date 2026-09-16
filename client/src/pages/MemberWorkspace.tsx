@@ -47,7 +47,7 @@ export default function MemberWorkspace() {
     <PublicLayout showCatalogueNotice={false}>
       {me.isLoading ? (
         <div className="container py-20">
-          <Loader2 className="size-6 animate-spin text-teal-700" />
+          <Loader2 className="size-6 animate-spin text-beacon-700" />
         </div>
       ) : !me.data?.member ? (
         <section className="container max-w-2xl py-20">
@@ -57,7 +57,7 @@ export default function MemberWorkspace() {
           </p>
           <Link
             href="/sign-in?next=/account"
-            className="mt-6 inline-flex rounded-xl bg-[#0B2A48] px-6 py-3 font-bold text-white"
+            className="mt-6 inline-flex rounded-xl bg-ink px-6 py-3 font-bold text-white"
           >
             {t.signIn}
           </Link>
@@ -107,7 +107,7 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
     <div className="container py-8 sm:py-12">
       <header className="mb-8 flex flex-wrap items-start justify-between gap-5">
         <div>
-          <p className="text-xs font-bold tracking-widest text-teal-700">
+          <p className="text-xs font-bold tracking-widest text-beacon-700">
             PROVIDERBEACON
           </p>
           <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">
@@ -121,10 +121,10 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/account/provider" className="inline-flex items-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-bold text-teal-800">{businessText(locale).title}</Link>
+          <Link href="/account/provider" className="inline-flex items-center gap-2 rounded-xl border border-beacon-200 bg-beacon-50 px-4 py-3 text-sm font-bold text-beacon-800">{businessText(locale).title}</Link>
           <Link
             href="/find"
-            className="inline-flex items-center gap-2 rounded-xl bg-[#0B2A48] px-4 py-3 text-sm font-bold text-white"
+            className="inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-3 text-sm font-bold text-white"
           >
             {t.newSearch}
             <ArrowRight className="size-4 rtl:rotate-180" />
@@ -146,13 +146,13 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
       </header>
       {data.isLoading ? (
         <p role="status" className="py-10">
-          <Loader2 className="size-6 animate-spin text-teal-700" />
+          <Loader2 className="size-6 animate-spin text-beacon-700" />
         </p>
       ) : data.isError ? (
         <div role="alert" className="rounded-xl bg-amber-50 p-5">
           <p>{t.error}</p>
           <button
-            className="mt-3 font-bold text-teal-800 underline"
+            className="mt-3 font-bold text-beacon-800 underline"
             onClick={() => void data.refetch()}
           >
             {t.refreshed}
@@ -166,8 +166,8 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
                 key={label}
                 className="rounded-2xl border border-slate-200 bg-white p-5"
               >
-                <Icon className="mb-4 size-5 text-teal-700" />
-                <p className="text-3xl font-extrabold text-[#0B2A48]">
+                <Icon className="mb-4 size-5 text-beacon-700" />
+                <p className="text-3xl font-extrabold text-ink">
                   {count.toLocaleString(locale)}
                 </p>
                 <p className="mt-2 text-xs font-semibold text-slate-500">
@@ -181,7 +181,7 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
             <button
               disabled={data.isFetching}
               onClick={() => void data.refetch()}
-              className="inline-flex items-center gap-2 text-xs font-bold text-teal-800 disabled:opacity-40"
+              className="inline-flex items-center gap-2 text-xs font-bold text-beacon-800 disabled:opacity-40"
             >
               <RefreshCw
                 className={`size-4 ${data.isFetching ? "animate-spin" : ""}`}
@@ -196,15 +196,15 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
               ))}
             </div>
           ) : (
-            <section className="rounded-2xl border border-dashed border-teal-300 bg-teal-50/40 p-7 sm:p-10">
-              <Bookmark className="size-8 text-teal-700" />
+            <section className="rounded-2xl border border-dashed border-beacon-300 bg-beacon-50/40 p-7 sm:p-10">
+              <Bookmark className="size-8 text-beacon-700" />
               <h3 className="mt-4 text-xl font-extrabold">{t.empty}</h3>
               <p className="mt-3 max-w-xl text-sm leading-7 text-slate-600">
                 {t.emptyBody}
               </p>
               <Link
                 href="/find"
-                className="mt-5 inline-flex items-center gap-2 font-bold text-teal-800"
+                className="mt-5 inline-flex items-center gap-2 font-bold text-beacon-800"
               >
                 {t.newSearch}
                 <ArrowRight className="size-4 rtl:rotate-180" />
@@ -231,7 +231,7 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
                     <div className="mt-5 flex items-center justify-between gap-3">
                       <Link
                         href={`/compare?services=${c.serviceIds.join(",")}&quantity=${c.quantity}&currency=${c.currency}`}
-                        className="text-sm font-bold text-teal-800"
+                        className="text-sm font-bold text-beacon-800"
                       >
                         {t.open} →
                       </Link>
@@ -287,7 +287,7 @@ function WatchCard({ watch, accountId }: { watch: Watch; accountId: number }) {
         {candidate ? (
           <Link
             href={`/providers/${candidate.provider.slug}`}
-            className="truncate text-sm font-extrabold text-teal-800"
+            className="truncate text-sm font-extrabold text-beacon-800"
           >
             {candidate.provider.name}
           </Link>
@@ -329,7 +329,7 @@ function WatchCard({ watch, accountId }: { watch: Watch; accountId: number }) {
             )}
         </span>
         {change.targetReached && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-teal-700 px-3 py-1.5 text-xs font-bold text-white">
+          <span className="inline-flex items-center gap-1 rounded-full bg-beacon-700 px-3 py-1.5 text-xs font-bold text-white">
             <Bell className="size-3" />
             {t.targetHit}
           </span>
@@ -351,7 +351,7 @@ function WatchCard({ watch, accountId }: { watch: Watch; accountId: number }) {
         </div>
         <div>
           <dt className="text-xs text-slate-500">{t.current}</dt>
-          <dd className="mt-2 break-all text-lg font-extrabold text-[#0B2A48]">
+          <dd className="mt-2 break-all text-lg font-extrabold text-ink">
             <bdi>
               {change.now ?? "—"} {service?.priceCurrency}
             </bdi>
@@ -372,14 +372,14 @@ function WatchCard({ watch, accountId }: { watch: Watch; accountId: number }) {
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded(!expanded)}
-        className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-bold text-teal-800"
+        className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-bold text-beacon-800"
       >
         <History className="size-4" />
         {t.history} · <Bell className="size-4" />
         {t.saveTarget} · {priceAlertCopy[locale].title}
       </button>
       {watch.emailAlert.enabled && !expanded && (
-        <p className="mt-2 text-xs leading-6 text-teal-800">
+        <p className="mt-2 text-xs leading-6 text-beacon-800">
           {priceAlertStatus(watch.emailAlert.status, locale)}
         </p>
       )}
@@ -420,7 +420,7 @@ function PriceHistory({
     { staleTime: 15000, retry: false }
   );
   if (history.isLoading)
-    return <Loader2 className="size-5 animate-spin text-teal-700" />;
+    return <Loader2 className="size-5 animate-spin text-beacon-700" />;
   if (history.isError)
     return <p className="text-xs text-amber-900">{t.error}</p>;
   const points = history.data?.points ?? [];
@@ -483,8 +483,8 @@ function PriceHistory({
               <Area
                 type="stepAfter"
                 dataKey="value"
-                stroke="#0f766e"
-                fill="#ccfbf1"
+                stroke="var(--chart-1)"
+                fill="var(--color-brand-soft)"
                 isAnimationActive={false}
               />
             </AreaChart>

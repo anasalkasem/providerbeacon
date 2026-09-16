@@ -108,9 +108,9 @@ export default function Find() {
     : "/compare";
   return (
     <PublicLayout showCatalogueNotice={false}>
-      <section className="border-b border-slate-200 bg-[#081B30] text-white">
+      <section className="border-b border-slate-200 bg-ink text-white">
         <div className="container max-w-5xl py-10 sm:py-14">
-          <p className="flex items-center gap-2 text-xs font-bold tracking-wide text-teal-300">
+          <p className="flex items-center gap-2 text-xs font-bold tracking-wide text-beacon-300">
             <Sparkles className="size-4" />
             BEACON AI
           </p>
@@ -140,7 +140,7 @@ export default function Find() {
               onChange={e => setDraft(e.target.value)}
               placeholder={result ? t.refine : a.placeholder}
               disabled={chat.isPending}
-              className="w-full resize-y rounded-xl p-3 text-base leading-7 outline-none focus:ring-2 focus:ring-teal-400"
+              className="w-full resize-y rounded-xl p-3 text-base leading-7 outline-none focus:ring-2 focus:ring-beacon-400"
             />
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
               <p className="max-w-xl text-[11px] leading-5 text-slate-500">
@@ -148,7 +148,7 @@ export default function Find() {
               </p>
               <button
                 disabled={!ready || chat.isPending || !draft.trim()}
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-bold text-white hover:bg-teal-800 disabled:opacity-50"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-beacon-700 px-5 py-3 text-sm font-bold text-white hover:bg-beacon-800 disabled:opacity-50"
               >
                 {chat.isPending ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -170,7 +170,7 @@ export default function Find() {
                     setDraft(example);
                     send(example);
                   }}
-                  className="rounded-full border border-white/20 px-3 py-2 text-xs text-slate-200 hover:border-teal-300 disabled:opacity-50"
+                  className="rounded-full border border-white/20 px-3 py-2 text-xs text-slate-200 hover:border-beacon-300 disabled:opacity-50"
                 >
                   {example}
                 </button>
@@ -185,7 +185,7 @@ export default function Find() {
           <div className="rounded-2xl border border-slate-200 bg-white p-6">
             <p>{status.isError ? a.error : a.unavailable}</p>
             <Link
-              className="mt-3 inline-flex font-bold text-teal-800 underline"
+              className="mt-3 inline-flex font-bold text-beacon-800 underline"
               href="/services"
             >
               {t.browse}
@@ -195,7 +195,7 @@ export default function Find() {
         {chat.isPending && (
           <p
             role="status"
-            className="mb-5 flex items-center gap-3 rounded-xl bg-teal-50 p-5 text-teal-900"
+            className="mb-5 flex items-center gap-3 rounded-xl bg-beacon-50 p-5 text-beacon-900"
           >
             <Loader2 className="size-5 animate-spin" />
             {a.thinking}
@@ -224,7 +224,7 @@ export default function Find() {
           >
             <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-teal-700">
+                <p className="text-xs font-bold uppercase tracking-wide text-beacon-700">
                   {t.request}
                 </p>
                 <p
@@ -311,7 +311,7 @@ export default function Find() {
                     <div className="mb-5 flex flex-wrap gap-3">
                       <Link
                         href={comparisonHref}
-                        className="inline-flex items-center gap-2 rounded-xl bg-[#0B2A48] px-5 py-3 text-sm font-bold text-white"
+                        className="inline-flex items-center gap-2 rounded-xl bg-ink px-5 py-3 text-sm font-bold text-white"
                       >
                         {a.compare}
                         <ArrowRight className="size-4 rtl:rotate-180" />
@@ -334,7 +334,7 @@ export default function Find() {
             )}
             <Link
               href={result.catalogueUrl}
-              className="inline-flex items-center gap-2 font-bold text-teal-800"
+              className="inline-flex items-center gap-2 font-bold text-beacon-800"
             >
               {t.browse}
               <ArrowRight className="size-4 rtl:rotate-180" />

@@ -25,8 +25,8 @@ export default function MemberGroups() {
       <section className="container py-10">
         <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Users className="size-8 text-teal-700" />
-            <h1 className="text-3xl font-extrabold text-[#0B2A48]">{t.mine}</h1>
+            <Users className="size-8 text-beacon-700" />
+            <h1 className="text-3xl font-extrabold text-ink">{t.mine}</h1>
           </div>
           <Link href="/groups" className={secondaryClass}>
             {t.directory}
@@ -144,12 +144,12 @@ function MyGroups({
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2
                   dir="auto"
-                  className="break-words text-lg font-bold text-[#0B2A48]"
+                  className="break-words text-lg font-bold text-ink"
                 >
                   {group.name}
                 </h2>
                 <span
-                  className={`rounded-full px-3 py-1 text-xs font-bold ${group.status === "approved" ? "bg-teal-50 text-teal-800" : group.status === "pending" ? "bg-amber-50 text-amber-800" : "bg-slate-100 text-slate-600"}`}
+                  className={`rounded-full px-3 py-1 text-xs font-bold ${group.status === "approved" ? "bg-beacon-50 text-beacon-800" : group.status === "pending" ? "bg-amber-50 text-amber-800" : "bg-slate-100 text-slate-600"}`}
                 >
                   {t.statuses[group.status]}
                 </span>
@@ -163,7 +163,7 @@ function MyGroups({
                 target="_blank"
                 rel="noopener noreferrer nofollow"
                 dir="ltr"
-                className="mt-3 block break-all text-sm text-teal-700 underline"
+                className="mt-3 block break-all text-sm text-beacon-700 underline"
               >
                 {group.url}
               </a>
@@ -230,8 +230,8 @@ function MyGroups({
             error={(editing === "new" ? submit.error : edit.error)?.message}
           />
         ) : (
-          <div className="rounded-2xl border border-teal-100 bg-teal-50/50 p-7">
-            <h2 className="text-xl font-extrabold text-[#0B2A48]">
+          <div className="rounded-2xl border border-beacon-100 bg-beacon-50/50 p-7">
+            <h2 className="text-xl font-extrabold text-ink">
               {t.formTitle}
             </h2>
             <p className="mt-3 text-sm leading-7 text-slate-600">

@@ -30,7 +30,7 @@ export function AdminPayments({ manage }: { manage: boolean }) {
     <div className="space-y-6">
       {manage && (
         <>
-          <h2 className="text-xl font-bold text-[#0B2A68]">{t.gates}</h2>
+          <h2 className="text-xl font-bold text-ink">{t.gates}</h2>
           <p className="max-w-3xl text-sm leading-7 text-slate-600">
             {t.settingsHelp}
           </p>
@@ -47,7 +47,7 @@ export function AdminPayments({ manage }: { manage: boolean }) {
           </div>
         </>
       )}
-      <h2 className="text-xl font-bold text-[#0B2A68]">{t.history}</h2>
+      <h2 className="text-xl font-bold text-ink">{t.history}</h2>
       {history.isError ? (
         <p role="alert">{paymentError(history.error.message, locale)}</p>
       ) : history.data?.items.length === 0 ? (
@@ -133,7 +133,7 @@ function GatewayForm({ setting }: { setting: Output["settings"][number] }) {
   return (
     <BusinessCard>
       <div className="flex flex-wrap justify-between gap-3">
-        <h3 className="text-lg font-extrabold text-[#0B2A68]">
+        <h3 className="text-lg font-extrabold text-ink">
           {setting.gateway === "paypal" ? "PayPal" : "NOWPayments"}
         </h3>
         <span className="text-xs text-slate-500">

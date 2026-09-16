@@ -66,13 +66,13 @@ export default function Groups() {
   };
   return (
     <PublicLayout showCatalogueNotice={false}>
-      <section className="overflow-hidden border-b border-teal-100 bg-[linear-gradient(120deg,#eef8f5,#f5f8fd)]">
+      <section className="overflow-hidden border-b border-beacon-100 bg-[linear-gradient(120deg,#eef8f5,#f5f8fd)]">
         <div className="container grid items-center gap-8 py-12 md:grid-cols-[1.5fr_1fr] md:py-16">
           <div>
-            <p className="text-xs font-bold tracking-[.18em] text-teal-700">
+            <p className="text-xs font-bold tracking-[.18em] text-beacon-700">
               {t.eyebrow}
             </p>
-            <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-[#0B2A48] sm:text-5xl">
+            <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl">
               {t.title}
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600">
@@ -87,9 +87,9 @@ export default function Groups() {
             aria-hidden="true"
             className="hidden justify-self-center md:grid"
           >
-            <div className="grid size-52 place-items-center rounded-full border border-teal-200/70 bg-white/40 shadow-[0_0_0_24px_#ffffff45,0_0_0_48px_#ffffff25]">
+            <div className="grid size-52 place-items-center rounded-full border border-beacon-200/70 bg-white/40 shadow-[0_0_0_24px_#ffffff45,0_0_0_48px_#ffffff25]">
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-[#0B2A48] p-5 text-white shadow-lg">
+                <div className="rounded-2xl bg-ink p-5 text-white shadow-lg">
                   <Users className="size-12" />
                 </div>
                 <div className="grid gap-3">
@@ -98,7 +98,7 @@ export default function Groups() {
                     return (
                       <span
                         key={v}
-                        className="rounded-xl border border-white bg-white p-3 text-teal-700 shadow-sm"
+                        className="rounded-xl border border-white bg-white p-3 text-beacon-700 shadow-sm"
                       >
                         <Icon className="size-5" />
                       </span>
@@ -203,14 +203,14 @@ export default function Groups() {
           {filtered && (
             <button
               onClick={reset}
-              className="text-sm font-bold text-teal-700 underline underline-offset-4"
+              className="text-sm font-bold text-beacon-700 underline underline-offset-4"
             >
               {t.reset}
             </button>
           )}
           <Link
             href="/account/groups"
-            className="text-sm font-bold text-[#0B2A48]"
+            className="text-sm font-bold text-ink"
           >
             {t.mine} →
           </Link>
@@ -234,8 +234,8 @@ export default function Groups() {
           </div>
         ) : !query.data?.items.length ? (
           <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center sm:p-14">
-            <MessagesSquare className="mx-auto size-10 text-teal-600" />
-            <h2 className="mt-5 text-2xl font-bold text-[#0B2A48]">
+            <MessagesSquare className="mx-auto size-10 text-beacon-600" />
+            <h2 className="mt-5 text-2xl font-bold text-ink">
               {filtered ? t.noMatch : t.empty}
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-slate-500">

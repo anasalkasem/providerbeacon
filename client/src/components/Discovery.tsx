@@ -31,7 +31,7 @@ export function GuideGrid({
         <Link
           key={g.slug}
           href={`/services/${g.slug}`}
-          className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:border-teal-400 hover:shadow-lg hover:shadow-teal-950/5"
+          className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-6 transition hover:-translate-y-1 hover:border-beacon-400 hover:shadow-lg hover:shadow-beacon-950/5"
         >
           <div className="flex items-center justify-between">
             <span
@@ -50,7 +50,7 @@ export function GuideGrid({
           <p className="mt-3 flex-1 text-sm leading-7 text-slate-500">
             {local(g.summary, locale)}
           </p>
-          <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 text-sm font-bold text-teal-700">
+          <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 text-sm font-bold text-beacon-700">
             <span>{t.readGuide}</span>
             <ArrowUpRight className="size-5 rtl:-rotate-90" />
           </div>
@@ -99,7 +99,7 @@ export function ReferenceGrid({
           <h3 className="mt-5 text-lg font-extrabold text-slate-950" dir="ltr">
             {p.name}
           </h3>
-          <p className="mt-1 text-xs font-bold text-teal-700">
+          <p className="mt-1 text-xs font-bold text-beacon-700">
             {local(p.type, locale)}
           </p>
           <p className="mt-4 flex-1 text-sm leading-7 text-slate-500">
@@ -108,7 +108,7 @@ export function ReferenceGrid({
           <p className="mt-4 text-xs text-slate-500">{t.publicSource}</p>
           <Link
             href={`/directory/${p.slug}`}
-            className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-sm font-bold text-[#0B2A68]"
+            className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-sm font-bold text-ink"
           >
             {t.viewProfile}
             <ArrowRight className="size-4 rtl:rotate-180" />
@@ -137,7 +137,7 @@ export function SourceLink({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-2 text-sm font-bold text-teal-700 underline decoration-teal-200 underline-offset-4"
+      className="inline-flex items-center gap-2 text-sm font-bold text-beacon-700 underline decoration-beacon-200 underline-offset-4"
     >
       {children}
       <ExternalLink className="size-4" />

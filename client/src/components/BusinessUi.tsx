@@ -11,7 +11,7 @@ import { businessError, businessText } from "@/i18n/providerBusiness";
 export const businessField =
   "mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 disabled:bg-slate-100";
 export const businessPrimary =
-  "inline-flex items-center justify-center gap-2 rounded-xl bg-[#0B2A68] px-4 py-2.5 text-sm font-bold text-white hover:bg-[#164580] disabled:cursor-not-allowed disabled:opacity-50";
+  "beacon-button inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50";
 export const businessSecondary =
   "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
 export function BusinessCard({
@@ -23,7 +23,7 @@ export function BusinessCard({
 }) {
   return (
     <section
-      className={`min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6 ${className}`}
+      className={`beacon-surface min-w-0 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 ${className}`}
     >
       {children}
     </section>
@@ -46,7 +46,7 @@ export function BusinessStatus({ value }: { value: string }) {
   const good = value === "active" || value === "approved";
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${good ? "bg-teal-50 text-teal-800" : value === "pending" || value === "scheduled" ? "bg-amber-50 text-amber-800" : "bg-slate-100 text-slate-600"}`}
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${good ? "bg-beacon-50 text-beacon-800" : value === "pending" || value === "scheduled" ? "bg-amber-50 text-amber-800" : "bg-slate-100 text-slate-600"}`}
     >
       {t[value as keyof typeof t] ?? t.status}
     </span>
@@ -107,15 +107,15 @@ export function PublicPromotionCard({ offer }: { offer: PublicPromotion }) {
       <div className="flex items-start justify-between gap-3">
         <Link
           href={`/providers/${offer.provider.slug}`}
-          className="text-sm font-bold text-teal-700"
+          className="text-sm font-bold text-beacon-700"
         >
           {offer.provider.name}
         </Link>
-        <Tag className="size-5 shrink-0 text-teal-600" />
+        <Tag className="size-5 shrink-0 text-beacon-600" />
       </div>
       <h3
         dir="auto"
-        className="mt-4 break-words text-xl font-extrabold text-[#0B2A68]"
+        className="mt-4 break-words text-xl font-extrabold text-ink"
       >
         {offer.title}
       </h3>
@@ -127,7 +127,7 @@ export function PublicPromotionCard({ offer }: { offer: PublicPromotion }) {
       </p>
       {offer.couponCode && (
         <p
-          className="mt-5 rounded-xl border border-dashed border-teal-300 bg-teal-50 p-3 text-center font-mono font-bold text-teal-900"
+          className="mt-5 rounded-xl border border-dashed border-beacon-300 bg-beacon-50 p-3 text-center font-mono font-bold text-beacon-900"
           dir="ltr"
         >
           {offer.couponCode}
@@ -176,9 +176,9 @@ export function PublicPromotions({ providerId }: { providerId?: number }) {
   return (
     <section className="mt-8">
       {providerId ? (
-        <h2 className="text-2xl font-extrabold text-[#0B2A68]">{t.offers}</h2>
+        <h2 className="text-2xl font-extrabold text-ink">{t.offers}</h2>
       ) : (
-        <h1 className="text-3xl font-extrabold text-[#0B2A68]">{t.offers}</h1>
+        <h1 className="text-3xl font-extrabold text-ink">{t.offers}</h1>
       )}
       <p className="mt-2 text-sm leading-7 text-slate-500">{t.offerIntro}</p>
       {!visible.length ? (

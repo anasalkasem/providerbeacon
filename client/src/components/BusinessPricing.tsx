@@ -42,11 +42,11 @@ export function BusinessPricing({
       timeZone: "UTC",
     }).format(value);
   return (
-    <div className="mt-5 rounded-2xl border border-teal-200 bg-teal-50/60 p-5">
-      <p className="text-sm font-bold text-teal-800">
+    <div className="mt-5 rounded-2xl border border-beacon-200 bg-beacon-50/60 p-5">
+      <p className="text-sm font-bold text-beacon-800">
         {standard ? t.current : t.launch}
       </p>
-      <p className="mt-3 flex flex-wrap items-baseline gap-2 text-[#0B2A68]">
+      <p className="mt-3 flex flex-wrap items-baseline gap-2 text-ink">
         <bdi dir="ltr" className="text-4xl font-extrabold">
           {usd(pricing.currentMonthlyCents)}
         </bdi>
@@ -57,7 +57,7 @@ export function BusinessPricing({
           <p className="mt-2 text-sm font-semibold text-slate-700">
             {t.intro.replace("{months}", String(PROVIDER_PLAN.introMonths))}
           </p>
-          <p className="mt-3 border-t border-teal-200 pt-3 text-sm font-bold text-[#0B2A68]">
+          <p className="mt-3 border-t border-beacon-200 pt-3 text-sm font-bold text-ink">
             {t.then.replace("{month}", String(PROVIDER_PLAN.introMonths + 1))}:{" "}
             <bdi dir="ltr">{usd(PROVIDER_PLAN.monthlyCents)} USD</bdi>{" "}
             {t.monthly}
@@ -68,7 +68,7 @@ export function BusinessPricing({
         {t.terms.replace("{months}", String(PROVIDER_PLAN.introMonths))}
       </p>
       {anchor && pricing.introEndsAt ? (
-        <dl className="mt-4 grid gap-3 border-t border-teal-200 pt-4 text-sm sm:grid-cols-2">
+        <dl className="mt-4 grid gap-3 border-t border-beacon-200 pt-4 text-sm sm:grid-cols-2">
           <div>
             <dt className="text-slate-500">{t.first}</dt>
             <dd className="mt-1 font-semibold text-slate-800">

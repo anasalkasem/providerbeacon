@@ -187,7 +187,7 @@ export default function ServiceReviewDetail({
               )}
             </section>
             {row.sourceKind === "provider_api" && (
-              <div className="space-y-2 rounded-xl border border-teal-200 bg-teal-50/50 p-4">
+              <div className="space-y-2 rounded-xl border border-beacon-200 bg-beacon-50/50 p-4">
                 <p className="text-sm font-semibold">
                   {locale === "ar" ? "وحدة سعر المصدر: " : "Source rate unit: "}
                   {unitLabel(locale, {
@@ -202,7 +202,7 @@ export default function ServiceReviewDetail({
                     href={row.sourcePricingEvidenceUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-teal-700 underline"
+                    className="text-beacon-700 underline"
                   >
                     {locale === "ar"
                       ? "دليل وحدة التسعير"
@@ -546,7 +546,7 @@ export default function ServiceReviewDetail({
               </p>
               {row.sourceUrl && (
                 <a
-                  className="mt-2 block break-all text-sm text-cyan-800 underline"
+                  className="mt-2 block break-all text-sm text-beacon-800 underline"
                   dir="ltr"
                   href={row.sourceUrl}
                   target="_blank"

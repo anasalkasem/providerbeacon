@@ -42,7 +42,7 @@ export function DecisionOffer({
     >
       <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-5 py-4">
         <Link
-          className="truncate font-extrabold text-teal-800"
+          className="truncate font-extrabold text-beacon-800"
           href={`/providers/${provider.slug}`}
         >
           {provider.name}
@@ -52,7 +52,7 @@ export function DecisionOffer({
             {service.platform}
           </span>
           {provider.apiConnected && (
-            <p className="mt-1 text-[10px] font-bold text-teal-700">
+            <p className="mt-1 text-[10px] font-bold text-beacon-700">
               {
                 {
                   ar: "اتصال API فعلي",
@@ -173,7 +173,7 @@ export function DecisionOffer({
           )}
           <Link
             href={`/providers/${provider.slug}`}
-            className="inline-flex items-center gap-1 text-xs font-bold text-teal-800"
+            className="inline-flex items-center gap-1 text-xs font-bold text-beacon-800"
           >
             {a.provider}
             <ArrowUpRight className="size-4" />
@@ -197,13 +197,13 @@ export function ComparisonExplanation({
   const t = workspaceCopy[locale];
   const facts = comparisonFacts(services, quantity);
   return (
-    <section className="mb-6 rounded-2xl border border-teal-200 bg-teal-50/60 p-5 sm:p-6">
+    <section className="mb-6 rounded-2xl border border-beacon-200 bg-beacon-50/60 p-5 sm:p-6">
       <h2 className="flex items-center gap-2 font-extrabold text-slate-950">
-        <CheckCircle2 className="size-5 shrink-0 text-teal-700" />
+        <CheckCircle2 className="size-5 shrink-0 text-beacon-700" />
         {t.explain}
       </h2>
       {comparable && (
-        <p className="mt-3 text-sm leading-7 text-teal-900">{t.equivalent}</p>
+        <p className="mt-3 text-sm leading-7 text-beacon-900">{t.equivalent}</p>
       )}
       {facts.differingFields.length > 0 && (
         <div className="mt-3">
@@ -212,7 +212,7 @@ export function ComparisonExplanation({
             {facts.differingFields.map(field => (
               <span
                 key={field}
-                className="rounded-full border border-teal-200 bg-white px-3 py-1 text-xs font-bold text-teal-900"
+                className="rounded-full border border-beacon-200 bg-white px-3 py-1 text-xs font-bold text-beacon-900"
               >
                 {t.fieldNames[field]}
               </span>
