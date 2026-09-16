@@ -23,10 +23,18 @@ import { dashboardText } from "@/i18n/providerDashboard";
 import {
   ProviderDashboardShell,
   ProviderOverview,
-  ProviderPlanLock,
   providerSections,
   type ProviderSection,
 } from "@/components/ProviderDashboard";
+import {
+  ProviderAccessNotice,
+  ProviderFeaturePreview,
+  ProviderFreeOverview,
+} from "@/components/ProviderPreviews";
+import {
+  isPremiumProviderSection,
+  providerToolAccess,
+} from "@/lib/providerToolAccess";
 import { communityError } from "@/i18n/community";
 import { formatNumber } from "@/i18n/messages";
 import { PublicLayout } from "@/components/SiteChrome";
@@ -71,9 +79,7 @@ export default function ProviderBusiness() {
             <Building2 className="size-8" />
           </span>
           <div>
-            <h1 className="text-3xl font-extrabold text-ink">
-              {t.title}
-            </h1>
+            <h1 className="text-3xl font-extrabold text-ink">{t.title}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
               {t.intro}
             </p>
@@ -154,16 +160,13 @@ function ProviderWorkspace({
     workspace?.providers.find(p => p.provider.id === selected) ??
     workspace?.providers[0];
   const requested = params.get("tab") as ProviderSection;
-  const section: ProviderSection =
-    !owned && workspace
-      ? requested === "billing"
-        ? "billing"
-        : "ownership"
-      : providerSections.includes(requested)
-        ? requested
-        : params.has("payment")
-          ? "billing"
-          : "overview";
+  const section: ProviderSection = providerSections.includes(requested)
+    ? requested
+    : params.has("payment")
+      ? "billing"
+      : !owned && selected > 0
+        ? "ownership"
+        : "overview";
   const go = (
     tab: ProviderSection,
     create = false,
@@ -183,12 +186,13 @@ function ProviderWorkspace({
     if (providerId) next.set("provider", String(providerId));
     navigate(`/account/provider?${next.toString()}`);
   };
-  const active = Boolean(
-    owned?.ownershipValid && planState(owned.subscription, now) === "active"
-  );
+  const access = providerToolAccess(owned, verified, now);
+  const active = access === "active";
+  const canReadSaved = Boolean(verified && owned?.ownershipValid);
   return (
     <ProviderDashboardShell
       owned={owned}
+      access={access}
       providers={workspace?.providers ?? []}
       section={section}
       onNavigate={go}
@@ -251,46 +255,50 @@ function ProviderWorkspace({
             owned={owned}
           />
         ) : (
-          <BusinessCard>
-            <h2 className="text-xl font-bold text-ink">{t.plan}</h2>
-            <BusinessPricing />
-            <PaymentMethods />
-            <p className="mt-4 text-sm leading-7 text-slate-600">
-              {t.planHelp}
-            </p>
-            <button
-              className={`${businessPrimary} mt-5`}
-              onClick={() => go("ownership")}
-            >
-              {d.start}
-            </button>
-          </BusinessCard>
+          <div className="space-y-5">
+            <ProviderAccessNotice access={access} onNavigate={go} />
+            <BusinessCard>
+              <h2 className="text-xl font-bold text-ink">{t.plan}</h2>
+              <BusinessPricing />
+              <PaymentMethods />
+              <p className="mt-4 text-sm leading-7 text-slate-600">
+                {t.planHelp}
+              </p>
+            </BusinessCard>
+          </div>
         )
-      ) : owned && !owned.ownershipValid ? (
-        <BusinessCard>
-          <p role="alert" className="text-sm leading-7 text-amber-900">
-            {t.ownerChanged}
-          </p>
-          <button
-            className={`${businessSecondary} mt-4`}
-            onClick={() => go("ownership")}
-          >
-            {d.ownership}
-          </button>
-        </BusinessCard>
-      ) : owned ? (
-        <div key={owned.provider.id} className="space-y-6">
-          {section === "overview" ? (
-            <ProviderOverview
-              accountId={accountId}
-              owned={owned}
-              active={active}
+      ) : section === "overview" ? (
+        active && owned ? (
+          <ProviderOverview
+            key={owned.provider.id}
+            accountId={accountId}
+            owned={owned}
+            active={active}
+            onNavigate={go}
+          />
+        ) : (
+          <ProviderFreeOverview access={access} onNavigate={go} />
+        )
+      ) : isPremiumProviderSection(section) ? (
+        <div key={owned?.provider.id ?? "preview"} className="space-y-6">
+          {!active && (
+            <ProviderFeaturePreview
+              feature={section}
+              access={access}
+              providerName={owned?.provider.name}
               onNavigate={go}
             />
-          ) : (
+          )}
+          {canReadSaved && owned && (
             <>
-              {!active && <ProviderPlanLock onNavigate={go} />}
-              {section === "vip" && <ProviderVip accountId={accountId} owned={owned} active={active} />}
+              {section === "vip" && (
+                <ProviderVip
+                  accountId={accountId}
+                  owned={owned}
+                  active={active}
+                  savedOnly={!active}
+                />
+              )}
               {section === "analytics" && active && (
                 <BusinessAnalytics
                   accountId={accountId}
@@ -302,6 +310,7 @@ function ProviderWorkspace({
                   accountId={accountId}
                   provider={owned.provider}
                   active={active}
+                  savedOnly={!active}
                   startCreating={params.get("action") === "create"}
                 />
               )}
@@ -310,6 +319,7 @@ function ProviderWorkspace({
                   accountId={accountId}
                   providerId={owned.provider.id}
                   active={active}
+                  savedOnly={!active}
                   startCreating={params.get("action") === "create"}
                 />
               )}
@@ -538,11 +548,13 @@ function ProviderGroups({
   provider,
   active,
   startCreating = false,
+  savedOnly = false,
 }: {
   accountId: number;
   provider: Owned["provider"];
   active: boolean;
   startCreating?: boolean;
+  savedOnly?: boolean;
 }) {
   const { locale } = useLocale();
   const t = businessText(locale);
@@ -589,6 +601,7 @@ function ProviderGroups({
       });
     else submit.mutate({ ...input, providerId: provider.id });
   };
+  if (savedOnly && !query.isError && !query.data?.length) return null;
   return (
     <BusinessCard>
       <div className="flex flex-wrap justify-between gap-3">
@@ -719,11 +732,13 @@ function ProviderPromotions({
   providerId,
   active,
   startCreating = false,
+  savedOnly = false,
 }: {
   accountId: number;
   providerId: number;
   active: boolean;
   startCreating?: boolean;
+  savedOnly?: boolean;
 }) {
   const { locale } = useLocale();
   const t = businessText(locale);
@@ -762,6 +777,8 @@ function ProviderPromotions({
     onSuccess: refresh,
     onError: e => toast.error(businessError(e.message, locale)),
   });
+  if (savedOnly && !query.isError && !cursor && !query.data?.items.length)
+    return null;
   return (
     <BusinessCard>
       <div className="flex flex-wrap justify-between gap-3">
