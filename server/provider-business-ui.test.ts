@@ -7,12 +7,16 @@ const state = vi.hoisted(() => ({
   locale: "ar",
   member: null as any,
   workspace: null as any,
+  workspaceError: false,
+  overview: undefined as any,
+  overviewError: false,
   analytics: undefined as any,
   analyticsError: false,
   offers: [] as any[],
   permissions: [] as string[],
   analyticsCalls: vi.fn(),
   accountCalls: vi.fn(),
+  paymentCalls: vi.fn(),
 }));
 vi.mock("@/contexts/LocaleContext", async original => ({
   ...(await original<any>()),
@@ -22,6 +26,7 @@ vi.mock("@/hooks/useMember", () => ({
   useMember: () => ({ data: { member: state.member } }),
 }));
 vi.mock("@/components/SiteChrome", () => ({
+  Brand: () => React.createElement("a", { href: "/" }, "ProviderBeacon"),
   PublicLayout: ({ children }: any) =>
     React.createElement("main", null, children),
 }));
@@ -47,7 +52,20 @@ vi.mock("@/lib/trpc", () => {
       useUtils: () => ({}),
       community: { providers: { useQuery: () => ({ data: [] }) } },
       business: {
-        mine: { useQuery: () => ({ data: state.workspace }) },
+        mine: {
+          useQuery: () => ({
+            data: state.workspace,
+            isError: state.workspaceError,
+            error: { message: "business_owner_required" },
+          }),
+        },
+        overview: {
+          useQuery: () => ({
+            data: state.overview,
+            isError: state.overviewError,
+            error: { message: "business_owner_required" },
+          }),
+        },
         payments: {
           methods: {
             useQuery: () => ({
@@ -57,7 +75,12 @@ vi.mock("@/lib/trpc", () => {
               ],
             }),
           },
-          list: { useQuery: () => ({}) },
+          list: {
+            useQuery: () => {
+              state.paymentCalls();
+              return {};
+            },
+          },
           status: { useQuery: () => ({}) },
           checkout: mutation,
           check: mutation,
@@ -130,6 +153,21 @@ beforeEach(() => {
   state.locale = "ar";
   state.member = null;
   state.workspace = null;
+  state.workspaceError = false;
+  state.overviewError = false;
+  state.overview = {
+    groups: { total: 0, live: 0, pending: 0, rejected: 0 },
+    offers: {
+      total: 0,
+      live: 0,
+      pending: 0,
+      rejected: 0,
+      expiring: 0,
+      nextExpiry: null,
+    },
+    usage: { used: 0, limit: 5, resetsAt: new Date("2026-10-01") },
+  };
+  window.history.replaceState({}, "", "/account/provider");
   state.analytics = undefined;
   state.analyticsError = false;
   state.offers = [];
@@ -145,6 +183,170 @@ afterEach(async () => {
   vi.useRealTimers();
 });
 const render = (element: React.ReactNode) => act(() => root.render(element));
+
+function paidWorkspace() {
+  const now = Date.now();
+  state.member = { id: 7, emailVerified: true };
+  state.workspace = {
+    providers: [
+      {
+        provider: {
+          id: 4,
+          name: "Provider Alpha",
+          slug: "alpha",
+          websiteUrl: "https://alpha.example/",
+          status: "active",
+        },
+        ownershipValid: true,
+        subscription: {
+          status: "active",
+          startsAt: new Date(now - 86400000),
+          endsAt: new Date(now + 20 * 86400000),
+          firstActivatedAt: new Date(now - 86400000),
+        },
+      },
+    ],
+    claims: [],
+  };
+  state.analytics = {
+    collectionEnabled: true,
+    from: "2026-08-18",
+    to: "2026-09-16",
+    totals: { views: 27, website: 9, telegram: 4 },
+    daily: [
+      { day: "2026-09-16", measured: true, views: 27, website: 9, telegram: 4 },
+    ],
+    previous: {
+      from: "2026-07-19",
+      to: "2026-08-17",
+      fullyMeasured: false,
+      totals: { views: 0, website: 0, telegram: 0 },
+    },
+  };
+}
+const button = (text: string) =>
+  [...container.querySelectorAll("button")].find(b => b.textContent === text)!;
+
+describe("provider dashboard navigation and entitlements", () => {
+  it("opens the offer form from a quick action while keeping creation unavailable without a plan", async () => {
+    state.locale = "en";
+    paidWorkspace();
+    await render(React.createElement(ProviderBusiness));
+    await act(() => button("New offer").click());
+    expect(window.location.search).toContain("action=create");
+    expect(container.querySelector('input[maxlength="120"]')).not.toBeNull();
+    state.workspace.providers[0].subscription.status = "inactive";
+    await render(React.createElement(ProviderBusiness));
+    expect(container.querySelector('input[maxlength="120"]')).toBeNull();
+    expect(button("New offer").disabled).toBe(true);
+  });
+  it("opens with performance and operational tools, keeps billing separate, and restores linked sections", async () => {
+    state.locale = "en";
+    paidWorkspace();
+    await render(React.createElement(ProviderBusiness));
+    expect(container.querySelector("h1")?.textContent).toBe("Overview");
+    expect(container.textContent).toContain("27");
+    expect(container.textContent).toContain("Your monthly offers");
+    expect(container.textContent).not.toContain("$19");
+    expect(state.paymentCalls).not.toHaveBeenCalled();
+    await act(() => button("Plan & payments").click());
+    expect(window.location.search).toContain("tab=billing");
+    expect(container.textContent).toContain("$19");
+    expect(state.paymentCalls).toHaveBeenCalled();
+    await act(() => {
+      window.history.replaceState(
+        {},
+        "",
+        "/account/provider?provider=4&tab=groups"
+      );
+      window.dispatchEvent(new PopStateEvent("popstate"));
+    });
+    expect(
+      container.querySelector('nav button[aria-current="page"]')?.textContent
+    ).toBe("Your provider groups");
+    expect(container.querySelector("h1")?.textContent).toBe(
+      "Your provider groups"
+    );
+  });
+  it("switches the provider partition, preserves the section and removes cached tools on an ownership error", async () => {
+    state.locale = "en";
+    paidWorkspace();
+    state.workspace.providers.push({
+      ...state.workspace.providers[0],
+      provider: {
+        ...state.workspace.providers[0].provider,
+        id: 5,
+        name: "Provider Beta",
+        slug: "beta",
+      },
+    });
+    await render(React.createElement(ProviderBusiness));
+    const select = container.querySelector(
+      'select[aria-label="Provider"]'
+    ) as HTMLSelectElement;
+    await act(() => {
+      select.value = "5";
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(state.analyticsCalls).toHaveBeenLastCalledWith({
+      accountId: 7,
+      providerId: 5,
+      days: 30,
+    });
+    expect(container.querySelector('a[href="/providers/beta"]')).not.toBeNull();
+    state.workspaceError = true;
+    await render(React.createElement(ProviderBusiness));
+    expect(container.textContent).not.toContain("27");
+    expect(container.querySelector('[role="alert"]')).not.toBeNull();
+  });
+  it("removes paid analytics and disables quick actions when a plan expires while the page stays open", async () => {
+    state.locale = "en";
+    vi.useFakeTimers();
+    paidWorkspace();
+    state.workspace.providers[0].subscription.endsAt = new Date(
+      Date.now() + 2000
+    );
+    await render(React.createElement(ProviderBusiness));
+    expect(container.textContent).toContain("Your performance");
+    await act(() => vi.advanceTimersByTime(5000));
+    expect(container.textContent).not.toContain("Your performance");
+    expect(container.textContent).toContain("Activate your provider tools");
+    expect(button("New offer").disabled).toBe(true);
+    expect(button("Add a group").disabled).toBe(true);
+  });
+  it("supports Arabic mobile navigation and focuses the selected section", async () => {
+    paidWorkspace();
+    await render(React.createElement(ProviderBusiness));
+    expect(
+      container.querySelector(".provider-dashboard")?.getAttribute("dir")
+    ).toBe("rtl");
+    const menu = container.querySelector(
+      'button[aria-controls="provider-navigation"]'
+    ) as HTMLButtonElement;
+    await act(() => menu.click());
+    expect(menu.getAttribute("aria-expanded")).toBe("true");
+    await act(() => button("عروضك وكوبوناتك").click());
+    expect(menu.getAttribute("aria-expanded")).toBe("false");
+    expect(document.activeElement).toBe(container.querySelector("h1"));
+  });
+  it("shows real operational alerts and hides old summary values when access fails", async () => {
+    state.locale = "en";
+    paidWorkspace();
+    state.overview.groups.pending = 3;
+    state.overview.offers.rejected = 1;
+    await render(React.createElement(ProviderBusiness));
+    expect(container.textContent).toContain(
+      "Your submissions are being reviewed"
+    );
+    expect(container.textContent).toContain("Review notes need a response");
+    state.overviewError = true;
+    await render(React.createElement(ProviderBusiness));
+    expect(container.textContent).not.toContain(
+      "Your submissions are being reviewed"
+    );
+    expect(container.textContent).not.toContain("You're up to date");
+  });
+});
 
 describe("provider package interfaces", () => {
   it("discloses both approved USD monthly prices before sign-in without inventing checkout", async () => {
@@ -257,7 +459,7 @@ describe("provider package interfaces", () => {
       claims: [],
     };
     await render(React.createElement(ProviderBusiness));
-    expect(container.textContent).toContain("تحتاج باقة فعالة");
+    expect(container.textContent).toContain("فعّل أدوات مزوّدك");
     expect(state.analyticsCalls).not.toHaveBeenCalled();
     const button = [...container.querySelectorAll("button")].find(
       b => b.textContent === "عروضك وكوبوناتك"

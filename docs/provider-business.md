@@ -1,5 +1,11 @@
 # Provider business package
 
+## Provider workspace
+
+Signed-in members use a dedicated dashboard at `/account/provider`. Owners land on an overview with measured visits and contact clicks, current publication totals, review and renewal reminders, and the monthly offer allowance. Separate navigation opens analytics, groups, offers, plan/payment history and ownership requests. The `provider` and `tab` query parameters preserve the selected provider and section on reload and browser navigation. Payment returns keep their verification flow and initially open billing. The navigation collapses on mobile and follows the current language, including Arabic RTL.
+
+`business.overview` uses the same verified-owner gate as saved content. It reports operational totals across all records, rather than counting a page of results, and contains no paid analytics. Live counts respect publication review, date ranges, active subscription, provider visibility and offer-domain checks. The browser hides cached reports on failed access checks and removes paid analytics when the current subscription expires. Renewals remain manual; the redesigned overview does not initiate checkout.
+
 Provider workspace: `/account/provider`. Staff management: `/admin/subscriptions`. Public offers: `/offers`, also shown on the associated provider profile.
 
 The platform provides one provider package: provider group listings and Telegram profile links, private provider analytics, and up to five new promotions per UTC calendar month. The approved price is **USD 19 per month for the first three months, then USD 29 per month from month four**. Prices apply per provider. Customers can pay for a month through PayPal or NOWPayments once the merchant configures the gateways. Confirmed payments activate or extend access automatically. Each renewal requires another customer-approved payment; there are no automatic debits. Staff can still record manual activations. See [Payment gateways](provider-payments.md) for configuration and settlement rules.

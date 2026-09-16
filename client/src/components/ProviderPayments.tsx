@@ -215,9 +215,11 @@ function ReturnedPayment({ accountId, id }: { accountId: number; id: string }) {
 export function ProviderCheckout({
   accountId,
   providerId,
+  showHistory = false,
 }: {
   accountId: number;
   providerId: number;
+  showHistory?: boolean;
 }) {
   const { locale } = useLocale();
   const t = paymentText(locale);
@@ -285,7 +287,7 @@ export function ProviderCheckout({
       <p className="mt-3 text-xs leading-6 text-slate-500">{t.cryptoHelp}</p>
       <PaymentAlert message={checkout.error?.message} />
       {query.data.items.length > 0 && (
-        <details className="mt-5" open={Boolean(open)}>
+        <details className="mt-5" open={showHistory || Boolean(open)}>
           <summary className="cursor-pointer text-sm font-semibold">
             {t.history}
           </summary>
