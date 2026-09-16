@@ -24,6 +24,7 @@ export const groupStatuses = [
 ] as const;
 export const reportReasons = ["broken", "unrelated", "spam", "other"] as const;
 export type GroupPlatform = (typeof groupPlatforms)[number];
+export type CommunityKind = "group" | "channel" | "server";
 
 // No redirects or network requests: validation identifies an allowed link format,
 // never whether its destination is a group. Publication needs a staff review.
@@ -36,17 +37,24 @@ export function groupLink(
     const u = new URL(value);
     if (u.protocol !== "https:" || u.username || u.password || u.port || u.hash)
       return null;
-    // WhatsApp's share sheet appends mode=ac_t (and related share modes).
-    // It is not part of the invite identity. Reject all other query actions.
+    const path = u.pathname.replace(/\/$/, "");
+    const whatsappChannel =
+      ["whatsapp.com", "www.whatsapp.com"].includes(u.hostname) &&
+      /^\/channel\/[A-Za-z0-9]{16,128}$/.test(path);
+    // Share mode and channel UI language do not change the community identity.
+    // Do not accept arbitrary query actions, post links or personal chats.
     if (
       u.search &&
       !(
-        u.hostname === "chat.whatsapp.com" &&
-        /^\?mode=[A-Za-z0-9_-]{1,32}$/.test(u.search)
+        (u.hostname === "chat.whatsapp.com" &&
+          /^\?mode=[A-Za-z0-9_-]{1,32}$/.test(u.search)) ||
+        (whatsappChannel &&
+          /^\?lang=[a-z]{2,3}(?:[_-][A-Za-z]{2,4})?$/.test(u.search))
       )
     )
       return null;
-    const path = u.pathname.replace(/\/$/, "");
+    if (whatsappChannel)
+      return { platform: "whatsapp", url: `https://www.whatsapp.com${path}` };
     if (["t.me", "telegram.me"].includes(u.hostname)) {
       const invite = path.match(/^\/(?:\+|joinchat\/)([A-Za-z0-9_-]{8,128})$/);
       if (invite && !/^\d+$/.test(invite[1]))
@@ -97,6 +105,24 @@ export function groupLink(
   } catch {
     /* Invalid URL */
   }
+  return null;
+}
+
+// A Telegram username alone cannot distinguish a group from a channel.
+// Use observed audience metadata there, and exact URL formats for WhatsApp.
+export function communityKind(
+  raw: string,
+  audienceKind?: string | null
+): CommunityKind | null {
+  const link = groupLink(raw);
+  if (!link) return null;
+  if (link.platform === "whatsapp")
+    return new URL(link.url).pathname.startsWith("/channel/")
+      ? "channel"
+      : "group";
+  if (link.platform === "discord") return "server";
+  if (audienceKind === "subscribers") return "channel";
+  if (audienceKind === "members") return "group";
   return null;
 }
 

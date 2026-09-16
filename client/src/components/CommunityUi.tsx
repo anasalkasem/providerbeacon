@@ -1,4 +1,5 @@
 import LinkAutofill, { GroupSourceDetails } from "./LinkAutofill";
+import { CommunityKindBadge } from "./CommunityKindBadge";
 import { fillSuggested, type GroupLinkMetadata } from "@shared/linkMetadata";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Link } from "wouter";
@@ -16,6 +17,7 @@ import type { AppRouter } from "../../../server/routers";
 import {
   groupInput,
   groupLink,
+  communityKind,
   groupLanguages,
   groupTopics,
   type GroupInput,
@@ -67,15 +69,19 @@ export function CommunityCard({
   const { locale } = useLocale();
   const t = communityCopy[locale];
   const Icon = platformIcons[group.platform];
+  const kind = communityKind(group.url, group.linkMetadata?.audience?.kind);
   return (
     <article className="flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
-      <div className="flex items-center justify-between gap-3">
-        <span
-          className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold ${tones[group.platform]}`}
-        >
-          <Icon className="size-4" />
-          {t.platforms[group.platform]}
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold ${tones[group.platform]}`}
+          >
+            <Icon className="size-4" />
+            {t.platforms[group.platform]}
+          </span>
+          <CommunityKindBadge url={group.url} data={group.linkMetadata} />
+        </div>
         <span className="text-xs font-medium text-slate-500">
           {t.topics[group.topic]}
         </span>
@@ -140,7 +146,13 @@ export function CommunityCard({
           rel="noopener noreferrer nofollow ugc"
           className={primaryClass}
         >
-          {t.open}
+          {kind === "channel"
+            ? t.openChannel
+            : kind === "server"
+              ? t.openServer
+              : kind === "group"
+                ? t.open
+                : t.openCommunity}
           <ArrowUpRight className="size-4" />
         </a>
         <button
@@ -351,15 +363,17 @@ export function GroupForm({
           </GroupField>
         </div>
         <div className="grid gap-3 rounded-xl bg-slate-50 p-4">
-          {!fixedProvider && <GroupField label={t.providerSearch}>
-            <input
-              className={fieldClass}
-              type="search"
-              maxLength={100}
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </GroupField>}
+          {!fixedProvider && (
+            <GroupField label={t.providerSearch}>
+              <input
+                className={fieldClass}
+                type="search"
+                maxLength={100}
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+            </GroupField>
+          )}
           <GroupField label={t.provider}>
             <select
               className={fieldClass}
@@ -372,7 +386,11 @@ export function GroupForm({
                 )
               }
             >
-              {fixedProvider ? <option value={fixedProvider.id}>{fixedProvider.name}</option> : <option value="">{t.noProvider}</option>}
+              {fixedProvider ? (
+                <option value={fixedProvider.id}>{fixedProvider.name}</option>
+              ) : (
+                <option value="">{t.noProvider}</option>
+              )}
               {values.providerId &&
                 !fixedProvider &&
                 !providers.data?.some(p => p.id === values.providerId) && (

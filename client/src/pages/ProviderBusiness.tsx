@@ -1,5 +1,6 @@
 import { BusinessAnalytics } from "@/components/BusinessAnalytics";
 import { BusinessPricing } from "@/components/BusinessPricing";
+import { CommunityKindBadge } from "@/components/CommunityKindBadge";
 import {
   PaymentMethods,
   PaymentReturn,
@@ -672,6 +673,7 @@ function ProviderGroups({
                 <h3 className="font-bold" dir="auto">
                   {group.name}
                 </h3>
+                <CommunityKindBadge url={group.url} data={group.linkMetadata} />
                 <BusinessStatus value={group.status} />
               </div>
               <p

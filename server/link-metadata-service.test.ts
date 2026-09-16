@@ -64,6 +64,65 @@ beforeEach(() => {
   );
 });
 describe("automatic import orchestration", () => {
+  it("imports and caches WhatsApp channel facts under the canonical channel identity", async () => {
+    const source = "https://www.whatsapp.com/channel/0029Va4K0PZ5a245NkngBA2M";
+    state.fetch.mockImplementation(
+      async (url: string, options: { html?: boolean }) => ({
+        url,
+        body: options.html
+          ? Buffer.from(
+              '<h1>Provider updates</h1><h5>News about comparing providers</h5><h5>Channel • 4.3M followers</h5><meta property="og:image" content="https://pps.whatsapp.net/channel.jpg?token=public">'
+            )
+          : png,
+        contentType: options.html ? "text/html" : "image/png",
+      })
+    );
+    const result = await previewGroupLink(
+      source.replace("www.", "") + "/?lang=es"
+    );
+    expect(result).toMatchObject({
+      kind: "whatsapp",
+      sourceUrl: source,
+      name: "Provider updates",
+      complete: true,
+      audience: { count: 4300000, kind: "followers", approximate: true },
+    });
+    expect(state.fetch.mock.calls[0]).toEqual([
+      `${source}?lang=en`,
+      { html: true, maxBytes: 1048576, timeoutMs: 10000 },
+    ]);
+    expect(result.avatarUrl).toContain("/api/imported-media/");
+    expect(state.fetch).toHaveBeenCalledTimes(2);
+    state.cached = [{ payload: result }];
+    state.fetch.mockClear();
+    expect(await previewGroupLink(source + "/")).toEqual(result);
+    expect(state.fetch).not.toHaveBeenCalled();
+  });
+  it("does not import another channel after a redirect and preserves manual entry on source failure", async () => {
+    const source = "https://www.whatsapp.com/channel/0029Va4K0PZ5a245NkngBA2M";
+    state.fetch.mockResolvedValue({
+      url: source + "OTHER",
+      contentType: "text/html",
+      body: Buffer.from(
+        "<h1>Other channel</h1><h5>Other news</h5><h5>Channel • 10K followers</h5>"
+      ),
+    });
+    expect(await previewGroupLink(source)).toMatchObject({
+      sourceUrl: source,
+      kind: "whatsapp",
+      issue: "unavailable",
+      name: null,
+      audience: null,
+    });
+    state.fetch.mockRejectedValue(new Error("metadata_protected"));
+    expect(await previewGroupLink(source)).toMatchObject({
+      issue: "protected",
+      complete: false,
+      name: null,
+      audience: null,
+    });
+    expect(state.model).not.toHaveBeenCalled();
+  });
   it("imports WhatsApp public invitation metadata and preserves signed images only in server storage", async () => {
     const source = "https://chat.whatsapp.com/AbCdEf1234567890123456";
     state.fetch.mockImplementation(

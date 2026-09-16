@@ -4,7 +4,10 @@ import { describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   locale: "ar" as "ar" | "en" | "es" | "hi" | "zh",
 }));
-vi.mock("../client/src/components/LinkAutofill", () => ({ default: () => null, GroupSourceDetails: () => null }));
+vi.mock("../client/src/components/LinkAutofill", () => ({
+  default: () => null,
+  GroupSourceDetails: () => null,
+}));
 vi.mock("@/contexts/LocaleContext", () => ({
   useLocale: () => ({ locale: state.locale }),
 }));
@@ -32,8 +35,70 @@ const group = {
   reviewedAt: new Date("2026-09-15T08:00:00Z"),
   provider: null,
   evidenceUrl: null,
+  linkMetadata: null,
 };
 describe("community cards and submission forms", () => {
+  it("distinguishes group, channel and server cards in every locale without guessing Telegram types", () => {
+    for (const locale of ["ar", "en", "es", "hi", "zh"] as const) {
+      state.locale = locale;
+      const t = communityCopy[locale];
+      for (const [url, platform, kind, button, audience] of [
+        [
+          "https://www.whatsapp.com/channel/0029Va4K0PZ5a245NkngBA2M",
+          "whatsapp",
+          "channel",
+          t.openChannel,
+          null,
+        ],
+        [
+          "https://chat.whatsapp.com/AbCdEf1234567890123456",
+          "whatsapp",
+          "group",
+          t.open,
+          null,
+        ],
+        [
+          "https://discord.gg/Beacon_Test",
+          "discord",
+          "server",
+          t.openServer,
+          null,
+        ],
+        [
+          group.url,
+          "telegram",
+          "channel",
+          t.openChannel,
+          { count: 1234, kind: "subscribers", approximate: false },
+        ],
+      ] as const) {
+        const html = renderToStaticMarkup(
+          React.createElement(CommunityCard, {
+            group: {
+              ...group,
+              url,
+              platform,
+              linkMetadata: {
+                audience,
+                avatarUrl: null,
+                fetchedAt: "2026-09-16T12:00:00Z",
+              },
+            },
+            onReport: () => {},
+          })
+        );
+        expect(html).toContain(`>${t.kinds[kind]}</span>`);
+        expect(html).toContain(button);
+        expect(html).not.toContain("undefined");
+      }
+      const unknown = renderToStaticMarkup(
+        React.createElement(CommunityCard, { group, onReport: () => {} })
+      );
+      expect(unknown).toContain(t.openCommunity);
+      expect(unknown).not.toContain(`>${t.kinds.channel}</span>`);
+    }
+    state.locale = "ar";
+  });
   it("escapes submitted text and separates a reviewed link from provider association", () => {
     const html = renderToStaticMarkup(
       React.createElement(CommunityCard, { group, onReport: () => {} })

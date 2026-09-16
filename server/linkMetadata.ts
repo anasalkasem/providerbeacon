@@ -10,6 +10,7 @@ import {
   groupLanguages,
   groupLink,
   groupTopics,
+  communityKind,
   type GroupPlatform,
 } from "../shared/community";
 import {
@@ -166,11 +167,16 @@ async function publicGroupFacts(source: string, platform: GroupPlatform) {
     if (page.url !== endpoint) throw new Error("metadata_source");
     return parseDiscordInvite(JSON.parse(page.body.toString("utf8")), code);
   }
-  const page = await fetchPublicMetadata(source, {
-    html: true,
-    maxBytes: 524288,
-    timeoutMs: 10000,
-  });
+  const channel =
+    platform === "whatsapp" && communityKind(source) === "channel";
+  const page = await fetchPublicMetadata(
+    channel ? `${source}?lang=en` : source,
+    {
+      html: true,
+      maxBytes: channel ? 1048576 : 524288,
+      timeoutMs: 10000,
+    }
+  );
   // Redirects must retain the same platform and invite, not just a trusted host.
   if (groupLink(page.url)?.url !== source) throw new Error("metadata_source");
   return platform === "telegram"

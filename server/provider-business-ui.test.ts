@@ -290,7 +290,7 @@ describe("discoverable provider tools before payment", () => {
       ["Your analytics", "analytics", "Understand how visitors reach you"],
       ["VIP provider album", "vip", "Showcase your provider in the VIP album"],
       [
-        "Your provider groups",
+        "Your provider groups and channels",
         "groups",
         "Bring your provider community together",
       ],
@@ -391,9 +391,9 @@ describe("discoverable provider tools before payment", () => {
     expect(button("Edit").disabled).toBe(true);
     expect(button("Hide").disabled).toBe(false);
     expect(container.querySelector('input[maxlength="120"]')).toBeNull();
-    await act(() => navButton("Your provider groups").click());
+    await act(() => navButton("Your provider groups and channels").click());
     expect(container.textContent).toContain("Saved provider community");
-    expect(button("Add a group").disabled).toBe(true);
+    expect(button("Add a group or channel").disabled).toBe(true);
     expect(button("Edit").disabled).toBe(true);
     expect(state.analyticsCalls).not.toHaveBeenCalled();
   });
@@ -512,9 +512,9 @@ describe("provider dashboard navigation and entitlements", () => {
     });
     expect(
       container.querySelector('nav button[aria-current="page"]')?.textContent
-    ).toBe("Your provider groups");
+    ).toBe("Your provider groups and channels");
     expect(container.querySelector("h1")?.textContent).toBe(
-      "Your provider groups"
+      "Your provider groups and channels"
     );
   });
   it("switches the provider partition, preserves the section and removes cached tools on an ownership error", async () => {
@@ -561,7 +561,7 @@ describe("provider dashboard navigation and entitlements", () => {
     expect(container.textContent).not.toContain("Your performance");
     expect(container.textContent).toContain("Your plan has ended");
     expect(button("New offer")).toBeUndefined();
-    expect(button("Add a group")).toBeUndefined();
+    expect(button("Add a group or channel")).toBeUndefined();
     await act(() => button("Renew plan").click());
     expect(window.location.search).toContain("tab=billing");
   });
