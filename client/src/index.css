@@ -3,7 +3,23 @@
 @layer components {
   .vip-card { box-shadow: 0 4px 18px rgb(32 36 31 / 4%); transition: border-color .2s, box-shadow .2s, transform .2s; }
   .vip-card:hover { border-color: #a5cd49; box-shadow: 0 14px 36px rgb(32 36 31 / 9%); transform: translateY(-3px); }
-  .vip-rail { scrollbar-color: #a5cd49 #eef0e9; scrollbar-width: thin; padding-top: 4px; }
+  .vip-gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 320px)); justify-content: center; gap: 20px; }
+  .vip-ribbon { max-width: 100%; margin-inline: auto; }
+  .vip-ribbon[data-count="2"] { max-width: 780px; }
+  .vip-ribbon[data-count="3"] { max-width: 1100px; }
+  .vip-ribbon-viewport { overflow: hidden; padding-block: 6px 16px; }
+  .vip-ribbon-track { display: flex; margin-inline-start: -20px; touch-action: pan-y pinch-zoom; }
+  .vip-ribbon-slide { display: flex; flex: 0 0 86%; min-width: 0; padding-inline-start: 20px; }
+  .vip-spotlight { box-shadow: 0 8px 28px rgb(32 36 31 / 6%); }
+  .vip-ribbon-control { display: inline-flex; align-items: center; justify-content: center; width: 44px; min-height: 44px; border: 1px solid #dfe3d8; border-radius: 999px; background: white; color: #20241f; }
+  .vip-ribbon-control:hover { background: #e9f2d2; border-color: #a5cd49; }
+  .vip-ribbon-control:focus-visible { outline: 2px solid #4f651e; outline-offset: 3px; }
+  @media (min-width: 640px) { .vip-ribbon-slide { flex-basis: 55%; } }
+  @media (min-width: 1024px) {
+    .vip-ribbon-slide { flex-basis: 32%; }
+    .vip-ribbon[data-count="2"] .vip-ribbon-slide { flex-basis: 76%; }
+    .vip-ribbon[data-count="3"] .vip-ribbon-slide { flex-basis: 46%; }
+  }
   .vip-empty { background-image: radial-gradient(ellipse at 100% 0%, #f1f7e6, transparent 65%); }
   @media (prefers-reduced-motion: reduce) { .vip-card { transition: none; } .vip-card:hover { transform: none; } }
 }

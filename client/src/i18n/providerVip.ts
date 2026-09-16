@@ -1,5 +1,11 @@
 import type { Locale } from "@/contexts/LocaleContext";
 const en = {
+  carousel: "Provider carousel",
+  navigation: "Provider carousel controls",
+  pause: "Pause movement",
+  play: "Resume movement",
+  goTo: "Go to card",
+  browseServices: "Explore services and compare prices",
   title: "VIP provider album",
   kicker: "THE PROVIDER EDIT",
   intro: "Meet the providers. Explore what they offer.",
@@ -56,6 +62,12 @@ const en = {
 };
 type Copy = typeof en;
 const ar: Copy = {
+  carousel: "شريط المزودين",
+  navigation: "التحكم بشريط المزودين",
+  pause: "إيقاف الحركة",
+  play: "تشغيل الحركة",
+  goTo: "انتقل إلى البطاقة",
+  browseServices: "استكشف الخدمات وقارن الأسعار",
   title: "ألبوم مزودي VIP",
   kicker: "مساحة للمزودين",
   intro: "تعرّف على المزودين، واستكشف ما يقدّمونه.",
@@ -107,6 +119,12 @@ const ar: Copy = {
   liveHelp: "تظهر البطاقة المعتمدة فقط عند سريان الاشتراك وصحة إثبات الملكية.",
 };
 const es: Copy = {
+  carousel: "Carrusel de proveedores",
+  navigation: "Controles del carrusel",
+  pause: "Pausar movimiento",
+  play: "Reanudar movimiento",
+  goTo: "Ir a la tarjeta",
+  browseServices: "Explorar servicios y comparar precios",
   title: "Álbum de proveedores VIP",
   kicker: "ESPACIO DE PROVEEDORES",
   intro: "Conoce a los proveedores y descubre su oferta.",
@@ -162,6 +180,12 @@ const es: Copy = {
     "Las tarjetas aprobadas se muestran con suscripción activa y propiedad válida.",
 };
 const hi: Copy = {
+  carousel: "प्रदाता कैरोसेल",
+  navigation: "कैरोसेल नियंत्रण",
+  pause: "चलना रोकें",
+  play: "चलना शुरू करें",
+  goTo: "कार्ड पर जाएँ",
+  browseServices: "सेवाएँ देखें और कीमतों की तुलना करें",
   title: "VIP प्रदाता एल्बम",
   kicker: "प्रदाता परिचय",
   intro: "प्रदाताओं और उनकी सेवाओं को जानें।",
@@ -215,6 +239,12 @@ const hi: Copy = {
   liveHelp: "स्वीकृत कार्ड सक्रिय सदस्यता और वैध स्वामित्व होने पर दिखते हैं।",
 };
 const zh: Copy = {
+  carousel: "服务商轮播",
+  navigation: "轮播控制",
+  pause: "暂停轮播",
+  play: "继续轮播",
+  goTo: "转到卡片",
+  browseServices: "探索服务并比较价格",
   title: "VIP 服务商相册",
   kicker: "服务商展示",
   intro: "认识服务商，了解他们的服务。",
