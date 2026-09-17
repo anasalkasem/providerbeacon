@@ -478,6 +478,30 @@
 }
 
 /* A compact optical identity. Only the response indicator loops while busy. */
+.beacon-route-progress {
+  position: fixed;
+  z-index: 80;
+  inset: 0 0 auto;
+  height: 2px;
+  overflow: hidden;
+  background: #152330;
+  pointer-events: none;
+}
+.beacon-route-progress i {
+  display: block;
+  width: 30%;
+  height: 100%;
+  background: #83cfff;
+  animation: beacon-route-loading 1100ms ease-in-out infinite;
+}
+@keyframes beacon-route-loading {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(340%);
+  }
+}
 .beacon-signal {
   display: inline-grid;
   place-items: center;
@@ -846,6 +870,9 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  .beacon-route-progress i {
+    animation: none;
+  }
   [data-site-theme="orbit"] .beacon-assistant-panel,
   [data-site-theme="orbit"] .beacon-assistant-panel[data-state="closing"],
   [data-site-theme="orbit"] .beacon-assistant-log article,

@@ -3,9 +3,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { lazy, Suspense } from "react";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { LocaleProvider } from "./contexts/LocaleContext";
+import { LocaleProvider, useLocale } from "./contexts/LocaleContext";
 import { MarketplaceDataProvider } from "./contexts/MarketplaceDataContext";
-import { SiteAppearanceProvider } from "./contexts/SiteAppearanceContext";
+import {
+  SiteAppearanceProvider,
+  useSiteTheme,
+} from "./contexts/SiteAppearanceContext";
+import { PageTransition } from "./components/PageTransition";
 
 const Find = lazy(() => import("@/pages/Find"));
 const Groups = lazy(() => import("@/pages/Groups"));
@@ -69,56 +73,73 @@ const MemberPrivacy = lazy(() =>
 const MemberEmailPage = lazy(() => import("@/pages/MemberEmail"));
 
 function Router() {
+  const [path] = useLocation();
+  const { locale } = useLocale();
+  const loading = {
+    ar: "جارٍ فتح الصفحة…",
+    en: "Opening page…",
+    es: "Abriendo página…",
+    hi: "पेज खुल रहा है…",
+    zh: "正在打开页面…",
+  }[locale];
   return (
-    <Suspense
+    <PageTransition
+      path={path}
+      enabled={useSiteTheme() === "orbit"}
+      label={loading}
       fallback={
         <div className="grid min-h-screen place-items-center bg-background">
           <div
             className="size-10 animate-spin rounded-full border-4 border-border border-t-ring"
-            aria-label="Loading page"
+            aria-label={loading}
           />
         </div>
       }
     >
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/find" component={Find} />
-        <Route path="/groups" component={Groups} />
-        <Route path="/offers" component={ProviderOffers} />
-        <Route path="/vip" component={VipProviders} />
-        <Route path="/services" component={Services} />
-        <Route path="/services/:slug" component={ServiceGuide} />
-        <Route path="/directory/:slug" component={DirectoryProfile} />
-        <Route path="/compare" component={Compare} />
-        <Route path="/providers" component={Providers} />
-        <Route path="/providers/:slug" component={Provider} />
-        <Route path="/login" component={Login} />
-        <Route path="/sign-in" component={MemberSignIn} />
-        <Route path="/sign-up" component={MemberSignUp} />
-        <Route path="/account" component={MemberWorkspace} />
-        <Route path="/account/groups" component={MemberGroups} />
-        <Route path="/account/provider" component={ProviderBusiness} />
-        <Route path="/account/settings" component={MemberAccount} />
-        <Route path="/recover-account" component={MemberRecovery} />
-        <Route path="/privacy" component={MemberPrivacy} />
-        <Route path="/verify-email" component={MemberEmailPage} />
-        <Route path="/forgot-password" component={MemberEmailPage} />
-        <Route path="/reset-password" component={MemberEmailPage} />
-        <Route path="/unsubscribe" component={MemberEmailPage} />
-        <Route path="/setup" component={Setup} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/admin/themes" component={AdminThemes} />
-        <Route path="/admin/security" component={Security} />
-        <Route path="/admin/email" component={AdminEmail} />
-        <Route path="/admin/groups" component={AdminGroups} />
-        <Route path="/admin/analytics" component={AdminProviderAnalytics} />
-        <Route path="/admin/subscriptions" component={AdminProviderBusiness} />
-        <Route path="/admin/:module" component={AdminModule} />
-        <Route path="/team/accept" component={AcceptInvite} />
-        <Route path="/404" component={NotFound} />
-        <Route component={NotFound} />
-      </Switch>
-    </Suspense>
+      {displayedPath => (
+        <Switch location={displayedPath}>
+          <Route path="/" component={Home} />
+          <Route path="/find" component={Find} />
+          <Route path="/groups" component={Groups} />
+          <Route path="/offers" component={ProviderOffers} />
+          <Route path="/vip" component={VipProviders} />
+          <Route path="/services" component={Services} />
+          <Route path="/services/:slug" component={ServiceGuide} />
+          <Route path="/directory/:slug" component={DirectoryProfile} />
+          <Route path="/compare" component={Compare} />
+          <Route path="/providers" component={Providers} />
+          <Route path="/providers/:slug" component={Provider} />
+          <Route path="/login" component={Login} />
+          <Route path="/sign-in" component={MemberSignIn} />
+          <Route path="/sign-up" component={MemberSignUp} />
+          <Route path="/account" component={MemberWorkspace} />
+          <Route path="/account/groups" component={MemberGroups} />
+          <Route path="/account/provider" component={ProviderBusiness} />
+          <Route path="/account/settings" component={MemberAccount} />
+          <Route path="/recover-account" component={MemberRecovery} />
+          <Route path="/privacy" component={MemberPrivacy} />
+          <Route path="/verify-email" component={MemberEmailPage} />
+          <Route path="/forgot-password" component={MemberEmailPage} />
+          <Route path="/reset-password" component={MemberEmailPage} />
+          <Route path="/unsubscribe" component={MemberEmailPage} />
+          <Route path="/setup" component={Setup} />
+          <Route path="/admin" component={Admin} />
+          <Route path="/admin/themes" component={AdminThemes} />
+          <Route path="/admin/security" component={Security} />
+          <Route path="/admin/email" component={AdminEmail} />
+          <Route path="/admin/groups" component={AdminGroups} />
+          <Route path="/admin/analytics" component={AdminProviderAnalytics} />
+          <Route
+            path="/admin/subscriptions"
+            component={AdminProviderBusiness}
+          />
+          <Route path="/admin/:module" component={AdminModule} />
+          <Route path="/team/accept" component={AcceptInvite} />
+          <Route path="/404" component={NotFound} />
+          <Route component={NotFound} />
+        </Switch>
+      )}
+    </PageTransition>
   );
 }
 
