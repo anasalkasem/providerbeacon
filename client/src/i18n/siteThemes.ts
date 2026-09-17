@@ -28,8 +28,9 @@ export const siteThemeCopy: Record<Locale, ThemeCopy> = {
         description: "أسود عميق، عناوين وإطارات حمراء نارية وتوهّج دافئ.",
       },
       navy: {
-        name: "الأبيض والأزرق",
-        description: "أبيض نقي مع عناوين وأزرار وإطارات باللون الأزرق الواضح.",
+        name: "الأسود والأزرق",
+        description:
+          "خلفية سوداء ونصوص بيضاء، مع عناوين وأزرار وإطارات زرقاء واضحة.",
       },
       copper: {
         name: "النحاسي",
@@ -67,9 +68,9 @@ export const siteThemeCopy: Record<Locale, ThemeCopy> = {
           "Deep black, fiery red headings and borders, with a warm glow.",
       },
       navy: {
-        name: "White and blue",
+        name: "Black and blue",
         description:
-          "Pure white with vivid blue headings, buttons and borders.",
+          "Black backgrounds and white text, with vivid blue headings, buttons and borders.",
       },
       copper: {
         name: "Copper",
@@ -110,9 +111,9 @@ export const siteThemeCopy: Record<Locale, ThemeCopy> = {
           "Negro profundo, títulos y bordes rojo fuego con un brillo cálido.",
       },
       navy: {
-        name: "Blanco y azul",
+        name: "Negro y azul",
         description:
-          "Blanco puro con títulos, botones y bordes de un azul vivo.",
+          "Fondos negros y texto blanco, con títulos, botones y bordes de un azul vivo.",
       },
       copper: {
         name: "Cobre",
@@ -152,8 +153,9 @@ export const siteThemeCopy: Record<Locale, ThemeCopy> = {
         description: "गहरा काला, आग जैसे लाल शीर्षक और किनारे, हल्की गर्म चमक।",
       },
       navy: {
-        name: "सफ़ेद और नीला",
-        description: "शुद्ध सफ़ेद, चमकीले नीले शीर्षक, बटन और किनारे।",
+        name: "काला और नीला",
+        description:
+          "काली पृष्ठभूमि और सफ़ेद पाठ, चमकीले नीले शीर्षक, बटन और किनारे।",
       },
       copper: {
         name: "तांबा",
@@ -190,8 +192,8 @@ export const siteThemeCopy: Record<Locale, ThemeCopy> = {
         description: "深黑底色、火红标题与边框，搭配温暖光晕。",
       },
       navy: {
-        name: "纯白亮蓝",
-        description: "纯白底色，搭配鲜明的蓝色标题、按钮和边框。",
+        name: "曜黑亮蓝",
+        description: "黑色背景和白色文字，搭配鲜明的蓝色标题、按钮和边框。",
       },
       copper: {
         name: "暖铜",

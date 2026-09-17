@@ -206,43 +206,43 @@
 }
 
 :root[data-site-theme="navy"], [data-theme-sample="navy"] {
-  color-scheme: light;
-  --background: #ffffff;
-  --foreground: #253247;
-  --card: #f4f8ff;
-  --popover: #ffffff;
-  --heading: #2563eb;
+  color-scheme: dark;
+  --background: #080b10;
+  --foreground: #f5f8ff;
+  --card: #111822;
+  --popover: #182230;
+  --heading: #5b9cff;
   --primary: #2563eb;
   --primary-foreground: #ffffff;
   --primary-hover: #1d4ed8;
-  --secondary: #dbeafe;
-  --secondary-foreground: #2554a7;
-  --muted: #edf4ff;
-  --muted-foreground: #506586;
-  --accent: #e2edff;
-  --accent-foreground: #1d4ed8;
-  --border: #8bb3f5;
-  --input: #5b8cd9;
-  --ring: #1d4ed8;
-  --steel: #6282b4;
-  --fog: #526e98;
-  --chart-1: #2563eb;
-  --chart-2: #0891b2;
-  --chart-3: #7c3aed;
-  --chart-4: #ca8a04;
-  --chart-5: #059669;
-  --logo-inner: #60a5fa;
+  --secondary: #1e2f48;
+  --secondary-foreground: #dbeafe;
+  --muted: #172333;
+  --muted-foreground: #bccce2;
+  --accent: #152d50;
+  --accent-foreground: #93c5fd;
+  --border: #2d65b4;
+  --input: #397bd4;
+  --ring: #60a5fa;
+  --steel: #809fc8;
+  --fog: #a2b8d7;
+  --chart-1: #5b9cff;
+  --chart-2: #67d1ed;
+  --chart-3: #baa2ff;
+  --chart-4: #f4ce86;
+  --chart-5: #75d8b0;
+  --logo-inner: #2563eb;
   --logo-highlight: #eff6ff;
   --radius: 12px;
   --control-radius: 8px;
   --beacon-font-display: var(--beacon-font-body);
   --display-weight: 600;
-  --hero-wash: linear-gradient(130deg, #dbeafe88, transparent 65%);
-  --card-shadow: 0 8px 24px rgb(37 99 235 / 8%);
+  --hero-wash: radial-gradient(ellipse at 85% 5%, #2563eb20, transparent 65%);
+  --card-shadow: 0 8px 24px rgb(0 0 0 / 28%);
 }
 
-:root:is([data-site-theme="summer"], [data-site-theme="pearl"], [data-site-theme="navy"]),
-[data-theme-sample="summer"], [data-theme-sample="pearl"], [data-theme-sample="navy"] {
+:root:is([data-site-theme="summer"], [data-site-theme="pearl"]),
+[data-theme-sample="summer"], [data-theme-sample="pearl"] {
   --success: #286442;
   --success-muted: #e7f3e9;
   --success-border: #a1bdaa;
