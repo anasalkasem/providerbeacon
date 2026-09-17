@@ -74,6 +74,7 @@ export default function Home() {
               <label htmlFor="home-request" className="sr-only">
                 {t.ask}
               </label>
+              {isOrbit && <span className="orbit-search-label">{t.ask}</span>}
               <Search
                 className="landing-search-icon size-5"
                 aria-hidden="true"
@@ -85,8 +86,13 @@ export default function Home() {
                 dir={query ? "auto" : locale === "ar" ? "rtl" : "ltr"}
                 value={query}
                 onChange={event => setQuery(event.target.value)}
-                placeholder={t.ask}
+                placeholder={isOrbit ? t.examples[0] : t.ask}
               />
+              {isOrbit && (
+                <Link href="/services" className="orbit-search-browse">
+                  {d.explore}
+                </Link>
+              )}
               <button type="submit" className="beacon-button">
                 {l.search}
                 <ArrowRight className="size-4 rtl:rotate-180" />
@@ -102,6 +108,12 @@ export default function Home() {
                   }
                 >
                   {example}
+                  {isOrbit && (
+                    <ArrowRight
+                      aria-hidden="true"
+                      className="size-3.5 shrink-0 rtl:rotate-180"
+                    />
+                  )}
                 </button>
               ))}
             </div>
