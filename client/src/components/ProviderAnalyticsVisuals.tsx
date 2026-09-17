@@ -391,7 +391,7 @@ export function AnalyticsReport({
               <span className="flex items-center gap-1.5">
                 <span
                   className="analytics-key"
-                  style={accent("var(--heading)")}
+                  style={accent("var(--chart-1)")}
                   aria-hidden="true"
                 />
                 {t.currentPeriod}

@@ -30,7 +30,7 @@ export const siteThemeCopy: Record<Locale, ThemeCopy> = {
       navy: {
         name: "الأسود والأزرق",
         description:
-          "خلفية سوداء ونصوص بيضاء، مع عناوين وأزرار وإطارات زرقاء واضحة.",
+          "خلفية سوداء ونصوص وعناوين بيضاء، مع أزرار وإطارات وأيقونات زرقاء زاهية.",
       },
       copper: {
         name: "النحاسي",
@@ -70,7 +70,7 @@ export const siteThemeCopy: Record<Locale, ThemeCopy> = {
       navy: {
         name: "Black and blue",
         description:
-          "Black backgrounds and white text, with vivid blue headings, buttons and borders.",
+          "Black backgrounds with white text and headings, and vivid blue buttons, borders and icons.",
       },
       copper: {
         name: "Copper",
@@ -113,7 +113,7 @@ export const siteThemeCopy: Record<Locale, ThemeCopy> = {
       navy: {
         name: "Negro y azul",
         description:
-          "Fondos negros y texto blanco, con títulos, botones y bordes de un azul vivo.",
+          "Fondos negros, texto y títulos blancos, con botones, bordes e iconos de un azul vivo.",
       },
       copper: {
         name: "Cobre",
@@ -155,7 +155,7 @@ export const siteThemeCopy: Record<Locale, ThemeCopy> = {
       navy: {
         name: "काला और नीला",
         description:
-          "काली पृष्ठभूमि और सफ़ेद पाठ, चमकीले नीले शीर्षक, बटन और किनारे।",
+          "काली पृष्ठभूमि, सफ़ेद पाठ और शीर्षक, चमकीले नीले बटन, किनारे और आइकन।",
       },
       copper: {
         name: "तांबा",
@@ -193,7 +193,8 @@ export const siteThemeCopy: Record<Locale, ThemeCopy> = {
       },
       navy: {
         name: "曜黑亮蓝",
-        description: "黑色背景和白色文字，搭配鲜明的蓝色标题、按钮和边框。",
+        description:
+          "黑色背景，白色文字和标题，搭配鲜明的蓝色按钮、边框和图标。",
       },
       copper: {
         name: "暖铜",

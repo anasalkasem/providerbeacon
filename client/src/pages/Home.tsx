@@ -37,7 +37,7 @@ export default function Home() {
             <h1 className="beacon-hero-title mt-6">
               {t.title}
               <br />
-              <span className="text-copper">{t.accent}</span>
+              <span className="text-heading">{t.accent}</span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-8 text-muted-foreground">
               {t.intro}
@@ -118,7 +118,7 @@ export default function Home() {
             </div>
             <Link
               href="/account"
-              className="mt-2 flex items-center justify-between gap-3 border-t border-input pt-5 text-sm text-copper"
+              className="mt-2 flex items-center justify-between gap-3 border-t border-input pt-5 text-sm text-heading"
             >
               {t.workspace}
               <ArrowRight className="size-4 rtl:rotate-180" />

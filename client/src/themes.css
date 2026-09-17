@@ -23,6 +23,7 @@
   --hero-wash: radial-gradient(ellipse at 82% 12%, rgb(239 184 131 / 9%), transparent 62%);
   --card-shadow: 0 12px 32px rgb(0 0 0 / 14%);
   --heading: #efb883;
+  --highlight: var(--heading);
   --background: #191d23;
   --foreground: #f2e2d4;
   --card: #252b33;
@@ -208,36 +209,37 @@
 :root[data-site-theme="navy"], [data-theme-sample="navy"] {
   color-scheme: dark;
   --background: #080b10;
-  --foreground: #f5f8ff;
+  --foreground: #ffffff;
   --card: #111822;
   --popover: #182230;
-  --heading: #5b9cff;
-  --primary: #2563eb;
+  --heading: #ffffff;
+  --highlight: #0285fe;
+  --primary: #0285fe;
   --primary-foreground: #ffffff;
-  --primary-hover: #1d4ed8;
+  --primary-hover: #0276e3;
   --secondary: #1e2f48;
-  --secondary-foreground: #dbeafe;
+  --secondary-foreground: #ffffff;
   --muted: #172333;
-  --muted-foreground: #bccce2;
+  --muted-foreground: #ffffff;
   --accent: #152d50;
-  --accent-foreground: #93c5fd;
-  --border: #2d65b4;
-  --input: #397bd4;
-  --ring: #60a5fa;
+  --accent-foreground: #ffffff;
+  --border: #0285fe;
+  --input: #0285fe;
+  --ring: #0285fe;
   --steel: #809fc8;
-  --fog: #a2b8d7;
-  --chart-1: #5b9cff;
+  --fog: #eeeeee;
+  --chart-1: #0285fe;
   --chart-2: #67d1ed;
   --chart-3: #baa2ff;
   --chart-4: #f4ce86;
   --chart-5: #75d8b0;
-  --logo-inner: #2563eb;
-  --logo-highlight: #eff6ff;
+  --logo-inner: #0276e3;
+  --logo-highlight: #ffffff;
   --radius: 12px;
   --control-radius: 8px;
   --beacon-font-display: var(--beacon-font-body);
   --display-weight: 600;
-  --hero-wash: radial-gradient(ellipse at 85% 5%, #2563eb20, transparent 65%);
+  --hero-wash: radial-gradient(ellipse at 85% 5%, #0285fe20, transparent 65%);
   --card-shadow: 0 8px 24px rgb(0 0 0 / 28%);
 }
 
@@ -265,3 +267,7 @@
 .theme-sample-grid { display: flex; gap: 7px; }
 .theme-sample-card { display: block; flex: 1; height: 29px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); box-shadow: var(--card-shadow); }
 .theme-sample-action { display: block; width: 37%; height: 13px; margin-top: 9px; border-radius: var(--control-radius); background: var(--primary); }
+
+/* White copy and reference-blue icon accents in the black/blue preset. */
+:root[data-site-theme="navy"] :is(a.text-primary, [data-slot="button"].text-primary) { color: var(--foreground); }
+:root[data-site-theme="navy"] :is(.beacon-guide-step svg, .beacon-guide a svg, .stat-icon) { color: var(--highlight); }
