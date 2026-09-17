@@ -6,6 +6,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { LocaleProvider } from "./contexts/LocaleContext";
 import { MarketplaceDataProvider } from "./contexts/MarketplaceDataContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { SiteAppearanceProvider } from "./contexts/SiteAppearanceContext";
 
 const Find = lazy(() => import("@/pages/Find"));
 const Groups = lazy(() => import("@/pages/Groups"));
@@ -114,11 +115,13 @@ export default function App() {
         <LocaleProvider>
           <MarketplaceDataProvider>
             <TooltipProvider>
-              <Toaster richColors />
-              <Router />
-              <Suspense fallback={null}>
-                <BeaconAssistant />
-              </Suspense>
+              <SiteAppearanceProvider>
+                <Toaster richColors />
+                <Router />
+                <Suspense fallback={null}>
+                  <BeaconAssistant />
+                </Suspense>
+              </SiteAppearanceProvider>
             </TooltipProvider>
           </MarketplaceDataProvider>
         </LocaleProvider>

@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { AssistantEdgeGlow } from "./EdgeGlow";
 import { Link, useLocation } from "wouter";
 import {
   Loader2,
@@ -57,13 +56,6 @@ function AssistantChat({ path }: { path: string }) {
     retry: false,
   });
   const chat = trpc.assistant.chat.useMutation({ retry: false });
-  const appearance = trpc.appearance.public.useQuery(undefined, {
-    staleTime: 0,
-    refetchInterval: 30_000,
-    refetchIntervalInBackground: false,
-    refetchOnWindowFocus: true,
-    retry: false,
-  });
   const ready = status.data?.available === true;
 
   useEffect(() => {
@@ -150,14 +142,6 @@ function AssistantChat({ path }: { path: string }) {
 
   return (
     <>
-      <AssistantEdgeGlow
-        enabled={
-          appearance.data?.edgeGlowEnabled === true && !appearance.isError
-        }
-        open={open}
-        pending={chat.isPending}
-        replyId={turns.findLast(turn => turn.role === "assistant")?.id ?? 0}
-      />
       <button
         ref={launcher}
         type="button"

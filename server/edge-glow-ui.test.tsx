@@ -2,16 +2,27 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { AssistantEdgeGlow } from "../client/src/components/EdgeGlow";
+const state = vi.hoisted(() => ({
+  data: { edgeGlowEnabled: true } as { edgeGlowEnabled: boolean } | undefined,
+  error: false,
+}));
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    appearance: {
+      public: {
+        useQuery: () => ({ data: state.data, isError: state.error }),
+      },
+    },
+  },
+}));
+import { SiteAppearanceProvider } from "../client/src/contexts/SiteAppearanceContext";
 
 let root: Root, container: HTMLDivElement;
-const baseline = { enabled: true, open: false, pending: false, replyId: 0 };
-let props = { ...baseline };
 beforeEach(() => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   vi.useFakeTimers();
-  sessionStorage.clear();
-  props = { ...baseline };
+  state.data = { edgeGlowEnabled: true };
+  state.error = false;
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -21,69 +32,60 @@ afterEach(async () => {
   container.remove();
   vi.useRealTimers();
 });
-const render = (changes = {}) =>
+const render = (page = "home") =>
   act(async () => {
-    props = { ...props, ...changes };
-    root.render(<AssistantEdgeGlow {...props} />);
-  });
-const phase = () =>
-  container.querySelector(".beacon-edge-glow")?.getAttribute("data-phase");
-const tick = (ms: number) => act(() => vi.advanceTimersByTime(ms));
-
-describe("edge glow tied to assistant activity", () => {
-  it("welcomes once per browser session, expires and has no focusable content", async () => {
-    await render();
-    expect(phase()).toBe("welcome");
-    expect(container.firstElementChild?.getAttribute("aria-hidden")).toBe(
-      "true"
+    root.render(
+      <SiteAppearanceProvider>
+        <main key={page}>
+          <article className="vip-card">
+            <a href="/providers/example">{page}</a>
+          </article>
+        </main>
+      </SiteAppearanceProvider>
     );
-    expect(container.querySelector("button, a, input, [tabindex]")).toBeNull();
-    await tick(3200);
-    expect(phase()).toBeUndefined();
-    await act(() => root.render(null));
+  });
+const glow = () => container.querySelector(".beacon-edge-glow");
+const scope = () => container.querySelector("[data-beacon-glow]");
+
+describe("continuous site and VIP illumination", () => {
+  it("stays mounted across time, page changes and a failed background refresh", async () => {
     await render();
-    expect(phase()).toBeUndefined();
+    const original = glow();
+    expect(original?.getAttribute("aria-hidden")).toBe("true");
+    expect(original?.querySelector("button, a, input, [tabindex]")).toBeNull();
+    expect(scope()?.getAttribute("data-beacon-glow")).toBe("on");
+    expect(scope()?.querySelector(".vip-card")).not.toBeNull();
+    await act(() => vi.advanceTimersByTime(120_000));
+    expect(glow()).toBe(original);
+    state.error = true;
+    await render("vip");
+    expect(glow()).toBe(original);
+    expect(scope()?.getAttribute("data-beacon-glow")).toBe("on");
+    expect(container.querySelector("main")?.textContent).toBe("vip");
   });
-  it("follows opening, a long request and a successful reply without stopping mid-request", async () => {
-    await render({ open: true });
-    expect(phase()).toBe("opening");
-    await render({ pending: true });
-    await tick(20000);
-    expect(phase()).toBe("thinking");
-    // The response may render before React Query clears isPending.
-    await render({ replyId: 2 });
-    expect(phase()).toBe("thinking");
-    await render({ pending: false });
-    expect(phase()).toBe("reply");
-    await tick(1800);
-    expect(phase()).toBeUndefined();
+
+  it("removes the frame and VIP illumination together when the owner disables it", async () => {
+    await render();
+    state.data = { edgeGlowEnabled: false };
+    await render();
+    expect(glow()).toBeNull();
+    expect(scope()?.getAttribute("data-beacon-glow")).toBe("off");
+    expect(container.querySelector(".vip-card a")).not.toBeNull();
+    await act(() => vi.advanceTimersByTime(120_000));
+    expect(glow()).toBeNull();
+    state.data = { edgeGlowEnabled: true };
+    await render();
+    expect(glow()).not.toBeNull();
+    expect(scope()?.getAttribute("data-beacon-glow")).toBe("on");
   });
-  it("fades after an error and never displays a success pulse for it", async () => {
-    await render({ open: true, pending: true });
-    await render({ pending: false });
-    expect(phase()).toBe("leaving");
-    await tick(450);
-    expect(phase()).toBeUndefined();
-  });
-  it("obeys a disabled setting immediately, even during a request, and clears timers", async () => {
-    await render({ enabled: false });
-    expect(phase()).toBeUndefined();
-    expect(sessionStorage.getItem("beacon-edge-welcome")).toBeNull();
-    await render({ enabled: true, open: true, pending: true });
-    expect(phase()).toBe("thinking");
-    await render({ enabled: false });
-    expect(phase()).toBeUndefined();
-    await render({ pending: false, replyId: 2 });
-    await tick(20000);
-    expect(phase()).toBeUndefined();
-  });
-  it("stays quiet if a closed assistant finishes a request", async () => {
-    await render({ open: true, pending: true });
-    await render({ open: false });
-    await tick(450);
-    await render({ pending: false, replyId: 2 });
-    expect(phase()).toBeUndefined();
-    await render({ open: true });
-    expect(phase()).toBe("opening");
+
+  it("does not guess the setting during initial loading or a failed initial request", async () => {
+    state.data = undefined;
+    await render();
+    expect(glow()).toBeNull();
+    expect(scope()?.getAttribute("data-beacon-glow")).toBe("off");
+    state.error = true;
+    await render();
+    expect(glow()).toBeNull();
   });
 });
