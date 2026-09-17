@@ -1,4 +1,4 @@
-import { BellRing, Volume2, VolumeX } from "lucide-react";
+import { BellRing, Users, Volume2, VolumeX } from "lucide-react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { messagingCopy } from "@/i18n/messaging";
 import type { useMessageAlerts } from "@/hooks/useMessageAlerts";
@@ -12,6 +12,23 @@ export function UnreadMessages({ count }: { count: number }) {
       aria-label={`${messagingCopy[locale].unreadMessages}: ${count}`}
       className="inline-flex min-w-6 items-center justify-center rounded-full bg-beacon-300 px-2 py-0.5 text-xs font-bold tabular-nums text-ink"
     >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
+export function WaitingCustomers({ count }: { count: number }) {
+  const { locale } = useLocale();
+  if (!count) return null;
+  const label = `${messagingCopy[locale].queue}: ${count}`;
+  return (
+    <span
+      role="status"
+      aria-label={label}
+      title={label}
+      className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold tabular-nums text-amber-900"
+    >
+      <Users className="size-3" aria-hidden="true" />
       {count > 99 ? "99+" : count}
     </span>
   );

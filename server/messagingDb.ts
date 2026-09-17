@@ -773,7 +773,14 @@ export async function messageNotifications(
       .leftJoin(members, memberJoin)
       .innerJoin(messages, incoming)
       .where(access);
-    if (!total.n) return { unread: 0, items: [] };
+    const [queue] =
+      actor.role === "auditor"
+        ? [{ n: 0 }]
+        : await tx
+            .select({ n: sql<number>`count(*)`.mapWith(Number) })
+            .from(chats)
+            .where(and(eq(chats.kind, "support"), eq(chats.status, "waiting")));
+    if (!total.n) return { unread: 0, waiting: queue.n, items: [] };
     const rows = await tx
       .select({
         conversationId: chats.id,
@@ -806,6 +813,7 @@ export async function messageNotifications(
     const names = new Map(peers.map(peer => [peer.id, peer.name]));
     return {
       unread: total.n,
+      waiting: queue.n,
       items: rows.map(row => ({
         conversationId: row.conversationId,
         kind: row.kind,

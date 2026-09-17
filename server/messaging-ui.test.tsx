@@ -87,7 +87,10 @@ vi.mock("@/lib/trpc", () => {
         notifications: {
           useQuery: (input: any, options: any) => {
             state.notificationCalls(input, options);
-            return { data: { unread: 4, items: [] }, refetch: vi.fn() };
+            return {
+              data: { unread: 4, waiting: 3, items: [] },
+              refetch: vi.fn(),
+            };
           },
         },
         assign: { useMutation: () => mutation(vi.fn()) },
@@ -193,6 +196,9 @@ describe("translated messenger", () => {
     ];
     await act(async () => root.render(<Messenger userId={10} />));
     expect(container.textContent).toContain("4");
+    expect(
+      container.querySelector('[aria-label="Solicitudes en espera: 3"]')
+    ).toBeTruthy();
     expect(state.listCalls.mock.calls.at(-1)![1].enabled).toBe(false);
     expect(state.notificationCalls.mock.calls.at(-1)![1]).toMatchObject({
       enabled: true,

@@ -9,7 +9,10 @@ import { usePageVisible } from "@/hooks/usePageVisible";
 import { messagingCopy, messagingError } from "@/i18n/messaging";
 import MessageThread from "./MessageThread";
 import { useMessageAlerts } from "@/hooks/useMessageAlerts";
-import MessageAlertControls, { UnreadMessages } from "./MessageAlertControls";
+import MessageAlertControls, {
+  UnreadMessages,
+  WaitingCustomers,
+} from "./MessageAlertControls";
 
 export default function StaffMessenger() {
   const { user } = useAuth();
@@ -112,6 +115,7 @@ export function Messenger({ userId }: { userId: number }) {
     return () => clearInterval(timer);
   }, [visible, !!profile.data, language]);
   const unread = notificationData?.unread ?? 0;
+  const waiting = notificationData?.waiting ?? 0;
   // Avoid continuing to display private cached inbox data after access fails.
   const inbox = list.isError || profile.isError ? undefined : list.data;
   const close = () => {
@@ -136,9 +140,7 @@ export function Messenger({ userId }: { userId: number }) {
       <button
         ref={launcher}
         type="button"
-        aria-label={
-          unread ? `${t.title} · ${t.unreadMessages}: ${unread}` : t.title
-        }
+        aria-label={`${t.title}${unread ? ` · ${t.unreadMessages}: ${unread}` : ""}${waiting ? ` · ${t.queue}: ${waiting}` : ""}`}
         aria-expanded={open}
         aria-controls="staff-messenger"
         onClick={() => setOpen(!open)}
@@ -147,6 +149,7 @@ export function Messenger({ userId }: { userId: number }) {
         <MessageCircle className="size-5 text-beacon-300" />
         {t.title}
         <UnreadMessages count={unread} />
+        <WaitingCustomers count={waiting} />
       </button>
       {open && (
         <section
@@ -165,6 +168,7 @@ export function Messenger({ userId }: { userId: number }) {
             <MessageCircle className="size-5 text-beacon-300" />
             <h2 className="flex-1 font-bold">{t.title}</h2>
             <UnreadMessages count={unread} />
+            <WaitingCustomers count={waiting} />
             <button
               type="button"
               aria-label={t.close}
@@ -270,7 +274,7 @@ export function Messenger({ userId }: { userId: number }) {
                   {profile.data?.canAssign
                     ? t.customerConversations
                     : t.customers}
-                  {!!inbox?.queue.length && ` (${inbox!.queue.length})`}
+                  {!!waiting && ` (${waiting})`}
                 </button>
               </div>
               {tab === "customers" && (

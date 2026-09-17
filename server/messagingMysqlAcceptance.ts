@@ -109,6 +109,7 @@ export function messagingAcceptanceCases(
       });
       expect(await caller(arabic).messaging.notifications()).toEqual({
         unread: 0,
+        waiting: 0,
         items: [],
       });
       vi.stubGlobal(
@@ -153,6 +154,7 @@ export function messagingAcceptanceCases(
       expect((await caller(spanish).messaging.list()).items[0].unread).toBe(0);
       expect(await caller(spanish).messaging.notifications()).toEqual({
         unread: 0,
+        waiting: 0,
         items: [],
       });
       expect(
@@ -243,6 +245,17 @@ export function messagingAcceptanceCases(
       expect(thread.items).toHaveLength(3);
       expect(thread.items.filter(m => m.imported)).toHaveLength(2);
       expect((await caller(arabic).messaging.list()).queue[0].id).toBe(id);
+      expect(await caller(arabic).messaging.notifications()).toEqual({
+        unread: 0,
+        waiting: 1,
+        items: [],
+      });
+      const auditor = await staff("Auditor", "auditor");
+      expect(await caller(auditor).messaging.notifications()).toEqual({
+        unread: 0,
+        waiting: 0,
+        items: [],
+      });
       await expect(
         caller(spanish).messaging.thread({ conversationId: id })
       ).rejects.toMatchObject({ code: "NOT_FOUND" });

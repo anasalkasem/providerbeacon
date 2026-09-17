@@ -16,6 +16,7 @@ export type MessageAlert = {
 };
 export type MessageNotificationSnapshot = {
   unread: number;
+  waiting?: number;
   items: MessageAlert[];
 };
 export const messageText = z.string().trim().min(1).max(2000);
