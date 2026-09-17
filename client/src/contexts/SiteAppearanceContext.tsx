@@ -42,8 +42,6 @@ export function SiteAppearanceProvider({ children }: { children: ReactNode }) {
           new URLSearchParams(window.location.search).get("previewTheme")
         )
   );
-  const { locale } = useLocale();
-  const t = siteThemeCopy[locale];
   const theme = themePreview ?? resolveSiteTheme(appearance.data?.theme);
   const value = useMemo(
     () => ({ preview, setPreview, theme }),
@@ -75,30 +73,41 @@ export function SiteAppearanceProvider({ children }: { children: ReactNode }) {
           data-beacon-glow={enabled ? "on" : "off"}
         >
           {themePreview && (
-            <aside
-              className="theme-preview-banner"
-              aria-label={t.previewBanner}
-            >
-              <span>
-                {t.previewBanner} · {t.themes[themePreview].name}
-              </span>
-              <button
-                onClick={() => {
-                  const url = new URL(window.location.href);
-                  url.searchParams.delete("previewTheme");
-                  window.history.replaceState(window.history.state, "", url);
-                  setThemePreview(null);
-                }}
-              >
-                {t.leavePreview}
-              </button>
-            </aside>
+            <ThemePreviewBanner
+              theme={themePreview}
+              onExit={() => {
+                const url = new URL(window.location.href);
+                url.searchParams.delete("previewTheme");
+                window.history.replaceState(window.history.state, "", url);
+                setThemePreview(null);
+              }}
+            />
           )}
           {children}
           <EdgeGlow enabled={enabled} />
         </div>
       </ThemeProvider>
     </SiteAppearanceContext.Provider>
+  );
+}
+
+// Locale is a dependency of the preview copy, not of appearance rendering.
+function ThemePreviewBanner({
+  theme,
+  onExit,
+}: {
+  theme: SiteThemeId;
+  onExit: () => void;
+}) {
+  const { locale } = useLocale();
+  const t = siteThemeCopy[locale];
+  return (
+    <aside className="theme-preview-banner" aria-label={t.previewBanner}>
+      <span>
+        {t.previewBanner} · {t.themes[theme].name}
+      </span>
+      <button onClick={onExit}>{t.leavePreview}</button>
+    </aside>
   );
 }
 
