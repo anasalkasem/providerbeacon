@@ -65,6 +65,7 @@ vi.mock("@/lib/trpc", () => ({
   },
 }));
 import { ProviderAnalyticsPanel } from "../client/src/pages/AdminProviderAnalytics";
+import { analyticsPresentation } from "../client/src/lib/analyticsPresentation";
 
 let root: Root, container: HTMLDivElement;
 const now = Date.parse("2026-09-16T12:00:00Z");
@@ -274,6 +275,9 @@ describe("provider analytics dashboard", () => {
     await render(React.createElement(ProviderAnalyticsPanel));
     expect(container.textContent).toContain("Website clicks");
     expect(container.textContent).toContain("Telegram clicks");
+    expect(container.textContent).toContain("Contact click distribution");
+    expect(container.textContent).toContain("63.6%");
+    expect(container.textContent).toContain("36.4%");
     expect(container.textContent).toContain("Before measurement");
     expect(container.textContent).toContain("confirmed sales");
     const click = (text: string) =>
@@ -308,6 +312,8 @@ describe("provider analytics dashboard", () => {
     expect(container.textContent).toContain("إحصاءات المزوّدين");
     expect(container.textContent).toContain("لم يُسجّل نشاط");
     expect(container.textContent).toContain("قبل بدء القياس");
+    expect(container.textContent).toContain("لم تُسجّل نقرات تواصل بعد.");
+    expect(container.textContent).not.toMatch(/NaN|Infinity/);
     state.error = true;
     await render(React.createElement(ProviderAnalyticsPanel));
     expect(container.querySelector('[role="alert"]')?.textContent).toContain(
@@ -321,5 +327,42 @@ describe("provider analytics dashboard", () => {
     expect(state.options.enabled).toBe(false);
     expect(container.querySelector('[role="alert"]')).not.toBeNull();
     expect(container.querySelector("select")).toBeNull();
+  });
+});
+
+describe("analytics presentation integrity", () => {
+  it("uses contact clicks as the distribution denominator and leaves missing days as gaps", () => {
+    const data = report();
+    const display = analyticsPresentation(data);
+    expect(display.contacts).toBe(11);
+    expect(display.channels.map(channel => channel.share)).toEqual([
+      7 / 11,
+      4 / 11,
+    ]);
+    expect(display.daily[0].views).toBeNull();
+    expect(display.daily[1].views).toBe(12);
+    data.daily[0].measured = true;
+    expect(analyticsPresentation(data).daily[0].views).toBe(0);
+  });
+  it("does not invent percentages or compare incomplete periods", () => {
+    const data = {
+      ...report(),
+      totals: { views: 20, website: 0, telegram: 0 },
+      previous: {
+        from: "2026-09-03",
+        to: "2026-09-09",
+        fullyMeasured: true,
+        totals: { views: 10, website: 3, telegram: 2 },
+      },
+    };
+    expect(
+      analyticsPresentation(data).channels.map(channel => channel.share)
+    ).toEqual([null, null]);
+    expect(analyticsPresentation(data).comparable).toBe(false);
+    data.daily[0].measured = true;
+    expect(analyticsPresentation(data).comparable).toBe(true);
+    expect(analyticsPresentation(data).previousContacts).toBe(5);
+    data.collectionEnabled = false;
+    expect(analyticsPresentation(data).comparable).toBe(false);
   });
 });
