@@ -6,6 +6,7 @@ export function EdgeGlow({ enabled }: { enabled: boolean }) {
     <div className="beacon-edge-glow" aria-hidden="true">
       <div className="beacon-edge-glow__halo" />
       <div className="beacon-edge-glow__rim" />
+      <div className="beacon-edge-glow__flow" />
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { vipText } from "@/i18n/providerVip";
 import {
-  advanceRibbon,
+  VIP_RIBBON_SPEED,
   ribbonCardPosition,
   wrapRibbonDistance,
 } from "@/lib/vipRibbonMotion";
@@ -35,6 +35,8 @@ function MovingRibbon({ cards }: { cards: VipCardData[] }) {
   const track = useRef<HTMLDivElement>(null);
   const distance = useRef(0);
   const pitch = useRef(0);
+  const animations = useRef<Animation[]>([]);
+  const playing = useRef(false);
   const selectedRef = useRef(0);
   const drag = useRef<{
     x: number;
@@ -51,6 +53,34 @@ function MovingRibbon({ cards }: { cards: VipCardData[] }) {
   const running =
     !paused && !hovered && !reducedMotion && onScreen && !pageHidden;
 
+  const readDistance = useCallback(() => {
+    const time = animations.current[0]?.currentTime;
+    if (typeof time === "number" && pitch.current) {
+      distance.current = wrapRibbonDistance(
+        (time * VIP_RIBBON_SPEED) / 1000 - (cards.length - 1) * pitch.current,
+        cards.length * pitch.current
+      );
+    }
+    return distance.current;
+  }, [cards.length]);
+
+  const updateSelected = useCallback(() => {
+    if (!pitch.current) return;
+    const index = Math.floor(distance.current / pitch.current) % cards.length;
+    if (index !== selectedRef.current) {
+      selectedRef.current = index;
+      setSelected(index);
+    }
+  }, [cards.length]);
+
+  const stop = useCallback(() => {
+    animations.current.forEach(animation => animation.pause());
+    playing.current = false;
+    readDistance();
+  }, [readDistance]);
+
+  // Only seek on a manual action or resize. Autoplay never writes styles or
+  // schedules requestAnimationFrame work on the main thread.
   const draw = useCallback(() => {
     if (!track.current || !pitch.current) return;
     Array.from(track.current.children).forEach((element, index) => {
@@ -63,14 +93,20 @@ function MovingRibbon({ cards }: { cards: VipCardData[] }) {
       const offset = (position - index * pitch.current) * (rtl ? -1 : 1);
       (element as HTMLElement).style.transform =
         `translate3d(${offset}px, 0, 0)`;
+      const animation = animations.current[index];
+      if (animation) {
+        animation.currentTime =
+          (((cards.length - index - 1) * pitch.current + distance.current) *
+            1000) /
+          VIP_RIBBON_SPEED;
+      }
     });
-    const index = Math.floor(distance.current / pitch.current) % cards.length;
-    if (index !== selectedRef.current) {
-      selectedRef.current = index;
-      setSelected(index);
-    }
-  }, [cards.length, rtl]);
+    updateSelected();
+  }, [cards.length, rtl, updateSelected]);
 
+  const motionKey = cards
+    .map(card => `${card.providerId}:${card.revision}`)
+    .join(",");
   useEffect(() => {
     const measure = () => {
       const first = track.current?.firstElementChild as HTMLElement | null;
@@ -79,13 +115,49 @@ function MovingRibbon({ cards }: { cards: VipCardData[] }) {
         first.getBoundingClientRect().width +
         (parseFloat(getComputedStyle(track.current).columnGap) || 0);
       if (nextPitch <= 0) return;
+      if (
+        nextPitch === pitch.current &&
+        animations.current.length === cards.length
+      )
+        return;
+      readDistance();
       const progress = pitch.current ? distance.current / pitch.current : 0;
+      animations.current.forEach(animation => animation.cancel());
+      animations.current = [];
       pitch.current = nextPitch;
       distance.current = wrapRibbonDistance(
         progress * nextPitch,
         cards.length * nextPitch
       );
+      if (typeof first.animate === "function") {
+        const direction = rtl ? -1 : 1;
+        animations.current = Array.from(track.current.children).map(
+          (element, index) => {
+            // Each original card loops between two fully offscreen positions.
+            // Phase offsets keep all cards aligned without cloned content.
+            const start = (cards.length - index - 1) * nextPitch * direction;
+            const end = -(index + 1) * nextPitch * direction;
+            const animation = element.animate(
+              [
+                { transform: `translate3d(${start}px, 0, 0)` },
+                { transform: `translate3d(${end}px, 0, 0)` },
+              ],
+              {
+                id: `vip-ribbon-${index}`,
+                duration: (cards.length * nextPitch * 1000) / VIP_RIBBON_SPEED,
+                iterations: Infinity,
+                easing: "linear",
+                fill: "both",
+              }
+            );
+            animation.pause();
+            return animation;
+          }
+        );
+      }
       draw();
+      if (playing.current)
+        animations.current.forEach(animation => animation.play());
     };
     measure();
     const observer =
@@ -95,10 +167,13 @@ function MovingRibbon({ cards }: { cards: VipCardData[] }) {
     if (observer && viewport.current) observer.observe(viewport.current);
     window.addEventListener("resize", measure);
     return () => {
+      readDistance();
+      animations.current.forEach(animation => animation.cancel());
+      animations.current = [];
       observer?.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [cards.length, draw]);
+  }, [cards.length, motionKey, rtl, draw, readDistance]);
 
   useEffect(() => {
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -132,26 +207,27 @@ function MovingRibbon({ cards }: { cards: VipCardData[] }) {
   }, []);
 
   useEffect(() => {
-    if (!running) return;
-    let frame: number;
-    let previous: number | undefined;
-    const tick = (now: number) => {
-      if (previous !== undefined) {
-        distance.current = advanceRibbon(
-          distance.current,
-          now - previous,
-          pitch.current * cards.length
-        );
-        draw();
-      }
-      previous = now;
-      frame = requestAnimationFrame(tick);
+    if (!running) {
+      stop();
+      updateSelected();
+      return;
+    }
+    playing.current = true;
+    animations.current.forEach(animation => animation.play());
+    // This low-frequency read only updates the navigation dots. Movement is
+    // driven by the browser even when JavaScript is busy with other UI work.
+    const timer = window.setInterval(() => {
+      readDistance();
+      updateSelected();
+    }, 500);
+    return () => {
+      window.clearInterval(timer);
+      stop();
     };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [running, cards.length, draw]);
+  }, [running, motionKey, readDistance, stop, updateSelected]);
 
   const goTo = (index: number) => {
+    stop();
     setPaused(true);
     distance.current = wrapRibbonDistance(
       index * pitch.current,
@@ -160,6 +236,7 @@ function MovingRibbon({ cards }: { cards: VipCardData[] }) {
     draw();
   };
   const manualMove = (direction: number) => {
+    readDistance();
     const progress = pitch.current ? distance.current / pitch.current : 0;
     goTo(direction > 0 ? Math.floor(progress) + 1 : Math.ceil(progress) - 1);
   };
@@ -169,6 +246,8 @@ function MovingRibbon({ cards }: { cards: VipCardData[] }) {
       ref={root}
       className="vip-ribbon"
       data-count={cards.length}
+      data-visible={onScreen}
+      data-moving={running}
       style={
         { "--vip-min-width": `${100 / (cards.length - 1)}%` } as CSSProperties
       }
@@ -185,6 +264,7 @@ function MovingRibbon({ cards }: { cards: VipCardData[] }) {
         ref={viewport}
         className="vip-ribbon-viewport"
         onFocusCapture={event => {
+          stop();
           setPaused(true);
           if (drag.current) return;
           const slide = (event.target as HTMLElement).closest<HTMLElement>(
@@ -212,6 +292,7 @@ function MovingRibbon({ cards }: { cards: VipCardData[] }) {
         }}
         onPointerDown={event => {
           if (event.button !== 0) return;
+          stop();
           setPaused(true);
           dragged.current = false;
           drag.current = {
