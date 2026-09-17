@@ -66,7 +66,7 @@ vi.mock("@/lib/trpc", () => ({
     },
   },
 }));
-import Admin from "../client/src/pages/Admin";
+import AdminThemes from "../client/src/pages/AdminThemes";
 import { SiteAppearanceProvider } from "../client/src/contexts/SiteAppearanceContext";
 let container: HTMLDivElement, root: Root;
 beforeEach(() => {
@@ -93,7 +93,7 @@ const render = () =>
   act(async () =>
     root.render(
       <SiteAppearanceProvider>
-        <Admin />
+        <AdminThemes />
       </SiteAppearanceProvider>
     )
   );
@@ -216,8 +216,9 @@ describe("owner appearance panel", () => {
       container.querySelector<HTMLButtonElement>("[data-apply-theme]")!.disabled
     ).toBe(true);
   });
-  it("mounts on the dashboard for the owner and is absent for other staff", async () => {
+  it("mounts on the themes page for the owner and is absent for other staff", async () => {
     await render();
+    expect(container.querySelector("h1")?.textContent).toBe("الثيمات");
     expect(container.textContent).toContain("مظهر الموقع");
     expect(toggle()?.getAttribute("aria-checked")).toBe("true");
     state.role = "administrator";

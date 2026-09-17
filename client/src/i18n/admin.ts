@@ -5,6 +5,7 @@ import { reviewEn, reviewAr } from "./review";
 import { syncEn, syncAr } from "./sync";
 
 const en = {
+  themes: "Themes",
   providerAnalytics: "Provider analytics",
   providerSubscriptions: "Provider subscriptions",
   groups: "Group moderation",
@@ -33,6 +34,7 @@ const en = {
 export type AdminTextKey = keyof typeof en;
 const translations: Record<Exclude<Locale,"en">, Partial<Record<AdminTextKey,string>>> = {
   ar: {
+    themes: "الثيمات",
     providerAnalytics: "إحصاءات المزوّدين",
     providerSubscriptions: "اشتراكات المزودين",
     customerEmail: "بريد العملاء",
@@ -57,10 +59,13 @@ const translations: Record<Exclude<Locale,"en">, Partial<Record<AdminTextKey,str
     suspendMember:"إيقاف", reactivateMember:"إعادة التفعيل", memberUpdated:"تم تحديث وصول العضو", suspendMemberConfirm:"إيقاف هذا الحساب وإلغاء جميع جلساته النشطة؟",
   },
   es: {
+    themes: "Temas",
     providerAnalytics: "Estadísticas de proveedores", providerSubscriptions: "Suscripciones de proveedores", controlCenter:"Centro de control Beacon", overview:"Resumen", providers:"Proveedores", services:"Servicios", team:"Equipo y acceso", translations:"Traducciones", audit:"Registro de auditoría", signOut:"Cerrar sesión", providerOperations:"Operaciones de proveedores", serviceCatalogue:"Catálogo de servicios", teamTitle:"Equipo y acceso", translationTitle:"Espacio de traducción", auditTitle:"Registro de auditoría", provider:"Proveedor", status:"Estado", service:"Servicio", price:"Precio / 1.000", quality:"Calidad", member:"Miembro", role:"Rol", active:"Activo", suspended:"Suspendido", inviteTitle:"Invitar con privilegios mínimos", inviteMember:"Invitar miembro", language:"Idioma", coverage:"Cobertura", reviewState:"Estado de revisión" },
   hi: {
+    themes: "थीम",
     providerAnalytics: "प्रदाता आँकड़े", providerSubscriptions: "प्रदाता सदस्यताएँ", controlCenter:"Beacon नियंत्रण केंद्र", overview:"अवलोकन", providers:"प्रदाता", services:"सेवाएँ", team:"टीम और पहुँच", translations:"अनुवाद", audit:"ऑडिट लॉग", signOut:"साइन आउट", providerOperations:"प्रदाता संचालन", serviceCatalogue:"सेवा कैटलॉग", teamTitle:"टीम और पहुँच", translationTitle:"अनुवाद कार्यक्षेत्र", auditTitle:"ऑडिट लॉग", provider:"प्रदाता", status:"स्थिति", service:"सेवा", price:"कीमत / 1,000", quality:"गुणवत्ता", member:"सदस्य", role:"भूमिका", active:"सक्रिय", suspended:"निलंबित", inviteTitle:"न्यूनतम अधिकार के साथ आमंत्रित करें", inviteMember:"सदस्य आमंत्रित करें", language:"भाषा", coverage:"कवरेज", reviewState:"समीक्षा स्थिति" },
   zh: {
+    themes: "主题",
     providerAnalytics: "供应商统计", providerSubscriptions: "供应商订阅", controlCenter:"Beacon 控制中心", overview:"概览", providers:"服务商", services:"服务", team:"团队与权限", translations:"翻译", audit:"审计日志", signOut:"退出登录", providerOperations:"服务商运营", serviceCatalogue:"服务目录", teamTitle:"团队与权限", translationTitle:"翻译工作区", auditTitle:"审计日志", provider:"服务商", status:"状态", service:"服务", price:"价格 / 1,000", quality:"质量", member:"成员", role:"角色", active:"启用", suspended:"停用", inviteTitle:"按最小权限邀请", inviteMember:"邀请成员", language:"语言", coverage:"覆盖率", reviewState:"审核状态" },
 };
 

@@ -24,7 +24,7 @@ import { useIsMobile } from "@/hooks/useMobile";
 import { trpc } from "@/lib/trpc";
 import { useLocale, localeNames, type Locale } from "@/contexts/LocaleContext";
 import { useAdminText, type AdminTextKey } from "@/i18n/admin";
-import { BarChart3, Bell, ClipboardCheck, BadgeCheck, KeyRound, Languages, Layers3, LayoutDashboard, LockKeyhole, LogOut, PanelLeft, ScrollText, Users } from "lucide-react";
+import { BarChart3, Bell, ClipboardCheck, BadgeCheck, KeyRound, Languages, Layers3, LayoutDashboard, LockKeyhole, LogOut, Palette, PanelLeft, ScrollText, Users } from "lucide-react";
 import { CSSProperties, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -33,6 +33,7 @@ import { Brand } from "./SiteChrome";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "overview" as AdminTextKey, path: "/admin", permission: null },
+  { icon: Palette, label: "themes" as AdminTextKey, path: "/admin/themes", permission: null, ownerOnly: true },
   { icon: BadgeCheck, label: "providers" as AdminTextKey, path: "/admin/providers", permission: "providers.read" },
   { icon: BarChart3, label: "providerAnalytics" as AdminTextKey, path: "/admin/analytics", permission: "providers.read" },
   { icon: BadgeCheck, label: "providerSubscriptions" as AdminTextKey, path: "/admin/subscriptions", permission: "business.read" },
@@ -145,7 +146,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         } as CSSProperties
       }
     >
-      <DashboardLayoutContent setSidebarWidth={setSidebarWidth} permissions={access.data.permissions}>
+      <DashboardLayoutContent setSidebarWidth={setSidebarWidth} permissions={access.data.permissions} isOwner={access.data.role === "owner"}>
         {children}
       </DashboardLayoutContent>
     </SidebarProvider>
@@ -156,12 +157,14 @@ type DashboardLayoutContentProps = {
   children: React.ReactNode;
   setSidebarWidth: (width: number) => void;
   permissions: string[];
+  isOwner: boolean;
 };
 
 function DashboardLayoutContent({
   children,
   setSidebarWidth,
   permissions,
+  isOwner,
 }: DashboardLayoutContentProps) {
   const { user, logout } = useAuth();
   const { locale, dir, setLocale } = useLocale();
@@ -171,7 +174,10 @@ function DashboardLayoutContent({
   const isCollapsed = state === "collapsed";
   const [isResizing, setIsResizing] = useState(false);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const activeMenuItem = menuItems.find(item => item.path === location);
+  const visibleMenuItems = menuItems.filter(item =>
+    (!item.ownerOnly || isOwner) && (!item.permission || permissions.includes(item.permission))
+  );
+  const activeMenuItem = visibleMenuItems.find(item => item.path === location);
   const isMobile = useIsMobile();
 
   useEffect(() => {
@@ -241,12 +247,13 @@ function DashboardLayoutContent({
 
           <SidebarContent className="admin-navigation gap-0 py-3">
             <SidebarMenu className="px-2 py-1">
-              {menuItems.filter(item => !item.permission || permissions.includes(item.permission)).map(item => {
+              {visibleMenuItems.map(item => {
                 const isActive = location === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>
                     <SidebarMenuButton
                       isActive={isActive}
+                      aria-current={isActive ? "page" : undefined}
                       onClick={() => { setLocation(item.path); if (isMobile) setOpenMobile(false); }}
                       tooltip={text(item.label)}
                       className="h-11 rounded-xl font-semibold text-silver hover:bg-sidebar-accent hover:text-sidebar-foreground data-[active=true]:bg-secondary data-[active=true]:text-foreground data-[active=true]:hover:bg-secondary"

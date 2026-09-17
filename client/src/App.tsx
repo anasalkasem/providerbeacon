@@ -24,6 +24,7 @@ const Compare = lazy(() => import("@/pages/Compare"));
 const Providers = lazy(() => import("@/pages/Providers"));
 const Provider = lazy(() => import("@/pages/Provider"));
 const Admin = lazy(() => import("@/pages/Admin"));
+const AdminThemes = lazy(() => import("@/pages/AdminThemes"));
 const AdminEmail = lazy(() => import("@/pages/AdminEmail"));
 const AdminProviderAnalytics = lazy(
   () => import("@/pages/AdminProviderAnalytics")
@@ -106,6 +107,7 @@ function Router() {
         <Route path="/unsubscribe" component={MemberEmailPage} />
         <Route path="/setup" component={Setup} />
         <Route path="/admin" component={Admin} />
+        <Route path="/admin/themes" component={AdminThemes} />
         <Route path="/admin/security" component={Security} />
         <Route path="/admin/email" component={AdminEmail} />
         <Route path="/admin/groups" component={AdminGroups} />
