@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
+  ArrowUpRight,
+  Headphones,
   Loader2,
   MessageCircle,
   RotateCcw,
@@ -14,6 +16,9 @@ import { assistantCopy } from "@/i18n/assistant";
 import { messagingCopy, messagingError } from "@/i18n/messaging";
 import { explicitHumanRequest } from "../../../shared/messaging";
 import MessageThread from "./MessageThread";
+import { useSiteTheme } from "@/contexts/SiteAppearanceContext";
+import { usePanelPresence } from "@/hooks/usePanelPresence";
+import { SignalMark } from "./orbit/SignalMark";
 import { usePageVisible } from "@/hooks/usePageVisible";
 import { useMessageAlerts } from "@/hooks/useMessageAlerts";
 import MessageAlertControls, { UnreadMessages } from "./MessageAlertControls";
@@ -58,6 +63,8 @@ function AssistantChat({ path }: { path: string }) {
   const t = assistantCopy[locale];
   const mt = messagingCopy[locale];
   const [open, setOpen] = useState(false);
+  const isOrbit = useSiteTheme() === "orbit";
+  const panelPresent = usePanelPresence(open, isOrbit);
   const [supportId, setSupportId] = useState<string | null>(null);
   const [reading, setReading] = useState(false);
   const visible = usePageVisible();
@@ -155,17 +162,23 @@ function AssistantChat({ path }: { path: string }) {
   }
 
   useEffect(() => {
-    if (open && ready) field.current?.focus();
+    // Opening on a phone should not immediately cover the greeting with a keyboard.
+    if (open && ready && !window.matchMedia?.("(pointer: coarse)").matches)
+      field.current?.focus({ preventScroll: true });
   }, [open, ready]);
   useEffect(() => {
     log.current?.scrollTo({
       top: log.current.scrollHeight,
-      behavior: "smooth",
+      behavior: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+        ? "instant"
+        : "smooth",
     });
   }, [turns, failure, chat.isPending]);
   const close = () => {
     setOpen(false);
-    requestAnimationFrame(() => launcher.current?.focus());
+    requestAnimationFrame(() =>
+      launcher.current?.focus({ preventScroll: true })
+    );
   };
 
   async function request(input: AssistantTurnInput, appendUser = true) {
@@ -254,14 +267,21 @@ function AssistantChat({ path }: { path: string }) {
         aria-controls="beacon-assistant"
         className={`beacon-assistant-launcher fixed end-5 z-[60] items-center gap-2 rounded-full bg-primary px-5 py-3.5 text-sm font-bold text-primary-foreground shadow-lg ring-1 ring-copper hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring ${open ? "hidden" : "inline-flex"}`}
       >
-        <Sparkles aria-hidden="true" className="size-5" />
+        {isOrbit ? (
+          <SignalMark />
+        ) : (
+          <Sparkles aria-hidden="true" className="size-5" />
+        )}
         {t.launcher}
         <UnreadMessages count={notificationData?.unread ?? 0} />
       </button>
-      {open && (
+      {panelPresent && (
         <section
           id="beacon-assistant"
           role="dialog"
+          data-state={open ? "open" : "closing"}
+          aria-hidden={!open || undefined}
+          inert={!open}
           aria-label={t.title}
           onKeyDown={event => {
             if (event.key === "Escape") {
@@ -269,10 +289,14 @@ function AssistantChat({ path }: { path: string }) {
               close();
             }
           }}
-          className="fixed inset-x-3 bottom-3 z-[70] flex h-[min(720px,calc(100dvh-24px))] flex-col overflow-hidden rounded-2xl border border-copper/70 bg-card text-foreground shadow-2xl sm:inset-x-auto sm:bottom-5 sm:end-5 sm:w-[430px]"
+          className="beacon-assistant-panel fixed inset-x-3 bottom-3 z-[70] flex h-[min(720px,calc(100dvh-24px))] flex-col overflow-hidden rounded-2xl border border-copper/70 bg-card text-foreground shadow-2xl sm:inset-x-auto sm:bottom-5 sm:end-5 sm:w-[430px]"
         >
-          <header className="flex shrink-0 items-center gap-3 border-b border-copper/50 bg-secondary p-4 text-heading">
-            <Sparkles aria-hidden="true" className="size-6 text-copper" />
+          <header className="beacon-assistant-header flex shrink-0 items-center gap-3 border-b border-copper/50 bg-secondary p-4 text-heading">
+            {isOrbit ? (
+              <SignalMark />
+            ) : (
+              <Sparkles aria-hidden="true" className="size-6 text-copper" />
+            )}
             <div className="flex-1">
               <h2 className="font-extrabold" dir="ltr">
                 {supportId ? mt.supportTitle : t.title}
@@ -325,7 +349,7 @@ function AssistantChat({ path }: { path: string }) {
                 role="log"
                 aria-label={t.history}
                 aria-live="polite"
-                className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4"
+                className="beacon-assistant-log min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4"
               >
                 {status.isLoading && (
                   <p role="status" className="text-sm text-muted-foreground">
@@ -353,13 +377,20 @@ function AssistantChat({ path }: { path: string }) {
                   </div>
                 )}
                 {ready && turns.length === 0 && (
-                  <div className="space-y-4 py-3">
-                    <MessageCircle
-                      aria-hidden="true"
-                      className="size-8 text-foreground"
-                    />
+                  <div className="beacon-assistant-welcome space-y-4 py-3">
+                    {isOrbit ? (
+                      <>
+                        <SignalMark className="beacon-signal--welcome" />
+                        <h3>{t.welcomeTitle}</h3>
+                      </>
+                    ) : (
+                      <MessageCircle
+                        aria-hidden="true"
+                        className="size-8 text-foreground"
+                      />
+                    )}
                     <p className="text-sm leading-7">{t.welcome}</p>
-                    <div className="flex flex-col gap-2">
+                    <div className="beacon-assistant-suggestions flex flex-col gap-2">
                       {t.examples.map(example => (
                         <button
                           key={example}
@@ -367,7 +398,13 @@ function AssistantChat({ path }: { path: string }) {
                           onClick={() => send(example)}
                           className="rounded-xl border border-border p-3 text-start text-sm font-medium hover:border-input hover:bg-secondary disabled:opacity-50"
                         >
-                          {example}
+                          <span>{example}</span>
+                          {isOrbit && (
+                            <ArrowUpRight
+                              aria-hidden="true"
+                              className="size-4 shrink-0 rtl:-scale-x-100"
+                            />
+                          )}
                         </button>
                       ))}
                     </div>
@@ -376,6 +413,7 @@ function AssistantChat({ path }: { path: string }) {
                 {turns.map(turn => (
                   <article
                     key={turn.id}
+                    data-speaker={turn.role}
                     className={
                       turn.role === "user"
                         ? "ms-8 rounded-2xl bg-secondary px-4 py-3 text-sm leading-7 text-foreground"
@@ -515,12 +553,20 @@ function AssistantChat({ path }: { path: string }) {
                 {(chat.isPending || handoff.isPending) && (
                   <p
                     role="status"
-                    className="flex items-center gap-2 text-sm text-foreground"
+                    className="beacon-assistant-thinking flex items-center gap-2 text-sm text-foreground"
                   >
-                    <Loader2
-                      aria-hidden="true"
-                      className="size-4 animate-spin"
-                    />
+                    {isOrbit ? (
+                      <span className="beacon-thinking-dots" aria-hidden="true">
+                        <i />
+                        <i />
+                        <i />
+                      </span>
+                    ) : (
+                      <Loader2
+                        aria-hidden="true"
+                        className="size-4 animate-spin"
+                      />
+                    )}
                     {handoff.isPending ? mt.connecting : t.thinking}
                   </p>
                 )}
@@ -543,7 +589,7 @@ function AssistantChat({ path }: { path: string }) {
                   </div>
                 )}
               </div>
-              <div className="shrink-0 border-t border-border px-3 py-2">
+              <div className="beacon-assistant-handoff shrink-0 border-t border-border px-3 py-2">
                 <button
                   type="button"
                   disabled={
@@ -556,6 +602,9 @@ function AssistantChat({ path }: { path: string }) {
                   }
                   className="w-full rounded-xl border border-input bg-secondary px-3 py-2 text-sm font-bold text-foreground disabled:opacity-50"
                 >
+                  {isOrbit && (
+                    <Headphones aria-hidden="true" className="size-4" />
+                  )}
                   {handoff.isPending
                     ? mt.connecting
                     : support.data?.status !== "closed" && support.data?.id
@@ -567,13 +616,13 @@ function AssistantChat({ path }: { path: string }) {
                 </p>
               </div>
               <form
-                className="shrink-0 border-t border-border bg-muted p-3"
+                className="beacon-assistant-composer shrink-0 border-t border-border bg-muted p-3"
                 onSubmit={event => {
                   event.preventDefault();
                   send(draft);
                 }}
               >
-                <div className="flex items-end gap-2">
+                <div className="beacon-composer-field flex items-end gap-2">
                   <textarea
                     ref={field}
                     rows={2}

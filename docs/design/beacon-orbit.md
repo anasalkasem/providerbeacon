@@ -18,3 +18,18 @@ Media: code-native geometric 3D scene, responsive 1:1 hero slot, camera projecti
 Avoid: restoring retired themes, replacing the blue design, all-purple surfaces, dense animated dashboards, non-semantic clickable cards, hover-only controls, loading a 3D engine for visitors using Classic.
 
 QA: owner permissions and save conflicts; preview makes no writes; real catalogue data in both themes; pause/reduced-motion/visibility lifecycle; live preview and Classic rendered review after deployment.
+
+## Glass Beacon refinement
+
+User feedback: retain Orbit's direction, replace the primitive purple lighthouse, improve the assistant and navigation without a heavy runtime. Refero research was attempted again; the connector returned NO_SUBSCRIPTION. The supplied Dala reference remains the primary source, with no invented secondary references.
+
+| Decision | Reference lock | Implementation |
+| --- | --- | --- |
+| Sculpted silver beacon | Black canvas, white typography and violet actions stay locked | Rounded lathed geometry, pearl/chrome highlights, transparent blue lens and a soft white-blue signal. Blue is decorative light, not a new action token. |
+| Assistant as a quiet instrument | Functional surfaces may have separation | Graphite shell, crisp hairline, small lens emblem, flat suggested requests, inset composer and clear human handoff. Existing privacy and provider disclosures remain visible. |
+| Motion with a purpose | Refero motion/craft guidance already read | 220 ms panel opening, 160 ms closing, 200 ms content arrival; only opacity and transforms. The header stays visually still and assistant state persists through client navigation. No transition delay before accepting input. |
+| Performance | User explicitly requires a light theme | No new packages, video, external images or animation framework. Geometry stays lazy loaded; bounded scene, 30 fps cap, offscreen/hidden/pause/reduced-motion suspension. |
+
+Reject: opaque violet toy geometry, animated glass blur across the screen, endlessly spinning assistant chrome, blocking route overlays and remounting chats during navigation. Verify panel dismissal/focus, draft retention, reduced motion and real offer rendering alongside deployment gates.
+
+Validation before release: TypeScript and production build pass. Targeted tests cover pause/offscreen/reduced motion, non-interactive panel exit, rapid reopen, Escape/focus return, retained drafts across routes, and no remount for page entrance. The lazy scene is 7.93 kB raw / 3.65 kB gzip. A native canvas microbenchmark at 720 CSS px / DPR 1.75 measured median ~2.0 ms per moving frame after caching (100 frames); this is a local rendering check, not a browser/mobile performance guarantee. No runtime dependency was added.

@@ -36,6 +36,13 @@ export default function OrbitScene({ paused }: { paused: boolean }) {
           viewBox="0 0 400 400"
           aria-hidden="true"
         >
+          <defs>
+            <linearGradient id="beacon-silver" x1="0" x2="1">
+              <stop offset="0" stopColor="#4d697b" />
+              <stop offset=".4" stopColor="#d5eff9" />
+              <stop offset="1" stopColor="#415b6b" />
+            </linearGradient>
+          </defs>
           <ellipse
             cx="200"
             cy="220"
@@ -55,12 +62,31 @@ export default function OrbitScene({ paused }: { paused: boolean }) {
             transform="rotate(30 200 220)"
           />
           <path
-            d="M176 290 188 150 212 150 224 290Z"
-            fill="#45345f"
-            stroke="#b59adf"
+            d="M176 290Q185 228 188 163H212Q215 228 224 290Q200 301 176 290Z"
+            fill="url(#beacon-silver)"
           />
-          <path d="M180 140 200 110 220 140Z" fill="#a98bcf" />
-          <path d="M184 143h32v18h-32Z" fill="#ddd0ff" />
+          <ellipse
+            cx="200"
+            cy="291"
+            rx="35"
+            ry="11"
+            fill="url(#beacon-silver)"
+          />
+          <path d="M180 123Q200 99 220 123Z" fill="url(#beacon-silver)" />
+          <path
+            d="M186 126h28v29h-28Z"
+            fill="#71c5eb"
+            fillOpacity=".5"
+            stroke="#b6eaff"
+          />
+          <ellipse
+            cx="200"
+            cy="160"
+            rx="26"
+            ry="6"
+            fill="url(#beacon-silver)"
+          />
+          <circle cx="200" cy="140" r="5" fill="#e3f8ff" />
           <circle cx="60" cy="230" r="5" fill="#ffb829" />
         </svg>
       )}

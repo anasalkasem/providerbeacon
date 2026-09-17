@@ -459,7 +459,13 @@
   display: block;
   position: absolute;
   inset: 25px 63px 25px;
-  background: linear-gradient(90deg, #392849, #aa8ae0 45%, #443159 50%);
+  background: linear-gradient(
+    90deg,
+    #4b667b,
+    #e1f6ff 45%,
+    #698794 75%,
+    #283f51
+  );
   clip-path: polygon(
     50% 0,
     90% 20%,
@@ -469,6 +475,305 @@
     30% 26%,
     10% 20%
   );
+}
+
+/* A compact optical identity. Only the response indicator loops while busy. */
+.beacon-signal {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  color: #9adfff;
+  background: radial-gradient(circle at 40% 35%, #22617e70, #11202e 70%);
+  box-shadow: inset 0 0 0 1px #9adfff25;
+}
+.beacon-signal svg {
+  width: 100%;
+  height: 100%;
+}
+[data-site-theme="orbit"] .beacon-assistant-launcher {
+  padding: 6px 18px 6px 6px;
+  gap: 11px;
+  color: #fff;
+  background: #111820;
+  border: 1px solid #52667a;
+  box-shadow: 0 6px 26px #0007;
+  font-weight: 500;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease;
+}
+:dir(rtl)[data-site-theme="orbit"] .beacon-assistant-launcher,
+[data-site-theme="orbit"] :dir(rtl).beacon-assistant-launcher {
+  padding: 6px 6px 6px 18px;
+}
+[data-site-theme="orbit"] .beacon-assistant-launcher:hover {
+  transform: translateY(-2px);
+  border-color: #9adfff;
+}
+[data-site-theme="orbit"] .beacon-assistant-launcher .beacon-signal {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+}
+[data-site-theme="orbit"] .beacon-assistant-panel {
+  height: min(760px, calc(100dvh - 40px));
+  border: 1px solid #526171;
+  border-radius: 26px;
+  background: #0c1016;
+  box-shadow:
+    0 24px 80px #0009,
+    inset 0 1px 0 #c5e8ff16;
+  transform-origin: bottom left;
+  animation: beacon-panel-in 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+:dir(ltr).beacon-assistant-panel {
+  transform-origin: bottom right;
+}
+[data-site-theme="orbit"] .beacon-assistant-panel[data-state="closing"] {
+  animation: beacon-panel-out 160ms ease-in both;
+  pointer-events: none;
+}
+[data-site-theme="orbit"] .beacon-assistant-header {
+  padding: 18px 18px 16px;
+  gap: 12px;
+  background: transparent;
+  border-color: #ffffff10;
+}
+[data-site-theme="orbit"] .beacon-assistant-header h2 {
+  font-size: 17px;
+  font-weight: 600;
+}
+[data-site-theme="orbit"] .beacon-assistant-header p {
+  color: #a8b6c5;
+  font-size: 11px;
+  line-height: 1.6;
+}
+[data-site-theme="orbit"] .beacon-assistant-header button {
+  color: #bcc8d4;
+  min-width: 36px;
+  min-height: 40px;
+}
+[data-site-theme="orbit"] .beacon-assistant-log {
+  padding: 12px 22px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: #45515e transparent;
+}
+[data-site-theme="orbit"] .beacon-assistant-welcome {
+  padding-top: 20px;
+}
+[data-site-theme="orbit"] .beacon-signal--welcome {
+  width: 62px;
+  height: 62px;
+  border-radius: 21px;
+  margin-bottom: 4px;
+}
+[data-site-theme="orbit"] .beacon-assistant-welcome h3 {
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: #fff;
+}
+[data-site-theme="orbit"] .beacon-assistant-welcome > p {
+  color: #bbc5d0;
+  font-size: 13px;
+  line-height: 1.9;
+}
+[data-site-theme="orbit"] .beacon-assistant-suggestions {
+  gap: 0;
+  padding-top: 6px;
+}
+[data-site-theme="orbit"] .beacon-assistant-suggestions button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 2px;
+  border: 0;
+  border-bottom: 1px solid #ffffff16;
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: #eef4fc;
+  background: transparent;
+  transition:
+    color 150ms ease,
+    padding 150ms ease;
+}
+[data-site-theme="orbit"] .beacon-assistant-suggestions button svg {
+  color: #83cfff;
+}
+[data-site-theme="orbit"] .beacon-assistant-suggestions button:hover {
+  color: #9adfff;
+  padding-inline: 6px;
+}
+[data-site-theme="orbit"] .beacon-assistant-log article {
+  animation: beacon-message-in 180ms ease-out both;
+}
+[data-site-theme="orbit"] .beacon-assistant-log article[data-speaker="user"] {
+  background: #1b2532;
+  border: 1px solid #334052;
+  border-start-end-radius: 5px;
+}
+[data-site-theme="orbit"]
+  .beacon-assistant-log
+  article[data-speaker="assistant"] {
+  padding-inline-start: 12px;
+  border-inline-start: 2px solid #72b9e8;
+  color: #edf3f9;
+}
+[data-site-theme="orbit"] .beacon-assistant-thinking {
+  color: #a8c1d5;
+  font-size: 12px;
+  min-height: 30px;
+}
+.beacon-thinking-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.beacon-thinking-dots i {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #9adfff;
+  animation: beacon-thinking 900ms ease-in-out infinite alternate;
+}
+.beacon-thinking-dots i:nth-child(2) {
+  animation-delay: 150ms;
+}
+.beacon-thinking-dots i:nth-child(3) {
+  animation-delay: 300ms;
+}
+[data-site-theme="orbit"] .beacon-assistant-handoff {
+  padding: 9px 22px 0;
+  border-color: #ffffff10;
+}
+[data-site-theme="orbit"] .beacon-assistant-handoff button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  min-height: 36px;
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 500;
+  color: #cad8e6;
+}
+[data-site-theme="orbit"] .beacon-assistant-handoff button:hover {
+  color: #fff;
+}
+[data-site-theme="orbit"] .beacon-assistant-handoff p {
+  margin-top: 0;
+  font-size: 10px;
+  line-height: 1.6;
+  color: #9eaebf;
+}
+[data-site-theme="orbit"] .beacon-assistant-composer {
+  border: 0;
+  padding: 12px 16px 14px;
+  background: transparent;
+}
+[data-site-theme="orbit"] .beacon-composer-field {
+  padding: 7px;
+  border: 1px solid #3e4c5e;
+  border-radius: 18px;
+  background: #161e28;
+}
+[data-site-theme="orbit"] .beacon-composer-field:focus-within {
+  outline: 2px solid #aa88ff;
+  outline-offset: 2px;
+}
+[data-site-theme="orbit"] .beacon-composer-field textarea {
+  background: transparent;
+  border: 0;
+  padding: 5px 6px;
+  min-width: 0;
+  min-height: 60px;
+  font-size: 13px;
+  line-height: 1.8;
+  box-shadow: none;
+}
+[data-site-theme="orbit"] .beacon-composer-field textarea:focus {
+  outline: none;
+}
+[data-site-theme="orbit"] .beacon-composer-field textarea::placeholder {
+  color: #a9b8c9;
+}
+[data-site-theme="orbit"] .beacon-composer-field button {
+  border-radius: 12px;
+  margin: 0;
+  padding: 10px;
+  transition: transform 140ms ease;
+}
+[data-site-theme="orbit"] .beacon-composer-field button:active:not(:disabled) {
+  transform: scale(0.94);
+}
+[data-site-theme="orbit"] .beacon-assistant-composer > p {
+  padding-inline: 3px;
+  color: #9eaebf;
+}
+@keyframes beacon-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes beacon-panel-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+}
+@keyframes beacon-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes beacon-thinking {
+  from {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-3px);
+  }
+}
+@media (min-width: 640px) {
+  [data-site-theme="orbit"] .beacon-assistant-panel {
+    width: 440px;
+  }
+}
+@media (max-width: 639px) {
+  [data-site-theme="orbit"] .beacon-assistant-panel {
+    height: min(760px, calc(100dvh - 24px));
+    border-radius: 22px;
+  }
+  [data-site-theme="orbit"] .beacon-assistant-log {
+    padding-inline: 18px;
+  }
+  [data-site-theme="orbit"] .beacon-composer-field textarea {
+    font-size: 16px;
+  }
 }
 @media (max-width: 959px) {
   .orbit-home .landing-hero {
@@ -541,6 +846,18 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  [data-site-theme="orbit"] .beacon-assistant-panel,
+  [data-site-theme="orbit"] .beacon-assistant-panel[data-state="closing"],
+  [data-site-theme="orbit"] .beacon-assistant-log article,
+  .beacon-thinking-dots i {
+    animation: none;
+  }
+  [data-site-theme="orbit"] .beacon-assistant-launcher:hover,
+  [data-site-theme="orbit"]
+    .beacon-composer-field
+    button:active:not(:disabled) {
+    transform: none;
+  }
   .orbit-ambience i {
     animation: none;
   }
