@@ -229,6 +229,7 @@
   margin-inline: auto;
   aspect-ratio: 1;
   position: relative;
+  pointer-events: none;
 }
 .orbit-art-source {
   display: none;
@@ -256,6 +257,8 @@
   background: radial-gradient(circle, #8052ff22, #0000 70%);
 }
 .orbit-visual figcaption {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
