@@ -72,6 +72,7 @@ let container: HTMLDivElement, root: Root;
 beforeEach(() => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   vi.clearAllMocks();
+  window.history.replaceState(null, "", "/");
   state.role = "owner";
   state.settings = { edgeGlowEnabled: true, theme: "beacon", revision: 1 };
   state.publicSettings = { edgeGlowEnabled: true, theme: "beacon" };
@@ -102,9 +103,16 @@ const toggle = () =>
 describe("owner appearance panel", () => {
   it("uses the approved design for stale saved themes without offering old presets", async () => {
     await render();
-    expect(container.textContent).toContain("التصميم المعتمد");
-    expect(container.querySelector("[data-theme-option]")).toBeNull();
-    expect(container.querySelector("[data-apply-theme]")).toBeNull();
+    expect(container.textContent).toContain("Beacon Orbit 3D");
+    expect(
+      Array.from(container.querySelectorAll("[data-theme-option]")).map(el =>
+        el.getAttribute("data-theme-option")
+      )
+    ).toEqual(["beacon", "orbit"]);
+    expect(
+      container.querySelector<HTMLButtonElement>('[data-apply-theme="beacon"]')
+        ?.disabled
+    ).toBe(true);
     for (const oldTheme of [
       "copper",
       "summer",
@@ -122,6 +130,88 @@ describe("owner appearance panel", () => {
       expect(document.documentElement.classList.contains("dark")).toBe(true);
     }
     expect(state.save).not.toHaveBeenCalled();
+  });
+  it("only publishes Orbit after the owner saves successfully", async () => {
+    await render();
+    await act(() =>
+      container
+        .querySelector<HTMLButtonElement>('[data-apply-theme="orbit"]')!
+        .click()
+    );
+    expect(state.save).toHaveBeenCalledWith({ theme: "orbit", revision: 1 });
+    expect(document.documentElement.dataset.siteTheme).toBe("beacon");
+    state.pending = true;
+    await render();
+    expect(
+      container.querySelector<HTMLButtonElement>('[data-apply-theme="orbit"]')!
+        .disabled
+    ).toBe(true);
+    state.pending = false;
+    await act(() =>
+      state.options.onSuccess(
+        { edgeGlowEnabled: true, theme: "orbit", revision: 2 },
+        { theme: "orbit", revision: 1 }
+      )
+    );
+    await render();
+    expect(document.documentElement.dataset.siteTheme).toBe("orbit");
+    expect(state.publicCache).toHaveBeenCalledWith(undefined, {
+      edgeGlowEnabled: true,
+      theme: "orbit",
+    });
+    expect(
+      container.querySelector<HTMLButtonElement>('[data-apply-theme="orbit"]')!
+        .disabled
+    ).toBe(true);
+    await act(() =>
+      container
+        .querySelector<HTMLButtonElement>('[data-apply-theme="beacon"]')!
+        .click()
+    );
+    expect(state.save).toHaveBeenLastCalledWith({
+      theme: "beacon",
+      revision: 2,
+    });
+  });
+  it("keeps URL previews local and exits to the saved design without any write", async () => {
+    window.history.replaceState(null, "", "/?previewTheme=orbit");
+    await render();
+    expect(document.documentElement.dataset.siteTheme).toBe("orbit");
+    expect(container.textContent).toContain("في هذه النافذة فقط");
+    expect(
+      container.querySelector('a[href="/?previewTheme=orbit"]')
+    ).not.toBeNull();
+    expect(state.save).not.toHaveBeenCalled();
+    await act(() =>
+      container
+        .querySelector<HTMLButtonElement>(".theme-preview-banner button")!
+        .click()
+    );
+    expect(document.documentElement.dataset.siteTheme).toBe("beacon");
+    expect(window.location.search).toBe("");
+    expect(state.save).not.toHaveBeenCalled();
+  });
+  it("keeps a failed theme change unpublished and retries using the refreshed revision", async () => {
+    await render();
+    await act(() =>
+      container
+        .querySelector<HTMLButtonElement>('[data-apply-theme="orbit"]')!
+        .click()
+    );
+    await act(() => state.options.onError({ data: { code: "CONFLICT" } }));
+    expect(document.documentElement.dataset.siteTheme).toBe("beacon");
+    expect(state.publicCache).not.toHaveBeenCalled();
+    state.settings = { theme: "beacon", edgeGlowEnabled: false, revision: 5 };
+    await render();
+    await act(() =>
+      container
+        .querySelector<HTMLButtonElement>('[data-apply-theme="orbit"]')!
+        .click()
+    );
+    expect(state.save).toHaveBeenLastCalledWith({
+      theme: "orbit",
+      revision: 5,
+    });
   });
   it("refetches a glow conflict and uses the latest revision without changing the design", async () => {
     await render();

@@ -7,7 +7,7 @@ import { appearanceCopy } from "@/i18n/appearance";
 import { trpc } from "@/lib/trpc";
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
-import AdminActiveTheme from "./AdminActiveTheme";
+import AdminThemePicker from "./AdminThemePicker";
 
 export default function AdminAppearance() {
   const { locale } = useLocale();
@@ -52,7 +52,19 @@ export default function AdminAppearance() {
           {t.owner}
         </span>
       </div>
-      <AdminActiveTheme />
+      <AdminThemePicker
+        savedTheme={settings.isError ? undefined : settings.data?.theme}
+        disabled={
+          !settings.data ||
+          settings.isError ||
+          settings.isFetching ||
+          update.isPending
+        }
+        onApply={theme => {
+          if (settings.data && !settings.isError)
+            update.mutate({ theme, revision: settings.data.revision });
+        }}
+      />
       <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center">
         <div
           aria-hidden="true"

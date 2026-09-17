@@ -11,11 +11,19 @@ import {
 import { EdgeGlow } from "@/components/EdgeGlow";
 import { trpc } from "@/lib/trpc";
 import { ThemeProvider } from "./ThemeContext";
-import { resolveSiteTheme, siteThemes } from "../../../shared/siteThemes";
+import {
+  readThemePreview,
+  resolveSiteTheme,
+  siteThemes,
+  type SiteThemeId,
+} from "../../../shared/siteThemes";
+import { useLocale } from "./LocaleContext";
+import { siteThemeCopy } from "@/i18n/siteThemes";
 
 const SiteAppearanceContext = createContext<{
   preview: boolean;
   setPreview: Dispatch<SetStateAction<boolean>>;
+  theme: SiteThemeId;
 } | null>(null);
 
 export function SiteAppearanceProvider({ children }: { children: ReactNode }) {
@@ -27,8 +35,20 @@ export function SiteAppearanceProvider({ children }: { children: ReactNode }) {
     retry: false,
   });
   const [preview, setPreview] = useState(false);
-  const theme = resolveSiteTheme(appearance.data?.theme);
-  const value = useMemo(() => ({ preview, setPreview }), [preview]);
+  const [themePreview, setThemePreview] = useState(() =>
+    typeof window === "undefined"
+      ? null
+      : readThemePreview(
+          new URLSearchParams(window.location.search).get("previewTheme")
+        )
+  );
+  const { locale } = useLocale();
+  const t = siteThemeCopy[locale];
+  const theme = themePreview ?? resolveSiteTheme(appearance.data?.theme);
+  const value = useMemo(
+    () => ({ preview, setPreview, theme }),
+    [preview, theme]
+  );
   useLayoutEffect(() => {
     const root = document.documentElement;
     const previousTheme = root.getAttribute("data-site-theme");
@@ -54,12 +74,36 @@ export function SiteAppearanceProvider({ children }: { children: ReactNode }) {
           className="beacon-appearance"
           data-beacon-glow={enabled ? "on" : "off"}
         >
+          {themePreview && (
+            <aside
+              className="theme-preview-banner"
+              aria-label={t.previewBanner}
+            >
+              <span>
+                {t.previewBanner} · {t.themes[themePreview].name}
+              </span>
+              <button
+                onClick={() => {
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete("previewTheme");
+                  window.history.replaceState(window.history.state, "", url);
+                  setThemePreview(null);
+                }}
+              >
+                {t.leavePreview}
+              </button>
+            </aside>
+          )}
           {children}
           <EdgeGlow enabled={enabled} />
         </div>
       </ThemeProvider>
     </SiteAppearanceContext.Provider>
   );
+}
+
+export function useSiteTheme(): SiteThemeId {
+  return useContext(SiteAppearanceContext)?.theme ?? "beacon";
 }
 
 export function useSiteAppearancePreview() {
