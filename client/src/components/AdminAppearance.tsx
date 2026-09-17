@@ -7,7 +7,7 @@ import { appearanceCopy } from "@/i18n/appearance";
 import { trpc } from "@/lib/trpc";
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
-import AdminThemePicker from "./AdminThemePicker";
+import AdminActiveTheme from "./AdminActiveTheme";
 
 export default function AdminAppearance() {
   const { locale } = useLocale();
@@ -16,14 +16,12 @@ export default function AdminAppearance() {
   const settings = trpc.admin.appearance.get.useQuery(undefined, {
     retry: false,
   });
-  const { preview, setPreview, previewTheme, setPreviewTheme } =
-    useSiteAppearancePreview();
+  const { preview, setPreview } = useSiteAppearancePreview();
   useEffect(
     () => () => {
       setPreview(false);
-      setPreviewTheme(null);
     },
-    [setPreview, setPreviewTheme]
+    [setPreview]
   );
   const update = trpc.admin.appearance.update.useMutation({
     onSuccess(data, input) {
@@ -34,7 +32,6 @@ export default function AdminAppearance() {
       });
       void utils.admin.audit.list.invalidate();
       if (input.edgeGlowEnabled !== undefined) setPreview(false);
-      if (input.theme !== undefined) setPreviewTheme(null);
       toast.success(t.saved);
     },
     onError(error) {
@@ -55,17 +52,7 @@ export default function AdminAppearance() {
           {t.owner}
         </span>
       </div>
-      <AdminThemePicker
-        active={settings.isError ? undefined : settings.data?.theme}
-        preview={previewTheme}
-        onPreview={setPreviewTheme}
-        onApply={theme => {
-          if (settings.data && !settings.isError)
-            update.mutate({ theme, revision: settings.data.revision });
-        }}
-        busy={update.isPending}
-        canSave={!!settings.data && !settings.isError && !settings.isFetching}
-      />
+      <AdminActiveTheme />
       <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center">
         <div
           aria-hidden="true"

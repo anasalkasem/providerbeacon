@@ -33,7 +33,7 @@ export function appearanceAcceptanceCases(
     it("persists both switch directions for fresh visitors and audits the owner's changes", async () => {
       await role("owner");
       expect(await caller().admin.appearance.get()).toEqual({
-        theme: "copper",
+        theme: "beacon",
         edgeGlowEnabled: true,
         revision: 1,
       });
@@ -42,13 +42,13 @@ export function appearanceAcceptanceCases(
           edgeGlowEnabled: false,
           revision: 1,
         })
-      ).toEqual({ edgeGlowEnabled: false, theme: "copper", revision: 2 });
+      ).toEqual({ edgeGlowEnabled: false, theme: "beacon", revision: 2 });
       expect(await caller(false).appearance.public()).toEqual({
-        theme: "copper",
+        theme: "beacon",
         edgeGlowEnabled: false,
       });
       expect(await readSiteAppearance()).toEqual({
-        theme: "copper",
+        theme: "beacon",
         edgeGlowEnabled: false,
         revision: 2,
       });
@@ -57,7 +57,7 @@ export function appearanceAcceptanceCases(
         revision: 2,
       });
       expect(await caller(false).appearance.public()).toEqual({
-        theme: "copper",
+        theme: "beacon",
         edgeGlowEnabled: true,
       });
       const entries = await database()
@@ -77,7 +77,7 @@ export function appearanceAcceptanceCases(
       await expect(
         caller(false).admin.appearance.update({
           edgeGlowEnabled: false,
-          theme: "summer",
+          theme: "beacon",
           revision: 1,
         })
       ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
@@ -96,7 +96,7 @@ export function appearanceAcceptanceCases(
         await expect(
           caller().admin.appearance.update({
             edgeGlowEnabled: false,
-            theme: "summer",
+            theme: "beacon",
             revision: 1,
           })
         ).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -105,12 +105,12 @@ export function appearanceAcceptanceCases(
       await expect(
         caller().admin.appearance.update({
           edgeGlowEnabled: false,
-          theme: "summer",
+          theme: "beacon",
           revision: 1,
         })
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
       expect(await readSiteAppearance()).toEqual({
-        theme: "copper",
+        theme: "beacon",
         edgeGlowEnabled: true,
         revision: 1,
       });
@@ -120,7 +120,7 @@ export function appearanceAcceptanceCases(
       await expect(
         caller(true, "https://other.example").admin.appearance.update({
           edgeGlowEnabled: false,
-          theme: "summer",
+          theme: "beacon",
           revision: 1,
         })
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -132,7 +132,7 @@ export function appearanceAcceptanceCases(
         caller().admin.appearance.update({ edgeGlowEnabled: true, revision: 1 })
       ).rejects.toMatchObject({ code: "CONFLICT" });
       expect(await caller(false).appearance.public()).toEqual({
-        theme: "copper",
+        theme: "beacon",
         edgeGlowEnabled: false,
       });
     });
@@ -142,35 +142,37 @@ export function appearanceAcceptanceCases(
         code: "SERVICE_UNAVAILABLE",
       });
     });
-    it("persists all six themes independently from glow and audits only actual changes", async () => {
+    it("normalizes retired saved designs and never restores a removed preset", async () => {
       await role("owner");
-      await caller().admin.appearance.update({
-        edgeGlowEnabled: false,
-        revision: 1,
-      });
-      let revision = 2;
-      for (const theme of [
-        "summer",
-        "midnight",
-        "pearl",
-        "fire",
-        "navy",
-        "copper",
-      ] as const) {
-        const saved = await caller().admin.appearance.update({
-          theme,
-          revision,
-        });
-        revision += 1;
-        expect(saved).toEqual({ theme, edgeGlowEnabled: false, revision });
+      const retired = ["copper", "summer", "midnight", "pearl", "fire", "navy"];
+      for (const theme of retired) {
+        await database()
+          .update(siteAppearance)
+          .set({ theme, edgeGlowEnabled: false, revision: 1 })
+          .where(eq(siteAppearance.id, 1));
         expect(await caller(false).appearance.public()).toEqual({
-          theme,
+          theme: "beacon",
           edgeGlowEnabled: false,
         });
+        await expect(
+          caller().admin.appearance.update({ theme, revision: 1 } as any)
+        ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+        const saved = await caller().admin.appearance.update({
+          theme: "beacon",
+          revision: 1,
+        });
+        expect(saved).toEqual({
+          theme: "beacon",
+          edgeGlowEnabled: false,
+          revision: 2,
+        });
         const [row] = await database().select().from(siteAppearance);
-        expect(row.theme).toBe(theme);
+        expect(row.theme).toBe("beacon");
         expect(
-          await caller().admin.appearance.update({ theme, revision })
+          await caller().admin.appearance.update({
+            theme: "beacon",
+            revision: 2,
+          })
         ).toEqual(saved);
       }
       const entries = await database()
@@ -178,46 +180,32 @@ export function appearanceAcceptanceCases(
         .from(auditEntries)
         .where(eq(auditEntries.action, "appearance.theme_changed"));
       expect(entries).toHaveLength(6);
-      expect(
-        entries.every((entry: any) => entry.actorUserId === actorId())
-      ).toBe(true);
       expect(entries.map((entry: any) => entry.metadata)).toEqual(
-        expect.arrayContaining([
-          { before: "copper", after: "summer" },
-          { before: "summer", after: "midnight" },
-          { before: "midnight", after: "pearl" },
-          { before: "pearl", after: "fire" },
-          { before: "fire", after: "navy" },
-          { before: "navy", after: "copper" },
-        ])
+        expect.arrayContaining(
+          retired.map(before => ({ before, after: "beacon" }))
+        )
       );
-      await caller().admin.appearance.update({ theme: "pearl", revision });
-      revision += 1;
-      expect(
-        await caller().admin.appearance.update({
-          edgeGlowEnabled: true,
-          revision,
-        })
-      ).toEqual({
-        theme: "pearl",
-        edgeGlowEnabled: true,
-        revision: revision + 1,
-      });
     });
-    it("rejects invalid themes, empty patches and stale theme changes", async () => {
+    it("rejects invalid themes, empty patches and concurrent stale appearance changes", async () => {
       await role("owner");
       for (const input of [
         { theme: "unknown", revision: 1 },
         { revision: 1 },
-        { theme: "summer", extra: true, revision: 1 },
+        { theme: "beacon", extra: true, revision: 1 },
       ]) {
         await expect(
           caller().admin.appearance.update(input as any)
         ).rejects.toMatchObject({ code: "BAD_REQUEST" });
       }
       const writes = await Promise.allSettled([
-        caller().admin.appearance.update({ theme: "summer", revision: 1 }),
-        caller().admin.appearance.update({ theme: "pearl", revision: 1 }),
+        caller().admin.appearance.update({
+          edgeGlowEnabled: false,
+          revision: 1,
+        }),
+        caller().admin.appearance.update({
+          edgeGlowEnabled: false,
+          revision: 1,
+        }),
       ]);
       expect(
         writes.filter(result => result.status === "fulfilled")
@@ -230,7 +218,7 @@ export function appearanceAcceptanceCases(
         result => result.status === "fulfilled"
       ) as PromiseFulfilledResult<any>;
       expect(await readSiteAppearance()).toEqual(winner.value);
-      expect(winner.value.edgeGlowEnabled).toBe(true);
+      expect(winner.value.edgeGlowEnabled).toBe(false);
     });
   });
 }

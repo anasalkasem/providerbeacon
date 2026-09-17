@@ -1,217 +1,17 @@
-/* Shared tokens keep every page, dialog and owner preview on the same theme. */
-:root, [data-theme-sample] {
+/* The single approved ProviderBeacon identity, including the initial page paint. */
+:root {
   color-scheme: dark;
   --beacon-font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  --beacon-font-display: "Playfair Display", Georgia, "Times New Roman", serif;
-  --radius: 10px;
-  --control-radius: 9999px;
-  --display-weight: 400;
-  --steel: #777a88;
-  --fog: #bba995;
-  --success: #a9c8b4;
-  --success-muted: #14251c;
-  --success-border: #385343;
-  --warning: #e2c797;
-  --warning-muted: #282218;
-  --warning-border: #625136;
-  --danger: #f1a1ad;
-  --danger-muted: #2c151c;
-  --danger-border: #68303d;
-  --primary-hover: #f7c99f;
-  --logo-inner: #b66f3f;
-  --logo-highlight: #ffe0c2;
-  --hero-wash: radial-gradient(ellipse at 82% 12%, rgb(239 184 131 / 9%), transparent 62%);
-  --card-shadow: 0 12px 32px rgb(0 0 0 / 14%);
-  --heading: #efb883;
-  --highlight: var(--heading);
-  --background: #191d23;
-  --foreground: #f2e2d4;
-  --card: #252b33;
-  --card-foreground: var(--foreground);
-  --popover: #303842;
-  --popover-foreground: var(--foreground);
-  --primary: #e8ad7b;
-  --primary-foreground: #191d23;
-  --secondary: #39414b;
-  --secondary-foreground: #e3c5ae;
-  --muted: #303842;
-  --muted-foreground: #cbbcae;
-  --accent: #44382e;
-  --accent-foreground: #ffe0c2;
-  --destructive: #bb4053;
-  --destructive-foreground: #ffffff;
-  --border: #9c7554;
-  --input: #b08a68;
-  --ring: #efb883;
-  --chart-1: #efb883;
-  --chart-2: #e3c5ae;
-  --chart-3: #9497a5;
-  --chart-4: #c7af80;
-  --chart-5: #787d90;
-  --gradient-gilded: linear-gradient(103deg, #ae9357, #fff0cc 40%, #ae9357 70%, #bd9d4f00);
-  --sidebar: var(--card);
-  --sidebar-foreground: var(--foreground);
-  --sidebar-primary: var(--primary);
-  --sidebar-primary-foreground: var(--primary-foreground);
-  --sidebar-accent: var(--secondary);
-  --sidebar-accent-foreground: var(--accent-foreground);
-  --sidebar-border: var(--border);
-  --sidebar-ring: var(--ring);
-}
-:is(:root, [data-theme-sample]):lang(ar) { --beacon-font-body: "IBM Plex Sans Arabic", sans-serif; --beacon-font-display: "Noto Naskh Arabic", Georgia, serif; }
-:is(:root, [data-theme-sample]):lang(hi) { --beacon-font-body: "Noto Sans Devanagari", sans-serif; --beacon-font-display: "Noto Sans Devanagari", sans-serif; }
-:is(:root, [data-theme-sample]):lang(zh) { --beacon-font-body: "Noto Sans SC", sans-serif; --beacon-font-display: "Noto Sans SC", sans-serif; }
-
-:root[data-site-theme="summer"], [data-theme-sample="summer"] {
-  color-scheme: light;
-  --background: #f2faf7;
-  --foreground: #173c38;
-  --card: #ffffff;
-  --popover: #ffffff;
-  --heading: #08675f;
-  --primary: #087568;
-  --primary-foreground: #ffffff;
-  --primary-hover: #075f55;
-  --secondary: #d9f0e8;
-  --secondary-foreground: #24594e;
-  --muted: #e8f4ee;
-  --muted-foreground: #47655c;
-  --accent: #ffead7;
-  --accent-foreground: #8e451e;
-  --border: #a2c6b9;
-  --input: #77aa99;
-  --ring: #087568;
-  --steel: #637d71;
-  --fog: #537064;
-  --chart-1: #087568;
-  --chart-2: #ba5426;
-  --chart-3: #426ead;
-  --chart-4: #917421;
-  --chart-5: #916382;
-  --logo-inner: #e78145;
-  --logo-highlight: #fff4d6;
-  --radius: 22px;
-  --control-radius: 9999px;
   --beacon-font-display: var(--beacon-font-body);
-  --display-weight: 600;
-  --hero-wash: radial-gradient(ellipse at 90% 10%, #ffe6cbb3, transparent 58%), radial-gradient(ellipse at 0% 100%, #b8e4d66e, transparent 60%);
-  --card-shadow: 0 12px 30px rgb(21 90 69 / 8%);
-}
-
-:root[data-site-theme="midnight"], [data-theme-sample="midnight"] {
-  color-scheme: dark;
-  --background: #0e192c;
-  --foreground: #e4edfa;
-  --card: #192a43;
-  --popover: #223752;
-  --heading: #a2ceff;
-  --primary: #98c7ff;
-  --primary-foreground: #0e192c;
-  --primary-hover: #c6e1ff;
-  --secondary: #2a4160;
-  --secondary-foreground: #bbd2f2;
-  --muted: #223752;
-  --muted-foreground: #b0c2db;
-  --accent: #283754;
-  --accent-foreground: #cbd0ff;
-  --border: #607e9f;
-  --input: #7694b7;
-  --ring: #98c7ff;
-  --steel: #91a8c4;
-  --fog: #a5b9d3;
-  --chart-1: #98c7ff;
-  --chart-2: #bdb5f6;
-  --chart-3: #81d4d0;
-  --chart-4: #dfc39c;
-  --chart-5: #d897b8;
-  --logo-inner: #627fce;
-  --logo-highlight: #dbf3ff;
-  --radius: 8px;
-  --control-radius: 8px;
-  --beacon-font-display: var(--beacon-font-body);
-  --display-weight: 500;
-  --hero-wash: radial-gradient(ellipse at 90% 0%, #4b77c52e, transparent 65%);
-  --card-shadow: 0 12px 32px rgb(0 6 23 / 22%);
-}
-
-:root[data-site-theme="pearl"], [data-theme-sample="pearl"] {
-  color-scheme: light;
-  --background: #f6f3ee;
-  --foreground: #353b41;
-  --card: #fffefb;
-  --popover: #fffefb;
-  --heading: #67553d;
-  --primary: #725b3e;
-  --primary-foreground: #ffffff;
-  --primary-hover: #58452f;
-  --secondary: #e8e2d8;
-  --secondary-foreground: #60574b;
-  --muted: #eee9e1;
-  --muted-foreground: #6b645c;
-  --accent: #ede4d6;
-  --accent-foreground: #58452f;
-  --border: #bcb09e;
-  --input: #a29480;
-  --ring: #725b3e;
-  --steel: #867c6d;
-  --fog: #746b60;
-  --chart-1: #725b3e;
-  --chart-2: #507575;
-  --chart-3: #75688b;
-  --chart-4: #aa634c;
-  --chart-5: #687c51;
-  --logo-inner: #a58c69;
-  --logo-highlight: #f9edd7;
-  --radius: 3px;
-  --control-radius: 4px;
-  --display-weight: 500;
-  --hero-wash: linear-gradient(120deg, #eee7da55, transparent 65%);
-  --card-shadow: 0 4px 12px rgb(70 54 27 / 5%);
-}
-
-
-:root[data-site-theme="fire"], [data-theme-sample="fire"] {
-  color-scheme: dark;
-  --background: #0c0c0e;
-  --foreground: #f7ece9;
-  --card: #191719;
-  --popover: #242023;
-  --heading: #ff624d;
-  --primary: #ff5038;
-  --primary-foreground: #130908;
-  --primary-hover: #ff7963;
-  --secondary: #352629;
-  --secondary-foreground: #efc2ba;
-  --muted: #242023;
-  --muted-foreground: #cdb6b3;
-  --accent: #3c1c1b;
-  --accent-foreground: #ffb4a5;
-  --border: #a64035;
-  --input: #c15345;
-  --ring: #ff624d;
-  --steel: #ad8f8d;
-  --fog: #bea3a0;
-  --chart-1: #ff624d;
-  --chart-2: #ffad73;
-  --chart-3: #c3a5dc;
-  --chart-4: #e6cd8d;
-  --chart-5: #82beb7;
-  --logo-inner: #bd261b;
-  --logo-highlight: #ffe4c6;
-  --radius: 10px;
+  --display-weight: 700;
+  --radius: 14px;
   --control-radius: 10px;
-  --beacon-font-display: var(--beacon-font-body);
-  --display-weight: 600;
-  --hero-wash: radial-gradient(ellipse at 90% 5%, #ff392426, transparent 60%);
-  --card-shadow: 0 10px 30px rgb(255 58 36 / 8%);
-}
-
-:root[data-site-theme="navy"], [data-theme-sample="navy"] {
-  color-scheme: dark;
   --background: #080b10;
   --foreground: #ffffff;
   --card: #111822;
+  --card-foreground: var(--foreground);
   --popover: #182230;
+  --popover-foreground: var(--foreground);
   --heading: #ffffff;
   --highlight: #0285fe;
   --primary: #0285fe;
@@ -228,6 +28,17 @@
   --ring: #0285fe;
   --steel: #809fc8;
   --fog: #eeeeee;
+  --success: #a9c8b4;
+  --success-muted: #14251c;
+  --success-border: #385343;
+  --warning: #e2c797;
+  --warning-muted: #282218;
+  --warning-border: #625136;
+  --danger: #f1a1ad;
+  --danger-muted: #2c151c;
+  --danger-border: #68303d;
+  --destructive: #bb4053;
+  --destructive-foreground: #ffffff;
   --chart-1: #0285fe;
   --chart-2: #67d1ed;
   --chart-3: #baa2ff;
@@ -235,39 +46,20 @@
   --chart-5: #75d8b0;
   --logo-inner: #0276e3;
   --logo-highlight: #ffffff;
-  --radius: 12px;
-  --control-radius: 8px;
-  --beacon-font-display: var(--beacon-font-body);
-  --display-weight: 600;
-  --hero-wash: radial-gradient(ellipse at 85% 5%, #0285fe20, transparent 65%);
+  --hero-wash: radial-gradient(ellipse at 50% 20%, #0285fe0d, transparent 70%);
   --card-shadow: 0 8px 24px rgb(0 0 0 / 28%);
+  --gradient-gilded: linear-gradient(103deg, #0285fe, #67d1ed 40%, #0285fe 70%, transparent);
+  --sidebar: var(--card);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--secondary);
+  --sidebar-accent-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }
-
-:root:is([data-site-theme="summer"], [data-site-theme="pearl"]),
-[data-theme-sample="summer"], [data-theme-sample="pearl"] {
-  --success: #286442;
-  --success-muted: #e7f3e9;
-  --success-border: #a1bdaa;
-  --warning: #7b581c;
-  --warning-muted: #fff1d4;
-  --warning-border: #cdb887;
-  --danger: #a13243;
-  --danger-muted: #fbe9ec;
-  --danger-border: #d7a6b0;
-}
-
-/* Preview cards carry their own palette, independent of the selected theme. */
-:is([data-theme-sample="summer"], [data-theme-sample="midnight"], [data-theme-sample="fire"], [data-theme-sample="navy"]):lang(ar) { --beacon-font-display: var(--beacon-font-body); }
-.theme-option { min-width: 0; padding: .7rem; text-align: start; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); color: var(--foreground); }
-.theme-option[aria-pressed="true"] { outline: 2px solid var(--ring); outline-offset: 2px; }
-.theme-option:disabled { cursor: wait; opacity: .65; }
-.theme-sample { display: block; overflow: hidden; height: 154px; padding: 14px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--hero-wash), var(--background); color: var(--foreground); font-family: var(--beacon-font-body); }
-.theme-sample-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--border); color: var(--heading); }
-.theme-sample-title { display: block; margin-block: 10px 9px; color: var(--heading); font-family: var(--beacon-font-display); font-weight: var(--display-weight); font-size: 22px; }
-.theme-sample-grid { display: flex; gap: 7px; }
-.theme-sample-card { display: block; flex: 1; height: 29px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); box-shadow: var(--card-shadow); }
-.theme-sample-action { display: block; width: 37%; height: 13px; margin-top: 9px; border-radius: var(--control-radius); background: var(--primary); }
-
-/* White copy and reference-blue icon accents in the black/blue preset. */
-:root[data-site-theme="navy"] :is(a.text-primary, [data-slot="button"].text-primary) { color: var(--foreground); }
-:root[data-site-theme="navy"] :is(.beacon-guide-step svg, .beacon-guide a svg, .stat-icon) { color: var(--highlight); }
+:root:lang(ar) { --beacon-font-body: "IBM Plex Sans Arabic", sans-serif; }
+:root:lang(hi) { --beacon-font-body: "Noto Sans Devanagari", sans-serif; }
+:root:lang(zh) { --beacon-font-body: "Noto Sans SC", sans-serif; }
+:is(a.text-primary, [data-slot="button"].text-primary) { color: var(--foreground); }
+.stat-icon { color: var(--highlight); }

@@ -10,7 +10,13 @@ import { VipCard } from "./VipCard";
 import { VipRibbon } from "./VipRibbon";
 export { VipCard, type VipCardData } from "./VipCard";
 
-export function VipAlbum({ full = false }: { full?: boolean }) {
+export function VipAlbum({
+  full = false,
+  title,
+}: {
+  full?: boolean;
+  title?: string;
+}) {
   const { locale } = useLocale();
   const t = vipText(locale),
     b = businessText(locale);
@@ -48,17 +54,19 @@ export function VipAlbum({ full = false }: { full?: boolean }) {
               id="vip-album-title"
               className="display-heading mt-3 text-4xl sm:text-5xl"
             >
-              {t.title}
+              {title ?? t.title}
             </h1>
           ) : (
             <h2
               id="vip-album-title"
               className="display-heading mt-3 text-4xl sm:text-5xl"
             >
-              {t.title}
+              {title ?? t.title}
             </h2>
           )}
-          <p className="mt-2 text-sm leading-7 text-secondary-foreground">{t.intro}</p>
+          <p className="mt-2 text-sm leading-7 text-secondary-foreground">
+            {t.intro}
+          </p>
         </div>
         {!full && Boolean(items.length) && (
           <Link

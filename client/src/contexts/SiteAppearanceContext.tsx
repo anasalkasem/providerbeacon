@@ -11,17 +11,11 @@ import {
 import { EdgeGlow } from "@/components/EdgeGlow";
 import { trpc } from "@/lib/trpc";
 import { ThemeProvider } from "./ThemeContext";
-import {
-  resolveSiteTheme,
-  siteThemes,
-  type SiteThemeId,
-} from "../../../shared/siteThemes";
+import { resolveSiteTheme, siteThemes } from "../../../shared/siteThemes";
 
 const SiteAppearanceContext = createContext<{
   preview: boolean;
   setPreview: Dispatch<SetStateAction<boolean>>;
-  previewTheme: SiteThemeId | null;
-  setPreviewTheme: Dispatch<SetStateAction<SiteThemeId | null>>;
 } | null>(null);
 
 export function SiteAppearanceProvider({ children }: { children: ReactNode }) {
@@ -33,12 +27,8 @@ export function SiteAppearanceProvider({ children }: { children: ReactNode }) {
     retry: false,
   });
   const [preview, setPreview] = useState(false);
-  const [previewTheme, setPreviewTheme] = useState<SiteThemeId | null>(null);
-  const theme = previewTheme ?? resolveSiteTheme(appearance.data?.theme);
-  const value = useMemo(
-    () => ({ preview, setPreview, previewTheme, setPreviewTheme }),
-    [preview, previewTheme]
-  );
+  const theme = resolveSiteTheme(appearance.data?.theme);
+  const value = useMemo(() => ({ preview, setPreview }), [preview]);
   useLayoutEffect(() => {
     const root = document.documentElement;
     const previousTheme = root.getAttribute("data-site-theme");

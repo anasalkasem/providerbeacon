@@ -200,13 +200,25 @@ describe("public catalogue rendering", () => {
     });
     expect(html).toContain("Independent provider"); expect(html).not.toContain("Northstar");
   });
-  it("keeps homepage provider advertising separate from the service catalogue", () => {
+  it("keeps real comparison offers separate from homepage provider advertising", () => {
     const html = render(Home);
-    expect(html).not.toContain("Independent provider");
-    expect(html).not.toContain("Available real offer");
-    expect(html).toContain("Explore services and compare prices");
+    const start = html.indexOf('aria-labelledby="home-comparison-title"');
+    const comparison = html.slice(start, html.indexOf("</section>", start));
+    const advertising = html.slice(html.indexOf('aria-labelledby="vip-album-title"'));
+    expect(comparison).toContain("Independent provider");
+    expect(comparison).toContain("Available real offer");
+    expect(comparison).toContain("USD 1.00");
+    expect(comparison).toContain("per 1,000 units");
+    expect(comparison).not.toContain(">Lowest price<");
+    expect(advertising).not.toContain("Independent provider");
+    expect(advertising).not.toContain("Available real offer");
+    expect(html).not.toContain("Northstar");
     expect(html).toContain('href="/services"');
-    expect(render(ServiceRow, { service: state.data.services[0], selected: false, onToggle: () => {} })).toContain("Independent provider");
+    state.data.source = "unavailable";
+    const unavailable = render(Home);
+    expect(unavailable).not.toContain("Independent provider");
+    expect(unavailable).not.toContain("USD 1.00");
+    expect(unavailable).toContain("Provider offers could not be loaded.");
   });
   it("does not show identity verification claims for an unverified provider", () => {
     const html = render(Provider);
