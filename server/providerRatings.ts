@@ -126,7 +126,8 @@ export async function writeProviderRating(
     const [owner] = await tx
       .select({ ownerId: accounts.ownerMemberId })
       .from(accounts)
-      .where(eq(accounts.providerId, input.providerId));
+      .where(eq(accounts.providerId, input.providerId))
+      .for("update");
     if (!remove && owner?.ownerId === member.id)
       throw new TRPCError({ code: "FORBIDDEN", message: "ratings_owner" });
     const filter = and(

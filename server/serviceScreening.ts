@@ -275,6 +275,7 @@ export async function runServiceScreeningStep() {
       );
       decisions.push(...validatedScreeningDecisions(aiRows, response));
     }
+    const applied = { checked: 0, held: 0, review: 0 };
     await db.transaction(async tx => {
       const [lease] = await tx
         .select()
@@ -330,6 +331,9 @@ export async function runServiceScreeningStep() {
             screeningAttempts: 0,
           })
           .where(eq(services.id, row.id));
+        applied.checked++;
+        if (status === "held") applied.held++;
+        if (status === "review") applied.review++;
         if (status !== "clear" || current.status === "held")
           await writeAudit(
             {
@@ -348,6 +352,11 @@ export async function runServiceScreeningStep() {
       }
     });
     invalidateCatalogueCaches();
+    if (applied.checked)
+      console.info(
+        "[Service screening] Batch completed:",
+        JSON.stringify(applied)
+      );
     return true;
   } catch (error) {
     failed = true;
@@ -395,6 +404,10 @@ export function startServiceScreeningWorker() {
     process.env.BEACON_SERVICE_SCREENING_ENABLED === "false"
   )
     return () => {};
+  console.info(
+    "[Service screening] Worker started; AI",
+    assistantAvailable() ? "configured" : "unconfigured"
+  );
   let stopped = false;
   let timer: ReturnType<typeof setTimeout>;
   const tick = async () => {
