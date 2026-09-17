@@ -12,10 +12,7 @@ vi.mock("@/lib/vipAnalytics", () => ({
 }));
 import { VipRibbon } from "../client/src/components/VipRibbon";
 import type { VipCardData } from "../client/src/components/VipCard";
-import {
-  advanceRibbon,
-  VIP_RIBBON_SPEED,
-} from "../client/src/lib/vipRibbonMotion";
+import { VIP_RIBBON_SPEED } from "../client/src/lib/vipRibbonMotion";
 const cards: VipCardData[] = Array.from({ length: 8 }, (_, index) => ({
   providerId: index + 1,
   revision: 1,
@@ -37,26 +34,66 @@ let media: {
   addEventListener: ReturnType<typeof vi.fn>;
   removeEventListener: ReturnType<typeof vi.fn>;
 };
-let viewportWidth: number, cardWidth: number, clock: number, frameId: number;
-const frames = new Map<number, FrameRequestCallback>();
+let viewportWidth: number, cardWidth: number, clock: number;
+// jsdom has no compositor. Model the standard linear Web Animations timeline
+// from the actual keyframes the component submits, independently of JS timers.
+const animations = new Map<Element, TestAnimation>();
+class TestAnimation {
+  private heldTime = 0;
+  private startedAt = clock;
+  playState = "running";
+  constructor(
+    readonly element: Element,
+    readonly keyframes: Keyframe[],
+    readonly options: KeyframeAnimationOptions
+  ) {}
+  get currentTime() {
+    return (
+      this.heldTime +
+      (this.playState === "running" ? clock - this.startedAt : 0)
+    );
+  }
+  set currentTime(value: number) {
+    this.heldTime = value;
+    this.startedAt = clock;
+  }
+  pause() {
+    this.heldTime = this.currentTime;
+    this.playState = "paused";
+  }
+  play() {
+    if (this.playState === "running") return;
+    this.startedAt = clock;
+    this.playState = "running";
+  }
+  cancel() {
+    this.playState = "idle";
+    animations.delete(this.element);
+  }
+  position() {
+    const number = (value: unknown) =>
+      Number(String(value).match(/translate3d\(([-\d.e+]+)px/)?.[1] ?? 0);
+    const from = number(this.keyframes[0].transform);
+    const to = number(this.keyframes[1].transform);
+    const duration = Number(this.options.duration);
+    return from + (to - from) * ((this.currentTime % duration) / duration);
+  }
+}
 const slides = () =>
   Array.from(container.querySelectorAll<HTMLElement>(".vip-ribbon-slide"));
-// Read the actual transforms written by the component, not a mocked carousel API.
+// Read compositor output when present; manual fallback uses inline transforms.
 const positions = () =>
   slides().map(
     (slide, index) =>
       index * (cardWidth + 20) +
       (state.locale === "ar" ? -1 : 1) *
-        Number(
-          slide.style.transform.match(/translate3d\(([-\d.e+]+)px/)?.[1] ?? 0
-        )
+        (animations.get(slide)?.position() ??
+          Number(
+            slide.style.transform.match(/translate3d\(([-\d.e+]+)px/)?.[1] ?? 0
+          ))
   );
 function frame(elapsed = 20) {
   clock += elapsed;
-  for (const [id, callback] of [...frames]) {
-    if (!frames.delete(id)) continue;
-    callback(clock);
-  }
 }
 async function time(count = 50) {
   await act(() => {
@@ -100,8 +137,7 @@ beforeEach(() => {
   state.locale = "en";
   viewportWidth = 960;
   clock = 0;
-  frameId = 0;
-  frames.clear();
+  animations.clear();
   media = {
     matches: false,
     addEventListener: vi.fn((_, callback) => {
@@ -134,11 +170,20 @@ beforeEach(() => {
       disconnect() {}
     }
   );
-  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
-    frames.set(++frameId, callback);
-    return frameId;
+  vi.stubGlobal("requestAnimationFrame", vi.fn());
+  vi.stubGlobal("cancelAnimationFrame", vi.fn());
+  Object.defineProperty(HTMLElement.prototype, "animate", {
+    configurable: true,
+    value: function (
+      this: HTMLElement,
+      keyframes: Keyframe[],
+      options: KeyframeAnimationOptions
+    ) {
+      const animation = new TestAnimation(this, keyframes, options);
+      animations.set(this, animation);
+      return animation;
+    },
   });
-  vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(
     function (this: HTMLElement) {
       return {
@@ -163,7 +208,8 @@ beforeEach(() => {
 });
 afterEach(async () => {
   await act(() => root.unmount());
-  expect(frames.size).toBe(0);
+  expect(animations.size).toBe(0);
+  delete (HTMLElement.prototype as any).animate;
   container.remove();
   vi.useRealTimers();
   vi.restoreAllMocks();
@@ -178,7 +224,7 @@ describe("continuous VIP ribbon", () => {
     expect(links).toHaveLength(2);
     expect(new Set(links.map(link => link.getAttribute("href"))).size).toBe(2);
     expect(container.querySelectorAll("button")).toHaveLength(0);
-    expect(frames.size).toBe(0);
+    expect(animations.size).toBe(0);
   });
   it.each([
     [2, "en", 520],
@@ -196,7 +242,7 @@ describe("continuous VIP ribbon", () => {
       viewportWidth = width as number;
       await mount(count as number);
       await visible();
-      await time(1); // Establish the animation timestamp.
+      await time(1);
       const step = VIP_RIBBON_SPEED * 0.02;
       const cycle = (cardWidth + 20) * (count as number);
       let previous = positions();
@@ -209,8 +255,8 @@ describe("continuous VIP ribbon", () => {
             const movement = position - previous[index];
             if (movement > 0) {
               // Wrapping is allowed only entirely outside both viewport edges.
-              expect(previous[index] + cardWidth).toBeLessThanOrEqual(0);
-              expect(position).toBeGreaterThanOrEqual(viewportWidth);
+              expect(previous[index] + cardWidth).toBeLessThanOrEqual(0.00001);
+              expect(position).toBeGreaterThanOrEqual(viewportWidth - 0.00001);
               expect(movement).toBeCloseTo(cycle - step, 5);
               recycled++;
             } else expect(movement).toBeCloseTo(-step, 5);
@@ -220,9 +266,9 @@ describe("continuous VIP ribbon", () => {
               position => position < viewportWidth && position + cardWidth > 0
             )
             .sort((a, b) => a - b);
-          expect(visibleCards[0]).toBeLessThanOrEqual(20);
+          expect(visibleCards[0]).toBeLessThanOrEqual(20.00001);
           expect(visibleCards.at(-1)! + cardWidth).toBeGreaterThanOrEqual(
-            viewportWidth - 20
+            viewportWidth - 20.00001
           );
           for (let index = 1; index < visibleCards.length; index++)
             expect(
@@ -257,14 +303,14 @@ describe("continuous VIP ribbon", () => {
     expect(positions()).toEqual(moving);
     await act(() => pointer(ribbon, "pointerout", 10));
     await time(2);
-    expect(positions()[0]).toBeCloseTo(moving[0] - 0.84);
+    expect(positions()[0]).toBeCloseTo(moving[0] - 1.68);
     await act(() => button("Pause movement").click());
     const paused = positions();
     await time();
     expect(positions()).toEqual(paused);
     await act(() => button("Resume movement").click());
     await time(2);
-    expect(positions()[0]).toBeCloseTo(paused[0] - 0.84);
+    expect(positions()[0]).toBeCloseTo(paused[0] - 1.68);
     await visible(false);
     const offscreen = positions();
     await time();
@@ -317,14 +363,14 @@ describe("continuous VIP ribbon", () => {
     vi.spyOn(document, "visibilityState", "get").mockReturnValue("visible");
     await act(() => document.dispatchEvent(new Event("visibilitychange")));
     await time(2);
-    expect(positions()[1]).toBeCloseTo(hidden[1] - 0.84);
+    expect(positions()[1]).toBeCloseTo(hidden[1] - 1.68);
     media.matches = true;
     await act(() => mediaChange());
     const reduced = positions();
     await time();
     expect(positions()).toEqual(reduced);
   });
-  it("retains progress on resize and clamps stalled frames", async () => {
+  it("retains progress on resize", async () => {
     await mount();
     await visible();
     await time(100);
@@ -333,9 +379,36 @@ describe("continuous VIP ribbon", () => {
     cardWidth = 360 * 0.86;
     await act(() => resize());
     expect(-positions()[0] / (cardWidth + 20)).toBeCloseTo(progress);
-    expect(advanceRibbon(10, 60000, 1000)).toBeCloseTo(
-      10 + VIP_RIBBON_SPEED * 0.064
-    );
+  });
+  it("keeps moving without per-frame JS or style writes when JS timers are delayed", async () => {
+    await mount();
+    await visible();
+    const initial = positions();
+    const styles = slides().map(slide => slide.style.cssText);
+    // Advance the compositor clock without running any scheduled JS callback.
+    clock += 1200;
+    positions().forEach((position, index) => {
+      expect(position).toBeCloseTo(initial[index] - VIP_RIBBON_SPEED * 1.2);
+    });
+    expect(slides().map(slide => slide.style.cssText)).toEqual(styles);
+    expect(requestAnimationFrame).not.toHaveBeenCalled();
+    for (const animation of animations.values()) {
+      expect(animation.options.easing).toBe("linear");
+      expect(animation.options.iterations).toBe(Infinity);
+      expect(
+        animation.keyframes.every(
+          keyframe => Object.keys(keyframe).join() === "transform"
+        )
+      ).toBe(true);
+    }
+  });
+  it("keeps manual navigation usable without Web Animations support", async () => {
+    delete (HTMLElement.prototype as any).animate;
+    await mount();
+    await visible();
+    await act(() => button("Next cards").click());
+    expect(positions()[1]).toBeCloseTo(0);
+    expect(animations.size).toBe(0);
   });
   it("allows touch dragging without opening the card and leaves autoplay paused", async () => {
     await mount();

@@ -1,17 +1,5 @@
-@property --beacon-edge-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: true;
-}
-
 .beacon-appearance {
   display: contents;
-}
-
-.beacon-edge-glow,
-[data-beacon-glow="on"] .vip-card {
-  --beacon-edge-angle: 0deg;
-  animation: beacon-edge-flow 12s linear infinite;
 }
 
 .beacon-edge-glow {
@@ -31,7 +19,7 @@
   position: absolute;
   pointer-events: none;
   background: conic-gradient(
-    from var(--beacon-edge-angle),
+    from var(--beacon-gradient-angle, 0deg),
     #53e5ef,
     #5287ff 20%,
     #b774f7 42%,
@@ -61,6 +49,15 @@
   opacity: 0.7;
 }
 
+/* Both gradients are painted once. Only blend their opacity; animating a
+   gradient angle repaints the viewport and every moving card on each frame. */
+.beacon-edge-glow .beacon-edge-glow__flow,
+[data-beacon-glow="on"] .vip-card::after {
+  --beacon-gradient-angle: 180deg;
+  animation: beacon-color-blend 12s ease-in-out infinite;
+  will-change: opacity;
+}
+
 .vip-card {
   position: relative;
   isolation: isolate;
@@ -71,19 +68,26 @@
   inset: 0;
   z-index: 2;
   border-radius: inherit;
-}
-[data-beacon-glow="on"] .vip-card::before {
-  padding: 12px;
-  filter: blur(6px);
-  opacity: 0.65;
-}
-[data-beacon-glow="on"] .vip-card::after {
   padding: 4px;
 }
 
-@keyframes beacon-edge-flow {
-  to {
-    --beacon-edge-angle: 360deg;
+[data-beacon-glow="on"] .vip-card:has(:focus-visible) {
+  outline: 3px solid #4f651e;
+  outline-offset: 3px;
+}
+
+.vip-ribbon[data-visible="false"] .vip-card::after {
+  animation-play-state: paused;
+  will-change: auto;
+}
+
+@keyframes beacon-color-blend {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
   }
 }
 
@@ -96,14 +100,17 @@
     padding: 14px;
     filter: blur(7px);
   }
+  [data-beacon-glow="on"] .vip-card::before,
   [data-beacon-glow="on"] .vip-card::after {
     padding: 3px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .beacon-edge-glow,
-  [data-beacon-glow="on"] .vip-card {
+  .beacon-edge-glow .beacon-edge-glow__flow,
+  [data-beacon-glow="on"] .vip-card::after {
     animation: none;
+    opacity: 0;
+    will-change: auto;
   }
 }
 @media (forced-colors: active), print {
@@ -112,7 +119,9 @@
   [data-beacon-glow="on"] .vip-card::after {
     display: none;
   }
-  [data-beacon-glow="on"] .vip-card {
+  .beacon-edge-glow .beacon-edge-glow__flow,
+  [data-beacon-glow="on"] .vip-card::after {
     animation: none;
+    will-change: auto;
   }
 }
