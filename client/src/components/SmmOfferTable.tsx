@@ -51,7 +51,7 @@ export default function SmmOfferTable({
                 onClick={() => toggle(service)}
                 disabled={!chosen && selected.length >= 4}
                 aria-pressed={chosen}
-                className={`mt-2 w-full rounded-xl border px-4 py-3 text-sm font-bold ${chosen ? "border-beacon-500 bg-beacon-50 text-beacon-900" : "border-slate-200 bg-white text-slate-700"} disabled:opacity-40`}
+                className={`mt-2 w-full rounded-xl border px-4 py-3 text-sm font-bold ${chosen ? "border-ring bg-secondary text-foreground" : "border-border bg-card text-secondary-foreground"} disabled:opacity-40`}
               >
                 {chosen ? "✓ " : "+ "}
                 {ar
@@ -68,9 +68,9 @@ export default function SmmOfferTable({
           );
         })}
       </div>
-      <div className="hidden lg:block overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+      <div className="hidden lg:block overflow-x-auto rounded-2xl border border-border bg-card">
         <table className="w-full min-w-[900px] text-start text-sm">
-          <thead className="bg-slate-50 text-slate-600">
+          <thead className="bg-muted text-secondary-foreground">
             <tr>
               {[
                 ar ? "الخدمة والمزود" : "Service and provider",
@@ -94,24 +94,24 @@ export default function SmmOfferTable({
                   key={service.id}
                   className={
                     chosen
-                      ? "border-t border-beacon-100 bg-beacon-50/50"
-                      : "border-t border-slate-100"
+                      ? "border-t border-input bg-secondary/50"
+                      : "border-t border-border"
                   }
                 >
                   <td className="max-w-sm p-4 align-top">
                     <Link
                       href={`/providers/${provider.slug}`}
-                      className="font-bold text-beacon-700 hover:underline"
+                      className="font-bold text-foreground hover:underline"
                     >
                       {provider.name}
                     </Link>
                     <p
-                      className="mt-1 line-clamp-2 font-semibold text-slate-950"
+                      className="mt-1 line-clamp-2 font-semibold text-foreground"
                       title={serviceName(locale, service)}
                     >
                       {serviceName(locale, service)}
                     </p>
-                    <p className="mt-1 text-xs text-slate-500">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       {service.platform} ·{" "}
                       {localizeData(locale, service.category)}
                       {service.sourceServiceId && (
@@ -122,7 +122,7 @@ export default function SmmOfferTable({
                       )}
                     </p>
                     <details className="mt-2 text-xs">
-                      <summary className="cursor-pointer text-slate-500">
+                      <summary className="cursor-pointer text-muted-foreground">
                         {wt.allDetails}
                       </summary>
                       <p dir="auto" className="mt-2 leading-6">
@@ -155,7 +155,7 @@ export default function SmmOfferTable({
                       {formatNumber(locale, service.min)} –{" "}
                       {formatNumber(locale, service.max)}
                     </bdi>
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs text-muted-foreground">
                       {service.countryCode === "WW"
                         ? ar
                           ? "عالمي"
@@ -166,7 +166,7 @@ export default function SmmOfferTable({
                   </td>
                   <td className="p-4 align-top">
                     <p>{localizeDuration(locale, service.startTime)}</p>
-                    <p className="mt-2 text-beacon-700">
+                    <p className="mt-2 text-foreground">
                       {localizeData(locale, service.refill)}
                     </p>
                   </td>
@@ -177,7 +177,7 @@ export default function SmmOfferTable({
                       aria-label={`${ar ? "قارن" : "Compare"} ${provider.name}: ${serviceName(locale, service)}`}
                       disabled={!chosen && selected.length >= 4}
                       onClick={() => toggle(service)}
-                      className="rounded-xl border border-ink px-4 py-2 font-bold text-ink hover:bg-slate-100 disabled:opacity-40"
+                      className="rounded-xl border border-ink px-4 py-2 font-bold text-foreground hover:bg-secondary disabled:opacity-40"
                     >
                       {chosen
                         ? ar

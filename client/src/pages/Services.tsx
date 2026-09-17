@@ -67,7 +67,7 @@ function ServicesPage() {
     market === "smm" && onlyMatching && validQuantity ? quantity : undefined;
   const [selected, setSelected] = useState<Service[]>([]);
   const field =
-    "h-12 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm";
+    "h-12 w-full rounded-xl border border-border bg-card px-3 text-sm";
   useEffect(() => {
     const timer = setTimeout(
       () =>
@@ -122,12 +122,12 @@ function ServicesPage() {
     <PublicLayout>
       <section className="container py-8 sm:py-12">
         <p className="section-kicker">PROVIDERBEACON MARKETPLACE</p>
-        <h1 className="mt-3 text-3xl font-extrabold text-slate-950 sm:text-4xl">
+        <h1 className="mt-3 text-3xl font-extrabold text-foreground sm:text-4xl">
           {ar
             ? "عروض SMM. قارن قبل أن تختار."
             : "SMM offers. Compare before you choose."}
         </h1>
-        <p className="mt-3 max-w-3xl leading-7 text-slate-600">
+        <p className="mt-3 max-w-3xl leading-7 text-secondary-foreground">
           {ar
             ? "ابحث حسب المنصة ونوع الخدمة وحدود الطلب. استعرض أسعار المزوّدين بوحدات بيعها، واحسب تكلفة الكمية للعروض التي تتوفر بيانات تسعيرها."
             : "Search by platform, service type and order limits. Browse provider prices with their sale units and calculate quantity totals where pricing data is available."}
@@ -157,7 +157,7 @@ function ServicesPage() {
                 setSelected([]);
                 setSort("recommended");
               }}
-              className={`rounded-xl border px-5 py-3 text-sm font-bold ${market === value ? "border-ink bg-ink text-white" : "border-slate-200 bg-white text-slate-600"}`}
+              className={`rounded-xl border px-5 py-3 text-sm font-bold ${market === value ? "border-ink bg-ink text-white" : "border-border bg-card text-secondary-foreground"}`}
             >
               {value === "smm"
                 ? ar
@@ -172,14 +172,14 @@ function ServicesPage() {
         {market === "smm" && (
           <section
             aria-label={ar ? "حاسبة تكلفة الخدمات" : "Service cost calculator"}
-            className="mb-6 rounded-2xl border border-beacon-200 bg-beacon-50/50 p-5"
+            className="mb-6 rounded-2xl border border-input bg-secondary/50 p-5"
           >
-            <h2 className="text-lg font-extrabold text-slate-950">
+            <h2 className="text-lg font-extrabold text-foreground">
               {ar
                 ? "كم ستكلفك الكمية التي تحتاجها؟"
                 : "What will your quantity cost?"}
             </h2>
-            <p className="mt-2 text-sm text-slate-600">
+            <p className="mt-2 text-sm text-secondary-foreground">
               {ar
                 ? "أدخل الكمية لتظهر تكلفة كل عرض مؤكد التسعير ضمن حدود الطلب."
                 : "Enter a quantity to calculate each offer with confirmed pricing and valid order limits."}
@@ -205,7 +205,7 @@ function ServicesPage() {
                     type="button"
                     aria-pressed={quantity === q}
                     onClick={() => setQuantity(q)}
-                    className={`rounded-lg border px-4 py-3 text-sm font-bold ${quantity === q ? "border-beacon-700 bg-beacon-700 text-white" : "border-beacon-200 bg-white text-beacon-900"}`}
+                    className={`rounded-lg border px-4 py-3 text-sm font-bold ${quantity === q ? "border-ring bg-graphite text-white" : "border-input bg-card text-foreground"}`}
                   >
                     {q.toLocaleString(locale)}
                   </button>
@@ -213,7 +213,7 @@ function ServicesPage() {
               </div>
             </div>
             {!validQuantity && (
-              <p role="alert" className="mt-3 text-sm text-red-700">
+              <p role="alert" className="mt-3 text-sm text-danger">
                 {ar
                   ? "أدخل عددًا صحيحًا من 1 إلى 2,147,483,647."
                   : "Enter a whole number from 1 to 2,147,483,647."}
@@ -224,7 +224,7 @@ function ServicesPage() {
                 type="checkbox"
                 checked={onlyMatching}
                 onChange={e => setOnlyMatching(e.target.checked)}
-                className="size-4 accent-beacon-700"
+                className="size-4 accent-ring"
               />
               {ar
                 ? "اعرض فقط العروض التي تقبل هذه الكمية"
@@ -232,7 +232,7 @@ function ServicesPage() {
             </label>
           </section>
         )}
-        <div className="mb-6 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mb-6 grid gap-3 rounded-2xl border border-border bg-muted p-4 sm:grid-cols-2 lg:grid-cols-4">
           <label className="grid gap-2 text-sm font-bold sm:col-span-2">
             {ar ? "ابحث عن خدمة أو مزود" : "Find a service or provider"}
             <input
@@ -361,7 +361,7 @@ function ServicesPage() {
               </option>
             </select>
             {market === "smm" && (!currency || !unit) && (
-              <span className="text-xs font-normal text-slate-500">
+              <span className="text-xs font-normal text-muted-foreground">
                 {ar
                   ? "اختر العملة ووحدة السعر لتفعيل الترتيب."
                   : "Select a currency and sale unit to enable price sorting."}
@@ -375,7 +375,7 @@ function ServicesPage() {
                   type="checkbox"
                   checked={refillOnly}
                   onChange={e => setRefillOnly(e.target.checked)}
-                  className="size-5 accent-beacon-700"
+                  className="size-5 accent-ring"
                 />
                 {ar ? "عروض مع تعويض فقط" : "Refill available only"}
               </label>
@@ -389,7 +389,7 @@ function ServicesPage() {
               dir="ltr"
               maxLength={2}
               placeholder="WW / PA"
-              className="h-11 w-36 rounded-xl border border-slate-200 bg-white px-3"
+              className="h-11 w-36 rounded-xl border border-border bg-card px-3"
               value={countryCode}
               onChange={e =>
                 setCountryCode(
@@ -402,7 +402,7 @@ function ServicesPage() {
             <label className="grid gap-2 text-xs font-bold">
               {wt.refillDays}
               <select
-                className="h-11 rounded-xl border border-slate-200 bg-white px-3"
+                className="h-11 rounded-xl border border-border bg-card px-3"
                 value={refillDays}
                 onChange={e => setRefillDays(Number(e.target.value))}
               >
@@ -429,7 +429,7 @@ function ServicesPage() {
           <label className="grid gap-2 text-xs font-bold">
             {wt.rows}
             <select
-              className="h-11 rounded-xl border border-slate-200 bg-white px-3"
+              className="h-11 rounded-xl border border-border bg-card px-3"
               value={limit}
               onChange={e => setLimit(Number(e.target.value))}
             >
@@ -440,12 +440,12 @@ function ServicesPage() {
           </label>
         </div>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="font-bold text-slate-700">
+          <p className="font-bold text-secondary-foreground">
             {pagination.total.toLocaleString(locale)} {ar ? "عرض" : "offers"}
           </p>
           <button
             type="button"
-            className="text-sm font-bold text-beacon-700"
+            className="text-sm font-bold text-foreground"
             onClick={() => {
               setQuery("");
               setCountryCode("");
@@ -474,19 +474,19 @@ function ServicesPage() {
           </p>
         )}
         {!isLoading && services.length === 0 && source !== "unavailable" && (
-          <p className="rounded-xl bg-slate-50 p-8 text-center">
+          <p className="rounded-xl bg-muted p-8 text-center">
             {ar
               ? "لا توجد عروض منشورة تطابق هذه الفلاتر حاليًا."
               : "No published offers match these filters yet."}
           </p>
         )}
         <CataloguePagination />
-        <p className="mt-5 text-sm leading-7 text-slate-500">
+        <p className="mt-5 text-sm leading-7 text-muted-foreground">
           {ar
             ? "الأسعار وشروط التنفيذ معلنة من المزودين؛ فحص المصدر لا يعني اختبار جودة التنفيذ. ترتيب السعر لا يساوي ترتيب الجودة."
             : "Prices and delivery terms are provider claims. Checking a source does not test delivery quality. Price order is not a quality ranking."}
         </p>
-        <details className="mt-8 rounded-xl border border-slate-200 p-4">
+        <details className="mt-8 rounded-xl border border-border p-4">
           <summary className="cursor-pointer font-bold">
             {ar ? "أدلة اختيار الخدمات" : "Service buying guides"}
           </summary>
@@ -494,7 +494,7 @@ function ServicesPage() {
             <GuideGrid query={query} />
             <Link
               href="/compare?manual=1"
-              className="mt-5 inline-block font-bold text-beacon-700"
+              className="mt-5 inline-block font-bold text-foreground"
             >
               {ar
                 ? "مقارنة عروض أسعار مخصصة يدويًا"
@@ -505,7 +505,7 @@ function ServicesPage() {
         {selected.length > 0 && (
           <div
             data-compare-tray
-            className="sticky bottom-4 z-20 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-ink p-4 text-white shadow-xl"
+            className="sticky bottom-4 z-20 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-ink p-4 text-white shadow-none"
           >
             <p>
               {ar
@@ -523,7 +523,7 @@ function ServicesPage() {
                     `/compare?services=${selected.map(s => s.id).join(",")}&quantity=${Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1000}`
                   )
                 }
-                className="rounded-xl bg-beacon-300 px-5 py-3 font-bold text-slate-950 disabled:opacity-40"
+                className="rounded-xl bg-secondary px-5 py-3 font-bold text-foreground disabled:opacity-40"
               >
                 {ar ? "افتح المقارنة" : "Open comparison"}
               </button>

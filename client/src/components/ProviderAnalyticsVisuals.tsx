@@ -52,19 +52,19 @@ export function AnalyticsHeader({
     <header className="analytics-header">
       <div className="analytics-header-copy flex items-center gap-4">
         <span
-          className="grid size-12 shrink-0 place-items-center rounded-2xl border border-white/15 bg-white/10 text-[#A8C1E5]"
+          className="grid size-12 shrink-0 place-items-center rounded-2xl border border-white/15 bg-white/10 text-[#c7c9d1]"
           aria-hidden="true"
         >
           <BarChart3 className="size-6" />
         </span>
         <div className="min-w-0">
-          <p className="mb-1 text-[11px] font-bold uppercase tracking-[.12em] text-[#B9C9DE]">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-[.12em] text-[#acafb9]">
             ProviderBeacon · {providerAnalyticsCopy[locale].overview}
           </p>
-          <Heading className="text-xl font-extrabold leading-normal text-white sm:text-2xl">
+          <Heading className="display-heading text-3xl text-white sm:text-4xl">
             {title}
           </Heading>
-          <p className="mt-2 max-w-2xl text-xs leading-6 text-[#D3DEED] sm:text-sm">
+          <p className="mt-2 max-w-2xl text-xs leading-6 text-[#c7c9d1] sm:text-sm">
             {subtitle}
           </p>
         </div>
@@ -88,7 +88,7 @@ export function AnalyticsPeriodSelect({
       {t.period}
       <select
         aria-label={t.period}
-        className="mt-2 w-full rounded-xl border border-[#D9E1ED] bg-white px-3 py-2.5 text-sm text-[#243650] focus:outline-2 focus:outline-offset-2 focus:outline-[#507DB7]"
+        className="mt-2 w-full rounded-xl border border-[#464853] bg-card px-3 py-2.5 text-sm text-[#e2e3e9] focus:outline-2 focus:outline-offset-2 focus:outline-ring"
         value={days}
         onChange={e => onChange(Number(e.target.value) as 7 | 30 | 90)}
       >
@@ -134,8 +134,8 @@ export function AnalyticsReport({
     })),
     {
       key: "contacts",
-      color: "#327D70",
-      tint: "#EDF7F3",
+      color: "#c7c9d1",
+      tint: "#121317",
       label: t.clicks,
       icon: MousePointerClick,
       value: model.contacts,
@@ -148,12 +148,12 @@ export function AnalyticsReport({
       {!data.collectionEnabled && (
         <p
           role="alert"
-          className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+          className="rounded-xl border border-warning-border bg-warning-muted p-4 text-sm text-warning"
         >
           {t.unavailable}
         </p>
       )}
-      <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs leading-6 text-slate-500">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1 text-xs leading-6 text-muted-foreground">
         <p>
           <bdi>
             {data.from} — {data.to}
@@ -174,25 +174,25 @@ export function AnalyticsReport({
               style={accent(metric.color)}
             >
               <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-semibold leading-6 text-slate-500">
+                <p className="text-xs font-semibold leading-6 text-muted-foreground">
                   {metric.label}
                 </p>
                 <span
                   className="shrink-0 rounded-xl p-2"
-                  style={{ color: metric.color, background: metric.tint }}
+                  style={{ color: "#c7c9d1", background: metric.tint }}
                   aria-hidden="true"
                 >
                   <metric.icon className="size-4" />
                 </span>
               </div>
-              <p className="mt-3 text-[clamp(1.65rem,4cqi,2.15rem)] font-extrabold leading-tight tabular-nums tracking-tight text-[#243650]">
+              <p className="mt-3 analytics-number text-[clamp(1.75rem,4cqi,2.75rem)] leading-tight tabular-nums tracking-tight text-[#e2e3e9]">
                 <bdi>{n(metric.value)}</bdi>
               </p>
-              <div className="mt-3 flex min-h-5 flex-wrap items-center gap-1 text-[11px] leading-5 text-slate-500">
+              <div className="mt-3 flex min-h-5 flex-wrap items-center gap-1 text-[11px] leading-5 text-muted-foreground">
                 {change !== null ? (
                   <>
                     <span
-                      className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 font-bold ${change >= 0 ? "bg-[#EDF7F3] text-[#276C60]" : "bg-[#FCF0F2] text-[#A34554]"}`}
+                      className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 font-bold ${change >= 0 ? "bg-success-muted text-success" : "bg-danger-muted text-danger"}`}
                     >
                       {change !== 0 &&
                         (change > 0 ? (
@@ -244,7 +244,7 @@ export function AnalyticsReport({
                 type="button"
                 aria-pressed={selected === "all"}
                 onClick={() => setSelected("all")}
-                className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${selected === "all" ? "border-[#243650] bg-[#243650] text-white" : "border-[#E3E8F0] bg-white text-slate-600"}`}
+                className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${selected === "all" ? "border-input bg-secondary text-white" : "border-[#2e3038] bg-card text-secondary-foreground"}`}
               >
                 {t.allMetrics}
               </button>
@@ -256,11 +256,11 @@ export function AnalyticsReport({
                   onClick={() =>
                     setSelected(selected === series.key ? "all" : series.key)
                   }
-                  className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold text-[#243650]"
+                  className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold text-[#e2e3e9]"
                   style={{
                     borderColor:
-                      selected === series.key ? series.color : "#E3E8F0",
-                    background: selected === series.key ? series.tint : "white",
+                      selected === series.key ? series.color : "#2e3038",
+                    background: selected === series.key ? series.tint : "#040406",
                   }}
                 >
                   <span
@@ -274,14 +274,14 @@ export function AnalyticsReport({
             </div>
           </div>
           {activity === 0 ? (
-            <div className="mt-6 grid min-h-52 place-items-center rounded-xl border border-dashed border-[#DCE3EE] bg-[#F8FAFD] p-6 text-center">
+            <div className="mt-6 grid min-h-52 place-items-center rounded-xl border border-dashed border-[#2e3038] bg-[#121317] p-6 text-center">
               <div>
                 <Eye
-                  className="mx-auto size-7 text-[#7894BB]"
+                  className="mx-auto size-7 text-[#acafb9]"
                   aria-hidden="true"
                 />
                 <h4 className="mt-3 text-sm font-bold">{t.empty}</h4>
-                <p className="mx-auto mt-2 max-w-md text-xs leading-6 text-slate-500">
+                <p className="mx-auto mt-2 max-w-md text-xs leading-6 text-muted-foreground">
                   {t.emptyBody}
                 </p>
               </div>
@@ -297,15 +297,22 @@ export function AnalyticsReport({
                   data={model.daily}
                   margin={{ left: 0, right: 14, top: 10, bottom: 5 }}
                 >
+                  <defs>
+                    <linearGradient id={`${labelId}-gilded`} x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0%" stopColor="#ae9357" />
+                      <stop offset="40%" stopColor="#fff0cc" />
+                      <stop offset="100%" stopColor="#ae9357" />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid
-                    stroke="#E8EDF4"
+                    stroke="#2e3038"
                     strokeDasharray="3 5"
                     vertical={false}
                   />
                   <XAxis
                     dataKey="day"
                     tickFormatter={date}
-                    tick={{ fill: "#718198", fontSize: 11 }}
+                    tick={{ fill: "#acafb9", fontSize: 12 }}
                     tickLine={false}
                     axisLine={false}
                     minTickGap={42}
@@ -314,7 +321,7 @@ export function AnalyticsReport({
                   <YAxis
                     domain={[0, "auto"]}
                     allowDecimals={false}
-                    tick={{ fill: "#718198", fontSize: 11 }}
+                    tick={{ fill: "#acafb9", fontSize: 12 }}
                     tickFormatter={value =>
                       new Intl.NumberFormat(locale, {
                         notation: "compact",
@@ -329,14 +336,14 @@ export function AnalyticsReport({
                     labelFormatter={value => date(String(value))}
                     formatter={(value: number) => n(value)}
                     contentStyle={{
-                      borderRadius: 12,
-                      border: "1px solid #E3E8F0",
-                      boxShadow: "0 8px 24px rgb(36 54 80 / 8%)",
+                      borderRadius: 10,
+                      border: "1px solid #2e3038",
+                      backgroundColor: "#121317", color: "#e2e3e9", boxShadow: "none",
                       fontSize: 12,
                       direction: locale === "ar" ? "rtl" : "ltr",
                     }}
                     labelStyle={{
-                      color: "#243650",
+                      color: "#e2e3e9",
                       fontWeight: 700,
                       marginBottom: 8,
                     }}
@@ -351,7 +358,7 @@ export function AnalyticsReport({
                         type="linear"
                         dataKey={series.key}
                         name={t[series.key]}
-                        stroke={series.color}
+                        stroke={series.key === "views" ? `url(#${labelId}-gilded)` : series.color}
                         strokeWidth={2.75}
                         strokeDasharray={
                           series.key === "telegram" ? "5 4" : undefined
@@ -380,11 +387,11 @@ export function AnalyticsReport({
           </h3>
           <p className="analytics-panel-note">{t.comparisonBody}</p>
           {model.comparable && (
-            <div className="mt-4 flex flex-wrap gap-4 text-[11px] text-slate-500">
+            <div className="mt-4 flex flex-wrap gap-4 text-[11px] text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <span
                   className="analytics-key"
-                  style={accent("#507DB7")}
+                  style={accent("#e3c88e")}
                   aria-hidden="true"
                 />
                 {t.currentPeriod}
@@ -392,7 +399,7 @@ export function AnalyticsReport({
               <span className="flex items-center gap-1.5">
                 <span
                   className="analytics-key"
-                  style={accent("#94A3B8")}
+                  style={accent("#777a88")}
                   aria-hidden="true"
                 />
                 {t.previousPeriod}
@@ -429,7 +436,7 @@ export function AnalyticsReport({
                         }}
                       />
                     </div>
-                    <p className="mt-1.5 text-[10px] text-slate-500">
+                    <p className="mt-1.5 text-[10px] text-muted-foreground">
                       {t.previousPeriod}:{" "}
                       <bdi>{n(data.previous!.totals[series.key])}</bdi>
                     </p>
@@ -439,7 +446,7 @@ export function AnalyticsReport({
             ))}
           </div>
           {data.previous && (
-            <p className="mt-5 border-t border-[#EDF0F5] pt-3 text-[11px] leading-5 text-slate-500">
+            <p className="mt-5 border-t border-[#2e3038] pt-3 text-[11px] leading-5 text-muted-foreground">
               {model.comparable ? (
                 <>
                   {t.previousPeriod}:{" "}
@@ -474,7 +481,7 @@ export function AnalyticsReport({
                       outerRadius={96}
                       startAngle={90}
                       endAngle={-270}
-                      stroke="white"
+                      stroke="#040406"
                       strokeWidth={4}
                       paddingAngle={
                         model.channels.every(channel => channel.value > 0)
@@ -495,14 +502,14 @@ export function AnalyticsReport({
             ) : (
               <div
                 aria-hidden="true"
-                className="absolute inset-0 m-auto size-48 rounded-full border-[24px] border-[#EDF1F7]"
+                className="absolute inset-0 m-auto size-48 rounded-full border-[24px] border-[#1c1d22]"
               />
             )}
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <bdi className="text-3xl font-extrabold tabular-nums text-[#243650]">
+              <bdi className="analytics-number text-3xl tabular-nums text-[#e2e3e9]">
                 {n(model.contacts)}
               </bdi>
-              <span className="mt-1 max-w-32 text-center text-[11px] text-slate-500">
+              <span className="mt-1 max-w-32 text-center text-[11px] text-muted-foreground">
                 {t.clicks}
               </span>
             </div>
@@ -517,14 +524,14 @@ export function AnalyticsReport({
                 />
                 <span className="flex-1 font-medium">{t[channel.key]}</span>
                 <bdi className="font-bold tabular-nums">{n(channel.value)}</bdi>
-                <bdi className="min-w-12 text-end tabular-nums text-slate-500">
+                <bdi className="min-w-12 text-end tabular-nums text-muted-foreground">
                   {channel.share === null ? "—" : percent(channel.share)}
                 </bdi>
               </li>
             ))}
           </ul>
           {model.contacts === 0 && (
-            <p className="mt-4 text-center text-xs text-slate-500">
+            <p className="mt-4 text-center text-xs text-muted-foreground">
               {t.noContacts}
             </p>
           )}
@@ -562,7 +569,7 @@ export function AnalyticsReport({
                       </td>
                     ))
                   ) : (
-                    <td colSpan={3} className="text-end text-slate-500">
+                    <td colSpan={3} className="text-end text-muted-foreground">
                       {t.beforeStart}
                     </td>
                   )}

@@ -39,9 +39,9 @@ export default function ProviderProfileHeader({
   const website = publicProfileUrl(provider.websiteUrl);
   const telegram = providerTelegramUrl(provider.telegramUrl);
   return (
-    <section className="border-b border-slate-200 bg-gradient-to-br from-white via-white to-beacon-50/60">
+    <section className="border-b border-border bg-card">
       <div className="container py-8 sm:py-10">
-        <Button variant="ghost" asChild className="mb-6 -ms-3 text-slate-500">
+        <Button variant="ghost" asChild className="mb-6 -ms-3 text-muted-foreground">
           <Link href="/providers">
             <ArrowLeft className="size-4 rtl:rotate-180" />
             {copy[locale].navProviders}
@@ -55,14 +55,14 @@ export default function ProviderProfileHeader({
                 <div className="flex flex-wrap items-center gap-3">
                   <h1
                     dir="auto"
-                    className="break-words text-2xl font-extrabold tracking-tight text-slate-950 sm:text-4xl"
+                    className="break-words text-2xl font-extrabold tracking-tight text-foreground sm:text-4xl"
                   >
                     {provider.name}
                   </h1>
                   {provider.verified && <VerifiedBadge />}
                 </div>
                 {website && (
-                  <p className="mt-2 flex min-w-0 items-center gap-1.5 text-sm text-slate-500">
+                  <p className="mt-2 flex min-w-0 items-center gap-1.5 text-sm text-muted-foreground">
                     <Globe2 aria-hidden="true" className="size-4 shrink-0" />
                     <bdi dir="ltr" className="truncate">
                       {new URL(website).hostname}
@@ -74,12 +74,12 @@ export default function ProviderProfileHeader({
             {provider.description && (
               <p
                 dir="auto"
-                className="mt-5 max-w-2xl whitespace-pre-line break-words text-sm leading-7 text-slate-600 sm:text-base"
+                className="mt-5 max-w-2xl whitespace-pre-line break-words text-sm leading-7 text-secondary-foreground sm:text-base"
               >
                 {localizeData(locale, provider.description)}
               </p>
             )}
-            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-500 sm:text-sm">
+            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground sm:text-sm">
               {provider.location && (
                 <span className="flex items-center gap-1.5">
                   <MapPin className="size-4" />
@@ -121,7 +121,7 @@ export default function ProviderProfileHeader({
                 <Button
                   asChild
                   variant="outline"
-                  className="rounded-xl border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100"
+                  className="rounded-xl border-input bg-secondary text-foreground hover:bg-secondary"
                 >
                   <a
                     href={telegram}
@@ -145,7 +145,7 @@ export default function ProviderProfileHeader({
               <Button
                 asChild
                 variant="outline"
-                className="rounded-xl border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
+                className="rounded-xl border-warning-border bg-warning-muted text-warning hover:bg-warning-muted"
               >
                 <a href="#visitor-ratings">
                   <Star aria-hidden="true" className="size-4" />

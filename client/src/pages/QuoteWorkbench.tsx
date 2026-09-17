@@ -28,18 +28,18 @@ export default function QuoteWorkbench() {
       current.map((q, j) => (i === j ? { ...q, ...patch } : q))
     );
   const field =
-    "mt-2 h-12 w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-beacon-400";
+    "mt-2 h-12 w-full min-w-0 rounded-xl border border-border bg-card px-3 text-sm outline-none focus:ring-2 focus:ring-input";
   return (
     <PublicLayout>
       <div className="container py-12" lang={locale === "ar" ? "ar" : "en"}>
         <p className="section-kicker">BEACON COMPARE</p>
-        <h1 className="mt-4 max-w-4xl text-4xl font-extrabold leading-relaxed text-slate-950 sm:text-5xl">
+        <h1 className="mt-4 max-w-4xl text-4xl font-extrabold leading-relaxed text-foreground sm:text-5xl">
           {t.quoteTitle}
         </h1>
-        <p className="mt-4 max-w-3xl text-lg leading-8 text-slate-600">
+        <p className="mt-4 max-w-3xl text-lg leading-8 text-secondary-foreground">
           {t.quoteBody}
         </p>
-        <div className="mt-8 grid gap-4 rounded-2xl border border-slate-200 bg-white p-5 sm:grid-cols-3">
+        <div className="mt-8 grid gap-4 rounded-2xl border border-border bg-card p-5 sm:grid-cols-3">
           <label className="text-sm font-bold">
             {t.currency}
             <select
@@ -87,15 +87,15 @@ export default function QuoteWorkbench() {
             <section
               key={i}
               aria-label={`${t.quote} ${i + 1}`}
-              className={`rounded-2xl border bg-white p-6 ${lowest !== null && totals[i] === lowest ? "border-beacon-400 ring-1 ring-beacon-200" : "border-slate-200"}`}
+              className={`rounded-2xl border bg-card p-6 ${lowest !== null && totals[i] === lowest ? "border-input ring-1 ring-input" : "border-border"}`}
             >
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-lg font-extrabold">
                   {t.quote} {i + 1}
                 </h2>
-                <Calculator className="size-5 text-beacon-600" />
+                <Calculator className="size-5 text-foreground" />
               </div>
-              <label className="block text-sm font-semibold text-slate-600">
+              <label className="block text-sm font-semibold text-secondary-foreground">
                 {t.quoteName}
                 <input
                   className={field}
@@ -104,7 +104,7 @@ export default function QuoteWorkbench() {
                   onChange={e => change(i, { name: e.target.value })}
                 />
               </label>
-              <label className="mt-5 block text-sm font-semibold text-slate-600">
+              <label className="mt-5 block text-sm font-semibold text-secondary-foreground">
                 {t.amount}
                 <input
                   className={field}
@@ -117,42 +117,42 @@ export default function QuoteWorkbench() {
                   onChange={e => change(i, { amount: e.target.value })}
                 />
               </label>
-              <div className="mt-7 rounded-xl bg-slate-50 p-5">
-                <p className="text-xs font-semibold text-slate-500">
+              <div className="mt-7 rounded-xl bg-muted p-5">
+                <p className="text-xs font-semibold text-muted-foreground">
                   {t.total}
                 </p>
                 <output
                   aria-live="polite"
-                  className="mt-3 block break-words text-2xl font-extrabold text-slate-900"
+                  className="mt-3 block break-words text-2xl font-extrabold text-foreground"
                   dir="ltr"
                 >
                   {totals[i] === null
                     ? "—"
                     : `${currency} ${totals[i]!.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 7 })}`}
                 </output>
-                <p className="mt-2 min-h-5 text-xs font-bold text-beacon-700">
+                <p className="mt-2 min-h-5 text-xs font-bold text-foreground">
                   {lowest !== null && totals[i] === lowest ? t.lowest : ""}
                 </p>
               </div>
             </section>
           ))}
         </div>
-        <label className="mt-6 flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-5 text-sm font-bold leading-7">
+        <label className="mt-6 flex items-start gap-3 rounded-xl border border-border bg-card p-5 text-sm font-bold leading-7">
           <input
             type="checkbox"
-            className="mt-1.5 size-4 shrink-0 accent-beacon-600"
+            className="mt-1.5 size-4 shrink-0 accent-ring"
             checked={matched}
             onChange={e => setMatched(e.target.checked)}
           />
           {t.scopeAgreement}
         </label>
-        <p className="mt-4 max-w-4xl text-sm leading-7 text-slate-500">
+        <p className="mt-4 max-w-4xl text-sm leading-7 text-muted-foreground">
           {t.compareHint}
         </p>
-        <p className="mt-2 text-xs text-slate-400">{t.privateInputs}</p>
+        <p className="mt-2 text-xs text-muted-foreground">{t.privateInputs}</p>
         <div className="mt-8 flex flex-wrap items-center gap-5">
           <button
-            className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3 text-sm font-bold"
+            className="flex items-center gap-2 rounded-xl border border-border bg-card px-5 py-3 text-sm font-bold"
             onClick={() => {
               setQuotes([
                 { name: "", amount: "" },
@@ -166,7 +166,7 @@ export default function QuoteWorkbench() {
             <RotateCcw className="size-4" />
             {t.reset}
           </button>
-          <Link href="/services" className="text-sm font-bold text-beacon-700">
+          <Link href="/services" className="text-sm font-bold text-foreground">
             {t.explore}
             <ArrowRight className="ms-2 inline size-4 rtl:rotate-180" />
           </Link>

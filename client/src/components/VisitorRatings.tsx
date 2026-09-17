@@ -39,17 +39,17 @@ export default function VisitorRatings({
       aria-labelledby="visitor-ratings-title"
       className="container scroll-mt-24 pt-8"
     >
-      <div className="rounded-2xl border border-beacon-200 bg-white p-6 sm:p-8">
+      <div className="rounded-2xl border border-input bg-card p-6 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div className="max-w-xl">
             <h2
               id="visitor-ratings-title"
-              className="flex items-center gap-2 text-xl font-extrabold text-ink"
+              className="flex items-center gap-2 text-xl font-extrabold text-foreground"
             >
-              <Star aria-hidden="true" className="size-6 text-amber-600" />
+              <Star aria-hidden="true" className="size-6 text-warning" />
               {t.title}
             </h2>
-            <p className="mt-2 text-sm leading-7 text-slate-600">{t.note}</p>
+            <p className="mt-2 text-sm leading-7 text-secondary-foreground">{t.note}</p>
           </div>
           <div aria-live="polite">
             {summary.isLoading ? (
@@ -64,24 +64,24 @@ export default function VisitorRatings({
             ) : summary.data?.rating != null ? (
               <div>
                 <p className="flex items-center gap-2">
-                  <Star className="size-6 fill-amber-400 text-amber-500" />
+                  <Star className="size-6 fill-warning text-warning" />
                   <bdi className="text-3xl font-extrabold">
                     {summary.data.rating.toLocaleString(locale, {
                       maximumFractionDigits: 2,
                     })}{" "}
-                    <span className="text-base text-slate-500">/ 5</span>
+                    <span className="text-base text-muted-foreground">/ 5</span>
                   </bdi>
                 </p>
-                <p className="mt-1 text-sm text-slate-600">
+                <p className="mt-1 text-sm text-secondary-foreground">
                   {summary.data.reviews.toLocaleString(locale)} {t.votes}
                 </p>
               </div>
             ) : (
-              <p className="text-sm text-slate-600">{t.empty}</p>
+              <p className="text-sm text-secondary-foreground">{t.empty}</p>
             )}
           </div>
         </div>
-        <div className="mt-6 border-t border-slate-100 pt-5">
+        <div className="mt-6 border-t border-border pt-5">
           {me.isLoading ? (
             <p>{t.loading}</p>
           ) : me.isError ? (
@@ -115,13 +115,13 @@ function RatingAccessPreview({ href, label }: { href: string; label: string }) {
   const { locale } = useLocale();
   const t = ratingsCopy[locale];
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-slate-50 p-4">
+    <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-muted p-4">
       <div>
-        <p className="font-bold text-slate-800">{t.your}</p>
+        <p className="font-bold text-foreground">{t.your}</p>
         <div
           role="img"
           aria-label={t.scale}
-          className="mt-3 flex gap-2 text-amber-600"
+          className="mt-3 flex gap-2 text-warning"
         >
           {[1, 2, 3, 4, 5].map(value => (
             <Star key={value} aria-hidden="true" className="size-8" />
@@ -185,16 +185,16 @@ function RatingForm({
   return (
     <div>
       {own.data.isOwner ? (
-        <p className="text-sm text-slate-600">{t.owner}</p>
+        <p className="text-sm text-secondary-foreground">{t.owner}</p>
       ) : (
         <>
           <fieldset disabled={busy} className="min-w-0">
-            <legend className="font-bold text-slate-800">{t.your}</legend>
+            <legend className="font-bold text-foreground">{t.your}</legend>
             <div className="mt-3 flex flex-wrap gap-1" aria-label={t.pick}>
               {[1, 2, 3, 4, 5].map(value => (
                 <label
                   key={value}
-                  className="relative cursor-pointer rounded-lg p-2 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-beacon-600"
+                  className="relative cursor-pointer rounded-lg p-2 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
                 >
                   <input
                     type="radio"
@@ -207,13 +207,13 @@ function RatingForm({
                   />
                   <Star
                     aria-hidden="true"
-                    className={`size-8 ${value <= stars ? "fill-amber-400 text-amber-500" : "text-slate-300"}`}
+                    className={`size-8 ${value <= stars ? "fill-warning text-warning" : "text-silver"}`}
                   />
                 </label>
               ))}
             </div>
           </fieldset>
-          <p className="mt-2 text-xs text-slate-500">{t.edit}</p>
+          <p className="mt-2 text-xs text-muted-foreground">{t.edit}</p>
           <Button
             className="mt-4"
             disabled={

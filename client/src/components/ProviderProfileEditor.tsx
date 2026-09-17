@@ -95,7 +95,7 @@ export default function ProviderProfileEditor({
     return (
       <p
         role="status"
-        className="flex items-center gap-2 py-6 text-sm text-slate-600"
+        className="flex items-center gap-2 py-6 text-sm text-secondary-foreground"
       >
         <Loader2 className="size-4 animate-spin" />
         {t.loading}
@@ -104,7 +104,7 @@ export default function ProviderProfileEditor({
   if (!draft)
     return (
       <div role="alert" className="py-4">
-        <p className="mb-3 text-sm text-red-700">{t.loadError}</p>
+        <p className="mb-3 text-sm text-danger">{t.loadError}</p>
         <Button variant="outline" onClick={() => void profile.refetch()}>
           {t.retry}
         </Button>
@@ -235,7 +235,7 @@ export default function ProviderProfileEditor({
             />
           </label>
         ))}
-        <p className="text-xs leading-6 text-slate-500 sm:col-span-2">
+        <p className="text-xs leading-6 text-muted-foreground sm:col-span-2">
           {t.linksHelp}
         </p>
         <label className="grid gap-2 text-sm font-semibold sm:col-span-2">
@@ -247,7 +247,7 @@ export default function ProviderProfileEditor({
             placeholder="https://t.me/username"
             onChange={event => update("telegramUrl", event.target.value)}
           />
-          <small className="font-normal leading-5 text-slate-500">
+          <small className="font-normal leading-5 text-muted-foreground">
             {t.telegramHelp}
           </small>
         </label>
@@ -269,8 +269,8 @@ export default function ProviderProfileEditor({
         {(preview?.logoUrl || preview?.websitePreviewUrl) && (
           <div className="grid gap-4 sm:col-span-2 sm:grid-cols-[140px_1fr]">
             {preview.logoUrl && (
-              <figure className="overflow-hidden rounded-xl border border-slate-200">
-                <figcaption className="bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600">
+              <figure className="overflow-hidden rounded-xl border border-border">
+                <figcaption className="bg-muted px-3 py-2 text-xs font-bold text-secondary-foreground">
                   {t.logo}
                 </figcaption>
                 <ProviderImage
@@ -283,8 +283,8 @@ export default function ProviderProfileEditor({
               </figure>
             )}
             {preview.websitePreviewUrl && (
-              <figure className="max-w-lg overflow-hidden rounded-xl border border-slate-200">
-                <figcaption className="bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600">
+              <figure className="max-w-lg overflow-hidden rounded-xl border border-border">
+                <figcaption className="bg-muted px-3 py-2 text-xs font-bold text-secondary-foreground">
                   {t.preview}
                 </figcaption>
                 <ProviderImage
@@ -300,7 +300,7 @@ export default function ProviderProfileEditor({
       {error && (
         <div
           role="alert"
-          className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-800"
+          className="rounded-xl border border-danger-border bg-danger-muted p-4 text-sm leading-6 text-danger"
         >
           <p>{error}</p>
           {conflict && (
@@ -318,7 +318,7 @@ export default function ProviderProfileEditor({
           )}
         </div>
       )}
-      <div className="flex flex-wrap items-center gap-3 border-t border-slate-200 pt-4">
+      <div className="flex flex-wrap items-center gap-3 border-t border-border pt-4">
         <Button
           type="submit"
           disabled={!dirty || save.isPending || fetching || conflict}
@@ -332,7 +332,7 @@ export default function ProviderProfileEditor({
         </Button>
         {dirty && (
           <>
-            <span role="status" className="text-xs text-slate-500">
+            <span role="status" className="text-xs text-muted-foreground">
               {t.unsaved}
             </span>
             {!conflict && (

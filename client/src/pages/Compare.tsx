@@ -161,12 +161,12 @@ export default function Compare() {
         <div className="flex items-center gap-3">
           <ScoreRing score={providerFor(service).score} />
           <div>
-            <p className="font-bold text-slate-900">
+            <p className="font-bold text-foreground">
               {providerFor(service).score == null
                 ? catalogueCopy[locale].insufficient
                 : t.explainableScore}
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-muted-foreground">
               {providerFor(service).score == null
                 ? catalogueCopy[locale].noScore
                 : t.explainableScore}
@@ -182,7 +182,7 @@ export default function Compare() {
         <div>
           <OfferPrice service={service} />
           {service.packageDescription && (
-            <p className="mt-2 text-sm text-slate-600" dir="auto">
+            <p className="mt-2 text-sm text-secondary-foreground" dir="auto">
               {serviceScope(locale, service)}
             </p>
           )}
@@ -194,10 +194,10 @@ export default function Compare() {
       <Clock3 />,
       service => (
         <div>
-          <bdi dir="ltr" className="font-bold text-slate-900">
+          <bdi dir="ltr" className="font-bold text-foreground">
             {localizeDuration(locale, service.startTime)}
           </bdi>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-muted-foreground">
             {t.delivery}:{" "}
             <bdi dir="ltr">{localizeDuration(locale, service.delivery)}</bdi>
           </p>
@@ -209,10 +209,10 @@ export default function Compare() {
       <RefreshCw />,
       service => (
         <div>
-          <p className="font-bold text-slate-900">
+          <p className="font-bold text-foreground">
             {localizeData(locale, service.refill)}
           </p>
-          <p className="text-xs text-slate-400">{t.providerPolicy}</p>
+          <p className="text-xs text-muted-foreground">{t.providerPolicy}</p>
         </div>
       ),
     ],
@@ -221,12 +221,12 @@ export default function Compare() {
       <CheckCircle2 />,
       service => (
         <div>
-          <bdi dir="ltr" className="font-bold text-slate-900">
+          <bdi dir="ltr" className="font-bold text-foreground">
             {percentLabel(service.retention)}
           </bdi>
-          <div className="mt-2 h-1.5 w-32 overflow-hidden rounded-full bg-slate-100">
+          <div className="mt-2 h-1.5 w-32 overflow-hidden rounded-full bg-secondary">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-600 to-beacon-400"
+              className="h-full rounded-full bg-silver"
               style={{ width: `${service.retention ?? 0}%` }}
             />
           </div>
@@ -237,7 +237,7 @@ export default function Compare() {
       t.orderRange,
       <Sparkles />,
       service => (
-        <bdi dir="ltr" className="font-bold text-slate-900">
+        <bdi dir="ltr" className="font-bold text-foreground">
           {formatNumber(locale, service.min)}–
           {formatNumber(locale, service.max)}
         </bdi>
@@ -292,7 +292,7 @@ export default function Compare() {
             {service.priceCurrency !== currency &&
               converted?.total &&
               !converted.convertedTotal && (
-                <p className="mt-2 text-xs text-amber-800">
+                <p className="mt-2 text-xs text-warning">
                   {assistantText.fxUnavailable}
                 </p>
               )}
@@ -329,9 +329,9 @@ export default function Compare() {
   }
   return (
     <PublicLayout>
-      <section className="border-b border-slate-200 bg-white">
+      <section className="border-b border-border bg-card">
         <div className="container py-10">
-          <Button variant="ghost" asChild className="mb-5 -ms-3 text-slate-500">
+          <Button variant="ghost" asChild className="mb-5 -ms-3 text-muted-foreground">
             <Link href="/services">
               <ArrowLeft className="size-4 rtl:rotate-180" />
               {t.backServices}
@@ -343,12 +343,12 @@ export default function Compare() {
                 <Sparkles className="size-4" />
                 {t.compareEyebrow}
               </div>
-              <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-slate-950 sm:text-5xl">
+              <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
                 {t.compareTitle}
               </h1>
-              <p className="mt-3 max-w-2xl text-slate-600">{t.compareBody}</p>
+              <p className="mt-3 max-w-2xl text-secondary-foreground">{t.compareBody}</p>
             </div>
-            <p className="text-sm font-semibold text-slate-500">
+            <p className="text-sm font-semibold text-muted-foreground">
               <bdi>{formatNumber(locale, compared.length)}</bdi>{" "}
               {t.selectedServices}
             </p>
@@ -357,7 +357,7 @@ export default function Compare() {
       </section>
       <section className="container py-10">
         {compared.every(service => service.priceUnit !== "package") && (
-          <div className="mb-5 flex flex-wrap items-end gap-4 rounded-xl border border-slate-200 bg-white p-4">
+          <div className="mb-5 flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4">
             <label className="grid gap-2 text-sm font-bold">
               {assistantText.currency}
               <select
@@ -365,7 +365,7 @@ export default function Compare() {
                 onChange={event =>
                   setCurrency(event.target.value as PriceCurrency)
                 }
-                className="h-12 rounded-xl border border-slate-200 px-3"
+                className="h-12 rounded-xl border border-border px-3"
                 dir="ltr"
               >
                 {priceCurrencies.map(code => (
@@ -384,10 +384,10 @@ export default function Compare() {
                 step={1}
                 value={Number.isFinite(quantity) ? quantity : ""}
                 onChange={event => setQuantity(event.target.valueAsNumber)}
-                className="h-12 w-48 rounded-xl border border-slate-200 px-3"
+                className="h-12 w-48 rounded-xl border border-border px-3"
               />
             </label>
-            <p className="max-w-xl text-sm leading-6 text-slate-500">
+            <p className="max-w-xl text-sm leading-6 text-muted-foreground">
               {assistantText.priceNote}
             </p>
           </div>
@@ -395,7 +395,7 @@ export default function Compare() {
         {!comparable && (
           <p
             role="note"
-            className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"
+            className="mb-5 rounded-xl border border-warning-border bg-warning-muted p-4 text-sm text-warning"
           >
             {pricingCopy[locale].mixed}
           </p>
@@ -434,22 +434,22 @@ export default function Compare() {
             name={compared.map(s => providerFor(s).name).join(" / ")}
           />
         </div>
-        <details className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
-          <summary className="mb-4 cursor-pointer font-extrabold text-slate-800">
+        <details className="rounded-2xl border border-border bg-card p-4 sm:p-6">
+          <summary className="mb-4 cursor-pointer font-extrabold text-foreground">
             {wt.details}
           </summary>
           <PriceLegend
             hasUnconfirmed={compared.some(service => !hasPricingBasis(service))}
           />
-          <div className="overflow-x-auto rounded-3xl border border-slate-200 bg-white shadow-sm">
+          <div className="overflow-x-auto rounded-3xl border border-border bg-card shadow-none">
             <table className="w-full min-w-[960px]">
               <thead>
                 <tr>
-                  <th className="w-[220px] bg-slate-50 p-6 text-start align-bottom">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <th className="w-[220px] bg-muted p-6 text-start align-bottom">
+                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                       {t.comparison}
                     </p>
-                    <p className="mt-2 text-lg font-extrabold text-slate-900">
+                    <p className="mt-2 text-lg font-extrabold text-foreground">
                       {t.serviceSignals}
                     </p>
                   </th>
@@ -458,28 +458,28 @@ export default function Compare() {
                     return (
                       <th
                         key={service.id}
-                        className="border-s border-slate-100 p-6 text-start align-top"
+                        className="border-s border-border p-6 text-start align-top"
                       >
                         <div className="flex items-center gap-3">
                           <ProviderAvatar provider={provider} />
                           <div>
                             <div className="flex items-center gap-2">
-                              <p className="font-extrabold text-slate-950">
+                              <p className="font-extrabold text-foreground">
                                 {provider.name}
                               </p>
                               {provider.verified && <VerifiedBadge compact />}
                             </div>
-                            <p className="mt-1 text-xs font-medium text-slate-500">
+                            <p className="mt-1 text-xs font-medium text-muted-foreground">
                               {service.platform} ·{" "}
                               {localizeData(locale, service.category)}
                             </p>
                           </div>
                         </div>
-                        <h2 className="mt-5 max-w-[250px] text-base font-bold text-slate-800">
+                        <h2 className="mt-5 max-w-[250px] text-base font-bold text-foreground">
                           {serviceName(locale, service)}
                         </h2>
                         {provider.score === bestScore && (
-                          <span className="mt-4 inline-flex rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-700">
+                          <span className="mt-4 inline-flex rounded-full bg-secondary px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-foreground">
                             {t.bestOverallScore}
                           </span>
                         )}
@@ -490,10 +490,10 @@ export default function Compare() {
               </thead>
               <tbody>
                 {rows.map(([label, icon, render]) => (
-                  <tr key={label} className="border-t border-slate-100">
-                    <th className="bg-slate-50 px-6 py-5 text-start">
-                      <div className="flex items-center gap-2 text-sm font-bold text-slate-700">
-                        <span className="text-beacon-600 [&_svg]:size-4">
+                  <tr key={label} className="border-t border-border">
+                    <th className="bg-muted px-6 py-5 text-start">
+                      <div className="flex items-center gap-2 text-sm font-bold text-secondary-foreground">
+                        <span className="text-foreground [&_svg]:size-4">
                           {icon}
                         </span>
                         {label}
@@ -502,7 +502,7 @@ export default function Compare() {
                     {compared.map(service => (
                       <td
                         key={service.id}
-                        className="border-s border-slate-100 px-6 py-5"
+                        className="border-s border-border px-6 py-5"
                       >
                         {render(service)}
                       </td>
@@ -511,8 +511,8 @@ export default function Compare() {
                 ))}
               </tbody>
               <tfoot>
-                <tr className="border-t border-slate-200">
-                  <th className="bg-slate-50 p-6 text-start text-sm text-slate-500">
+                <tr className="border-t border-border">
+                  <th className="bg-muted p-6 text-start text-sm text-muted-foreground">
                     {t.chooseConfidence}
                   </th>
                   {compared.map(service => {
@@ -520,7 +520,7 @@ export default function Compare() {
                     return (
                       <td
                         key={service.id}
-                        className="border-s border-slate-100 p-6"
+                        className="border-s border-border p-6"
                       >
                         <Button
                           asChild

@@ -47,12 +47,12 @@ export default function MemberWorkspace() {
     <PublicLayout showCatalogueNotice={false}>
       {me.isLoading ? (
         <div className="container py-20">
-          <Loader2 className="size-6 animate-spin text-beacon-700" />
+          <Loader2 className="size-6 animate-spin text-foreground" />
         </div>
       ) : !me.data?.member ? (
         <section className="container max-w-2xl py-20">
           <h1 className="text-3xl font-extrabold">{t.workspace}</h1>
-          <p className="mt-4 leading-8 text-slate-600">
+          <p className="mt-4 leading-8 text-secondary-foreground">
             {me.isError ? t.error : t.signedOut}
           </p>
           <Link
@@ -107,21 +107,21 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
     <div className="container py-8 sm:py-12">
       <header className="mb-8 flex flex-wrap items-start justify-between gap-5">
         <div>
-          <p className="text-xs font-bold tracking-widest text-beacon-700">
+          <p className="text-xs font-bold tracking-widest text-foreground">
             PROVIDERBEACON
           </p>
           <h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">
             {t.workspace}
           </h1>
-          <p className="mt-3 font-semibold text-slate-700" dir="auto">
+          <p className="mt-3 font-semibold text-secondary-foreground" dir="auto">
             {name}
           </p>
-          <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-500">
+          <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
             {t.dashboardIntro}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link href="/account/provider" className="inline-flex items-center gap-2 rounded-xl border border-beacon-200 bg-beacon-50 px-4 py-3 text-sm font-bold text-beacon-800">{businessText(locale).title}</Link>
+          <Link href="/account/provider" className="inline-flex items-center gap-2 rounded-xl border border-input bg-secondary px-4 py-3 text-sm font-bold text-foreground">{businessText(locale).title}</Link>
           <Link
             href="/find"
             className="inline-flex items-center gap-2 rounded-xl bg-ink px-4 py-3 text-sm font-bold text-white"
@@ -131,13 +131,13 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
           </Link>
           <Link
             href="/account/groups"
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-bold text-secondary-foreground"
           >
             {communityCopy[locale].mine}
           </Link>
           <Link
             href="/account/settings"
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-bold text-secondary-foreground"
           >
             <Settings2 className="size-4" />
             {t.settings}
@@ -146,13 +146,13 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
       </header>
       {data.isLoading ? (
         <p role="status" className="py-10">
-          <Loader2 className="size-6 animate-spin text-beacon-700" />
+          <Loader2 className="size-6 animate-spin text-foreground" />
         </p>
       ) : data.isError ? (
-        <div role="alert" className="rounded-xl bg-amber-50 p-5">
+        <div role="alert" className="rounded-xl bg-warning-muted p-5">
           <p>{t.error}</p>
           <button
-            className="mt-3 font-bold text-beacon-800 underline"
+            className="mt-3 font-bold text-foreground underline"
             onClick={() => void data.refetch()}
           >
             {t.refreshed}
@@ -164,13 +164,13 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
             {stats.map(({ label, count, icon: Icon }) => (
               <div
                 key={label}
-                className="rounded-2xl border border-slate-200 bg-white p-5"
+                className="rounded-2xl border border-border bg-card p-5"
               >
-                <Icon className="mb-4 size-5 text-beacon-700" />
-                <p className="text-3xl font-extrabold text-ink">
+                <Icon className="mb-4 size-5 text-foreground" />
+                <p className="text-3xl font-extrabold text-foreground">
                   {count.toLocaleString(locale)}
                 </p>
-                <p className="mt-2 text-xs font-semibold text-slate-500">
+                <p className="mt-2 text-xs font-semibold text-muted-foreground">
                   {label}
                 </p>
               </div>
@@ -181,7 +181,7 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
             <button
               disabled={data.isFetching}
               onClick={() => void data.refetch()}
-              className="inline-flex items-center gap-2 text-xs font-bold text-beacon-800 disabled:opacity-40"
+              className="inline-flex items-center gap-2 text-xs font-bold text-foreground disabled:opacity-40"
             >
               <RefreshCw
                 className={`size-4 ${data.isFetching ? "animate-spin" : ""}`}
@@ -196,15 +196,15 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
               ))}
             </div>
           ) : (
-            <section className="rounded-2xl border border-dashed border-beacon-300 bg-beacon-50/40 p-7 sm:p-10">
-              <Bookmark className="size-8 text-beacon-700" />
+            <section className="rounded-2xl border border-dashed border-input bg-secondary/40 p-7 sm:p-10">
+              <Bookmark className="size-8 text-foreground" />
               <h3 className="mt-4 text-xl font-extrabold">{t.empty}</h3>
-              <p className="mt-3 max-w-xl text-sm leading-7 text-slate-600">
+              <p className="mt-3 max-w-xl text-sm leading-7 text-secondary-foreground">
                 {t.emptyBody}
               </p>
               <Link
                 href="/find"
-                className="mt-5 inline-flex items-center gap-2 font-bold text-beacon-800"
+                className="mt-5 inline-flex items-center gap-2 font-bold text-foreground"
               >
                 {t.newSearch}
                 <ArrowRight className="size-4 rtl:rotate-180" />
@@ -218,12 +218,12 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
                 {comparisons.map(c => (
                   <article
                     key={c.id}
-                    className="rounded-2xl border border-slate-200 bg-white p-5"
+                    className="rounded-2xl border border-border bg-card p-5"
                   >
                     <h3 className="break-words font-bold" dir="auto">
                       {c.name}
                     </h3>
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs text-muted-foreground">
                       {t.quantity}:{" "}
                       <bdi>{c.quantity.toLocaleString(locale)}</bdi> ·{" "}
                       <bdi>{c.currency}</bdi>
@@ -231,7 +231,7 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
                     <div className="mt-5 flex items-center justify-between gap-3">
                       <Link
                         href={`/compare?services=${c.serviceIds.join(",")}&quantity=${c.quantity}&currency=${c.currency}`}
-                        className="text-sm font-bold text-beacon-800"
+                        className="text-sm font-bold text-foreground"
                       >
                         {t.open} →
                       </Link>
@@ -241,7 +241,7 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
                         onClick={() =>
                           remove.mutate({ id: c.id, kind: "comparison" })
                         }
-                        className="rounded-lg p-2 text-slate-500 hover:bg-slate-100"
+                        className="rounded-lg p-2 text-muted-foreground hover:bg-secondary"
                         aria-label={`${t.remove}: ${c.name}`}
                       >
                         <Trash2 className="size-4" />
@@ -251,7 +251,7 @@ function Workspace({ accountId, name }: { accountId: number; name: string }) {
                 ))}
               </div>
             ) : (
-              <p className="rounded-xl border border-slate-200 bg-white p-5 text-sm leading-7 text-slate-500">
+              <p className="rounded-xl border border-border bg-card p-5 text-sm leading-7 text-muted-foreground">
                 {t.noComparisons}
               </p>
             )}
@@ -277,22 +277,22 @@ function WatchCard({ watch, accountId }: { watch: Watch; accountId: number }) {
   const service = candidate?.service;
   const color =
     change.status === "lower" || change.targetReached
-      ? "text-emerald-800 bg-emerald-50"
+      ? "text-success bg-success-muted"
       : change.status === "same"
-        ? "text-slate-600 bg-slate-100"
-        : "text-amber-900 bg-amber-50";
+        ? "text-secondary-foreground bg-secondary"
+        : "text-warning bg-warning-muted";
   return (
-    <article className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
+    <article className="min-w-0 rounded-2xl border border-border bg-card p-5 sm:p-6">
       <div className="flex items-center justify-between gap-3">
         {candidate ? (
           <Link
             href={`/providers/${candidate.provider.slug}`}
-            className="truncate text-sm font-extrabold text-beacon-800"
+            className="truncate text-sm font-extrabold text-foreground"
           >
             {candidate.provider.name}
           </Link>
         ) : (
-          <p className="text-sm font-bold text-slate-500">
+          <p className="text-sm font-bold text-muted-foreground">
             {watch.providerName}
           </p>
         )}
@@ -300,7 +300,7 @@ function WatchCard({ watch, accountId }: { watch: Watch; accountId: number }) {
           type="button"
           disabled={remove.isPending}
           onClick={() => remove.mutate({ id: watch.id, kind: "watch" })}
-          className="rounded-lg p-2 text-slate-400 hover:bg-slate-100"
+          className="rounded-lg p-2 text-muted-foreground hover:bg-secondary"
           aria-label={`${t.remove}: ${baseline.name}`}
         >
           <Trash2 className="size-4" />
@@ -329,20 +329,20 @@ function WatchCard({ watch, accountId }: { watch: Watch; accountId: number }) {
             )}
         </span>
         {change.targetReached && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-beacon-700 px-3 py-1.5 text-xs font-bold text-white">
+          <span className="inline-flex items-center gap-1 rounded-full bg-graphite px-3 py-1.5 text-xs font-bold text-white">
             <Bell className="size-3" />
             {t.targetHit}
           </span>
         )}
       </div>
-      <p className="mt-3 text-xs text-slate-500">
+      <p className="mt-3 text-xs text-muted-foreground">
         {t.quantity}: <bdi>{watch.quantity.toLocaleString(locale)}</bdi> ·{" "}
         {t.sinceSaved}:{" "}
         <bdi>{new Date(watch.createdAt).toLocaleDateString(locale)}</bdi>
       </p>
-      <dl className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-slate-50 p-4">
+      <dl className="mt-4 grid grid-cols-2 gap-3 rounded-xl bg-muted p-4">
         <div>
-          <dt className="text-xs text-slate-500">{t.original}</dt>
+          <dt className="text-xs text-muted-foreground">{t.original}</dt>
           <dd className="mt-2 break-all text-sm font-semibold">
             <bdi>
               {change.original ?? "—"} {baseline.priceCurrency}
@@ -350,8 +350,8 @@ function WatchCard({ watch, accountId }: { watch: Watch; accountId: number }) {
           </dd>
         </div>
         <div>
-          <dt className="text-xs text-slate-500">{t.current}</dt>
-          <dd className="mt-2 break-all text-lg font-extrabold text-ink">
+          <dt className="text-xs text-muted-foreground">{t.current}</dt>
+          <dd className="mt-2 break-all text-lg font-extrabold text-foreground">
             <bdi>
               {change.now ?? "—"} {service?.priceCurrency}
             </bdi>
@@ -364,7 +364,7 @@ function WatchCard({ watch, accountId }: { watch: Watch; accountId: number }) {
         </div>
       )}
       {change.status === "terms_changed" && (
-        <p className="mt-3 text-xs leading-6 text-amber-900">
+        <p className="mt-3 text-xs leading-6 text-warning">
           {t.targetPaused}
         </p>
       )}
@@ -372,19 +372,19 @@ function WatchCard({ watch, accountId }: { watch: Watch; accountId: number }) {
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded(!expanded)}
-        className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-bold text-beacon-800"
+        className="mt-5 inline-flex min-h-10 items-center gap-2 text-sm font-bold text-foreground"
       >
         <History className="size-4" />
         {t.history} · <Bell className="size-4" />
         {t.saveTarget} · {priceAlertCopy[locale].title}
       </button>
       {watch.emailAlert.enabled && !expanded && (
-        <p className="mt-2 text-xs leading-6 text-beacon-800">
+        <p className="mt-2 text-xs leading-6 text-foreground">
           {priceAlertStatus(watch.emailAlert.status, locale)}
         </p>
       )}
       {expanded && (
-        <div className="mt-4 border-t border-slate-100 pt-5">
+        <div className="mt-4 border-t border-border pt-5">
           <PriceHistory accountId={accountId} id={watch.id} service={service} />
           <PriceTargetForm
             key={`${watch.target}:${watch.emailAlert.revision}`}
@@ -420,9 +420,9 @@ function PriceHistory({
     { staleTime: 15000, retry: false }
   );
   if (history.isLoading)
-    return <Loader2 className="size-5 animate-spin text-beacon-700" />;
+    return <Loader2 className="size-5 animate-spin text-foreground" />;
   if (history.isError)
-    return <p className="text-xs text-amber-900">{t.error}</p>;
+    return <p className="text-xs text-warning">{t.error}</p>;
   const points = history.data?.points ?? [];
   const data = points.map(p => ({
     at: new Date(p.at).getTime(),
@@ -431,7 +431,7 @@ function PriceHistory({
   }));
   return (
     <div>
-      <p className="text-xs leading-6 text-slate-500">{t.historyNote}</p>
+      <p className="text-xs leading-6 text-muted-foreground">{t.historyNote}</p>
       {data.length >= 2 ? (
         <div
           className="mt-4 h-44 w-full min-w-0"
@@ -471,7 +471,7 @@ function PriceHistory({
               <Tooltip
                 content={({ active, payload, label }) =>
                   active && payload?.[0] ? (
-                    <div className="rounded-lg border border-slate-200 bg-white p-3 text-xs shadow">
+                    <div className="rounded-lg border border-border bg-card p-3 text-xs shadow">
                       <p>{new Date(Number(label)).toLocaleString(locale)}</p>
                       <bdi>
                         {payload[0].payload.rate} {history.data?.currency}
@@ -491,18 +491,18 @@ function PriceHistory({
           </ResponsiveContainer>
         </div>
       ) : (
-        <p className="mt-3 rounded-lg bg-slate-50 p-3 text-xs leading-6 text-slate-600">
+        <p className="mt-3 rounded-lg bg-muted p-3 text-xs leading-6 text-secondary-foreground">
           {t.noHistory}
         </p>
       )}
       {service && (
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs text-muted-foreground">
           {unitLabel(locale, service)} · <bdi>{history.data?.currency}</bdi>
         </p>
       )}
       {points.length > 0 && (
         <details className="mt-3 text-xs">
-          <summary className="cursor-pointer font-semibold text-slate-600">
+          <summary className="cursor-pointer font-semibold text-secondary-foreground">
             {t.observed}
           </summary>
           <div className="mt-2 max-h-48 overflow-auto">
@@ -515,7 +515,7 @@ function PriceHistory({
               </thead>
               <tbody>
                 {[...points].reverse().map((p, i) => (
-                  <tr key={i} className="border-t border-slate-100">
+                  <tr key={i} className="border-t border-border">
                     <td className="p-2">
                       <bdi>{new Date(p.at).toLocaleString(locale)}</bdi>
                     </td>

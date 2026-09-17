@@ -14,7 +14,7 @@ export function CommunityKindBadge({
   const kind = communityKind(url, data?.audience?.kind);
   if (!kind) return null;
   return (
-    <span className="inline-flex rounded-full border border-beacon-200 bg-beacon-50 px-2.5 py-1 text-xs font-semibold text-beacon-800">
+    <span className="inline-flex rounded-full border border-input bg-secondary px-2.5 py-1 text-xs font-semibold text-foreground">
       {communityCopy[locale].kinds[kind]}
     </span>
   );

@@ -59,8 +59,8 @@ export function AdminBusinessPanel() {
   return (
     <div className="space-y-6">
       <header className="flex items-center gap-3">
-        <Building2 className="size-7 text-beacon-700" />
-        <h1 className="text-2xl font-extrabold text-ink">{t.adminTitle}</h1>
+        <Building2 className="size-7 text-foreground" />
+        <h1 className="text-2xl font-extrabold text-foreground">{t.adminTitle}</h1>
       </header>
       <nav className="flex flex-wrap gap-2" aria-label={t.adminTitle}>
         {[
@@ -167,19 +167,19 @@ export function SubscriptionForm({
   return (
     <BusinessCard>
       <div className="flex flex-wrap justify-between gap-4">
-        <h2 className="text-xl font-bold text-ink" dir="auto">
+        <h2 className="text-xl font-bold text-foreground" dir="auto">
           {data.provider.name}
         </h2>
         <BusinessStatus value={data.subscription.state} />
       </div>
-      <p className="mt-4 text-sm leading-7 text-slate-600">{t.manualHelp}</p>
-      <div className="mt-5 rounded-xl bg-slate-50 p-4">
-        <p className="text-xs font-semibold text-slate-500">{t.owner}</p>
+      <p className="mt-4 text-sm leading-7 text-secondary-foreground">{t.manualHelp}</p>
+      <div className="mt-5 rounded-xl bg-muted p-4">
+        <p className="text-xs font-semibold text-muted-foreground">{t.owner}</p>
         <p className="mt-2 font-semibold" dir="auto">
           {data.owner?.name ?? t.noOwner}
         </p>
         {data.owner?.email && (
-          <p className="mt-1 text-sm text-slate-600" dir="ltr">
+          <p className="mt-1 text-sm text-secondary-foreground" dir="ltr">
             {data.owner.email}
           </p>
         )}
@@ -244,11 +244,11 @@ export function SubscriptionForm({
               />
             </label>
           </div>
-          <p className="text-xs text-slate-500">{t.utc}</p>
+          <p className="text-xs text-muted-foreground">{t.utc}</p>
           {!data.subscription.firstActivatedAt &&
             status === "active" &&
             startsAt && (
-              <p className="text-sm font-semibold text-slate-600">
+              <p className="text-sm font-semibold text-secondary-foreground">
                 {pricingText.preview}
               </p>
             )}
@@ -259,7 +259,7 @@ export function SubscriptionForm({
               (status === "active" ? businessParseDate(startsAt) : null)
             }
           />
-          <p className="text-xs leading-6 text-slate-500">
+          <p className="text-xs leading-6 text-muted-foreground">
             {pricingText.customPeriod}
           </p>
           <label className="block text-sm font-semibold">
@@ -282,8 +282,8 @@ export function SubscriptionForm({
         </button>
       </form>
       {data.owner && manage && (
-        <div className="mt-8 border-t border-slate-200 pt-5">
-          <label className="flex items-start gap-3 text-sm leading-7 text-slate-600">
+        <div className="mt-8 border-t border-border pt-5">
+          <label className="flex items-start gap-3 text-sm leading-7 text-secondary-foreground">
             <input
               type="checkbox"
               className="mt-2"
@@ -293,7 +293,7 @@ export function SubscriptionForm({
             {t.revokeConfirm}
           </label>
           <button
-            className={`${businessSecondary} mt-4 border-red-200 text-red-700`}
+            className={`${businessSecondary} mt-4 border-danger-border text-danger`}
             disabled={busy || !confirmRevoke || note.trim().length < 8}
             onClick={() =>
               revoke.mutate({
@@ -341,7 +341,7 @@ function ClaimsQueue({ manage }: { manage: boolean }) {
         <>
           {!query.data.items.length && (
             <BusinessCard>
-              <p className="text-slate-500">{t.noItems}</p>
+              <p className="text-muted-foreground">{t.noItems}</p>
             </BusinessCard>
           )}
           {query.data.items.map(claim => (
@@ -385,17 +385,17 @@ function ClaimReview({ claim, manage }: { claim: Claim; manage: boolean }) {
       <p className="mt-3 text-sm" dir="auto">
         {claim.memberName}
       </p>
-      <p className="mt-1 text-sm text-slate-500" dir="ltr">
+      <p className="mt-1 text-sm text-muted-foreground" dir="ltr">
         {claim.memberEmail}
       </p>
       <p
-        className="mt-3 break-all text-sm font-semibold text-beacon-700"
+        className="mt-3 break-all text-sm font-semibold text-foreground"
         dir="ltr"
       >
         {claim.websiteHost}
       </p>
       <code
-        className="mt-3 block break-all rounded-xl bg-slate-100 p-3 text-sm"
+        className="mt-3 block break-all rounded-xl bg-secondary p-3 text-sm"
         dir="ltr"
       >
         {claim.token}
@@ -405,7 +405,7 @@ function ClaimReview({ claim, manage }: { claim: Claim; manage: boolean }) {
           href={claim.proofUrl}
           target="_blank"
           rel="noopener noreferrer nofollow"
-          className="mt-4 inline-flex max-w-full items-start gap-2 break-all text-sm text-beacon-700 underline"
+          className="mt-4 inline-flex max-w-full items-start gap-2 break-all text-sm text-foreground underline"
           dir="ltr"
         >
           {claim.proofUrl}
@@ -511,7 +511,7 @@ function OffersQueue({ manage }: { manage: boolean }) {
         <>
           {!query.data.items.length && (
             <BusinessCard>
-              <p className="text-slate-500">{t.noItems}</p>
+              <p className="text-muted-foreground">{t.noItems}</p>
             </BusinessCard>
           )}
           {query.data.items.map(offer => (
@@ -557,7 +557,7 @@ function OfferReview({ offer, manage }: { offer: Offer; manage: boolean }) {
         <BusinessStatus value={row.status} />
       </div>
       <p
-        className="mt-4 whitespace-pre-line break-words text-sm leading-7 text-slate-600"
+        className="mt-4 whitespace-pre-line break-words text-sm leading-7 text-secondary-foreground"
         dir="auto"
       >
         {row.description}
@@ -571,12 +571,12 @@ function OfferReview({ offer, manage }: { offer: Offer; manage: boolean }) {
         href={row.destinationUrl}
         target="_blank"
         rel="noopener noreferrer nofollow"
-        className="mt-4 block break-all text-sm text-beacon-700 underline"
+        className="mt-4 block break-all text-sm text-foreground underline"
         dir="ltr"
       >
         {row.destinationUrl}
       </a>
-      <p className="mt-3 text-xs text-slate-500" dir="ltr">
+      <p className="mt-3 text-xs text-muted-foreground" dir="ltr">
         {businessDateInput(row.startsAt)} — {businessDateInput(row.endsAt)} UTC
       </p>
       {row.reviewNote && (

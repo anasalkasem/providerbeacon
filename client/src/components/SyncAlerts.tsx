@@ -24,7 +24,7 @@ export default function SyncAlerts() {
       {access.data?.permissions.includes("services.read") && (
         <CatalogueHealth />
       )}
-      <section className="rounded-2xl border border-slate-200 bg-white p-5">
+      <section className="rounded-2xl border border-border bg-card p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-bold">
             {text("alertsTitle")}{" "}
@@ -38,7 +38,7 @@ export default function SyncAlerts() {
             </Button>
           )}
         </div>
-        <p className="mt-2 text-sm text-slate-500">{text("alertLimit")}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{text("alertLimit")}</p>
         {!canRead ? (
           <p className="mt-4">{text("noAlertsPermission")}</p>
         ) : query.isError ? (
@@ -51,7 +51,7 @@ export default function SyncAlerts() {
         ) : query.isLoading ? (
           <p className="mt-4">{text("loading")}</p>
         ) : !query.data?.items.length ? (
-          <p className="mt-5 rounded-xl bg-slate-50 p-5 text-sm text-slate-600">
+          <p className="mt-5 rounded-xl bg-muted p-5 text-sm text-secondary-foreground">
             {text("noSyncAlerts")}
           </p>
         ) : (
@@ -62,7 +62,7 @@ export default function SyncAlerts() {
                   {item.providerName} · {item.name}
                 </h3>
                 {item.hasFailure && (
-                  <p className="mt-1 text-sm text-red-700">
+                  <p className="mt-1 text-sm text-danger">
                     {text("syncError")}
                     {item.failures > 0 && (
                       <>
@@ -74,34 +74,34 @@ export default function SyncAlerts() {
                   </p>
                 )}
                 {item.isOverdue && (
-                  <p className="mt-1 text-sm text-amber-800">
+                  <p className="mt-1 text-sm text-warning">
                     {text("overdueSync")}
                   </p>
                 )}
                 {item.hasFailure && item.lastError && (
                   <p
                     dir="auto"
-                    className="mt-2 break-words text-sm text-red-700"
+                    className="mt-2 break-words text-sm text-danger"
                   >
                     {item.lastError}
                   </p>
                 )}
-                <p className="mt-2 text-xs text-slate-500">
+                <p className="mt-2 text-xs text-muted-foreground">
                   {text("lastSync")}:{" "}
                   {item.lastSyncedAt
                     ? new Date(item.lastSyncedAt).toLocaleString(locale)
                     : text("never")}
                 </p>
                 {item.sourceIssues && (
-                  <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50/60 p-4">
-                    <p className="font-semibold text-amber-900">
+                  <div className="mt-4 rounded-xl border border-warning-border bg-warning-muted/60 p-4">
+                    <p className="font-semibold text-warning">
                       {text("syncQuarantined")}:{" "}
                       {item.sourceIssues.count.toLocaleString(locale)}
                     </p>
-                    <p className="mt-1 text-xs leading-5 text-slate-600">
+                    <p className="mt-1 text-xs leading-5 text-secondary-foreground">
                       {text("sourceAlertBody")}
                     </p>
-                    <p className="mt-2 text-xs text-slate-500">
+                    <p className="mt-2 text-xs text-muted-foreground">
                       {text("sourceAlertSnapshot")}:{" "}
                       {item.sourceIssues.completedAt
                         ? new Date(

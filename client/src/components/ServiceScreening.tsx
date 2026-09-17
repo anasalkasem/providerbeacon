@@ -23,7 +23,7 @@ export function ScreeningBadge({
   const t = screeningLabels[locale === "ar" ? "ar" : "en"];
   return (
     <div
-      className={`mt-2 max-w-64 text-xs leading-5 ${status === "held" ? "text-red-700" : status === "clear" || status === "manual_clear" ? "text-emerald-700" : "text-slate-600"}`}
+      className={`mt-2 max-w-64 text-xs leading-5 ${status === "held" ? "text-danger" : status === "clear" || status === "manual_clear" ? "text-success" : "text-secondary-foreground"}`}
     >
       <strong>{t[status]}</strong>
       {reason !== "none" && (
@@ -57,7 +57,7 @@ export function ServiceScreeningPanel({
   });
   const data = summary.data;
   return (
-    <section className="rounded-2xl border border-beacon-200 bg-white p-5">
+    <section className="rounded-2xl border border-input bg-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-extrabold">
           {ar
@@ -81,13 +81,13 @@ export function ServiceScreeningPanel({
           </Button>
         )}
       </div>
-      <p className="mt-2 text-sm leading-7 text-slate-600">
+      <p className="mt-2 text-sm leading-7 text-secondary-foreground">
         {ar
           ? "فحص تلقائي للخدمات الجديدة والمتغيرة. يُحجب المحتوى غير الصالح مع الاحتفاظ به للمراجعة. اجتياز الفحص لا يثبت جودة التنفيذ أو صحة أساس التسعير."
           : "New and changed services are screened automatically. Invalid content is hidden and retained for review. Passing does not verify delivery quality or the pricing basis."}
       </p>
       {summary.isError ? (
-        <p role="alert" className="mt-3 text-red-700">
+        <p role="alert" className="mt-3 text-danger">
           {ar ? "تعذر تحميل حالة الفحص" : "Could not load screening status"}{" "}
           <Button variant="outline" onClick={() => summary.refetch()}>
             {ar ? "إعادة المحاولة" : "Retry"}
@@ -148,16 +148,16 @@ export function ServiceScreeningPanel({
                 type="button"
                 aria-pressed={selected === item.filter}
                 onClick={() => onFilter(item.filter)}
-                className={`rounded-xl border p-3 text-start ${selected === item.filter ? "border-beacon-500 bg-beacon-50" : "border-slate-200"}`}
+                className={`rounded-xl border p-3 text-start ${selected === item.filter ? "border-ring bg-secondary" : "border-border"}`}
               >
                 <strong className="block text-2xl">
                   {item.value.toLocaleString(locale)}
                 </strong>
-                <span className="text-xs text-slate-600">{item.label}</span>
+                <span className="text-xs text-secondary-foreground">{item.label}</span>
               </button>
             ))}
           </div>
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-muted-foreground">
             {ar ? "تم فحصها:" : "Screened:"}{" "}
             {data.checked.toLocaleString(locale)} /{" "}
             {data.total.toLocaleString(locale)}.{" "}
@@ -217,7 +217,7 @@ export function ServiceScreeningDetail({
       ),
   });
   return (
-    <section className="rounded-xl border border-beacon-200 bg-beacon-50/30 p-4">
+    <section className="rounded-xl border border-input bg-secondary/30 p-4">
       <h3 className="font-bold">
         {ar ? "نتيجة التنقية التلقائية" : "Automatic screening result"}
       </h3>
@@ -227,13 +227,13 @@ export function ServiceScreeningDetail({
       />
       {row.screeningEvidence && (
         <blockquote
-          className="mt-2 break-words rounded-lg bg-white p-3 text-sm"
+          className="mt-2 break-words rounded-lg bg-card p-3 text-sm"
           dir="auto"
         >
           {row.screeningEvidence}
         </blockquote>
       )}
-      <p className="mt-2 text-xs text-slate-500">
+      <p className="mt-2 text-xs text-muted-foreground">
         {row.screeningModel === "manual"
           ? ar
             ? "قرار يدوي مسجل"
@@ -249,7 +249,7 @@ export function ServiceScreeningDetail({
         </p>
       )}
       {row.screeningError && (
-        <p role="status" className="mt-2 text-xs text-amber-800">
+        <p role="status" className="mt-2 text-xs text-warning">
           {ar
             ? "تعذر إكمال الفحص؛ ستعاد المحاولة تلقائيًا."
             : "Screening could not complete; an automatic retry is scheduled."}
@@ -307,7 +307,7 @@ export function ServiceScreeningDetail({
               </Button>
             ))}
           </div>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs text-muted-foreground">
             {ar
               ? "رفع الحجب لا يلغي شروط النشر. أي تغيير في الخدمة يعيدها للفحص."
               : "Releasing a hold does not waive publication requirements. Changes trigger another screening."}

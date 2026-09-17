@@ -363,13 +363,13 @@ function MovingRibbon({ cards }: { cards: VipCardData[] }) {
             <button
               key={card.providerId}
               type="button"
-              className="grid size-8 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-beacon-700"
+              className="grid size-8 place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-ring"
               aria-label={`${t.goTo} ${index + 1}`}
               aria-current={index === selected ? "true" : undefined}
               onClick={() => goTo(index)}
             >
               <span
-                className={`h-1.5 rounded-full transition-all motion-reduce:transition-none ${index === selected ? "w-6 bg-beacon-700" : "w-1.5 bg-slate-300"}`}
+                className={`h-1.5 rounded-full transition-all motion-reduce:transition-none ${index === selected ? "w-6 bg-graphite" : "w-1.5 bg-steel"}`}
               />
             </button>
           ))}

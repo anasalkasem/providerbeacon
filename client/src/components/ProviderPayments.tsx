@@ -19,7 +19,7 @@ function PaymentAlert({ message }: { message?: string }) {
   return message ? (
     <p
       role="alert"
-      className="mt-3 rounded-xl bg-amber-50 p-3 text-sm leading-7 text-amber-900"
+      className="mt-3 rounded-xl bg-warning-muted p-3 text-sm leading-7 text-warning"
     >
       {paymentError(message, locale)}
     </p>
@@ -33,13 +33,13 @@ export function PaymentMethods() {
     staleTime: 30_000,
   });
   return (
-    <div className="mt-5 border-t border-slate-100 pt-4">
-      <p className="text-sm font-semibold text-slate-700">{t.methods}</p>
+    <div className="mt-5 border-t border-border pt-4">
+      <p className="text-sm font-semibold text-secondary-foreground">{t.methods}</p>
       <div className="mt-3 flex flex-wrap gap-3">
         {(["paypal", "nowpayments"] as const).map(gateway => (
           <span
             key={gateway}
-            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700"
+            className="inline-flex items-center gap-2 rounded-xl border border-border px-3 py-2 text-sm text-secondary-foreground"
           >
             {gateway === "paypal" ? (
               <CreditCard className="size-4" />
@@ -52,7 +52,7 @@ export function PaymentMethods() {
                 : `${nowpaymentsCheckoutAsset.label} · NOWPayments`}
             </bdi>
             {!query.data?.find(m => m.gateway === gateway)?.available && (
-              <span className="text-xs text-slate-500">{t.unavailable}</span>
+              <span className="text-xs text-muted-foreground">{t.unavailable}</span>
             )}
           </span>
         ))}
@@ -95,20 +95,20 @@ export function PaymentStatusCard({
       timeZone: "UTC",
     }).format(new Date(value));
   return (
-    <article className="rounded-xl border border-slate-200 bg-white p-4">
+    <article className="rounded-xl border border-border bg-card p-4">
       <div className="flex flex-wrap justify-between gap-3">
         <p
           role="status"
-          className={`font-bold ${state === "paid" ? "text-beacon-700" : "text-slate-800"}`}
+          className={`font-bold ${state === "paid" ? "text-foreground" : "text-foreground"}`}
         >
           {t[state]}
         </p>
         <bdi className="font-semibold">{paymentUsd(payment.amountCents)}</bdi>
       </div>
-      <p className="mt-2 text-sm text-slate-600">
+      <p className="mt-2 text-sm text-secondary-foreground">
         {payment.gateway === "paypal" ? "PayPal" : "NOWPayments"}
       </p>
-      <p className="mt-2 text-xs text-slate-500">
+      <p className="mt-2 text-xs text-muted-foreground">
         {t.reference}: <bdi className="break-all">{payment.id}</bdi>
       </p>
       {payment.periodStartsAt && payment.periodEndsAt && (
@@ -120,7 +120,7 @@ export function PaymentStatusCard({
         </p>
       )}
       {state === "review" && (
-        <p className="mt-3 text-sm leading-7 text-amber-800">{t.reviewHelp}</p>
+        <p className="mt-3 text-sm leading-7 text-warning">{t.reviewHelp}</p>
       )}
       {!readOnly && !["paid", "refunded"].includes(state) && (
         <div className="mt-4 flex flex-wrap gap-2">
@@ -158,7 +158,7 @@ export function PaymentStatusCard({
         </div>
       )}
       {!readOnly && open && (
-        <p className="mt-3 text-xs leading-6 text-slate-500">{t.cancelHelp}</p>
+        <p className="mt-3 text-xs leading-6 text-muted-foreground">{t.cancelHelp}</p>
       )}
       <PaymentAlert message={check.error?.message ?? cancel.error?.message} />
     </article>
@@ -243,9 +243,9 @@ export function ProviderCheckout({
       (p.state === "review" || new Date(p.expiresAt).getTime() > now)
   );
   return (
-    <div className="mt-6 border-t border-slate-100 pt-5">
-      <h3 className="font-bold text-ink">{t.checkout}</h3>
-      <p className="mt-3 text-sm leading-7 text-slate-600">{t.terms}</p>
+    <div className="mt-6 border-t border-border pt-5">
+      <h3 className="font-bold text-foreground">{t.checkout}</h3>
+      <p className="mt-3 text-sm leading-7 text-secondary-foreground">{t.terms}</p>
       <p className="mt-4 font-semibold">
         {t.renewal}: <bdi>{paymentUsd(query.data.quote.amountCents)}</bdi>
       </p>
@@ -282,9 +282,9 @@ export function ProviderCheckout({
         ))}
       </div>
       {!query.data.allowed && (
-        <p className="mt-3 text-sm text-amber-800">{t.suspended}</p>
+        <p className="mt-3 text-sm text-warning">{t.suspended}</p>
       )}
-      <p className="mt-3 text-xs leading-6 text-slate-500">{t.cryptoHelp}</p>
+      <p className="mt-3 text-xs leading-6 text-muted-foreground">{t.cryptoHelp}</p>
       <PaymentAlert message={checkout.error?.message} />
       {query.data.items.length > 0 && (
         <details className="mt-5" open={showHistory || Boolean(open)}>

@@ -4,7 +4,6 @@ import {
   ArrowRight,
   Bookmark,
   Search,
-  RadioTower,
   SlidersHorizontal,
   Sparkles,
 } from "lucide-react";
@@ -29,23 +28,22 @@ export default function Home() {
   ];
   return (
     <PublicLayout>
-      <section className="beacon-hero mx-3 mt-3 rounded-[1.75rem] sm:mx-5 sm:rounded-[2rem]">
-        <div className="container relative grid items-center gap-10 py-10 lg:grid-cols-[1.4fr_.7fr] lg:gap-14 lg:py-16">
+      <section className="beacon-hero">
+        <div className="container relative grid items-center gap-12 py-12 lg:grid-cols-[1.5fr_1fr] lg:gap-20 lg:py-20">
           <div>
-            <p className="inline-flex items-center gap-2 rounded-full border border-brand/25 bg-brand/5 px-3 py-2 text-[11px] font-bold tracking-wide text-brand">
-              <Sparkles className="size-4" />
+            <p className="section-kicker">
               {t.eyebrow}
             </p>
-            <h1 className="beacon-hero-title mt-6 text-[clamp(2rem,4.3vw,4.1rem)] font-extrabold leading-[1.3] tracking-tight">
+            <h1 className="beacon-hero-title mt-6">
               {t.title}
               <br />
-              <span className="text-brand">{t.accent}</span>
+              <span className="text-white">{t.accent}</span>
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-slate-300">
+            <p className="mt-6 max-w-xl text-base leading-8 text-muted-foreground">
               {t.intro}
             </p>
             <form
-              className="beacon-search mt-7 rounded-2xl p-2"
+              className="beacon-search mt-8 rounded-lg p-2"
               onSubmit={e => {
                 e.preventDefault();
                 if (query.trim())
@@ -60,7 +58,7 @@ export default function Home() {
                 rows={2}
                 maxLength={1200}
                 dir="auto"
-                className="w-full resize-none rounded-xl bg-transparent p-4 text-base leading-7 text-ink placeholder:text-slate-500 outline-none focus:ring-2 focus:ring-beacon-600"
+                className="w-full resize-none rounded-xl bg-transparent p-4 text-base leading-7 text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-ring"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 placeholder={t.ask}
@@ -68,13 +66,13 @@ export default function Home() {
               <div className="flex flex-wrap items-center justify-between gap-3 px-2 pb-2">
                 <Link
                   href="/services"
-                  className="px-2 text-xs font-bold text-slate-500 hover:text-beacon-800"
+                  className="px-2 text-sm text-muted-foreground hover:text-foreground"
                 >
                   {t.browse}
                 </Link>
                 <button
                   disabled={!query.trim()}
-                  className="beacon-button inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-bold"
+                  className="beacon-button inline-flex min-h-11 items-center gap-2 px-5 py-3 text-sm"
                 >
                   <Search className="size-4" />
                   {t.search}
@@ -89,34 +87,29 @@ export default function Home() {
                   onClick={() =>
                     navigate(`/find?q=${encodeURIComponent(example)}`)
                   }
-                  className="rounded-full border border-white/15 px-3 py-2 text-xs text-slate-300 hover:border-beacon-300 hover:text-beacon-200"
+                  className="rounded-full border border-input px-3 py-2 text-xs text-muted-foreground hover:border-ring hover:text-foreground"
                 >
                   {example}
                 </button>
               ))}
             </div>
           </div>
-          <div className="beacon-guide rounded-3xl p-5 lg:p-7">
-            <div className="mb-5 hidden lg:block" aria-hidden="true">
-              <div className="beacon-radar">
-                <RadioTower className="size-7 text-brand" />
-              </div>
-            </div>
+          <div className="beacon-guide rounded-lg p-6 lg:p-8">
             <p
               dir="ltr"
-              className="mb-6 text-xs font-bold tracking-[.2em] text-brand lg:text-center"
+              className="mb-3 text-xs tracking-[.18em] text-muted-foreground"
             >
               PROVIDERBEACON
             </p>
-            <div className="space-y-6">
+            <div>
               {steps.map(({ icon: Icon, title, body }) => (
-                <div key={title} className="flex gap-4">
-                  <div className="grid size-10 shrink-0 place-items-center rounded-xl border border-brand/15 bg-brand/10 text-brand">
-                    <Icon className="size-5" />
+                <div key={title} className="beacon-guide-step flex gap-4">
+                  <div className="grid size-10 shrink-0 place-items-center rounded-full border border-input text-muted-foreground">
+                    <Icon className="size-4" strokeWidth={1.25} />
                   </div>
                   <div>
-                    <h2 className="text-sm font-bold">{title}</h2>
-                    <p className="mt-2 text-xs leading-6 text-slate-300">
+                    <h2 className="text-base font-medium">{title}</h2>
+                    <p className="mt-2 text-sm leading-7 text-muted-foreground">
                       {body}
                     </p>
                   </div>
@@ -125,7 +118,7 @@ export default function Home() {
             </div>
             <Link
               href="/account"
-              className="mt-7 flex items-center justify-between gap-3 border-t border-white/10 pt-5 text-sm font-bold text-beacon-200"
+              className="mt-2 flex items-center justify-between gap-3 border-t border-input pt-5 text-sm text-copper"
             >
               {t.workspace}
               <ArrowRight className="size-4 rtl:rotate-180" />
@@ -137,34 +130,34 @@ export default function Home() {
       <div className="container flex justify-center pb-4">
         <Link
           href="/services"
-          className="inline-flex min-h-12 items-center gap-3 rounded-full border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-ink hover:border-beacon-600"
+          className="inline-flex min-h-12 items-center gap-3 rounded-full border border-input bg-card px-6 py-3 text-sm font-bold text-foreground hover:border-ring"
         >
           <Search className="size-4" />
           {vipText(locale).browseServices}
           <ArrowRight className="size-4 rtl:rotate-180" />
         </Link>
       </div>
-      <section id="methodology" className="container scroll-mt-24 py-12">
-        <div className="beacon-surface grid gap-7 rounded-3xl border bg-white p-6 lg:grid-cols-2 sm:p-9">
+      <section id="methodology" className="editorial-section container scroll-mt-24">
+        <div className="grid gap-10 border-y border-border py-12 lg:grid-cols-2 lg:gap-20">
           <div>
             <p className="section-kicker">{d.method}</p>
-            <h2 className="mt-3 text-2xl font-extrabold leading-relaxed">
+            <h2 className="display-heading mt-4 text-4xl sm:text-5xl">
               {d.evidence}
             </h2>
-            <p className="mt-4 text-sm leading-8 text-slate-600">
+            <p className="mt-6 text-base leading-8 text-muted-foreground">
               {d.evidenceBody}
             </p>
           </div>
           <div className="space-y-5">
             <div>
               <h3 className="font-bold">{d.method}</h3>
-              <p className="mt-2 text-sm leading-8 text-slate-600">
+              <p className="mt-3 text-base leading-8 text-muted-foreground">
                 {d.methodBody}
               </p>
             </div>
-            <div className="border-t border-slate-100 pt-5">
+            <div className="border-t border-border pt-5">
               <h3 className="font-bold">{d.independence}</h3>
-              <p className="mt-2 text-sm leading-8 text-slate-600">
+              <p className="mt-3 text-base leading-8 text-muted-foreground">
                 {d.independenceBody}
               </p>
             </div>
@@ -172,7 +165,7 @@ export default function Home() {
         </div>
       </section>
       <section className="container py-8">
-        <details className="rounded-2xl border border-slate-200 bg-white p-6">
+        <details className="rounded-2xl border border-border bg-card p-6">
           <summary className="cursor-pointer text-lg font-bold">
             {d.guideTitle}
           </summary>
@@ -181,9 +174,9 @@ export default function Home() {
           </div>
         </details>
       </section>
-      <section id="about" className="container py-12">
-        <h2 className="text-xl font-extrabold">{d.about}</h2>
-        <p className="mt-3 max-w-3xl text-sm leading-8 text-slate-600">
+      <section id="about" className="editorial-section container">
+        <h2 className="display-heading text-4xl">{d.about}</h2>
+        <p className="mt-5 max-w-3xl text-base leading-8 text-muted-foreground">
           {d.aboutBody}
         </p>
       </section>

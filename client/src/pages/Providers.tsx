@@ -26,7 +26,7 @@ export default function Providers() {
         <p className="section-kicker">
           {ar ? "دليل مزودي الخدمات" : "Service provider directory"}
         </p>
-        <h1 className="mt-4 max-w-4xl text-4xl font-extrabold leading-relaxed text-slate-950 sm:text-5xl">
+        <h1 className="mt-4 max-w-4xl text-4xl font-extrabold leading-relaxed text-foreground sm:text-5xl">
           {market === "smm"
             ? ar
               ? "مزودو SMM وأسعارهم"
@@ -35,16 +35,16 @@ export default function Providers() {
               ? "وكالات التسويق"
               : "Marketing agencies"}
         </h1>
-        <p className="mt-5 max-w-3xl leading-8 text-slate-500">
+        <p className="mt-5 max-w-3xl leading-8 text-muted-foreground">
           {ar
             ? "اختر مزودًا لعرض خدماته المنشورة، أو قارن خدمات عدة مزودين من مستكشف العروض."
             : "Open a provider to see published services, or compare providers in the offer explorer."}
         </p>
         <label className="relative my-8 block max-w-xl">
           <span className="sr-only">{t.providerSearch}</span>
-          <Search className="absolute start-4 top-4 size-5 text-slate-400" />
+          <Search className="absolute start-4 top-4 size-5 text-muted-foreground" />
           <input
-            className="h-14 w-full rounded-xl border border-slate-200 bg-white ps-12 pe-4"
+            className="h-14 w-full rounded-xl border border-border bg-card ps-12 pe-4"
             placeholder={t.providerSearch}
             maxLength={100}
             value={query}
@@ -56,7 +56,7 @@ export default function Providers() {
             <button
               key={value}
               aria-pressed={value === market}
-              className={`rounded-xl border px-4 py-3 font-bold ${market === value ? "bg-ink text-white" : "bg-white"}`}
+              className={`rounded-xl border px-4 py-3 font-bold ${market === value ? "bg-ink text-white" : "bg-card"}`}
               onClick={() => setMarket(value)}
             >
               {value === "smm"
@@ -67,7 +67,7 @@ export default function Providers() {
             </button>
           ))}
         </div>
-        {providers.length === 0 && <p className="mt-8 rounded-xl border p-6 text-slate-500">{ar ? "لا يوجد مزود منشور في هذه الفئة." : "No published providers in this category."}</p>}
+        {providers.length === 0 && <p className="mt-8 rounded-xl border p-6 text-muted-foreground">{ar ? "لا يوجد مزود منشور في هذه الفئة." : "No published providers in this category."}</p>}
         {providers.length > 0 && (
           <section className="mt-12">
             <h2 className="mb-6 text-2xl font-extrabold">{t.liveProfiles}</h2>
@@ -84,7 +84,7 @@ export default function Providers() {
           className="mt-14 scroll-mt-24 rounded-2xl bg-ink p-8 text-white"
         >
           <h2 className="text-2xl font-extrabold">{t.join}</h2>
-          <p className="mt-4 max-w-3xl leading-8 text-slate-300">
+          <p className="mt-4 max-w-3xl leading-8 text-silver">
             {t.joinBody}
           </p>
         </section>

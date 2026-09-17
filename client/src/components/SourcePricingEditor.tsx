@@ -48,7 +48,7 @@ export default function SourcePricingEditor({
   });
   const title = ar ? "وحدة تسعير API" : "API pricing unit";
   const field =
-    "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm";
+    "w-full rounded-lg border border-input bg-card px-3 py-2 text-sm";
   return (
     <>
       <Button

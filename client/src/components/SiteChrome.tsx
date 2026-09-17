@@ -22,8 +22,8 @@ export function Brand({ compact = false, inverse = false }: { compact?: boolean;
     <Link href="/" className={`brand-link ${inverse ? "brand-inverse" : ""}`} aria-label="ProviderBeacon">
       <svg aria-hidden="true" viewBox="0 0 64 64" className={`brand-mark ${compact ? "size-10" : "size-11"}`}>
         <path fill="currentColor" d="M10 6h21.5C46.7 6 56 14.7 56 28.3 56 42 46.4 50 31.5 50H22v8H10V6Zm12 11v22h9.4C39 39 44 35.3 44 28.4 44 21.2 39 17 31.4 17H22Z"/>
-        <path fill="#a5cd49" d="m28 28 17-8v16l-17-8Z"/>
-        <circle cx="22" cy="28" r="3.5" fill="#d4f77d"/>
+        <path fill="#9194a1" d="m28 28 17-8v16l-17-8Z"/>
+        <circle cx="22" cy="28" r="3.5" fill="#ffffff"/>
       </svg>
       <span dir="ltr" className={`brand-wordmark ${compact ? "text-[17px]" : "text-xl"} font-extrabold tracking-[-.045em]`}
       >
@@ -54,7 +54,7 @@ export function SiteHeader() {
   ];
 
   return (
-    <header className="site-header sticky top-0 z-50 border-b border-slate-200/70 backdrop-blur-xl">
+    <header className="site-header sticky top-0 z-50 border-b border-border/70 backdrop-blur-sm">
       <a href="#main-content" className="skip-link">
         {p.skipMain}
       </a>
@@ -77,7 +77,7 @@ export function SiteHeader() {
         <div className="hidden items-center gap-2 sm:flex">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="gap-2 text-slate-600">
+              <Button variant="ghost" className="gap-2 text-secondary-foreground">
                 <Globe2 className="size-4" />
                 {localeNames[locale]}
                 <ChevronDown className="size-3.5" />
@@ -93,7 +93,7 @@ export function SiteHeader() {
           </DropdownMenu>
           <Button
             asChild
-            className="beacon-button rounded-xl"
+            variant="outline" className="beacon-ghost"
           >
             <a href={accountHref}>
               <UserRound className="size-4" />
@@ -104,7 +104,7 @@ export function SiteHeader() {
           </Button>
         </div>
         <button
-          className="touch-target rounded-lg p-2 text-slate-700 xl:hidden"
+          className="touch-target rounded-lg p-2 text-secondary-foreground xl:hidden"
           aria-label={open ? "×" : p.mobileNav}
           onClick={() => setOpen(!open)}
         >
@@ -112,14 +112,14 @@ export function SiteHeader() {
         </button>
       </div>
       {open && (
-        <div className="border-t border-slate-200 bg-white p-4 xl:hidden">
+        <div className="border-t border-border bg-card p-4 xl:hidden">
           <nav className="grid gap-2" aria-label={p.mobileNav}>
             {links.map(([href, label]) => (
               <Link
                 key={href}
                 href={href}
                 onClick={() => setOpen(false)}
-                className="rounded-lg px-3 py-3 font-medium text-slate-700 hover:bg-slate-50"
+                className="rounded-lg px-3 py-3 font-medium text-secondary-foreground hover:bg-muted"
               >
                 {label}
               </Link>
@@ -127,7 +127,7 @@ export function SiteHeader() {
             <a
               href={accountHref}
               onClick={() => setOpen(false)}
-              className="beacon-button flex items-center gap-2 rounded-xl px-3 py-3 font-semibold"
+              className="beacon-ghost flex items-center gap-2 rounded-xl px-3 py-3 font-semibold"
             >
               <UserRound className="size-4" />
               {staff.data ? t.admin : member.data?.member
@@ -139,7 +139,7 @@ export function SiteHeader() {
                 <button
                   key={value}
                   onClick={() => setLocale(value)}
-                  className={`rounded-lg border px-3 py-2 text-sm ${locale === value ? "border-beacon-500 bg-beacon-50 text-beacon-800" : "border-slate-200"}`}
+                  className={`rounded-lg border px-3 py-2 text-sm ${locale === value ? "border-ring bg-secondary text-foreground" : "border-border"}`}
                 >
                   {localeNames[value]}
                 </button>
@@ -162,7 +162,7 @@ export function SiteFooter() {
       <div className="container grid gap-10 py-12 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
         <div>
           <Brand compact />
-          <p className="mt-4 max-w-sm text-sm leading-6 text-slate-500">
+          <p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">
             {p.footerTagline}
           </p>
         </div>
@@ -199,8 +199,8 @@ export function SiteFooter() {
           ]}
         />
       </div>
-      <div className="border-t border-slate-100">
-        <div className="container flex flex-col justify-between gap-3 py-5 text-xs text-slate-500 sm:flex-row">
+      <div className="border-t border-border">
+        <div className="container flex flex-col justify-between gap-3 py-5 text-xs text-muted-foreground sm:flex-row">
           <span>© 2026 ProviderBeacon. {p.rights}</span>
           <span>{p.transparentRanking}</span>
         </div>
@@ -218,11 +218,11 @@ function FooterColumn({
 }) {
   return (
     <div>
-      <h2 className="text-sm font-bold text-slate-900">{title}</h2>
-      <ul className="mt-4 grid gap-3 text-sm text-slate-500">
+      <h2 className="text-sm font-bold text-foreground">{title}</h2>
+      <ul className="mt-4 grid gap-3 text-sm text-muted-foreground">
         {links.map(([label, href]) => (
           <li key={`${label}-${href}`}>
-            <a href={href} className="hover:text-ink">
+            <a href={href} className="hover:text-foreground">
               {label}
             </a>
           </li>
@@ -240,7 +240,7 @@ export function PublicLayout({
   showCatalogueNotice?: boolean;
 }) {
   return (
-    <div className="min-h-screen bg-background text-slate-950">
+    <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
       <main id="main-content">
         {showCatalogueNotice && <CatalogueNotice />}

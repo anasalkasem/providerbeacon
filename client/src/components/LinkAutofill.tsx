@@ -35,7 +35,7 @@ export function GroupSourceDetails({
         />
       )}
       {data.audience && (
-        <p className="text-xs leading-6 text-slate-600">
+        <p className="text-xs leading-6 text-secondary-foreground">
           <span className="block font-semibold">
             {data.audience.approximate ? "≈ " : ""}
             {data.audience.count.toLocaleString(locale)} {t[data.audience.kind]}
@@ -150,11 +150,11 @@ export default function LinkAutofill({
   return (
     <section
       aria-label={title}
-      className="col-span-full min-w-0 rounded-xl border border-beacon-100 bg-beacon-50/60 p-4"
+      className="col-span-full min-w-0 rounded-xl border border-input bg-secondary/60 p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="flex items-center gap-2 text-sm font-bold text-beacon-900">
+          <span className="flex items-center gap-2 text-sm font-bold text-foreground">
             <WandSparkles className="size-4" />
             {title}
           </span>
@@ -163,7 +163,7 @@ export default function LinkAutofill({
         <button
           type="button"
           disabled={!source || visible?.pending}
-          className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-beacon-200 bg-white px-3 text-xs font-semibold text-beacon-800 disabled:opacity-50"
+          className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-input bg-card px-3 text-xs font-semibold text-foreground disabled:opacity-50"
           onClick={() => {
             setManual(source);
             setAttempt(v => v + 1);
@@ -182,7 +182,7 @@ export default function LinkAutofill({
       <p
         role="status"
         aria-live="polite"
-        className="mt-2 text-xs leading-6 text-slate-600"
+        className="mt-2 text-xs leading-6 text-secondary-foreground"
       >
         {visible?.pending
           ? t.fetching
@@ -225,15 +225,15 @@ export default function LinkAutofill({
                     src={data.logoUrl}
                     alt={t.logo}
                     errorText={t.unavailable}
-                    className="size-16 rounded-lg border bg-white object-contain p-2"
+                    className="size-16 rounded-lg border bg-card object-contain p-2"
                   />
-                  <figcaption className="mt-1 text-xs text-slate-500">
+                  <figcaption className="mt-1 text-xs text-muted-foreground">
                     {t.logo}
                   </figcaption>
                   {onUseImage && (
                     <button
                       type="button"
-                      className="mt-2 text-xs font-semibold text-beacon-800 underline"
+                      className="mt-2 text-xs font-semibold text-foreground underline"
                       onClick={() => onUseImage("logoUrl", data.logoUrl!)}
                     >
                       {t.useLogo}
@@ -247,15 +247,15 @@ export default function LinkAutofill({
                     src={data.websitePreviewUrl}
                     alt={t.screenshot}
                     referrerPolicy="no-referrer"
-                    className="aspect-[1200/750] w-60 max-w-full rounded-lg border bg-white object-cover"
+                    className="aspect-[1200/750] w-60 max-w-full rounded-lg border bg-card object-cover"
                   />
-                  <figcaption className="mt-1 text-xs text-slate-500">
+                  <figcaption className="mt-1 text-xs text-muted-foreground">
                     {t.screenshot}
                   </figcaption>
                   {onUseImage && (
                     <button
                       type="button"
-                      className="mt-2 text-xs font-semibold text-beacon-800 underline"
+                      className="mt-2 text-xs font-semibold text-foreground underline"
                       onClick={() =>
                         onUseImage("websitePreviewUrl", data.websitePreviewUrl!)
                       }
@@ -270,20 +270,20 @@ export default function LinkAutofill({
             <GroupSourceDetails data={data} />
           )}
           {kind === "website" && (
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-muted-foreground">
               {t.recorded} {new Date(data.fetchedAt).toLocaleDateString(locale)}
             </p>
           )}
           {data.name && (
             <p
               dir="auto"
-              className="mt-2 break-words text-sm font-bold text-slate-800"
+              className="mt-2 break-words text-sm font-bold text-foreground"
             >
               {data.name}
             </p>
           )}
           {data.aiSuggested && (
-            <p className="mt-2 text-xs leading-6 text-slate-600">
+            <p className="mt-2 text-xs leading-6 text-secondary-foreground">
               {t.suggested}
             </p>
           )}

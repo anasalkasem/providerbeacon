@@ -26,7 +26,7 @@ import { Badge } from "./ui/badge";
 import SourcePricingEditor from "./SourcePricingEditor";
 
 const selectClass =
-  "h-10 min-w-0 rounded-lg border border-slate-200 bg-white px-3 text-sm";
+  "h-10 min-w-0 rounded-lg border border-border bg-card px-3 text-sm";
 type Form = {
   platform: (typeof platforms)[number];
   category: (typeof serviceTypes)[number];
@@ -159,12 +159,12 @@ export default function ServiceReviewDetail({
                 <bdi>{query.data?.providerName}</bdi>
               </Badge>
               <Badge variant="outline">{text(row.reviewStatus)}</Badge>
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-muted-foreground">
                 {text("revision")}: {row.revision} ·{" "}
                 <bdi>#{row.externalId ?? row.id}</bdi>
               </span>
               {query.data?.stale && (
-                <Badge variant="outline" className="text-amber-800">
+                <Badge variant="outline" className="text-warning">
                   {text("stale")}
                 </Badge>
               )}
@@ -172,24 +172,24 @@ export default function ServiceReviewDetail({
                 <Badge variant="outline">{text("providerNotPublished")}</Badge>
               )}
             </div>
-            <section className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
-              <h3 className="font-semibold text-slate-800">
+            <section className="rounded-xl border border-warning-border bg-warning-muted/60 p-4">
+              <h3 className="font-semibold text-foreground">
                 {text("blockers")}
               </h3>
               {query.data?.blockers.length ? (
-                <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-amber-900">
+                <ul className="mt-2 list-inside list-disc space-y-1 text-sm text-warning">
                   {query.data.blockers.map(issue => (
                     <li key={issue}>{text(issue as AdminTextKey)}</li>
                   ))}
                 </ul>
               ) : (
-                <p className="mt-2 text-sm text-emerald-800">
+                <p className="mt-2 text-sm text-success">
                   {text("noBlockers")}
                 </p>
               )}
             </section>
             {row.sourceKind === "provider_api" && (
-              <div className="space-y-2 rounded-xl border border-beacon-200 bg-beacon-50/50 p-4">
+              <div className="space-y-2 rounded-xl border border-input bg-secondary/50 p-4">
                 <p className="text-sm font-semibold">
                   {locale === "ar" ? "وحدة سعر المصدر: " : "Source rate unit: "}
                   {unitLabel(locale, {
@@ -204,7 +204,7 @@ export default function ServiceReviewDetail({
                     href={row.sourcePricingEvidenceUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-beacon-700 underline"
+                    className="text-foreground underline"
                   >
                     {locale === "ar"
                       ? "دليل وحدة التسعير"
@@ -247,7 +247,7 @@ export default function ServiceReviewDetail({
             >
               <fieldset
                 disabled={!canWrite || busy || row.normalizationVersion === 0}
-                className="grid gap-4 rounded-xl border border-slate-200 p-4 sm:grid-cols-2"
+                className="grid gap-4 rounded-xl border border-border p-4 sm:grid-cols-2"
               >
                 <legend className="px-2 font-semibold">
                   {text("editService")}
@@ -299,11 +299,11 @@ export default function ServiceReviewDetail({
                       update({ countryCode: event.target.value.toUpperCase() })
                     }
                   />
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-muted-foreground">
                     {text("countryHint")}
                   </span>
                 </label>
-                <div className="rounded-lg bg-slate-50 p-3 text-sm sm:col-span-2">
+                <div className="rounded-lg bg-muted p-3 text-sm sm:col-span-2">
                   <p className="font-semibold">
                     {pricing.sourceRate}:{" "}
                     <bdi dir="ltr">
@@ -311,7 +311,7 @@ export default function ServiceReviewDetail({
                       {row.sourceRate ?? "—"}
                     </bdi>
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {pricing.sourceHelp}
                   </p>
                 </div>
@@ -393,7 +393,7 @@ export default function ServiceReviewDetail({
                       })
                     }
                   />
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-muted-foreground">
                     {text(
                       row.pricingConfirmed
                         ? "confirmedPrice"
@@ -482,7 +482,7 @@ export default function ServiceReviewDetail({
                       update({ evidenceUrl: event.target.value })
                     }
                   />
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-muted-foreground">
                     {text("evidenceHelp")}
                   </span>
                 </label>
@@ -519,7 +519,7 @@ export default function ServiceReviewDetail({
                     placeholder={text("reasonHint")}
                   />
                 </label>
-                <p className="text-xs leading-5 text-slate-500 sm:col-span-2">
+                <p className="text-xs leading-5 text-muted-foreground sm:col-span-2">
                   {text("reviewResetHint")}
                 </p>
                 {canWrite && (
@@ -532,9 +532,9 @@ export default function ServiceReviewDetail({
                 )}
               </fieldset>
             </form>
-            <section className="rounded-xl border border-slate-200 p-4">
+            <section className="rounded-xl border border-border p-4">
               <h3 className="font-semibold">{text("sourceDetails")}</h3>
-              <p className="mt-2 text-sm text-slate-500">
+              <p className="mt-2 text-sm text-muted-foreground">
                 {row.sourceKind === "public_web"
                   ? locale === "ar"
                     ? "عرض معلن في موقع المزود"
@@ -543,12 +543,12 @@ export default function ServiceReviewDetail({
                       row.sourceKind === "legacy" ? "legacySource" : "apiSource"
                     )}
               </p>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-muted-foreground">
                 {text("sourceClaim")}
               </p>
               {row.sourceUrl && (
                 <a
-                  className="mt-2 block break-all text-sm text-beacon-800 underline"
+                  className="mt-2 block break-all text-sm text-foreground underline"
                   dir="ltr"
                   href={row.sourceUrl}
                   target="_blank"
@@ -559,7 +559,7 @@ export default function ServiceReviewDetail({
               )}
               <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-2">
                 <div>
-                  <dt className="text-slate-500">{text("lastSync")}</dt>
+                  <dt className="text-muted-foreground">{text("lastSync")}</dt>
                   <dd>
                     {row.sourceUpdatedAt
                       ? new Date(row.sourceUpdatedAt).toLocaleString(locale)
@@ -567,7 +567,7 @@ export default function ServiceReviewDetail({
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-slate-500">{text("lastReview")}</dt>
+                  <dt className="text-muted-foreground">{text("lastReview")}</dt>
                   <dd>
                     {row.reviewedAt
                       ? new Date(row.reviewedAt).toLocaleString(locale)
@@ -578,7 +578,7 @@ export default function ServiceReviewDetail({
               {row.reviewReason && (
                 <p
                   dir="auto"
-                  className="mt-3 rounded-lg bg-slate-50 p-3 text-sm"
+                  className="mt-3 rounded-lg bg-muted p-3 text-sm"
                 >
                   {row.reviewReason}
                 </p>
@@ -588,7 +588,7 @@ export default function ServiceReviewDetail({
                   <summary className="cursor-pointer font-medium">
                     {text("notes")}
                   </summary>
-                  <ul className="mt-2 list-inside list-disc text-slate-600">
+                  <ul className="mt-2 list-inside list-disc text-secondary-foreground">
                     {row.classificationNotes.map(note => (
                       <li key={note}>{text(note as AdminTextKey)}</li>
                     ))}
@@ -608,7 +608,7 @@ export default function ServiceReviewDetail({
                   {data ? (
                     <pre
                       dir="ltr"
-                      className="mt-2 max-h-60 overflow-auto rounded-lg bg-slate-950 p-3 text-start text-xs text-slate-100"
+                      className="mt-2 max-h-60 overflow-auto rounded-lg bg-onyx p-3 text-start text-xs text-foreground"
                     >
                       {JSON.stringify(data, null, 2)}
                     </pre>
@@ -618,7 +618,7 @@ export default function ServiceReviewDetail({
                 </details>
               ))}
             </section>
-            <details className="rounded-xl border border-slate-200 p-4">
+            <details className="rounded-xl border border-border p-4">
               <summary className="cursor-pointer font-semibold">
                 {text("priceHistory")}
               </summary>
@@ -647,7 +647,7 @@ export default function ServiceReviewDetail({
                                 })
                               : formatPrice(locale, price)}
                           </bdi>
-                          <p className="mt-1 text-xs text-slate-500">
+                          <p className="mt-1 text-xs text-muted-foreground">
                             {price.kind === "source"
                               ? unitLabel(locale, {
                                   ...price,
@@ -669,7 +669,7 @@ export default function ServiceReviewDetail({
                   </tbody>
                 </table>
               ) : (
-                <p className="mt-2 text-sm text-slate-500">
+                <p className="mt-2 text-sm text-muted-foreground">
                   {text("noPriceHistory")}
                 </p>
               )}

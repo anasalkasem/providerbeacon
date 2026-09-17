@@ -76,12 +76,12 @@ export default function ProviderBusiness() {
     <PublicLayout showCatalogueNotice={false}>
       <section className="container py-10">
         <header className="mb-8 flex items-start gap-4">
-          <span className="rounded-2xl bg-beacon-50 p-3 text-beacon-700">
+          <span className="rounded-2xl bg-secondary p-3 text-foreground">
             <Building2 className="size-8" />
           </span>
           <div>
-            <h1 className="text-3xl font-extrabold text-ink">{t.title}</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
+            <h1 className="text-3xl font-extrabold text-foreground">{t.title}</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-7 text-secondary-foreground">
               {t.intro}
             </p>
           </div>
@@ -93,9 +93,9 @@ export default function ProviderBusiness() {
         ) : (
           <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
             <BusinessCard>
-              <h2 className="text-2xl font-bold text-ink">{t.plan}</h2>
+              <h2 className="text-2xl font-bold text-foreground">{t.plan}</h2>
               <BusinessPricing />
-              <p className="mt-4 leading-8 text-slate-600">{t.planHelp}</p>
+              <p className="mt-4 leading-8 text-secondary-foreground">{t.planHelp}</p>
               <PaymentMethods />
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
@@ -121,8 +121,8 @@ export default function ProviderBusiness() {
               ].map(feature => (
                 <BusinessCard key={feature.title}>
                   <div className="flex items-center gap-4">
-                    <feature.icon className="size-6 text-beacon-600" />
-                    <h2 className="font-bold text-slate-800">
+                    <feature.icon className="size-6 text-foreground" />
+                    <h2 className="font-bold text-foreground">
                       {feature.title}
                     </h2>
                   </div>
@@ -201,7 +201,7 @@ function ProviderWorkspace({
     >
       <PaymentReturn accountId={accountId} />
       {!verified && (
-        <p className="mb-6 rounded-xl bg-amber-50 p-4 text-sm leading-7 text-amber-900">
+        <p className="mb-6 rounded-xl bg-warning-muted p-4 text-sm leading-7 text-warning">
           {t.verify}{" "}
           <Link href="/account/settings" className="font-bold underline">
             {t.settings}
@@ -222,9 +222,9 @@ function ProviderWorkspace({
       ) : section === "ownership" ? (
         <div className="space-y-6">
           {!owned && (
-            <BusinessCard className="border-beacon-200 bg-beacon-50/50">
-              <h2 className="text-xl font-bold text-ink">{d.start}</h2>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
+            <BusinessCard className="border-input bg-secondary/50">
+              <h2 className="text-xl font-bold text-foreground">{d.start}</h2>
+              <p className="mt-3 text-sm leading-7 text-secondary-foreground">
                 {d.startHelp}
               </p>
             </BusinessCard>
@@ -232,7 +232,7 @@ function ProviderWorkspace({
           <div className="grid items-start gap-6 xl:grid-cols-2">
             <ClaimPicker verified={verified} />
             <BusinessCard>
-              <h2 className="text-lg font-bold text-ink">{t.requests}</h2>
+              <h2 className="text-lg font-bold text-foreground">{t.requests}</h2>
               <div className="mt-5 space-y-5">
                 {workspace.claims.length ? (
                   workspace.claims.map(claim => (
@@ -242,7 +242,7 @@ function ProviderWorkspace({
                     />
                   ))
                 ) : (
-                  <p className="text-sm text-slate-500">{t.noItems}</p>
+                  <p className="text-sm text-muted-foreground">{t.noItems}</p>
                 )}
               </div>
             </BusinessCard>
@@ -259,10 +259,10 @@ function ProviderWorkspace({
           <div className="space-y-5">
             <ProviderAccessNotice access={access} onNavigate={go} />
             <BusinessCard>
-              <h2 className="text-xl font-bold text-ink">{t.plan}</h2>
+              <h2 className="text-xl font-bold text-foreground">{t.plan}</h2>
               <BusinessPricing />
               <PaymentMethods />
-              <p className="mt-4 text-sm leading-7 text-slate-600">
+              <p className="mt-4 text-sm leading-7 text-secondary-foreground">
                 {t.planHelp}
               </p>
             </BusinessCard>
@@ -360,7 +360,7 @@ function ClaimPicker({ verified }: { verified: boolean }) {
   });
   return (
     <BusinessCard>
-      <h2 className="text-lg font-bold text-ink">{t.claim}</h2>
+      <h2 className="text-lg font-bold text-foreground">{t.claim}</h2>
       <label className="mt-4 block text-sm font-semibold">
         {t.search}
         <input
@@ -414,7 +414,7 @@ function ClaimItem({ claim }: { claim: Claim }) {
   });
   const pending = claim.status === "draft" || claim.status === "pending";
   return (
-    <article className="rounded-xl border border-slate-200 p-4">
+    <article className="rounded-xl border border-border p-4">
       <div className="flex flex-wrap justify-between gap-3">
         <h3 className="font-bold" dir="auto">
           {claim.providerName}
@@ -423,7 +423,7 @@ function ClaimItem({ claim }: { claim: Claim }) {
       </div>
       {claim.reviewNote && (
         <p
-          className="mt-3 whitespace-pre-line break-words text-sm leading-7 text-slate-600"
+          className="mt-3 whitespace-pre-line break-words text-sm leading-7 text-secondary-foreground"
           dir="auto"
         >
           {claim.reviewNote}
@@ -431,18 +431,18 @@ function ClaimItem({ claim }: { claim: Claim }) {
       )}
       {pending && (
         <>
-          <p className="mt-4 text-sm leading-7 text-slate-600">{t.claimHelp}</p>
-          <p className="mt-2 break-all text-xs text-slate-500" dir="ltr">
+          <p className="mt-4 text-sm leading-7 text-secondary-foreground">{t.claimHelp}</p>
+          <p className="mt-2 break-all text-xs text-muted-foreground" dir="ltr">
             {claim.websiteHost}
           </p>
           <code
-            className="mt-3 block break-all rounded-lg bg-slate-100 p-3 text-xs leading-6"
+            className="mt-3 block break-all rounded-lg bg-secondary p-3 text-xs leading-6"
             dir="ltr"
           >
             {claim.token}
           </code>
           {new Date(claim.expiresAt).getTime() <= now ? (
-            <p className="mt-3 text-sm text-amber-800">{t.expiredCode}</p>
+            <p className="mt-3 text-sm text-warning">{t.expiredCode}</p>
           ) : (
             <form
               className="mt-4"
@@ -498,15 +498,15 @@ function ProviderBilling({
     <div className="grid items-start gap-6 xl:grid-cols-2">
       <BusinessCard>
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xl font-bold text-ink">{t.plan}</h2>
+          <h2 className="text-xl font-bold text-foreground">{t.plan}</h2>
           <BusinessStatus value={planState(owned.subscription, now)} />
         </div>
         <BusinessPricing
           firstActivatedAt={owned.subscription.firstActivatedAt}
         />
-        <p className="mt-4 text-sm leading-7 text-slate-600">{t.planHelp}</p>
+        <p className="mt-4 text-sm leading-7 text-secondary-foreground">{t.planHelp}</p>
         {owned.subscription.endsAt && (
-          <p className="mt-3 text-sm text-slate-600">
+          <p className="mt-3 text-sm text-secondary-foreground">
             {t.endsAt}:{" "}
             <bdi>
               {new Intl.DateTimeFormat(locale, {
@@ -526,7 +526,7 @@ function ProviderBilling({
         </a>
       </BusinessCard>
       <BusinessCard>
-        <h2 className="text-xl font-bold text-ink">
+        <h2 className="text-xl font-bold text-foreground">
           {dashboardText(locale).billing}
         </h2>
         {owned.ownershipValid ? (
@@ -536,7 +536,7 @@ function ProviderBilling({
             showHistory
           />
         ) : (
-          <p role="alert" className="mt-4 text-sm leading-7 text-amber-900">
+          <p role="alert" className="mt-4 text-sm leading-7 text-warning">
             {t.ownerChanged}
           </p>
         )}
@@ -606,7 +606,7 @@ function ProviderGroups({
   return (
     <BusinessCard>
       <div className="flex flex-wrap justify-between gap-3">
-        <h2 className="text-xl font-bold text-ink">{t.groups}</h2>
+        <h2 className="text-xl font-bold text-foreground">{t.groups}</h2>
         <button
           className={businessPrimary}
           disabled={
@@ -622,7 +622,7 @@ function ProviderGroups({
           {t.addGroup}
         </button>
       </div>
-      <p className="mt-3 text-sm leading-7 text-slate-500">{t.groupHelp}</p>
+      <p className="mt-3 text-sm leading-7 text-muted-foreground">{t.groupHelp}</p>
       {active &&
         !query.isError &&
         editing &&
@@ -663,11 +663,11 @@ function ProviderGroups({
         </p>
       ) : (
         <div className="mt-5 space-y-3">
-          {!query.data.length && <p className="text-slate-500">{t.noItems}</p>}
+          {!query.data.length && <p className="text-muted-foreground">{t.noItems}</p>}
           {query.data.map(group => (
             <article
               key={group.id}
-              className="rounded-xl border border-slate-200 p-4"
+              className="rounded-xl border border-border p-4"
             >
               <div className="flex flex-wrap justify-between gap-3">
                 <h3 className="font-bold" dir="auto">
@@ -677,7 +677,7 @@ function ProviderGroups({
                 <BusinessStatus value={group.status} />
               </div>
               <p
-                className="mt-2 break-words text-sm leading-7 text-slate-600"
+                className="mt-2 break-words text-sm leading-7 text-secondary-foreground"
                 dir="auto"
               >
                 {group.description}
@@ -686,7 +686,7 @@ function ProviderGroups({
                 href={group.url}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
-                className="mt-2 block break-all text-xs text-beacon-700 underline"
+                className="mt-2 block break-all text-xs text-foreground underline"
                 dir="ltr"
               >
                 {group.url}
@@ -784,7 +784,7 @@ function ProviderPromotions({
   return (
     <BusinessCard>
       <div className="flex flex-wrap justify-between gap-3">
-        <h2 className="text-xl font-bold text-ink">{t.myOffers}</h2>
+        <h2 className="text-xl font-bold text-foreground">{t.myOffers}</h2>
         <button
           className={businessPrimary}
           disabled={
@@ -803,9 +803,9 @@ function ProviderPromotions({
           {t.newOffer}
         </button>
       </div>
-      <p className="mt-3 text-sm leading-7 text-slate-500">{t.offerHelp}</p>
+      <p className="mt-3 text-sm leading-7 text-muted-foreground">{t.offerHelp}</p>
       {query.data && (
-        <p className="mt-3 text-xs font-semibold text-beacon-700">
+        <p className="mt-3 text-xs font-semibold text-foreground">
           {t.usage}:{" "}
           <bdi>
             {formatNumber(locale, query.data.usage.used)} /{" "}
@@ -848,12 +848,12 @@ function ProviderPromotions({
         <>
           <div className="mt-5 space-y-3">
             {!query.data.items.length && (
-              <p className="text-slate-500">{t.noItems}</p>
+              <p className="text-muted-foreground">{t.noItems}</p>
             )}
             {query.data.items.map(offer => (
               <article
                 key={offer.id}
-                className="rounded-xl border border-slate-200 p-4"
+                className="rounded-xl border border-border p-4"
               >
                 <div className="flex flex-wrap justify-between gap-3">
                   <h3 className="font-bold" dir="auto">
@@ -868,14 +868,14 @@ function ProviderPromotions({
                   />
                 </div>
                 <p
-                  className="mt-3 whitespace-pre-line break-words text-sm leading-7 text-slate-600"
+                  className="mt-3 whitespace-pre-line break-words text-sm leading-7 text-secondary-foreground"
                   dir="auto"
                 >
                   {offer.description}
                 </p>
                 {offer.reviewNote && (
                   <p
-                    className="mt-3 rounded-lg bg-slate-50 p-3 text-sm leading-7"
+                    className="mt-3 rounded-lg bg-muted p-3 text-sm leading-7"
                     dir="auto"
                   >
                     {offer.reviewNote}
@@ -952,7 +952,7 @@ function PromotionForm({
   const [invalid, setInvalid] = useState(false);
   return (
     <form
-      className="mt-6 space-y-4 rounded-xl bg-slate-50 p-5"
+      className="mt-6 space-y-4 rounded-xl bg-muted p-5"
       onSubmit={e => {
         e.preventDefault();
         if (pending) return;
@@ -1044,7 +1044,7 @@ function PromotionForm({
             />
           </label>
         </div>
-        <p className="text-xs text-slate-500">{t.utc}</p>
+        <p className="text-xs text-muted-foreground">{t.utc}</p>
       </fieldset>
       {error && <BusinessError message={error} />}{" "}
       {invalid && <BusinessError />}

@@ -68,7 +68,7 @@ export function ProviderLogo({
     <div
       dir="ltr"
       style={visible ? media.style : undefined}
-      className={`grid shrink-0 place-items-center overflow-hidden rounded-2xl font-extrabold shadow-sm ${visible ? "border border-slate-200 bg-white" : "bg-brand text-ink"} ${className}`}
+      className={`grid shrink-0 place-items-center overflow-hidden rounded-2xl font-extrabold shadow-none ${visible ? "border border-border bg-card" : "bg-secondary text-foreground"} ${className}`}
     >
       {visible ? (
         <img
@@ -107,7 +107,7 @@ export function ProviderImage({
   if (!safe) return null;
   if (media.failed)
     return errorText ? (
-      <p role="status" className="p-4 text-sm text-slate-500">
+      <p role="status" className="p-4 text-sm text-muted-foreground">
         {errorText}
       </p>
     ) : null;
@@ -145,14 +145,14 @@ export function ProviderWebsitePreview({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`${title} · ${openLabel}`}
-      className="block w-full overflow-hidden rounded-2xl lg:w-80 lg:shrink-0 border border-slate-200 bg-white shadow-sm transition hover:border-beacon-400 focus-visible:outline-2 focus-visible:outline-beacon-700"
+      className="block w-full overflow-hidden rounded-2xl lg:w-80 lg:shrink-0 border border-border bg-card shadow-none transition hover:border-input focus-visible:outline-2 focus-visible:outline-ring"
     >
-      <div className="flex items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-4 py-3">
-        <span className="text-xs font-bold text-slate-600">{title}</span>
+      <div className="flex items-center justify-between gap-2 border-b border-border bg-muted px-4 py-3">
+        <span className="text-xs font-bold text-secondary-foreground">{title}</span>
         <span aria-hidden="true" className="flex gap-1">
-          <i className="size-1.5 rounded-full bg-slate-300" />
-          <i className="size-1.5 rounded-full bg-slate-300" />
-          <i className="size-1.5 rounded-full bg-slate-300" />
+          <i className="size-1.5 rounded-full bg-steel" />
+          <i className="size-1.5 rounded-full bg-steel" />
+          <i className="size-1.5 rounded-full bg-steel" />
         </span>
       </div>
       <img

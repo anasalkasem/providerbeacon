@@ -32,9 +32,9 @@ export default function ProviderDraftFields({
   return (
     <fieldset
       disabled={pending}
-      className="grid min-w-0 gap-3 rounded-xl border border-beacon-200 bg-beacon-50/70 p-4 md:col-span-2 md:grid-cols-2 disabled:opacity-60"
+      className="grid min-w-0 gap-3 rounded-xl border border-input bg-secondary/70 p-4 md:col-span-2 md:grid-cols-2 disabled:opacity-60"
     >
-      <label className="grid min-w-0 gap-2 text-sm font-bold text-slate-700">
+      <label className="grid min-w-0 gap-2 text-sm font-bold text-secondary-foreground">
         <span>{providerProfileCopy[locale].websiteUrl}</span>
         <Input
           dir="ltr"
@@ -51,7 +51,7 @@ export default function ProviderDraftFields({
           placeholder="https://provider.example"
         />
       </label>
-      <label className="grid min-w-0 gap-2 text-sm font-bold text-slate-700">
+      <label className="grid min-w-0 gap-2 text-sm font-bold text-secondary-foreground">
         <span>{text("providerName")}</span>
         <Input
           value={name}

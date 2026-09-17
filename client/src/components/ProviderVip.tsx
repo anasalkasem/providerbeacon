@@ -48,7 +48,7 @@ export async function prepareVipCover(file: File) {
     canvas.height = 800;
     const ctx = canvas.getContext("2d");
     if (!ctx) throw new Error("image");
-    ctx.fillStyle = "#20241f";
+    ctx.fillStyle = "#121317";
     ctx.fillRect(0, 0, 1280, 800);
     const scale = Math.min(
       1280 / image.naturalWidth,
@@ -90,10 +90,10 @@ export function ProviderVip({
     <div className="space-y-6">
       <BusinessCard>
         <div className="flex items-center gap-3">
-          <Diamond className="size-6 text-beacon-700" />
+          <Diamond className="size-6 text-foreground" />
           <h2 className="text-xl font-bold">{t.ownerTitle}</h2>
         </div>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-secondary-foreground">
           {t.ownerHelp}
         </p>
       </BusinessCard>
@@ -165,18 +165,18 @@ export function VipEditor({
         {card ? (
           <div className="mb-5 space-y-3">
             <BusinessStatus value={card.status} />
-            <p className="text-xs leading-6 text-slate-500">{t.liveHelp}</p>
+            <p className="text-xs leading-6 text-muted-foreground">{t.liveHelp}</p>
             {card.reviewNote && (
               <p
                 dir="auto"
-                className="rounded-xl bg-slate-50 p-4 text-sm leading-7"
+                className="rounded-xl bg-muted p-4 text-sm leading-7"
               >
                 {card.reviewNote}
               </p>
             )}
           </div>
         ) : (
-          <p className="mb-5 text-sm text-slate-600">{t.noCard}</p>
+          <p className="mb-5 text-sm text-secondary-foreground">{t.noCard}</p>
         )}
         <form
           className="space-y-5"
@@ -207,12 +207,12 @@ export function VipEditor({
           <fieldset disabled={!active || busy} className="space-y-5">
             <label className="block text-sm font-semibold">
               {t.cover}
-              <span className="mt-2 flex items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                <Upload className="size-5 shrink-0 text-beacon-700" />
+              <span className="mt-2 flex items-center gap-3 rounded-xl border border-dashed border-input bg-muted p-4">
+                <Upload className="size-5 shrink-0 text-foreground" />
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
-                  className="w-full min-w-0 text-xs file:me-3 file:rounded-lg file:border-0 file:bg-brand file:px-3 file:py-2 file:font-semibold file:text-ink"
+                  className="w-full min-w-0 text-xs file:me-3 file:rounded-lg file:border-0 file:bg-secondary file:px-3 file:py-2 file:font-semibold file:text-foreground"
                   onChange={async e => {
                     const file = e.target.files?.[0];
                     if (!file) return;
@@ -229,7 +229,7 @@ export function VipEditor({
                 />
               </span>
             </label>
-            <p className="text-xs leading-6 text-slate-500">{t.coverHelp}</p>
+            <p className="text-xs leading-6 text-muted-foreground">{t.coverHelp}</p>
             <label className="block text-sm font-semibold">
               {t.tagline}
               <textarea
@@ -254,7 +254,7 @@ export function VipEditor({
                 onChange={e => setSpecialties(e.target.value)}
               />
             </label>
-            <p className="text-xs leading-6 text-slate-500">
+            <p className="text-xs leading-6 text-muted-foreground">
               {t.specialtiesHelp}
             </p>
             <label className="block text-sm font-semibold">
@@ -280,12 +280,12 @@ export function VipEditor({
                 />
               </label>
             )}
-            <p className="text-xs leading-6 text-slate-500">{t.offerHelp}</p>
+            <p className="text-xs leading-6 text-muted-foreground">{t.offerHelp}</p>
           </fieldset>
           {error && (
             <p
               role="alert"
-              className="rounded-xl bg-red-50 p-4 text-sm text-red-800"
+              className="rounded-xl bg-danger-muted p-4 text-sm text-danger"
             >
               {error}
             </p>
@@ -338,7 +338,7 @@ export function VipEditor({
         )}
       </BusinessCard>
       <aside className="min-w-0 xl:sticky xl:top-24">
-        <h3 className="mb-4 text-sm font-bold text-slate-600">{t.preview}</h3>
+        <h3 className="mb-4 text-sm font-bold text-secondary-foreground">{t.preview}</h3>
         <VipCard
           preview
           card={{
@@ -355,7 +355,7 @@ export function VipEditor({
             ownershipVerified: owned.ownershipValid,
           }}
         />
-        <p className="mt-4 text-xs leading-6 text-slate-500">{t.disclosure}</p>
+        <p className="mt-4 text-xs leading-6 text-muted-foreground">{t.disclosure}</p>
       </aside>
     </div>
   );
@@ -427,20 +427,20 @@ export function VipMetrics({
           {b.loading}
         </p>
       ) : !data.collectionEnabled ? (
-        <p className="mt-5 text-sm text-amber-900">{t.metricsDisabled}</p>
+        <p className="mt-5 text-sm text-warning">{t.metricsDisabled}</p>
       ) : (
         <>
-          <p className="mt-3 text-xs text-slate-500" dir="ltr">
+          <p className="mt-3 text-xs text-muted-foreground" dir="ltr">
             {data.from} — {data.to} · UTC
           </p>
           <div className="mt-5 grid gap-4 sm:grid-cols-3">
             {metrics.map(m => (
               <div
                 key={m.label}
-                className="beacon-metric rounded-xl border bg-slate-50 p-5"
+                className="beacon-metric rounded-xl border bg-muted p-5"
               >
-                <m.icon className="mb-3 size-5 text-beacon-700" />
-                <p className="text-xs font-semibold text-slate-600">
+                <m.icon className="mb-3 size-5 text-foreground" />
+                <p className="text-xs font-semibold text-secondary-foreground">
                   {m.label}
                 </p>
                 <p className="mt-3 text-3xl font-extrabold">{m.value}</p>
@@ -449,7 +449,7 @@ export function VipMetrics({
           </div>
         </>
       )}
-      <p className="mt-5 max-w-4xl text-xs leading-7 text-slate-500">
+      <p className="mt-5 max-w-4xl text-xs leading-7 text-muted-foreground">
         {t.metricsHelp}
       </p>
     </BusinessCard>

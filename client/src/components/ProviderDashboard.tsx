@@ -135,7 +135,7 @@ export function ProviderDashboardShell({
     }).format(new Date(value));
   return (
     <div
-      className="provider-dashboard min-h-screen bg-background text-slate-900"
+      className="provider-dashboard min-h-screen bg-background text-foreground"
       dir={locale === "ar" ? "rtl" : "ltr"}
     >
       <header className="workspace-header sticky top-0 z-40">
@@ -145,19 +145,19 @@ export function ProviderDashboardShell({
         <div className="mx-auto flex min-h-[72px] max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-3 lg:flex-nowrap lg:px-6 lg:py-0">
           <div className="flex items-center gap-4">
             <Brand compact />
-            <span className="hidden border-s border-slate-200 ps-4 text-sm text-slate-500 xl:block">
+            <span className="hidden border-s border-border ps-4 text-sm text-muted-foreground xl:block">
               {t.workspace}
             </span>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
             <Link
               href="/providers"
-              className="hidden items-center gap-2 text-sm font-semibold text-slate-600 md:flex"
+              className="hidden items-center gap-2 text-sm font-semibold text-secondary-foreground md:flex"
             >
               {t.browse}
               <ArrowUpRight className="size-4" />
             </Link>
-            <label className="flex items-center gap-1.5 text-sm font-semibold text-slate-600">
+            <label className="flex items-center gap-1.5 text-sm font-semibold text-secondary-foreground">
               <Globe2 className="hidden size-4 sm:block" aria-hidden="true" />
               <select
                 aria-label={t.language}
@@ -177,7 +177,7 @@ export function ProviderDashboardShell({
               aria-label={mobileOpen ? t.closeMenu : t.menu}
               aria-expanded={mobileOpen}
               aria-controls="provider-navigation"
-              className="touch-target grid place-items-center rounded-xl border border-slate-200 lg:hidden"
+              className="touch-target grid place-items-center rounded-xl border border-border lg:hidden"
               onClick={() => setMobileOpen(!mobileOpen)}
             >
               {mobileOpen ? (
@@ -210,14 +210,14 @@ export function ProviderDashboardShell({
                 />
               ) : (
                 <span
-                  className="grid size-11 shrink-0 place-items-center rounded-xl bg-brand text-ink"
+                  className="grid size-11 shrink-0 place-items-center rounded-xl bg-secondary text-foreground"
                   aria-hidden="true"
                 >
                   <ShieldCheck className="size-5" />
                 </span>
               )}
               <div className="min-w-0">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-300">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-silver">
                   {t.workspace}
                 </p>
                 <p
@@ -244,7 +244,7 @@ export function ProviderDashboardShell({
             )}
           </div>
           <nav className="grid gap-1 p-3" aria-label={t.menu}>
-            <p className="px-3 pb-2 pt-3 text-[11px] font-bold uppercase tracking-wider text-slate-300">
+            <p className="px-3 pb-2 pt-3 text-[11px] font-bold uppercase tracking-wider text-silver">
               {t.manage}
             </p>
             {items.map(item => (
@@ -280,7 +280,7 @@ export function ProviderDashboardShell({
             ))}
             <Link
               href="/account/settings"
-              className="mt-3 flex min-h-12 items-center gap-3 rounded-xl border-t border-sidebar-border px-3 py-3 text-sm font-semibold text-slate-300 hover:bg-sidebar-accent"
+              className="mt-3 flex min-h-12 items-center gap-3 rounded-xl border-t border-sidebar-border px-3 py-3 text-sm font-semibold text-silver hover:bg-sidebar-accent"
             >
               <Settings2 className="size-[18px]" />
               {t.settings}
@@ -290,13 +290,13 @@ export function ProviderDashboardShell({
             {owned ? (
               <div className="provider-sidebar-plan rounded-2xl p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="text-xs font-bold text-slate-300">
+                  <span className="text-xs font-bold text-silver">
                     {t.planStatus}
                   </span>
                   <BusinessStatus value={planState(owned.subscription, now)} />
                 </div>
                 {owned.subscription.endsAt && (
-                  <p className="mt-3 text-xs leading-6 text-slate-300">
+                  <p className="mt-3 text-xs leading-6 text-silver">
                     {b.endsAt}: <bdi>{date(owned.subscription.endsAt)}</bdi>
                   </p>
                 )}
@@ -322,7 +322,7 @@ export function ProviderDashboardShell({
             )}
             <a
               href="mailto:soporte@providerbeacon.com"
-              className="flex items-center gap-3 text-slate-300"
+              className="flex items-center gap-3 text-silver"
             >
               <LifeBuoy className="size-5 shrink-0" />
               <span className="text-xs leading-5">
@@ -337,7 +337,7 @@ export function ProviderDashboardShell({
         <main id="main-content" className="min-w-0 px-4 py-6 sm:px-6 lg:p-8">
           <header className="workspace-heading mb-7 flex flex-wrap items-center justify-between gap-4">
             <div className="min-w-0">
-              <p className="mb-2 flex items-center gap-2 text-xs font-medium text-slate-500">
+              <p className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
                 <span>{t.workspace}</span>
                 <span aria-hidden="true">/</span>
                 <bdi className="max-w-56 truncate">
@@ -347,11 +347,11 @@ export function ProviderDashboardShell({
               <h1
                 ref={heading}
                 tabIndex={-1}
-                className="scroll-mt-24 text-2xl font-extrabold tracking-tight text-ink outline-none sm:text-3xl"
+                className="scroll-mt-24 text-2xl font-extrabold tracking-tight text-foreground outline-none sm:text-3xl"
               >
                 {current.label}
               </h1>
-              <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-500">
+              <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
                 {current.help}
               </p>
             </div>
@@ -366,9 +366,9 @@ export function ProviderDashboardShell({
             )}
           </header>
           {children}
-          <footer className="mt-10 flex flex-wrap justify-between gap-3 border-t border-slate-200 pt-5 text-xs text-slate-400">
+          <footer className="mt-10 flex flex-wrap justify-between gap-3 border-t border-border pt-5 text-xs text-muted-foreground">
             <span dir="ltr">© {new Date().getFullYear()} ProviderBeacon</span>
-            <Link href="/privacy" className="hover:text-slate-600">
+            <Link href="/privacy" className="hover:text-secondary-foreground">
               {t.privacy}
             </Link>
           </footer>
@@ -386,15 +386,15 @@ export function ProviderPlanLock({
   const { locale } = useLocale();
   const t = dashboardText(locale);
   return (
-    <BusinessCard className="border-beacon-200 bg-beacon-50/50">
+    <BusinessCard className="border-input bg-secondary/50">
       <div className="flex flex-wrap items-center justify-between gap-5">
         <div className="flex items-start gap-4">
-          <span className="rounded-xl bg-white p-3 text-beacon-700">
+          <span className="rounded-xl bg-card p-3 text-foreground">
             <LockKeyhole className="size-5" />
           </span>
           <div className="max-w-xl">
-            <h2 className="font-bold text-ink">{t.unlock}</h2>
-            <p className="mt-2 text-sm leading-7 text-slate-600">
+            <h2 className="font-bold text-foreground">{t.unlock}</h2>
+            <p className="mt-2 text-sm leading-7 text-secondary-foreground">
               {t.unlockHelp}
             </p>
           </div>
@@ -546,17 +546,17 @@ export function ProviderOverview({
                 ].map(item => (
                   <button
                     key={item.label}
-                    className="beacon-metric p-5 text-start transition-colors hover:border-beacon-500"
+                    className="beacon-metric p-5 text-start transition-colors hover:border-ring"
                     onClick={() => onNavigate(item.target as ProviderSection)}
                   >
-                    <span className="flex items-center justify-between gap-2 text-xs font-semibold text-slate-500">
+                    <span className="flex items-center justify-between gap-2 text-xs font-semibold text-muted-foreground">
                       {item.label}
-                      <item.icon className="size-4 text-beacon-600" />
+                      <item.icon className="size-4 text-foreground" />
                     </span>
-                    <bdi className="mt-3 block text-3xl font-extrabold text-ink">
+                    <bdi className="mt-3 block text-3xl font-extrabold text-foreground">
                       {formatNumber(locale, item.count)}
                     </bdi>
-                    <span className="mt-2 block text-xs leading-5 text-slate-500">
+                    <span className="mt-2 block text-xs leading-5 text-muted-foreground">
                       {item.help}
                     </span>
                   </button>
@@ -564,14 +564,14 @@ export function ProviderOverview({
               </div>
               <BusinessCard>
                 <div className="flex items-center justify-between gap-3">
-                  <h2 className="font-bold text-ink">{t.attention}</h2>
+                  <h2 className="font-bold text-foreground">{t.attention}</h2>
                   {alerts.length > 0 && (
-                    <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-amber-800">
+                    <span className="rounded-full bg-warning-muted px-2.5 py-1 text-xs font-bold text-warning">
                       {formatNumber(locale, alerts.length)}
                     </span>
                   )}
                 </div>
-                <div className="mt-4 divide-y divide-slate-100">
+                <div className="mt-4 divide-y divide-border">
                   {alerts.length ? (
                     alerts.map(alert => (
                       <article
@@ -579,20 +579,20 @@ export function ProviderOverview({
                         className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between"
                       >
                         <div className="flex min-w-0 gap-3">
-                          <span className="mt-0.5 rounded-lg bg-amber-50 p-2 text-amber-700">
+                          <span className="mt-0.5 rounded-lg bg-warning-muted p-2 text-warning">
                             <Clock3 className="size-4" />
                           </span>
                           <div className="min-w-0">
-                            <h3 className="text-sm font-bold text-slate-800">
+                            <h3 className="text-sm font-bold text-foreground">
                               {alert.title}
                             </h3>
-                            <p className="mt-1 break-words text-xs leading-6 text-slate-500">
+                            <p className="mt-1 break-words text-xs leading-6 text-muted-foreground">
                               {alert.body}
                             </p>
                           </div>
                         </div>
                         <button
-                          className="shrink-0 self-start rounded-lg px-2 py-2 text-xs font-bold text-beacon-700 hover:bg-beacon-50"
+                          className="shrink-0 self-start rounded-lg px-2 py-2 text-xs font-bold text-foreground hover:bg-secondary"
                           onClick={() =>
                             onNavigate(
                               alert.target,
@@ -606,13 +606,13 @@ export function ProviderOverview({
                       </article>
                     ))
                   ) : (
-                    <div className="flex items-start gap-3 rounded-xl bg-beacon-50 p-4">
-                      <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-beacon-600" />
+                    <div className="flex items-start gap-3 rounded-xl bg-secondary p-4">
+                      <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-foreground" />
                       <div>
-                        <h3 className="text-sm font-bold text-beacon-900">
+                        <h3 className="text-sm font-bold text-foreground">
                           {t.clear}
                         </h3>
-                        <p className="mt-1 text-xs leading-6 text-beacon-800">
+                        <p className="mt-1 text-xs leading-6 text-foreground">
                           {t.clearHelp}
                         </p>
                       </div>
@@ -625,7 +625,7 @@ export function ProviderOverview({
         </div>
         <div className="space-y-5">
           <BusinessCard>
-            <h2 className="font-bold text-ink">{t.quickActions}</h2>
+            <h2 className="font-bold text-foreground">{t.quickActions}</h2>
             <div className="mt-4 grid gap-3">
               <button
                 className={`${businessPrimary} justify-between`}
@@ -646,7 +646,7 @@ export function ProviderOverview({
                 <Plus className="size-4" />
               </button>
               <Link
-                className="flex items-center justify-between gap-2 rounded-xl px-1 py-2 text-sm font-semibold text-slate-600 hover:text-beacon-700"
+                className="flex items-center justify-between gap-2 rounded-xl px-1 py-2 text-sm font-semibold text-secondary-foreground hover:text-foreground"
                 href={`/providers/${owned.provider.slug}`}
               >
                 {t.viewProfile}
@@ -657,30 +657,30 @@ export function ProviderOverview({
           {data && (
             <BusinessCard>
               <div className="flex items-center gap-2">
-                <Tag className="size-4 text-beacon-600" />
-                <h2 className="text-sm font-bold text-ink">
+                <Tag className="size-4 text-foreground" />
+                <h2 className="text-sm font-bold text-foreground">
                   {t.monthlyOffers}
                 </h2>
               </div>
-              <p className="mt-5 text-3xl font-extrabold text-ink">
+              <p className="mt-5 text-3xl font-extrabold text-foreground">
                 <bdi>
                   {formatNumber(locale, data.usage.used)}{" "}
-                  <span className="text-lg font-medium text-slate-400">
+                  <span className="text-lg font-medium text-muted-foreground">
                     / {formatNumber(locale, data.usage.limit)}
                   </span>
                 </bdi>
               </p>
-              <p className="mt-1 text-xs text-slate-500">{t.used}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{t.used}</p>
               <progress
                 aria-label={t.monthlyOffers}
                 value={Math.min(data.usage.used, data.usage.limit)}
                 max={data.usage.limit}
                 className="provider-offer-progress mt-4 h-1.5 w-full overflow-hidden rounded-full"
               />
-              <p className="mt-4 text-xs leading-6 text-slate-500">
+              <p className="mt-4 text-xs leading-6 text-muted-foreground">
                 {t.allowanceHelp}
               </p>
-              <p className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500">
+              <p className="mt-4 border-t border-border pt-3 text-xs text-muted-foreground">
                 {t.resets}:{" "}
                 <bdi>
                   {new Intl.DateTimeFormat(locale, {
@@ -693,14 +693,14 @@ export function ProviderOverview({
             </BusinessCard>
           )}
           <div className="rounded-2xl bg-ink p-5 text-white">
-            <ShieldCheck className="size-6 text-beacon-300" />
+            <ShieldCheck className="size-6 text-foreground" />
             <h2 className="mt-3 font-bold">{active ? t.ready : t.unlock}</h2>
-            <p className="mt-2 text-xs leading-6 text-slate-300">
+            <p className="mt-2 text-xs leading-6 text-silver">
               {b.planHelp}
             </p>
             <button
               onClick={() => onNavigate("billing")}
-              className="mt-4 flex items-center gap-2 text-xs font-bold text-beacon-200"
+              className="mt-4 flex items-center gap-2 text-xs font-bold text-foreground"
             >
               {t.managePlan}
               <ArrowUpRight className="size-4" />

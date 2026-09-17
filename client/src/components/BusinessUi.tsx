@@ -9,11 +9,11 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { businessError, businessText } from "@/i18n/providerBusiness";
 
 export const businessField =
-  "mt-2 block w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 disabled:bg-slate-100";
+  "mt-2 block w-full rounded-xl border border-input bg-card px-3 py-2.5 text-sm text-foreground disabled:bg-secondary";
 export const businessPrimary =
   "beacon-button inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50";
 export const businessSecondary =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-xl border border-input bg-card px-4 py-2.5 text-sm font-semibold text-secondary-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50";
 export function BusinessCard({
   children,
   className = "",
@@ -23,7 +23,7 @@ export function BusinessCard({
 }) {
   return (
     <section
-      className={`beacon-surface min-w-0 rounded-2xl border border-slate-200 bg-white p-5 sm:p-6 ${className}`}
+      className={`beacon-surface min-w-0 rounded-2xl border border-border bg-card p-5 sm:p-6 ${className}`}
     >
       {children}
     </section>
@@ -34,7 +34,7 @@ export function BusinessError({ message }: { message?: string }) {
   return (
     <p
       role="alert"
-      className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-7 text-red-800"
+      className="rounded-xl border border-danger-border bg-danger-muted p-4 text-sm leading-7 text-danger"
     >
       {businessError(message ?? "", locale)}
     </p>
@@ -46,7 +46,7 @@ export function BusinessStatus({ value }: { value: string }) {
   const good = value === "active" || value === "approved";
   return (
     <span
-      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${good ? "bg-beacon-50 text-beacon-800" : value === "pending" || value === "scheduled" ? "bg-amber-50 text-amber-800" : "bg-slate-100 text-slate-600"}`}
+      className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${good ? "bg-secondary text-foreground" : value === "pending" || value === "scheduled" ? "bg-warning-muted text-warning" : "bg-secondary text-secondary-foreground"}`}
     >
       {t[value as keyof typeof t] ?? t.status}
     </span>
@@ -103,37 +103,37 @@ export function PublicPromotionCard({ offer }: { offer: PublicPromotion }) {
   const { locale } = useLocale();
   const t = businessText(locale);
   return (
-    <article className="flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <article className="flex min-w-0 flex-col rounded-2xl border border-border bg-card p-5 shadow-none">
       <div className="flex items-start justify-between gap-3">
         <Link
           href={`/providers/${offer.provider.slug}`}
-          className="text-sm font-bold text-beacon-700"
+          className="text-sm font-bold text-foreground"
         >
           {offer.provider.name}
         </Link>
-        <Tag className="size-5 shrink-0 text-beacon-600" />
+        <Tag className="size-5 shrink-0 text-foreground" />
       </div>
       <h3
         dir="auto"
-        className="mt-4 break-words text-xl font-extrabold text-ink"
+        className="mt-4 break-words text-xl font-extrabold text-foreground"
       >
         {offer.title}
       </h3>
       <p
         dir="auto"
-        className="mt-3 whitespace-pre-line break-words text-sm leading-7 text-slate-600"
+        className="mt-3 whitespace-pre-line break-words text-sm leading-7 text-secondary-foreground"
       >
         {offer.description}
       </p>
       {offer.couponCode && (
         <p
-          className="mt-5 rounded-xl border border-dashed border-beacon-300 bg-beacon-50 p-3 text-center font-mono font-bold text-beacon-900"
+          className="mt-5 rounded-xl border border-dashed border-input bg-secondary p-3 text-center font-mono font-bold text-foreground"
           dir="ltr"
         >
           {offer.couponCode}
         </p>
       )}
-      <p className="mt-4 text-xs text-slate-500">
+      <p className="mt-4 text-xs text-muted-foreground">
         {t.endsAt}:{" "}
         <bdi>
           {new Intl.DateTimeFormat(locale, {
@@ -176,13 +176,13 @@ export function PublicPromotions({ providerId }: { providerId?: number }) {
   return (
     <section className="mt-8">
       {providerId ? (
-        <h2 className="text-2xl font-extrabold text-ink">{t.offers}</h2>
+        <h2 className="text-2xl font-extrabold text-foreground">{t.offers}</h2>
       ) : (
-        <h1 className="text-3xl font-extrabold text-ink">{t.offers}</h1>
+        <h1 className="text-3xl font-extrabold text-foreground">{t.offers}</h1>
       )}
-      <p className="mt-2 text-sm leading-7 text-slate-500">{t.offerIntro}</p>
+      <p className="mt-2 text-sm leading-7 text-muted-foreground">{t.offerIntro}</p>
       {!visible.length ? (
-        <p className="mt-6 rounded-xl bg-slate-50 p-6 text-slate-500">
+        <p className="mt-6 rounded-xl bg-muted p-6 text-muted-foreground">
           {t.noItems}
         </p>
       ) : (

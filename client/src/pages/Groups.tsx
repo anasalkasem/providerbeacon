@@ -66,16 +66,16 @@ export default function Groups() {
   };
   return (
     <PublicLayout showCatalogueNotice={false}>
-      <section className="overflow-hidden border-b border-beacon-100 bg-[linear-gradient(120deg,#eef8f5,#f5f8fd)]">
+      <section className="overflow-hidden border-b border-input bg-card">
         <div className="container grid items-center gap-8 py-12 md:grid-cols-[1.5fr_1fr] md:py-16">
           <div>
-            <p className="text-xs font-bold tracking-[.18em] text-beacon-700">
+            <p className="text-xs font-bold tracking-[.18em] text-foreground">
               {t.eyebrow}
             </p>
-            <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-ink sm:text-5xl">
+            <h1 className="mt-4 text-4xl font-extrabold leading-tight tracking-tight text-foreground sm:text-5xl">
               {t.title}
             </h1>
-            <p className="mt-5 max-w-2xl text-base leading-8 text-slate-600">
+            <p className="mt-5 max-w-2xl text-base leading-8 text-secondary-foreground">
               {t.intro}
             </p>
             <Link href="/account/groups" className={`${primaryClass} mt-7`}>
@@ -87,9 +87,9 @@ export default function Groups() {
             aria-hidden="true"
             className="hidden justify-self-center md:grid"
           >
-            <div className="grid size-52 place-items-center rounded-full border border-beacon-200/70 bg-white/40 shadow-[0_0_0_24px_#ffffff45,0_0_0_48px_#ffffff25]">
+            <div className="grid size-52 place-items-center rounded-full border border-input/70 bg-card">
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-ink p-5 text-white shadow-lg">
+                <div className="rounded-2xl bg-ink p-5 text-white shadow-none">
                   <Users className="size-12" />
                 </div>
                 <div className="grid gap-3">
@@ -98,7 +98,7 @@ export default function Groups() {
                     return (
                       <span
                         key={v}
-                        className="rounded-xl border border-white bg-white p-3 text-beacon-700 shadow-sm"
+                        className="rounded-xl border border-white bg-card p-3 text-foreground shadow-none"
                       >
                         <Icon className="size-5" />
                       </span>
@@ -111,7 +111,7 @@ export default function Groups() {
         </div>
       </section>
       <section className="container py-8 sm:py-10">
-        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+        <div className="rounded-2xl border border-border bg-card p-4 sm:p-5">
           <div
             className="flex flex-wrap items-center gap-2"
             aria-label={t.platform}
@@ -143,7 +143,7 @@ export default function Groups() {
           <div className="mt-5 grid gap-4 md:grid-cols-[2fr_1fr_1fr]">
             <GroupField label={t.search}>
               <div className="relative">
-                <Search className="pointer-events-none absolute start-3 top-3.5 size-4 text-slate-400" />
+                <Search className="pointer-events-none absolute start-3 top-3.5 size-4 text-muted-foreground" />
                 <input
                   type="search"
                   className={`${fieldClass} ps-10`}
@@ -196,33 +196,33 @@ export default function Groups() {
         <div className="my-6 flex flex-wrap items-center justify-between gap-3">
           <p
             aria-live="polite"
-            className="text-sm font-semibold text-slate-600"
+            className="text-sm font-semibold text-secondary-foreground"
           >
             {t.found}: {query.data?.total ?? "—"}
           </p>
           {filtered && (
             <button
               onClick={reset}
-              className="text-sm font-bold text-beacon-700 underline underline-offset-4"
+              className="text-sm font-bold text-foreground underline underline-offset-4"
             >
               {t.reset}
             </button>
           )}
           <Link
             href="/account/groups"
-            className="text-sm font-bold text-ink"
+            className="text-sm font-bold text-foreground"
           >
             {t.mine} →
           </Link>
         </div>
         {query.isLoading ? (
-          <p role="status" className="py-16 text-center text-slate-500">
+          <p role="status" className="py-16 text-center text-muted-foreground">
             {t.loading}
           </p>
         ) : query.isError ? (
           <div
             role="alert"
-            className="rounded-2xl border border-red-100 bg-white p-8 text-center"
+            className="rounded-2xl border border-danger-border bg-card p-8 text-center"
           >
             <p>{t.error}</p>
             <button
@@ -233,12 +233,12 @@ export default function Groups() {
             </button>
           </div>
         ) : !query.data?.items.length ? (
-          <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center sm:p-14">
-            <MessagesSquare className="mx-auto size-10 text-beacon-600" />
-            <h2 className="mt-5 text-2xl font-bold text-ink">
+          <div className="rounded-2xl border border-dashed border-input bg-card p-8 text-center sm:p-14">
+            <MessagesSquare className="mx-auto size-10 text-foreground" />
+            <h2 className="mt-5 text-2xl font-bold text-foreground">
               {filtered ? t.noMatch : t.empty}
             </h2>
-            <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-slate-500">
+            <p className="mx-auto mt-3 max-w-lg text-sm leading-7 text-muted-foreground">
               {filtered ? t.noMatchBody : t.emptyBody}
             </p>
             <Link href="/account/groups" className={`${primaryClass} mt-6`}>
@@ -268,7 +268,7 @@ export default function Groups() {
               : undefined
           }
         />
-        <p className="mx-auto mt-8 max-w-3xl text-center text-xs leading-6 text-slate-500">
+        <p className="mx-auto mt-8 max-w-3xl text-center text-xs leading-6 text-muted-foreground">
           {t.disclaimer}
         </p>
       </section>
@@ -352,7 +352,7 @@ function ReportForm({ id, close }: { id: number; close: () => void }) {
         />
       </GroupField>
       {mutation.error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {communityError(mutation.error.message, locale)}
         </p>
       )}

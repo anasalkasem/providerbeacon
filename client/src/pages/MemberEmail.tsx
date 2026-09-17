@@ -32,9 +32,9 @@ export function EmailPreferences({ member }: { member: MemberProfile }) {
     onError: () => setError(t.requestError),
   });
   return (
-    <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
+    <section className="space-y-5 rounded-2xl border border-border bg-card p-6 sm:p-8">
       <h2 className="flex items-center gap-2 text-xl font-bold">
-        <Mail className="size-5 text-blue-800" />
+        <Mail className="size-5 text-foreground" />
         {t.preferences}
       </h2>
       <form
@@ -49,7 +49,7 @@ export function EmailPreferences({ member }: { member: MemberProfile }) {
         <label className="grid gap-2 text-sm font-semibold">
           {t.language}
           <select
-            className="h-11 rounded-lg border border-slate-300 bg-white px-3"
+            className="h-11 rounded-lg border border-input bg-card px-3"
             value={language}
             onChange={e => setLanguage(e.target.value as Locale)}
           >
@@ -72,7 +72,7 @@ export function EmailPreferences({ member }: { member: MemberProfile }) {
         <Button disabled={preferences.isPending}>{t.save}</Button>
       </form>
       {!member.emailVerified && (
-        <div className="space-y-3 border-t border-slate-100 pt-4">
+        <div className="space-y-3 border-t border-border pt-4">
           <Button
             variant="outline"
             disabled={!me.data?.emailEnabled || verify.isPending}
@@ -85,20 +85,20 @@ export function EmailPreferences({ member }: { member: MemberProfile }) {
             {t.sendVerification}
           </Button>
           {!me.data?.emailEnabled && (
-            <p className="text-xs text-slate-500">{t.unavailable}</p>
+            <p className="text-xs text-muted-foreground">{t.unavailable}</p>
           )}
         </div>
       )}
       {notice && (
         <p
           role="status"
-          className="rounded-lg bg-beacon-50 p-3 text-sm text-beacon-900"
+          className="rounded-lg bg-secondary p-3 text-sm text-foreground"
         >
           {notice}
         </p>
       )}
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {error}
         </p>
       )}
@@ -181,16 +181,16 @@ export default function MemberEmailPage() {
   return (
     <PublicLayout showCatalogueNotice={false}>
       <div className="container py-14">
-        <section className="mx-auto max-w-lg space-y-6 rounded-3xl border border-slate-200 bg-white p-7 shadow-sm sm:p-10">
-          <div className="grid size-12 place-items-center rounded-2xl bg-beacon-50 text-beacon-700">
+        <section className="mx-auto max-w-lg space-y-6 rounded-3xl border border-border bg-card p-7 shadow-none sm:p-10">
+          <div className="grid size-12 place-items-center rounded-2xl bg-secondary text-foreground">
             <MailCheck />
           </div>
-          <p className="text-sm font-semibold text-blue-800">ProviderBeacon</p>
-          <h1 className="text-2xl font-extrabold text-slate-950">{title}</h1>
+          <p className="text-sm font-semibold text-foreground">ProviderBeacon</p>
+          <h1 className="text-2xl font-extrabold text-foreground">{title}</h1>
           {done ? (
             <p
               role="status"
-              className="rounded-xl bg-beacon-50 p-4 leading-7 text-beacon-900"
+              className="rounded-xl bg-secondary p-4 leading-7 text-foreground"
             >
               {mode === "verify"
                 ? t.verified
@@ -257,22 +257,22 @@ export default function MemberEmailPage() {
                 </>
               )}
               {mode === "unsubscribe" && (
-                <p className="text-sm leading-7 text-slate-600">
+                <p className="text-sm leading-7 text-secondary-foreground">
                   {priceScope ? priceText.unsubBody : t.unsubBody}
                 </p>
               )}
               {mode !== "forgot" && !token && (
-                <p role="alert" className="text-sm text-red-700">
+                <p role="alert" className="text-sm text-danger">
                   {t.error}
                 </p>
               )}
               {error && (
-                <p role="alert" className="text-sm leading-6 text-red-700">
+                <p role="alert" className="text-sm leading-6 text-danger">
                   {error}
                 </p>
               )}
               {mode === "forgot" && !me.data?.emailEnabled && (
-                <p className="text-sm text-slate-500">{t.unavailable}</p>
+                <p className="text-sm text-muted-foreground">{t.unavailable}</p>
               )}
               <Button
                 className="h-12 w-full"
@@ -291,7 +291,7 @@ export default function MemberEmailPage() {
               </Button>
             </form>
           )}
-          <div className="flex flex-wrap gap-4 text-sm font-semibold text-blue-800">
+          <div className="flex flex-wrap gap-4 text-sm font-semibold text-foreground">
             <Link href={`/sign-in?lang=${locale}`} className="underline">
               {t.signIn}
             </Link>

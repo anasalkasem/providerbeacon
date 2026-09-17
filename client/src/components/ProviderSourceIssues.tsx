@@ -22,7 +22,7 @@ export default function ProviderSourceIssues({ jobId }: { jobId: number }) {
   );
   return (
     <div className="mt-4 space-y-3">
-      <p className="text-xs leading-5 text-slate-600">
+      <p className="text-xs leading-5 text-secondary-foreground">
         {text("syncIssuesBody")}
       </p>
       {issues.isLoading ? (
@@ -39,19 +39,19 @@ export default function ProviderSourceIssues({ jobId }: { jobId: number }) {
           </Button>
         </p>
       ) : !issues.data?.items.length ? (
-        <p className="text-sm text-slate-600">{text("syncNoIssues")}</p>
+        <p className="text-sm text-secondary-foreground">{text("syncNoIssues")}</p>
       ) : (
         issues.data.items.map(item => (
           <div
             key={item.ordinal}
-            className="min-w-0 rounded-xl border border-amber-200 bg-white p-4"
+            className="min-w-0 rounded-xl border border-warning-border bg-card p-4"
           >
-            <p className="break-words text-xs font-bold text-slate-500">
+            <p className="break-words text-xs font-bold text-muted-foreground">
               {text("syncIssueId")}: <bdi>{item.externalId}</bdi>
             </p>
             <p
               dir="auto"
-              className="mt-1 break-words text-sm font-semibold text-slate-900"
+              className="mt-1 break-words text-sm font-semibold text-foreground"
             >
               {item.name ?? "—"}
             </p>
@@ -64,14 +64,14 @@ export default function ProviderSourceIssues({ jobId }: { jobId: number }) {
                 ] as const
               ).map(([key, value]) => (
                 <div key={key} className="min-w-0">
-                  <dt className="text-slate-500">{text(key)}</dt>
+                  <dt className="text-muted-foreground">{text(key)}</dt>
                   <dd className="mt-1 break-words font-bold">
                     <bdi>{value ?? "—"}</bdi>
                   </dd>
                 </div>
               ))}
             </dl>
-            <ul className="mt-3 space-y-1 text-xs text-amber-800">
+            <ul className="mt-3 space-y-1 text-xs text-warning">
               {item.problems.map(problem => (
                 <li key={problem}>
                   {text(

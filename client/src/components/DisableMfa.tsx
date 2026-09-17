@@ -92,7 +92,7 @@ export function DisableMfa({
       <Button
         type="button"
         variant="outline"
-        className="mt-6 w-full text-red-700"
+        className="mt-6 w-full text-danger"
         onClick={() => setOpen(true)}
       >
         {t.disable}
@@ -100,14 +100,14 @@ export function DisableMfa({
     );
   return (
     <form
-      className="mt-6 grid gap-4 rounded-xl border border-amber-200 bg-amber-50 p-4"
+      className="mt-6 grid gap-4 rounded-xl border border-warning-border bg-warning-muted p-4"
       onSubmit={event => {
         event.preventDefault();
         setError("");
         disable.mutate({ currentPassword: password, code, confirm: true });
       }}
     >
-      <p className="text-sm leading-6 text-amber-950">{t.body}</p>
+      <p className="text-sm leading-6 text-warning">{t.body}</p>
       <label className="grid gap-2 text-sm font-semibold">
         {text("currentPassword")}
         <Input
@@ -132,7 +132,7 @@ export function DisableMfa({
         />
       </label>
       {error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {error}
         </p>
       )}

@@ -41,18 +41,18 @@ export default function AcceptInvite() {
   return (
     <PublicLayout showCatalogueNotice={false}>
       <main className="container grid min-h-[76vh] place-items-center py-16">
-        <section className="w-full max-w-xl rounded-[2rem] border border-slate-200 bg-white p-8 shadow-xl shadow-slate-200/50">
-          <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-emerald-50 text-emerald-700">
+        <section className="w-full max-w-xl rounded-[2rem] border border-border bg-card p-8 shadow-none shadow-slate-200/50">
+          <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-success-muted text-success">
             {accept.isSuccess ? <CheckCircle2 /> : <ShieldCheck />}
           </div>
-          <h1 className="mt-5 text-center text-3xl font-extrabold text-slate-950">
+          <h1 className="mt-5 text-center text-3xl font-extrabold text-foreground">
             {text("invitedTitle")}
           </h1>
-          <p className="mt-3 text-center leading-7 text-slate-500">
+          <p className="mt-3 text-center leading-7 text-muted-foreground">
             {text("invitedBody")}
           </p>
           {invalid ? (
-            <p className="mt-6 rounded-xl bg-red-50 p-4 text-sm font-semibold text-red-700">
+            <p className="mt-6 rounded-xl bg-danger-muted p-4 text-sm font-semibold text-danger">
               {w.invalidLink}
             </p>
           ) : loading ? (
@@ -83,7 +83,7 @@ export default function AcceptInvite() {
                   register.mutate({ token, name, email, password });
               }}
             >
-              <label className="grid gap-2 text-sm font-semibold text-slate-700">
+              <label className="grid gap-2 text-sm font-semibold text-secondary-foreground">
                 {text("name")}
                 <Input
                   value={name}
@@ -92,7 +92,7 @@ export default function AcceptInvite() {
                   required
                 />
               </label>
-              <label className="grid gap-2 text-sm font-semibold text-slate-700">
+              <label className="grid gap-2 text-sm font-semibold text-secondary-foreground">
                 {text("email")}
                 <Input
                   dir="ltr"
@@ -103,7 +103,7 @@ export default function AcceptInvite() {
                   required
                 />
               </label>
-              <label className="grid gap-2 text-sm font-semibold text-slate-700">
+              <label className="grid gap-2 text-sm font-semibold text-secondary-foreground">
                 {text("password")}
                 <Input
                   dir="ltr"
@@ -116,7 +116,7 @@ export default function AcceptInvite() {
                   required
                 />
               </label>
-              <label className="grid gap-2 text-sm font-semibold text-slate-700">
+              <label className="grid gap-2 text-sm font-semibold text-secondary-foreground">
                 {text("confirmPassword")}
                 <Input
                   dir="ltr"
@@ -129,9 +129,9 @@ export default function AcceptInvite() {
                   required
                 />
               </label>
-              <p className="text-xs text-slate-500 sm:col-span-2">
+              <p className="text-xs text-muted-foreground sm:col-span-2">
                 {password && confirmation && password !== confirmation ? (
-                  <span className="text-red-600">{text("mismatch")}</span>
+                  <span className="text-danger">{text("mismatch")}</span>
                 ) : (
                   text("passwordRule")
                 )}
@@ -148,7 +148,7 @@ export default function AcceptInvite() {
             </form>
           )}
           {(accept.error || register.error) && (
-            <p className="mt-4 rounded-xl bg-red-50 p-4 text-sm text-red-700">
+            <p className="mt-4 rounded-xl bg-danger-muted p-4 text-sm text-danger">
               {(
                 accept.error?.message ??
                 register.error?.message ??

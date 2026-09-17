@@ -38,10 +38,10 @@ export function AdminVipGrants() {
     <div className="space-y-5">
       <BusinessCard>
         <h2 className="flex items-center gap-3 text-xl font-bold">
-          <Gift className="size-6 text-beacon-700" />
+          <Gift className="size-6 text-foreground" />
           {t.title}
         </h2>
-        <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
+        <p className="mt-3 max-w-3xl text-sm leading-7 text-secondary-foreground">
           {t.help}
         </p>
         <div className="mt-5">
@@ -126,7 +126,7 @@ export function VipGrantForm({ data }: { data: GrantState }) {
               }
             />
             {card.complimentaryEndsAt && (
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-secondary-foreground">
                 {t.activeUntil}:{" "}
                 <bdi>
                   {new Intl.DateTimeFormat(locale, {
@@ -142,7 +142,7 @@ export function VipGrantForm({ data }: { data: GrantState }) {
         {blocked && (
           <p
             role="status"
-            className="mt-4 rounded-xl bg-amber-50 p-4 text-sm leading-7 text-amber-900"
+            className="mt-4 rounded-xl bg-warning-muted p-4 text-sm leading-7 text-warning"
           >
             {data.paidCardActive ? t.paidCard : t.unavailable}
           </p>
@@ -188,8 +188,8 @@ export function VipGrantForm({ data }: { data: GrantState }) {
             </label>
             <label className="block text-sm font-semibold">
               {v.cover}
-              <span className="mt-2 flex items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4">
-                <Upload className="size-5 shrink-0 text-beacon-700" />
+              <span className="mt-2 flex items-center gap-3 rounded-xl border border-dashed border-input bg-muted p-4">
+                <Upload className="size-5 shrink-0 text-foreground" />
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
@@ -210,7 +210,7 @@ export function VipGrantForm({ data }: { data: GrantState }) {
                 />
               </span>
             </label>
-            <p className="text-xs leading-6 text-slate-500">{t.coverHelp}</p>
+            <p className="text-xs leading-6 text-muted-foreground">{t.coverHelp}</p>
             <label className="block text-sm font-semibold">
               {v.tagline}
               <textarea
@@ -257,14 +257,14 @@ export function VipGrantForm({ data }: { data: GrantState }) {
             </button>
           </fieldset>
           {error && (
-            <p role="alert" className="text-sm text-red-700">
+            <p role="alert" className="text-sm text-danger">
               {error}
             </p>
           )}
           {grant.isError && <BusinessError message={grant.error.message} />}
         </form>
         {complimentary && card.status !== "hidden" && (
-          <div className="mt-6 border-t border-slate-200 pt-5">
+          <div className="mt-6 border-t border-border pt-5">
             {confirmStop && <p className="mb-3 text-sm">{t.stopConfirm}</p>}
             <button
               className={businessSecondary}
@@ -297,7 +297,7 @@ export function VipGrantForm({ data }: { data: GrantState }) {
         )}
       </BusinessCard>
       <aside className="min-w-0 xl:sticky xl:top-24">
-        <h3 className="mb-4 text-sm font-bold text-slate-600">{v.preview}</h3>
+        <h3 className="mb-4 text-sm font-bold text-secondary-foreground">{v.preview}</h3>
         <VipCard
           preview
           card={{

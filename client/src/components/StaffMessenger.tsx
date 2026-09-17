@@ -144,9 +144,9 @@ export function Messenger({ userId }: { userId: number }) {
         aria-expanded={open}
         aria-controls="staff-messenger"
         onClick={() => setOpen(!open)}
-        className={`fixed bottom-5 end-5 z-[65] flex items-center gap-2 rounded-full bg-ink px-5 py-3.5 font-bold text-white shadow-xl ring-1 ring-white/20 ${open ? "hidden" : ""}`}
+        className={`fixed bottom-5 end-5 z-[65] flex items-center gap-2 rounded-full bg-ink px-5 py-3.5 font-bold text-white shadow-none ring-1 ring-white/20 ${open ? "hidden" : ""}`}
       >
-        <MessageCircle className="size-5 text-beacon-300" />
+        <MessageCircle className="size-5 text-foreground" />
         {t.title}
         <UnreadMessages count={unread} />
         <WaitingCustomers count={waiting} />
@@ -162,10 +162,10 @@ export function Messenger({ userId }: { userId: number }) {
               close();
             }
           }}
-          className="fixed inset-x-2 bottom-2 z-[70] flex h-[min(750px,calc(100dvh-20px))] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl sm:inset-x-auto sm:bottom-5 sm:end-5 sm:w-[min(860px,calc(100vw-40px))]"
+          className="fixed inset-x-2 bottom-2 z-[70] flex h-[min(750px,calc(100dvh-20px))] flex-col overflow-hidden rounded-2xl border border-border bg-card text-foreground shadow-none sm:inset-x-auto sm:bottom-5 sm:end-5 sm:w-[min(860px,calc(100vw-40px))]"
         >
           <header className="flex items-center gap-3 bg-ink px-4 py-3 text-white">
-            <MessageCircle className="size-5 text-beacon-300" />
+            <MessageCircle className="size-5 text-foreground" />
             <h2 className="flex-1 font-bold">{t.title}</h2>
             <UnreadMessages count={unread} />
             <WaitingCustomers count={waiting} />
@@ -179,7 +179,7 @@ export function Messenger({ userId }: { userId: number }) {
             </button>
           </header>
           <MessageAlertControls alerts={alerts} />
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b bg-slate-50 px-4 py-3 text-xs sm:text-sm">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b bg-muted px-4 py-3 text-xs sm:text-sm">
             <label className="flex items-center gap-2">
               {t.language}
               <select
@@ -189,7 +189,7 @@ export function Messenger({ userId }: { userId: number }) {
                 onChange={e =>
                   void updateSettings({ locale: e.target.value as Locale })
                 }
-                className="max-w-32 rounded-lg border bg-white px-2 py-1.5"
+                className="max-w-32 rounded-lg border bg-card px-2 py-1.5"
               >
                 {Object.entries(localeNames).map(([id, name]) => (
                   <option key={id} value={id}>
@@ -212,7 +212,7 @@ export function Messenger({ userId }: { userId: number }) {
                       available: e.target.checked,
                     })
                   }
-                  className="size-4 accent-[#5b7029]"
+                  className="size-4 accent-ring"
                 />
                 {profile.data.available ? t.available : t.unavailable}
               </label>
@@ -224,7 +224,7 @@ export function Messenger({ userId }: { userId: number }) {
             notifications.isError) && (
             <p
               role="alert"
-              className="bg-amber-50 px-4 py-2 text-sm text-amber-900"
+              className="bg-warning-muted px-4 py-2 text-sm text-warning"
             >
               {failure ?? t.connectionError}
               <button
@@ -240,13 +240,13 @@ export function Messenger({ userId }: { userId: number }) {
             </p>
           )}
           {profile.data && !profile.data.translationAvailable && (
-            <p className="bg-amber-50 px-4 py-2 text-xs text-amber-900">
+            <p className="bg-warning-muted px-4 py-2 text-xs text-warning">
               {t.translationOff}
             </p>
           )}
           <div className="flex min-h-0 flex-1">
             <aside
-              className={`min-h-0 w-full shrink-0 flex-col border-e bg-white sm:w-64 ${active ? "hidden sm:flex" : "flex"}`}
+              className={`min-h-0 w-full shrink-0 flex-col border-e bg-card sm:w-64 ${active ? "hidden sm:flex" : "flex"}`}
             >
               <div className="flex items-center gap-1 border-b p-2">
                 <button
@@ -257,7 +257,7 @@ export function Messenger({ userId }: { userId: number }) {
                     setShowPeople(false);
                     setBefore(undefined);
                   }}
-                  className={`flex-1 rounded-lg px-3 py-2 text-sm font-bold ${tab === "team" ? "bg-beacon-100 text-beacon-900" : "text-slate-500"}`}
+                  className={`flex-1 rounded-lg px-3 py-2 text-sm font-bold ${tab === "team" ? "bg-secondary text-foreground" : "text-muted-foreground"}`}
                 >
                   {t.team}
                 </button>
@@ -269,7 +269,7 @@ export function Messenger({ userId }: { userId: number }) {
                     setShowPeople(false);
                     setBefore(undefined);
                   }}
-                  className={`flex-1 rounded-lg px-3 py-2 text-sm font-bold ${tab === "customers" ? "bg-beacon-100 text-beacon-900" : "text-slate-500"}`}
+                  className={`flex-1 rounded-lg px-3 py-2 text-sm font-bold ${tab === "customers" ? "bg-secondary text-foreground" : "text-muted-foreground"}`}
                 >
                   {profile.data?.canAssign
                     ? t.customerConversations
@@ -280,7 +280,7 @@ export function Messenger({ userId }: { userId: number }) {
               {tab === "customers" && (
                 <div className="border-b px-3 py-2 text-xs">
                   {profile.data?.canAssign && (
-                    <p className="mb-2 leading-5 text-slate-500">
+                    <p className="mb-2 leading-5 text-muted-foreground">
                       {t.supervision}
                     </p>
                   )}
@@ -289,7 +289,7 @@ export function Messenger({ userId }: { userId: number }) {
                     <select
                       aria-label={t.conversationStatus}
                       value={customerStatus}
-                      className="min-w-0 flex-1 rounded-lg border bg-white px-2 py-1.5"
+                      className="min-w-0 flex-1 rounded-lg border bg-card px-2 py-1.5"
                       onChange={e => {
                         setCustomerStatus(
                           e.target.value as typeof customerStatus
@@ -308,7 +308,7 @@ export function Messenger({ userId }: { userId: number }) {
                 <button
                   type="button"
                   onClick={() => setShowPeople(!showPeople)}
-                  className="m-3 flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold hover:bg-slate-50"
+                  className="m-3 flex items-center justify-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold hover:bg-muted"
                 >
                   <Plus className="size-4" />
                   {t.newChat}
@@ -316,7 +316,7 @@ export function Messenger({ userId }: { userId: number }) {
               )}
               {showPeople && (
                 <div className="mx-3 mb-2 flex items-center gap-2 rounded-lg border px-2">
-                  <Search className="size-4 text-slate-400" />
+                  <Search className="size-4 text-muted-foreground" />
                   <input
                     aria-label={t.newChat}
                     placeholder={t.newChat}
@@ -352,23 +352,23 @@ export function Messenger({ userId }: { userId: number }) {
                               setFailure(messagingError(locale, e));
                             }
                           }}
-                          className="mb-1 flex w-full items-center gap-3 rounded-xl p-3 text-start hover:bg-beacon-50"
+                          className="mb-1 flex w-full items-center gap-3 rounded-xl p-3 text-start hover:bg-secondary"
                         >
-                          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-slate-100 text-sm font-bold">
+                          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary text-sm font-bold">
                             {person.name?.slice(0, 2) ?? "…"}
                           </span>
                           <span className="min-w-0">
                             <span className="block truncate text-sm font-semibold">
                               {person.name ?? t.team}
                             </span>
-                            <span className="text-xs text-slate-500">
+                            <span className="text-xs text-muted-foreground">
                               {person.online ? t.online : t.offline}
                             </span>
                           </span>
                         </button>
                       ))}
                     {people.data?.length === 0 && (
-                      <p className="p-3 text-sm leading-6 text-slate-500">
+                      <p className="p-3 text-sm leading-6 text-muted-foreground">
                         {t.noTeam}
                       </p>
                     )}
@@ -379,19 +379,19 @@ export function Messenger({ userId }: { userId: number }) {
                       <div className="mb-3">
                         {!profile.data?.available &&
                           profile.data?.canSupport && (
-                            <p className="px-2 py-2 text-xs leading-5 text-slate-500">
+                            <p className="px-2 py-2 text-xs leading-5 text-muted-foreground">
                               {t.leaveOffline}
                             </p>
                           )}
                         {inbox?.queue.map(item => (
                           <div
                             key={item.id}
-                            className="mb-2 rounded-xl border border-amber-200 bg-amber-50 p-3"
+                            className="mb-2 rounded-xl border border-warning-border bg-warning-muted p-3"
                           >
                             <p className="text-sm font-bold">
                               {item.name ?? t.visitor}
                             </p>
-                            <p className="mt-1 text-xs text-amber-800">
+                            <p className="mt-1 text-xs text-warning">
                               {t.waiting} ·{" "}
                               {localeNames[item.locale as Locale] ??
                                 item.locale}
@@ -400,7 +400,7 @@ export function Messenger({ userId }: { userId: number }) {
                               <button
                                 type="button"
                                 onClick={() => setActive(item.id)}
-                                className="me-2 mt-2 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold"
+                                className="me-2 mt-2 rounded-lg border border-warning-border bg-card px-3 py-1.5 text-xs font-bold"
                               >
                                 {t.open}
                               </button>
@@ -440,16 +440,16 @@ export function Messenger({ userId }: { userId: number }) {
                           key={item.id}
                           type="button"
                           onClick={() => setActive(item.id)}
-                          className={`mb-1 flex w-full items-center gap-3 rounded-xl p-3 text-start ${active === item.id ? "bg-beacon-100" : "hover:bg-slate-50"}`}
+                          className={`mb-1 flex w-full items-center gap-3 rounded-xl p-3 text-start ${active === item.id ? "bg-secondary" : "hover:bg-muted"}`}
                         >
-                          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-slate-100">
-                            <Users className="size-4 text-slate-500" />
+                          <span className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary">
+                            <Users className="size-4 text-muted-foreground" />
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm font-bold">
                               {item.name ?? t.visitor}
                             </span>
-                            <span className="mt-1 block text-xs text-slate-500">
+                            <span className="mt-1 block text-xs text-muted-foreground">
                               {item.status === "closed"
                                 ? t.closed
                                 : new Date(item.updatedAt).toLocaleDateString(
@@ -458,14 +458,14 @@ export function Messenger({ userId }: { userId: number }) {
                                   )}
                             </span>
                             {item.kind === "support" && (
-                              <span className="mt-1 block text-xs text-slate-500">
+                              <span className="mt-1 block text-xs text-muted-foreground">
                                 {t.responsibleEmployee}:{" "}
                                 {item.agentName ?? t.waiting}
                               </span>
                             )}
                           </span>
                           {item.unread > 0 && (
-                            <span className="rounded-full bg-beacon-600 px-2 py-0.5 text-xs text-white">
+                            <span className="rounded-full bg-graphite px-2 py-0.5 text-xs text-white">
                               {item.unread}
                             </span>
                           )}
@@ -476,7 +476,7 @@ export function Messenger({ userId }: { userId: number }) {
                         item =>
                           item.kind === (tab === "team" ? "direct" : "support")
                       ) && (
-                        <p className="p-3 text-sm leading-6 text-slate-500">
+                        <p className="p-3 text-sm leading-6 text-muted-foreground">
                           {t.empty}
                         </p>
                       )}
@@ -501,7 +501,7 @@ export function Messenger({ userId }: { userId: number }) {
                   </>
                 )}
               </div>
-              <p className="border-t px-3 py-2 text-[11px] leading-5 text-slate-500">
+              <p className="border-t px-3 py-2 text-[11px] leading-5 text-muted-foreground">
                 {t.privacy}
               </p>
             </aside>
@@ -517,11 +517,11 @@ export function Messenger({ userId }: { userId: number }) {
                 onBack={() => setActive(null)}
               />
             ) : (
-              <div className="hidden flex-1 flex-col items-center justify-center gap-4 bg-[#f4f6ef] p-8 text-center sm:flex">
-                <span className="grid size-16 place-items-center rounded-2xl bg-beacon-100">
-                  <MessageCircle className="size-8 text-beacon-800" />
+              <div className="hidden flex-1 flex-col items-center justify-center gap-4 bg-[#08080a] p-8 text-center sm:flex">
+                <span className="grid size-16 place-items-center rounded-2xl bg-secondary">
+                  <MessageCircle className="size-8 text-foreground" />
                 </span>
-                <p className="max-w-60 text-sm leading-7 text-slate-500">
+                <p className="max-w-60 text-sm leading-7 text-muted-foreground">
                   {t.choose}
                 </p>
               </div>

@@ -36,7 +36,7 @@ const languages: Record<Locale, string> = {
   zh: "中文",
 };
 const selectClass =
-  "h-10 w-full min-w-0 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-800";
+  "h-10 w-full min-w-0 rounded-md border border-border bg-card px-3 text-sm text-foreground";
 type Member = {
   id: number;
   userId: number | null;
@@ -71,10 +71,10 @@ export function TeamMemberActions({
   const w = teamWords[locale];
   const text = useAdminText();
   if (member.role === "owner")
-    return <span className="text-xs text-slate-500">{w.protected}</span>;
+    return <span className="text-xs text-muted-foreground">{w.protected}</span>;
   if (!canWrite) return null;
   if (member.userId === selfId)
-    return <span className="text-xs text-slate-500">{w.self}</span>;
+    return <span className="text-xs text-muted-foreground">{w.self}</span>;
   return (
     <div className="flex flex-wrap gap-2">
       <Button variant="outline" size="sm" disabled={busy} onClick={onEdit}>
@@ -96,7 +96,7 @@ export function TeamMemberActions({
       <Button
         variant="outline"
         size="sm"
-        className="border-red-200 text-red-700"
+        className="border-danger-border text-danger"
         disabled={busy}
         onClick={onRemove}
       >
@@ -206,7 +206,7 @@ export default function TeamAccessTable() {
     <div className="space-y-5">
       {canWrite && (
         <form
-          className="rounded-2xl border border-blue-100 bg-blue-50/50 p-5"
+          className="rounded-2xl border border-input bg-secondary/50 p-5"
           onSubmit={event => {
             event.preventDefault();
             setLink(null);
@@ -214,20 +214,20 @@ export default function TeamAccessTable() {
           }}
         >
           <div className="flex items-start gap-3">
-            <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-white text-blue-700">
+            <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-card text-foreground">
               <ShieldCheck className="size-5" />
             </div>
             <div>
-              <h2 className="font-extrabold text-slate-950">
+              <h2 className="font-extrabold text-foreground">
                 {text("inviteTitle")}
               </h2>
-              <p className="mt-1 text-sm text-slate-600">{w.inviteBody}</p>
+              <p className="mt-1 text-sm text-secondary-foreground">{w.inviteBody}</p>
             </div>
           </div>
           {config.data && !config.data.enabled && (
             <p
               role="alert"
-              className="mt-4 rounded-xl bg-amber-100 p-3 text-sm text-amber-900"
+              className="mt-4 rounded-xl bg-warning-muted p-3 text-sm text-warning"
             >
               {w.disabled}
             </p>
@@ -264,7 +264,7 @@ export default function TeamAccessTable() {
               </select>
             </label>
           </div>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
+          <p className="mt-3 text-sm leading-6 text-secondary-foreground">
             {w.roleHints[role]}
           </p>
           <Button
@@ -281,9 +281,9 @@ export default function TeamAccessTable() {
         </form>
       )}
       {link && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4">
+        <div className="rounded-xl border border-success-border bg-success-muted/40 p-4">
           <label
-            className="text-sm font-bold text-emerald-900"
+            className="text-sm font-bold text-success"
             htmlFor="team-invitation-link"
           >
             {text("inviteLink")}
@@ -312,11 +312,11 @@ export default function TeamAccessTable() {
           </div>
         </div>
       )}
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-none">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">
             <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-xs text-slate-500">
+              <tr className="border-b border-border bg-muted text-xs text-muted-foreground">
                 {[
                   text("member"),
                   text("role"),
@@ -330,7 +330,7 @@ export default function TeamAccessTable() {
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {team.isLoading ? (
                 <tr>
                   <td colSpan={5} className="px-5 py-14 text-center">
@@ -341,7 +341,7 @@ export default function TeamAccessTable() {
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-5 py-14 text-center text-sm text-red-700"
+                    className="px-5 py-14 text-center text-sm text-danger"
                     role="alert"
                   >
                     {text("noTeamPermission")}
@@ -368,7 +368,7 @@ export default function TeamAccessTable() {
                       <td className="px-5 py-5">
                         <p
                           dir="ltr"
-                          className="break-all font-bold text-slate-900"
+                          className="break-all font-bold text-foreground"
                         >
                           {member.email}
                         </p>
@@ -377,14 +377,14 @@ export default function TeamAccessTable() {
                             <p
                               className={
                                 mailFailure
-                                  ? "font-semibold text-red-700"
-                                  : "text-slate-600"
+                                  ? "font-semibold text-danger"
+                                  : "text-secondary-foreground"
                               }
                             >
                               {w.delivery}: {mailStatus || w.notSent}
                             </p>
                             {member.invitationExpiresAt && (
-                              <p className="text-slate-500">
+                              <p className="text-muted-foreground">
                                 {w.expires}:{" "}
                                 {new Date(
                                   member.invitationExpiresAt
@@ -394,17 +394,17 @@ export default function TeamAccessTable() {
                           </div>
                         )}
                       </td>
-                      <td className="px-5 py-5 text-sm text-slate-700">
+                      <td className="px-5 py-5 text-sm text-secondary-foreground">
                         {text(roleKeys[member.role])}
                       </td>
                       <td className="px-5 py-5">
                         <Badge
                           className={
                             member.status === "active"
-                              ? "bg-emerald-50 text-emerald-700"
+                              ? "bg-success-muted text-success"
                               : member.status === "suspended" || expired
-                                ? "bg-red-50 text-red-700"
-                                : "bg-amber-50 text-amber-800"
+                                ? "bg-danger-muted text-danger"
+                                : "bg-warning-muted text-warning"
                           }
                         >
                           {member.status === "active"
@@ -416,7 +416,7 @@ export default function TeamAccessTable() {
                                 : w.pending}
                         </Badge>
                       </td>
-                      <td className="px-5 py-5 text-xs text-slate-500">
+                      <td className="px-5 py-5 text-xs text-muted-foreground">
                         {new Date(member.createdAt).toLocaleDateString(locale)}
                       </td>
                       <td className="min-w-56 px-5 py-5">
@@ -465,7 +465,7 @@ export default function TeamAccessTable() {
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-5 py-14 text-center text-sm text-slate-500"
+                    className="px-5 py-14 text-center text-sm text-muted-foreground"
                   >
                     {text("noInvites")}
                   </td>
@@ -506,7 +506,7 @@ export default function TeamAccessTable() {
               {dialog.kind === "role" && (
                 <>
                   {roleSelect(editRole, setEditRole)}
-                  <p className="text-sm leading-6 text-slate-600">
+                  <p className="text-sm leading-6 text-secondary-foreground">
                     {w.roleHints[editRole]}
                   </p>
                 </>

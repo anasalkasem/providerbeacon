@@ -15,7 +15,7 @@ export function CataloguePagination() {
   const t = labels[locale];
   if (!pagination) return null;
   return <nav className="mt-6 flex flex-wrap items-center justify-between gap-4" aria-label={t.page}>
-    <p role="status" className="text-sm text-slate-500">{isFetching ? t.loading : `${t.page} ${new Intl.NumberFormat(locale).format(pagination.page)}`}</p>
+    <p role="status" className="text-sm text-muted-foreground">{isFetching ? t.loading : `${t.page} ${new Intl.NumberFormat(locale).format(pagination.page)}`}</p>
     <div className="flex gap-2"><Button variant="outline" disabled={isFetching || pagination.page === 1} onClick={pagination.previous}>{t.previous}</Button><Button variant="outline" disabled={isFetching || !pagination.hasNext} onClick={pagination.next}>{t.next}</Button></div>
   </nav>;
 }

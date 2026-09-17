@@ -44,7 +44,7 @@ export function AdminVip({ manage }: { manage: boolean }) {
           />
           {b.pendingOnly}
         </label>
-        <p className="mt-3 text-xs leading-6 text-slate-500">{t.liveHelp}</p>
+        <p className="mt-3 text-xs leading-6 text-muted-foreground">{t.liveHelp}</p>
       </BusinessCard>
       {query.isError ? (
         <BusinessError message={query.error.message} />
@@ -114,16 +114,16 @@ function Review({ item, manage }: { item: Item; manage: boolean }) {
         />
         <div className="space-y-4">
           <BusinessStatus value={card.status} />
-          <p className="text-xs text-slate-500" dir="ltr">
+          <p className="text-xs text-muted-foreground" dir="ltr">
             {card.websiteHost}
           </p>
           {card.reviewNote && (
-            <p dir="auto" className="rounded-lg bg-slate-50 p-3 text-sm">
+            <p dir="auto" className="rounded-lg bg-muted p-3 text-sm">
               {card.reviewNote}
             </p>
           )}
           {card.placement === "complimentary" ? (
-            <p className="text-sm leading-7 text-slate-600">
+            <p className="text-sm leading-7 text-secondary-foreground">
               {vipGrantText(locale).managed}
             </p>
           ) : (

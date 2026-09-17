@@ -38,21 +38,21 @@ export function DecisionOffer({
   return (
     <article
       data-service-id={service.id}
-      className={`flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-white shadow-sm ${lowest ? "border-emerald-400 ring-1 ring-emerald-200" : "border-slate-200"}`}
+      className={`flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-none ${lowest ? "border-success-border ring-1 ring-success-border" : "border-border"}`}
     >
-      <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-5 py-4">
+      <div className="flex items-center justify-between gap-2 border-b border-border px-5 py-4">
         <Link
-          className="truncate font-extrabold text-beacon-800"
+          className="truncate font-extrabold text-foreground"
           href={`/providers/${provider.slug}`}
         >
           {provider.name}
         </Link>
         <div className="text-end">
-          <span className="text-xs font-semibold text-slate-500">
+          <span className="text-xs font-semibold text-muted-foreground">
             {service.platform}
           </span>
           {provider.apiConnected && (
-            <p className="mt-1 text-[10px] font-bold text-beacon-700">
+            <p className="mt-1 text-[10px] font-bold text-foreground">
               {
                 {
                   ar: "اتصال API فعلي",
@@ -74,12 +74,12 @@ export function DecisionOffer({
         >
           {serviceName(locale, service)}
         </h3>
-        <div className="rounded-xl bg-slate-50 p-4">
+        <div className="rounded-xl bg-muted p-4">
           <OfferPrice service={service} lowest={lowest} />
           {service.priceUnit === "package" ||
           !hasPricingBasis(service) ? null : quantity != null ? (
-            <div className="mt-3 border-t border-slate-200 pt-3">
-              <p className="mb-1 text-xs font-semibold text-slate-500">
+            <div className="mt-3 border-t border-border pt-3">
+              <p className="mb-1 text-xs font-semibold text-muted-foreground">
                 {t.quantity}: <bdi>{quantity.toLocaleString(locale)}</bdi>
               </p>
               <QuoteCost
@@ -89,7 +89,7 @@ export function DecisionOffer({
               />
             </div>
           ) : (
-            <p className="mt-3 text-xs text-slate-500">{a.quantityNeeded}</p>
+            <p className="mt-3 text-xs text-muted-foreground">{a.quantityNeeded}</p>
           )}
           {convertedTotal && fxAsOf != null && currency && (
             <ConvertedQuote
@@ -105,11 +105,11 @@ export function DecisionOffer({
             !convertedTotal &&
             quantity != null &&
             quantityQuoteExact(service, quantity) != null && (
-              <p className="mt-2 text-xs text-amber-800">{a.fxUnavailable}</p>
+              <p className="mt-2 text-xs text-warning">{a.fxUnavailable}</p>
             )}
           {budgetStatus && (
             <p
-              className={`mt-2 text-xs font-bold ${budgetStatus === "within" ? "text-emerald-800" : "text-amber-800"}`}
+              className={`mt-2 text-xs font-bold ${budgetStatus === "within" ? "text-success" : "text-warning"}`}
             >
               {budgetStatus === "within"
                 ? a.within
@@ -121,19 +121,19 @@ export function DecisionOffer({
         </div>
         <dl className="grid grid-cols-2 gap-3 text-xs">
           <div>
-            <dt className="text-slate-500">{t.fieldNames.refill}</dt>
+            <dt className="text-muted-foreground">{t.fieldNames.refill}</dt>
             <dd className="mt-1 font-semibold">
               {localizeData(locale, service.refill)}
             </dd>
           </div>
           <div>
-            <dt className="text-slate-500">{t.fieldNames.countryCode}</dt>
+            <dt className="text-muted-foreground">{t.fieldNames.countryCode}</dt>
             <dd className="mt-1 font-semibold">
               {service.countryCode ?? t.unspecified}
             </dd>
           </div>
           <div>
-            <dt className="text-slate-500">{t.quantity}</dt>
+            <dt className="text-muted-foreground">{t.quantity}</dt>
             <dd className="mt-1 font-semibold">
               <bdi>
                 {service.min.toLocaleString(locale)}–
@@ -142,7 +142,7 @@ export function DecisionOffer({
             </dd>
           </div>
           <div>
-            <dt className="text-slate-500">
+            <dt className="text-muted-foreground">
               {locale === "ar"
                 ? "البدء المعلن"
                 : locale === "es"
@@ -158,8 +158,8 @@ export function DecisionOffer({
             </dd>
           </div>
         </dl>
-        <details className="rounded-xl border border-slate-100 p-3 text-xs">
-          <summary className="cursor-pointer font-semibold text-slate-600">
+        <details className="rounded-xl border border-border p-3 text-xs">
+          <summary className="cursor-pointer font-semibold text-secondary-foreground">
             {t.allDetails}
           </summary>
           <p dir="auto" className="mt-3 break-words leading-6">
@@ -173,7 +173,7 @@ export function DecisionOffer({
           )}
           <Link
             href={`/providers/${provider.slug}`}
-            className="inline-flex items-center gap-1 text-xs font-bold text-beacon-800"
+            className="inline-flex items-center gap-1 text-xs font-bold text-foreground"
           >
             {a.provider}
             <ArrowUpRight className="size-4" />
@@ -197,22 +197,22 @@ export function ComparisonExplanation({
   const t = workspaceCopy[locale];
   const facts = comparisonFacts(services, quantity);
   return (
-    <section className="mb-6 rounded-2xl border border-beacon-200 bg-beacon-50/60 p-5 sm:p-6">
-      <h2 className="flex items-center gap-2 font-extrabold text-slate-950">
-        <CheckCircle2 className="size-5 shrink-0 text-beacon-700" />
+    <section className="mb-6 rounded-2xl border border-input bg-secondary/60 p-5 sm:p-6">
+      <h2 className="flex items-center gap-2 font-extrabold text-foreground">
+        <CheckCircle2 className="size-5 shrink-0 text-foreground" />
         {t.explain}
       </h2>
       {comparable && (
-        <p className="mt-3 text-sm leading-7 text-beacon-900">{t.equivalent}</p>
+        <p className="mt-3 text-sm leading-7 text-foreground">{t.equivalent}</p>
       )}
       {facts.differingFields.length > 0 && (
         <div className="mt-3">
-          <p className="text-sm text-slate-600">{t.differences}</p>
+          <p className="text-sm text-secondary-foreground">{t.differences}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {facts.differingFields.map(field => (
               <span
                 key={field}
-                className="rounded-full border border-beacon-200 bg-white px-3 py-1 text-xs font-bold text-beacon-900"
+                className="rounded-full border border-input bg-card px-3 py-1 text-xs font-bold text-foreground"
               >
                 {t.fieldNames[field]}
               </span>
@@ -221,15 +221,15 @@ export function ComparisonExplanation({
         </div>
       )}
       {facts.pricingMissing && (
-        <p className="mt-2 text-sm text-amber-900">{t.pricingMissing}</p>
+        <p className="mt-2 text-sm text-warning">{t.pricingMissing}</p>
       )}
       {facts.quantityInvalid && (
-        <p className="mt-2 text-sm text-amber-900">{t.quantityInvalid}</p>
+        <p className="mt-2 text-sm text-warning">{t.quantityInvalid}</p>
       )}
       {facts.termsMissing && (
-        <p className="mt-2 text-sm text-slate-600">{t.termsMissing}</p>
+        <p className="mt-2 text-sm text-secondary-foreground">{t.termsMissing}</p>
       )}
-      <p className="mt-3 text-xs leading-6 text-slate-500">{t.claims}</p>
+      <p className="mt-3 text-xs leading-6 text-muted-foreground">{t.claims}</p>
     </section>
   );
 }
