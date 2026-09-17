@@ -49,7 +49,7 @@
 }
 .beacon-edge-glow[data-phase="thinking"] {
   animation:
-    beacon-edge-flow 9s linear infinite,
+    beacon-edge-flow 12s linear infinite,
     beacon-edge-appear 0.45s ease-out both;
 }
 .beacon-edge-glow[data-phase="reply"] {
