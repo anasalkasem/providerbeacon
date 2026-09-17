@@ -10,6 +10,7 @@ import {
   MapPin,
   RefreshCw,
   Send,
+  Star,
 } from "lucide-react";
 import { Link } from "wouter";
 import { copy, useLocale } from "@/contexts/LocaleContext";
@@ -17,6 +18,7 @@ import type { Provider } from "@/data/marketplace";
 import { catalogueCopy } from "@/i18n/catalogue";
 import { formatNumber, localizeData, pageCopy } from "@/i18n/messages";
 import { providerProfileCopy } from "@/i18n/providerProfile";
+import { ratingsCopy } from "@/i18n/ratings";
 import {
   publicProfileUrl,
   providerTelegramUrl,
@@ -139,6 +141,16 @@ export default function ProviderProfileHeader({
               )}
               <Button asChild variant="outline" className="rounded-xl">
                 <a href="#provider-services">{pages.exploreServices}</a>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                className="rounded-xl border-amber-200 bg-amber-50 text-amber-900 hover:bg-amber-100"
+              >
+                <a href="#visitor-ratings">
+                  <Star aria-hidden="true" className="size-4" />
+                  {ratingsCopy[locale].rateProvider}
+                </a>
               </Button>
             </div>
           </div>

@@ -62,7 +62,12 @@ export function safeMemberNext(value: unknown) {
       url.pathname !== "/"
     )
       return "/account";
-    return `${url.pathname}${url.search}`;
+    const fragment =
+      /^\/providers\/[^/]+$/.test(url.pathname) &&
+      url.hash === "#visitor-ratings"
+        ? url.hash
+        : "";
+    return `${url.pathname}${url.search}${fragment}`;
   } catch {
     return "/account";
   }

@@ -32,7 +32,7 @@ vi.mock("wouter", () => ({
   useRoute: () => [true, { slug: state.slug }], useLocation: () => ["/", () => {}],
   useSearch: () => "",
 }));
-import { ScoreRing, ServiceRow } from "../client/src/components/Marketplace";
+import { ProviderCard, ScoreRing, ServiceRow } from "../client/src/components/Marketplace";
 import Home from "../client/src/pages/Home";
 import Provider from "../client/src/pages/Provider";
 import Compare from "../client/src/pages/Compare";
@@ -59,6 +59,17 @@ afterEach(() => vi.unstubAllGlobals());
 const render = (component: React.ComponentType<any>, props = {}) => renderToStaticMarkup(React.createElement(component, props));
 
 describe("public catalogue rendering", () => {
+  it.each([true, false])("makes ratings discoverable on provider cards (API connected: %s)", apiConnected => {
+    const provider = { ...state.data.providers[0], apiConnected, rating: null, reviews: 0 };
+    const empty = render(ProviderCard, { provider });
+    expect(empty).toContain('href="/providers/real-provider#visitor-ratings"');
+    expect(empty).toContain("Rate provider");
+    expect(empty).toContain("No ratings yet");
+    expect(empty).not.toContain("0 / 5");
+    const rated = render(ProviderCard, { provider: { ...provider, rating: 4.5, reviews: 12 } });
+    expect(rated).toContain("4.5 / 5");
+    expect(rated).toContain("12 ratings");
+  });
   it("shows supplied provider images and contact links without inventing verification", () => {
     const provider = state.data.providers[0];
     Object.assign(provider, { websiteUrl: "https://provider.example/", logoUrl: "https://cdn.example.com/logo.png", websitePreviewUrl: "https://cdn.example.com/website.png", telegramUrl: "https://t.me/providersupport" });
@@ -69,6 +80,10 @@ describe("public catalogue rendering", () => {
     expect(html).toContain('src="https://cdn.example.com/website.png"');
     expect(html).toContain("Identity not verified");
     expect(html).toContain('href="#provider-services"');
+    expect(html).toContain('href="#visitor-ratings"');
+    expect(html).toContain("Rate provider");
+    expect(html).toContain('id="visitor-ratings"');
+    expect(html.indexOf('id="visitor-ratings"')).toBeLessThan(html.indexOf('id="provider-services"'));
     expect(html).toContain('id="provider-services"');
     Object.assign(provider, { websiteUrl: null, logoUrl: null, websitePreviewUrl: null, telegramUrl: null });
     const empty = render(Provider);

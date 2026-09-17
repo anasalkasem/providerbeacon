@@ -1,6 +1,9 @@
 export const ratingsCopy = {
   ar: {
     title: "تقييمات الزوار",
+    rateProvider: "قيّم المزود",
+    noRatings: "لا توجد تقييمات بعد",
+    scale: "التقييم من نجمة إلى خمس نجوم",
     note: "آراء زوار بحسابات مؤكدة، وليست إثبات شراء أو اعتمادًا لجودة المزود.",
     empty: "لا توجد تقييمات بعد. كن أول من يشارك رأيه.",
     votes: "تقييم",
@@ -23,6 +26,9 @@ export const ratingsCopy = {
   },
   en: {
     title: "Visitor ratings",
+    rateProvider: "Rate provider",
+    noRatings: "No ratings yet",
+    scale: "Rating from one to five stars",
     note: "Opinions from visitors with verified accounts, not proof of purchase or provider certification.",
     empty: "No ratings yet. Be the first to share your opinion.",
     votes: "ratings",
@@ -46,6 +52,9 @@ export const ratingsCopy = {
   },
   es: {
     title: "Valoraciones de visitantes",
+    rateProvider: "Valorar proveedor",
+    noRatings: "Aún no hay valoraciones",
+    scale: "Valoración de una a cinco estrellas",
     note: "Opiniones de visitantes con cuentas verificadas, no pruebas de compra ni certificaciones del proveedor.",
     empty: "Aún no hay valoraciones. Comparte tu opinión.",
     votes: "valoraciones",
@@ -70,6 +79,9 @@ export const ratingsCopy = {
   },
   hi: {
     title: "आगंतुक रेटिंग",
+    rateProvider: "प्रदाता को रेटिंग दें",
+    noRatings: "अभी कोई रेटिंग नहीं है",
+    scale: "एक से पाँच सितारों की रेटिंग",
     note: "सत्यापित खातों वाले आगंतुकों की राय; खरीद का प्रमाण या प्रदाता का प्रमाणन नहीं।",
     empty: "अभी कोई रेटिंग नहीं है। अपनी राय दें।",
     votes: "रेटिंग",
@@ -93,6 +105,9 @@ export const ratingsCopy = {
   },
   zh: {
     title: "访客评分",
+    rateProvider: "为供应商评分",
+    noRatings: "暂无评分",
+    scale: "评分为一至五星",
     note: "来自已验证账户的访客意见，不代表购买凭证或供应商认证。",
     empty: "暂无评分，欢迎分享你的看法。",
     votes: "个评分",

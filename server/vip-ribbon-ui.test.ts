@@ -174,7 +174,9 @@ describe("continuous VIP ribbon", () => {
     await mount(1);
     await time();
     expect(container.querySelectorAll("article")).toHaveLength(1);
-    expect(container.querySelectorAll("a")).toHaveLength(1);
+    const links = Array.from(container.querySelectorAll("a"));
+    expect(links).toHaveLength(2);
+    expect(new Set(links.map(link => link.getAttribute("href"))).size).toBe(2);
     expect(container.querySelectorAll("button")).toHaveLength(0);
     expect(frames.size).toBe(0);
   });
@@ -233,7 +235,11 @@ describe("continuous VIP ribbon", () => {
       expect(container.querySelectorAll("article")).toHaveLength(
         count as number
       );
-      expect(container.querySelectorAll("a")).toHaveLength(count as number);
+      const links = Array.from(container.querySelectorAll("a"));
+      expect(links).toHaveLength((count as number) * 2);
+      expect(new Set(links.map(link => link.getAttribute("href"))).size).toBe(
+        (count as number) * 2
+      );
     }
   );
   it("pauses offscreen, on hover and by request, then resumes from the same position", async () => {
