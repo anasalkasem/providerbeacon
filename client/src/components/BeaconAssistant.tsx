@@ -11,6 +11,9 @@ import {
 import { trpc } from "@/lib/trpc";
 import { useLocale } from "@/contexts/LocaleContext";
 import { assistantCopy } from "@/i18n/assistant";
+import { messagingCopy, messagingError } from "@/i18n/messaging";
+import { explicitHumanRequest } from "../../../shared/messaging";
+import MessageThread from "./MessageThread";
 import { unitLabel } from "@/i18n/pricing";
 import { serviceName } from "./OfferEvidence";
 import OfferPrice from "./OfferPrice";
@@ -30,15 +33,36 @@ type Turn = {
 
 export default function BeaconAssistant() {
   const [path] = useLocation();
-  if (!/^\/(?:$|services(?:\/|$)|providers(?:\/|$)|compare$)/.test(path))
+  if (
+    !/^\/(?:$|services(?:\/|$)|providers(?:\/|$)|compare$|find$|groups$|offers$|vip$|account(?:\/|$)|directory(?:\/|$))/.test(
+      path
+    )
+  )
     return null;
-  return <AssistantChat path={path} />;
+  return (
+    <AssistantChat
+      path={
+        /^\/(?:$|services(?:\/|$)|providers(?:\/|$)|compare$|find$)/.test(path)
+          ? path
+          : "/"
+      }
+    />
+  );
 }
 
 function AssistantChat({ path }: { path: string }) {
   const { locale } = useLocale();
   const t = assistantCopy[locale];
+  const mt = messagingCopy[locale];
   const [open, setOpen] = useState(false);
+  const [supportId, setSupportId] = useState<string | null>(null);
+  const handoffIdentity = useRef<{ text: string; id: string } | null>(null);
+  const support = trpc.messaging.support.current.useQuery(undefined, {
+    enabled: open,
+    retry: false,
+    staleTime: 0,
+  });
+  const handoff = trpc.messaging.support.start.useMutation({ retry: false });
   const [draft, setDraft] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
   const [failure, setFailure] = useState<string | null>(null);
@@ -57,6 +81,37 @@ function AssistantChat({ path }: { path: string }) {
   });
   const chat = trpc.assistant.chat.useMutation({ retry: false });
   const ready = status.data?.available === true;
+
+  useEffect(() => {
+    if (support.data && support.data.status !== "closed")
+      setSupportId(support.data.id);
+  }, [support.data?.id, support.data?.status]);
+
+  async function startHuman(
+    text = draft.trim() || mt.startText,
+    history = turns
+      .slice(-12)
+      .map(({ role, content }) => ({ role, content: content.slice(0, 2000) }))
+  ) {
+    if (handoff.isPending) return;
+    setFailure(null);
+    if (handoffIdentity.current?.text !== text)
+      handoffIdentity.current = { text, id: crypto.randomUUID() };
+    try {
+      const result = await handoff.mutateAsync({
+        locale,
+        text,
+        history,
+        clientId: handoffIdentity.current.id,
+      });
+      setSupportId(result.id);
+      setDraft("");
+      handoffIdentity.current = null;
+      void support.refetch();
+    } catch (error) {
+      setFailure(messagingError(locale, error));
+    }
+  }
 
   useEffect(() => {
     if (open && ready) field.current?.focus();
@@ -85,6 +140,10 @@ function AssistantChat({ path }: { path: string }) {
       ]);
     try {
       const response = await chat.mutateAsync(input);
+      if (response.handoff) {
+        await startHuman(input.message, input.history);
+        return;
+      }
       setTurns(current => [
         ...current,
         {
@@ -114,6 +173,10 @@ function AssistantChat({ path }: { path: string }) {
 
   function send(message: string) {
     if (!message.trim()) return;
+    if (explicitHumanRequest(message)) {
+      void startHuman(message.trim());
+      return;
+    }
     const latest = [...turns]
       .reverse()
       .find(turn => turn.result?.offers.length)?.result;
@@ -170,15 +233,17 @@ function AssistantChat({ path }: { path: string }) {
             <Sparkles aria-hidden="true" className="size-6 text-beacon-300" />
             <div className="flex-1">
               <h2 className="font-extrabold" dir="ltr">
-                {t.title}
+                {supportId ? mt.supportTitle : t.title}
               </h2>
-              <p className="mt-1 text-xs text-blue-100">{t.subtitle}</p>
+              <p className="mt-1 text-xs text-blue-100">
+                {supportId ? mt.supportIntro : t.subtitle}
+              </p>
             </div>
             <button
               type="button"
               title={t.clear}
               aria-label={t.clear}
-              disabled={chat.isPending}
+              disabled={chat.isPending || handoff.isPending || !!supportId}
               onClick={() => {
                 setTurns([]);
                 setFailure(null);
@@ -199,263 +264,316 @@ function AssistantChat({ path }: { path: string }) {
               <X className="size-5" />
             </button>
           </header>
-          <div
-            ref={log}
-            role="log"
-            aria-label={t.history}
-            aria-live="polite"
-            className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4"
-          >
-            {status.isLoading && (
-              <p role="status" className="text-sm text-slate-500">
-                {t.thinking}
-              </p>
-            )}
-            {!status.isLoading && !ready && (
-              <div className="rounded-xl bg-slate-50 p-4 text-sm leading-7">
-                <p>{status.isError ? t.error : t.unavailable}</p>
-                <Link
-                  href="/services"
-                  onClick={close}
-                  className="font-bold text-beacon-700 underline"
-                >
-                  {t.more}
-                </Link>
-                {status.isError && (
-                  <button
-                    onClick={() => void status.refetch()}
-                    className="ms-3 font-bold text-beacon-700"
-                  >
-                    {t.retry}
-                  </button>
-                )}
-              </div>
-            )}
-            {ready && turns.length === 0 && (
-              <div className="space-y-4 py-3">
-                <MessageCircle
-                  aria-hidden="true"
-                  className="size-8 text-beacon-700"
-                />
-                <p className="text-sm leading-7">{t.welcome}</p>
-                <div className="flex flex-col gap-2">
-                  {t.examples.map(example => (
-                    <button
-                      key={example}
-                      disabled={chat.isPending}
-                      onClick={() => send(example)}
-                      className="rounded-xl border border-slate-200 p-3 text-start text-sm font-medium hover:border-beacon-400 hover:bg-beacon-50 disabled:opacity-50"
-                    >
-                      {example}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {turns.map(turn => (
-              <article
-                key={turn.id}
-                className={
-                  turn.role === "user"
-                    ? "ms-8 rounded-2xl bg-ink px-4 py-3 text-sm leading-7 text-white"
-                    : "space-y-3 text-sm leading-7"
-                }
+          {supportId ? (
+            <MessageThread
+              key={supportId}
+              id={supportId}
+              mode="visitor"
+              onBack={() => {
+                setSupportId(null);
+              }}
+            />
+          ) : (
+            <>
+              <div
+                ref={log}
+                role="log"
+                aria-label={t.history}
+                aria-live="polite"
+                className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4"
               >
-                <p dir="auto" className="whitespace-pre-wrap break-words">
-                  {turn.content}
-                </p>
-                {turn.result && (
-                  <>
-                    {turn.result.comparisonMissing && (
-                      <p className="rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
-                        {t.missing}
-                      </p>
-                    )}
-                    {turn.result.offers.length > 0 && (
-                      <>
-                        <p className="text-xs text-slate-500">
-                          {t.currency}: <bdi>{turn.result.displayCurrency}</bdi>
-                          {turn.result.quantity != null && (
-                            <>
-                              {" "}
-                              · {t.quantity}:{" "}
-                              <bdi>
-                                {turn.result.quantity.toLocaleString(locale)}
-                              </bdi>
-                            </>
-                          )}
-                        </p>
-                        {turn.result.offers.map(offer => (
-                          <div
-                            key={offer.service.id}
-                            className="space-y-2 rounded-xl border border-slate-200 p-3"
-                          >
-                            <Link
-                              href={`/providers/${offer.provider.slug}`}
-                              onClick={close}
-                              className="font-bold text-beacon-700 hover:underline"
-                            >
-                              {offer.provider.name}
-                            </Link>
-                            <p
-                              dir="auto"
-                              className="text-sm font-semibold leading-6"
-                            >
-                              {serviceName(locale, offer.service)}
-                            </p>
-                            <OfferPrice
-                              service={offer.service}
-                              lowest={offer.lowest}
-                            />
-                            <p className="text-xs text-slate-500">
-                              {unitLabel(locale, offer.service)}
-                            </p>
-                            {turn.result!.quantity != null ? (
-                              <QuoteCost
-                                service={offer.service}
-                                quantity={turn.result!.quantity}
-                                lowest={offer.lowest}
-                              />
-                            ) : (
-                              <p className="text-xs text-slate-500">
-                                {t.quantityNeeded}
-                              </p>
-                            )}
-                            {offer.convertedTotal && offer.fxAsOf != null && (
-                              <ConvertedQuote
-                                amount={offer.convertedTotal}
-                                currency={offer.displayCurrency}
-                                asOf={offer.fxAsOf}
-                                lowest={offer.lowest}
-                              />
-                            )}
-                            {offer.total &&
-                              offer.service.priceCurrency !==
-                                offer.displayCurrency &&
-                              !offer.convertedTotal && (
-                                <p className="text-xs text-amber-800">
-                                  {t.fxUnavailable}
-                                </p>
-                              )}
-                            {offer.budgetStatus && (
-                              <p
-                                className={`text-xs font-bold ${offer.budgetStatus === "within" ? "text-emerald-800" : "text-amber-800"}`}
-                              >
-                                {offer.budgetStatus === "within"
-                                  ? t.within
-                                  : offer.budgetStatus === "above"
-                                    ? t.above
-                                    : t.budgetUnknown}
-                              </p>
-                            )}
-                            <Link
-                              href={`/providers/${offer.provider.slug}`}
-                              onClick={close}
-                              className="inline-block text-xs font-bold text-beacon-700 underline"
-                            >
-                              {t.provider}
-                            </Link>
-                          </div>
-                        ))}
-                        {turn.result.offers.length >= 2 && (
-                          <Link
-                            onClick={close}
-                            href={`/compare?services=${turn.result.offers.map(offer => offer.service.id).join(",")}${turn.result.quantity != null ? `&quantity=${turn.result.quantity}` : ""}&currency=${turn.result.displayCurrency}`}
-                            className="block rounded-xl bg-ink p-3 text-center text-sm font-bold text-white"
-                          >
-                            {t.compare}
-                          </Link>
-                        )}
-                        {turn.result.partial && (
-                          <p className="text-xs text-slate-500">{t.partial}</p>
-                        )}
-                        <p className="text-xs leading-5 text-slate-500">
-                          {t.priceNote}
-                        </p>
-                      </>
-                    )}
+                {status.isLoading && (
+                  <p role="status" className="text-sm text-slate-500">
+                    {t.thinking}
+                  </p>
+                )}
+                {!status.isLoading && !ready && (
+                  <div className="rounded-xl bg-slate-50 p-4 text-sm leading-7">
+                    <p>{status.isError ? t.error : t.unavailable}</p>
                     <Link
-                      href={turn.result.catalogueUrl}
+                      href="/services"
                       onClick={close}
-                      className="inline-block text-xs font-bold text-beacon-700 underline"
+                      className="font-bold text-beacon-700 underline"
                     >
                       {t.more}
                     </Link>
-                  </>
+                    {status.isError && (
+                      <button
+                        onClick={() => void status.refetch()}
+                        className="ms-3 font-bold text-beacon-700"
+                      >
+                        {t.retry}
+                      </button>
+                    )}
+                  </div>
                 )}
-              </article>
-            ))}
-            {chat.isPending && (
-              <p
-                role="status"
-                className="flex items-center gap-2 text-sm text-beacon-800"
-              >
-                <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-                {t.thinking}
-              </p>
-            )}
-            {failure && (
-              <div
-                role="alert"
-                className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900"
-              >
-                <p>{failure}</p>
-                {failedRequest && (
-                  <button
-                    type="button"
-                    disabled={chat.isPending}
-                    onClick={() => void request(failedRequest, false)}
-                    className="mt-2 font-bold underline"
+                {ready && turns.length === 0 && (
+                  <div className="space-y-4 py-3">
+                    <MessageCircle
+                      aria-hidden="true"
+                      className="size-8 text-beacon-700"
+                    />
+                    <p className="text-sm leading-7">{t.welcome}</p>
+                    <div className="flex flex-col gap-2">
+                      {t.examples.map(example => (
+                        <button
+                          key={example}
+                          disabled={chat.isPending}
+                          onClick={() => send(example)}
+                          className="rounded-xl border border-slate-200 p-3 text-start text-sm font-medium hover:border-beacon-400 hover:bg-beacon-50 disabled:opacity-50"
+                        >
+                          {example}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {turns.map(turn => (
+                  <article
+                    key={turn.id}
+                    className={
+                      turn.role === "user"
+                        ? "ms-8 rounded-2xl bg-ink px-4 py-3 text-sm leading-7 text-white"
+                        : "space-y-3 text-sm leading-7"
+                    }
                   >
-                    {t.retry}
-                  </button>
+                    <p dir="auto" className="whitespace-pre-wrap break-words">
+                      {turn.content}
+                    </p>
+                    {turn.result && (
+                      <>
+                        {turn.result.comparisonMissing && (
+                          <p className="rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
+                            {t.missing}
+                          </p>
+                        )}
+                        {turn.result.offers.length > 0 && (
+                          <>
+                            <p className="text-xs text-slate-500">
+                              {t.currency}:{" "}
+                              <bdi>{turn.result.displayCurrency}</bdi>
+                              {turn.result.quantity != null && (
+                                <>
+                                  {" "}
+                                  · {t.quantity}:{" "}
+                                  <bdi>
+                                    {turn.result.quantity.toLocaleString(
+                                      locale
+                                    )}
+                                  </bdi>
+                                </>
+                              )}
+                            </p>
+                            {turn.result.offers.map(offer => (
+                              <div
+                                key={offer.service.id}
+                                className="space-y-2 rounded-xl border border-slate-200 p-3"
+                              >
+                                <Link
+                                  href={`/providers/${offer.provider.slug}`}
+                                  onClick={close}
+                                  className="font-bold text-beacon-700 hover:underline"
+                                >
+                                  {offer.provider.name}
+                                </Link>
+                                <p
+                                  dir="auto"
+                                  className="text-sm font-semibold leading-6"
+                                >
+                                  {serviceName(locale, offer.service)}
+                                </p>
+                                <OfferPrice
+                                  service={offer.service}
+                                  lowest={offer.lowest}
+                                />
+                                <p className="text-xs text-slate-500">
+                                  {unitLabel(locale, offer.service)}
+                                </p>
+                                {turn.result!.quantity != null ? (
+                                  <QuoteCost
+                                    service={offer.service}
+                                    quantity={turn.result!.quantity}
+                                    lowest={offer.lowest}
+                                  />
+                                ) : (
+                                  <p className="text-xs text-slate-500">
+                                    {t.quantityNeeded}
+                                  </p>
+                                )}
+                                {offer.convertedTotal &&
+                                  offer.fxAsOf != null && (
+                                    <ConvertedQuote
+                                      amount={offer.convertedTotal}
+                                      currency={offer.displayCurrency}
+                                      asOf={offer.fxAsOf}
+                                      lowest={offer.lowest}
+                                    />
+                                  )}
+                                {offer.total &&
+                                  offer.service.priceCurrency !==
+                                    offer.displayCurrency &&
+                                  !offer.convertedTotal && (
+                                    <p className="text-xs text-amber-800">
+                                      {t.fxUnavailable}
+                                    </p>
+                                  )}
+                                {offer.budgetStatus && (
+                                  <p
+                                    className={`text-xs font-bold ${offer.budgetStatus === "within" ? "text-emerald-800" : "text-amber-800"}`}
+                                  >
+                                    {offer.budgetStatus === "within"
+                                      ? t.within
+                                      : offer.budgetStatus === "above"
+                                        ? t.above
+                                        : t.budgetUnknown}
+                                  </p>
+                                )}
+                                <Link
+                                  href={`/providers/${offer.provider.slug}`}
+                                  onClick={close}
+                                  className="inline-block text-xs font-bold text-beacon-700 underline"
+                                >
+                                  {t.provider}
+                                </Link>
+                              </div>
+                            ))}
+                            {turn.result.offers.length >= 2 && (
+                              <Link
+                                onClick={close}
+                                href={`/compare?services=${turn.result.offers.map(offer => offer.service.id).join(",")}${turn.result.quantity != null ? `&quantity=${turn.result.quantity}` : ""}&currency=${turn.result.displayCurrency}`}
+                                className="block rounded-xl bg-ink p-3 text-center text-sm font-bold text-white"
+                              >
+                                {t.compare}
+                              </Link>
+                            )}
+                            {turn.result.partial && (
+                              <p className="text-xs text-slate-500">
+                                {t.partial}
+                              </p>
+                            )}
+                            <p className="text-xs leading-5 text-slate-500">
+                              {t.priceNote}
+                            </p>
+                          </>
+                        )}
+                        <Link
+                          href={turn.result.catalogueUrl}
+                          onClick={close}
+                          className="inline-block text-xs font-bold text-beacon-700 underline"
+                        >
+                          {t.more}
+                        </Link>
+                      </>
+                    )}
+                  </article>
+                ))}
+                {(chat.isPending || handoff.isPending) && (
+                  <p
+                    role="status"
+                    className="flex items-center gap-2 text-sm text-beacon-800"
+                  >
+                    <Loader2
+                      aria-hidden="true"
+                      className="size-4 animate-spin"
+                    />
+                    {handoff.isPending ? mt.connecting : t.thinking}
+                  </p>
+                )}
+                {failure && (
+                  <div
+                    role="alert"
+                    className="rounded-xl bg-amber-50 p-3 text-sm text-amber-900"
+                  >
+                    <p>{failure}</p>
+                    {failedRequest && (
+                      <button
+                        type="button"
+                        disabled={chat.isPending}
+                        onClick={() => void request(failedRequest, false)}
+                        className="mt-2 font-bold underline"
+                      >
+                        {t.retry}
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-          <form
-            className="shrink-0 border-t border-slate-200 bg-slate-50 p-3"
-            onSubmit={event => {
-              event.preventDefault();
-              send(draft);
-            }}
-          >
-            <div className="flex items-end gap-2">
-              <textarea
-                ref={field}
-                rows={2}
-                maxLength={1200}
-                value={draft}
-                onChange={event => setDraft(event.target.value)}
-                placeholder={t.placeholder}
-                aria-label={t.placeholder}
-                disabled={!ready || chat.isPending}
-                dir="auto"
-                onKeyDown={event => {
-                  if (
-                    event.key === "Enter" &&
-                    !event.shiftKey &&
-                    !event.nativeEvent.isComposing
-                  ) {
-                    event.preventDefault();
-                    send(draft);
+              <div className="shrink-0 border-t border-slate-100 px-3 py-2">
+                <button
+                  type="button"
+                  disabled={
+                    chat.isPending || handoff.isPending || support.isLoading
                   }
+                  onClick={() =>
+                    support.data?.status !== "closed" && support.data?.id
+                      ? setSupportId(support.data.id)
+                      : void startHuman()
+                  }
+                  className="w-full rounded-xl border border-beacon-200 bg-beacon-50 px-3 py-2 text-sm font-bold text-beacon-900 disabled:opacity-50"
+                >
+                  {handoff.isPending
+                    ? mt.connecting
+                    : support.data?.status !== "closed" && support.data?.id
+                      ? mt.resume
+                      : mt.support}
+                </button>
+                <p className="mt-1.5 text-[11px] leading-5 text-slate-500">
+                  {mt.supportPrivacy}
+                </p>
+              </div>
+              <form
+                className="shrink-0 border-t border-slate-200 bg-slate-50 p-3"
+                onSubmit={event => {
+                  event.preventDefault();
+                  send(draft);
                 }}
-                className="max-h-32 min-h-16 flex-1 resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm focus:border-beacon-500 focus:outline-none disabled:opacity-60"
-              />
-              <button
-                type="submit"
-                aria-label={t.send}
-                disabled={!ready || chat.isPending || !draft.trim()}
-                className="mb-1 rounded-xl bg-beacon-700 p-3 text-white hover:bg-beacon-800 disabled:opacity-40"
               >
-                <Send aria-hidden="true" className="size-5 rtl:-scale-x-100" />
-              </button>
-            </div>
-            <p className="mt-2 text-[10px] leading-4 text-slate-500">
-              {t.privacy}
-            </p>
-          </form>
+                <div className="flex items-end gap-2">
+                  <textarea
+                    ref={field}
+                    rows={2}
+                    maxLength={1200}
+                    value={draft}
+                    onChange={event => setDraft(event.target.value)}
+                    placeholder={t.placeholder}
+                    aria-label={t.placeholder}
+                    disabled={!ready || chat.isPending || handoff.isPending}
+                    dir="auto"
+                    onKeyDown={event => {
+                      if (
+                        event.key === "Enter" &&
+                        !event.shiftKey &&
+                        !event.nativeEvent.isComposing
+                      ) {
+                        event.preventDefault();
+                        send(draft);
+                      }
+                    }}
+                    className="max-h-32 min-h-16 flex-1 resize-none rounded-xl border border-slate-200 bg-white p-3 text-sm focus:border-beacon-500 focus:outline-none disabled:opacity-60"
+                  />
+                  <button
+                    type="submit"
+                    aria-label={t.send}
+                    disabled={
+                      !ready ||
+                      chat.isPending ||
+                      handoff.isPending ||
+                      !draft.trim()
+                    }
+                    className="mb-1 rounded-xl bg-beacon-700 p-3 text-white hover:bg-beacon-800 disabled:opacity-40"
+                  >
+                    <Send
+                      aria-hidden="true"
+                      className="size-5 rtl:-scale-x-100"
+                    />
+                  </button>
+                </div>
+                <p className="mt-2 text-[10px] leading-4 text-slate-500">
+                  {t.privacy}
+                </p>
+              </form>
+            </>
+          )}
         </section>
       )}
     </>

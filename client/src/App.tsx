@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { lazy, Suspense } from "react";
-import { Route, Switch } from "wouter";
+import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { LocaleProvider } from "./contexts/LocaleContext";
 import { MarketplaceDataProvider } from "./contexts/MarketplaceDataContext";
@@ -26,9 +26,13 @@ const Providers = lazy(() => import("@/pages/Providers"));
 const Provider = lazy(() => import("@/pages/Provider"));
 const Admin = lazy(() => import("@/pages/Admin"));
 const AdminEmail = lazy(() => import("@/pages/AdminEmail"));
-const AdminProviderAnalytics = lazy(() => import("@/pages/AdminProviderAnalytics"));
+const AdminProviderAnalytics = lazy(
+  () => import("@/pages/AdminProviderAnalytics")
+);
 const ProviderBusiness = lazy(() => import("@/pages/ProviderBusiness"));
-const AdminProviderBusiness = lazy(() => import("@/pages/AdminProviderBusiness"));
+const AdminProviderBusiness = lazy(
+  () => import("@/pages/AdminProviderBusiness")
+);
 const ProviderOffers = lazy(() => import("@/pages/ProviderOffers"));
 const VipProviders = lazy(() => import("@/pages/VipProviders"));
 const AdminModule = lazy(() => import("@/pages/AdminModule"));
@@ -38,6 +42,15 @@ const Setup = lazy(() => import("@/pages/Setup"));
 const Security = lazy(() => import("@/pages/Security"));
 const NotFound = lazy(() => import("@/pages/NotFound"));
 const BeaconAssistant = lazy(() => import("@/components/BeaconAssistant"));
+const StaffMessenger = lazy(() => import("@/components/StaffMessenger"));
+function MessagingMount() {
+  const [path] = useLocation();
+  return path === "/admin" || path.startsWith("/admin/") ? (
+    <Suspense fallback={null}>
+      <StaffMessenger />
+    </Suspense>
+  ) : null;
+}
 const MemberSignIn = lazy(() =>
   import("@/pages/MemberAuth").then(m => ({ default: m.MemberSignIn }))
 );
@@ -118,6 +131,7 @@ export default function App() {
               <SiteAppearanceProvider>
                 <Toaster richColors />
                 <Router />
+                <MessagingMount />
                 <Suspense fallback={null}>
                   <BeaconAssistant />
                 </Suspense>

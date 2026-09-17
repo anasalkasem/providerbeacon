@@ -1,4 +1,5 @@
 import { startServiceScreeningWorker } from "../serviceScreening";
+import { startMessagingWorker } from "../messageTranslation";
 import { registerImportedMediaRoutes, startImportedMediaCleanup } from "../importedMediaRoutes";
 import { repairImportedProviderLogos } from "../providerLogoRepair";
 import "dotenv/config";
@@ -55,7 +56,7 @@ async function startServer() {
   app.use("/api/trpc/business.vip.submit", express.json({ limit: "720kb" }));
   app.use((req, res, next) => {
     const procedures = req.path.startsWith("/api/trpc/") ? req.path.slice("/api/trpc/".length).split(",") : [];
-    return procedures.some(name => name === "assistant.chat" || name.startsWith("member.") || name.startsWith("business.") || name.startsWith("admin.business.") || name.startsWith("workspace.") || name.startsWith("admin.email.") || name.startsWith("community.") || name.startsWith("ratings.") || name.startsWith("admin.groups.") || ["admin.providers.previewWebsite", "admin.providers.createDraft", "admin.providers.saveProfile"].includes(name)) ? assistantJson(req, res, next) : next();
+    return procedures.some(name => name.startsWith("messaging.") || name === "assistant.chat" || name.startsWith("member.") || name.startsWith("business.") || name.startsWith("admin.business.") || name.startsWith("workspace.") || name.startsWith("admin.email.") || name.startsWith("community.") || name.startsWith("ratings.") || name.startsWith("admin.groups.") || ["admin.providers.previewWebsite", "admin.providers.createDraft", "admin.providers.saveProfile"].includes(name)) ? assistantJson(req, res, next) : next();
   });
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
@@ -134,6 +135,7 @@ async function startServer() {
     }
     server.on("close", startPriceAlertWorker());
     server.on("close", startServiceScreeningWorker());
+    server.on("close", startMessagingWorker());
   });
 }
 
