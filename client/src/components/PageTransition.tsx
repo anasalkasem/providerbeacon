@@ -8,10 +8,21 @@ import {
   useRef,
   type ReactNode,
 } from "react";
+import { Router as LocationRouter } from "wouter";
+import { useBrowserLocation } from "wouter/use-browser-location";
 
 const DisplayedPath = createContext<string | null>(null);
 export const useDisplayedPagePath = (fallback: string) =>
   useContext(DisplayedPath) ?? fallback;
+
+// Keep useRoute/useLocation inside the retained page on its displayed route too.
+// Navigation still uses the original browser history implementation.
+function useDisplayedLocation(
+  options: Parameters<typeof useBrowserLocation>[0]
+): ReturnType<typeof useBrowserLocation> {
+  const [path, navigate] = useBrowserLocation(options);
+  return [useDisplayedPagePath(path), navigate];
+}
 
 /** Deferred routing keeps the current content visible while a lazy page loads. */
 export function PageTransition({
@@ -73,6 +84,8 @@ function PageFrame({
     historyNavigation.current = false;
   }, [path, enabled]);
   return (
-    <DisplayedPath.Provider value={path}>{children}</DisplayedPath.Provider>
+    <DisplayedPath.Provider value={path}>
+      <LocationRouter hook={useDisplayedLocation}>{children}</LocationRouter>
+    </DisplayedPath.Provider>
   );
 }

@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import React, { act, lazy } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { useRoute } from "wouter";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   PageTransition,
@@ -26,6 +27,39 @@ function Current() {
 }
 
 describe("Orbit page continuity", () => {
+  it("retains route parameters in a provider page while a different page loads", async () => {
+    let resolve!: (value: { default: () => React.ReactNode }) => void;
+    const Next = lazy(
+      () =>
+        new Promise<{ default: () => React.ReactNode }>(done => {
+          resolve = done;
+        })
+    );
+    function Provider() {
+      const [, params] = useRoute("/providers/:slug");
+      return <p>Provider {params?.slug ?? "missing"}</p>;
+    }
+    const render = (path: string) => (
+      <PageTransition
+        path={path}
+        enabled
+        label="Opening page"
+        fallback={<p>Fallback</p>}
+      >
+        {shown => (shown.startsWith("/providers/") ? <Provider /> : <Next />)}
+      </PageTransition>
+    );
+    window.history.replaceState({}, "", "/providers/example");
+    await act(async () => root.render(render("/providers/example")));
+    await act(async () => {
+      window.history.pushState({}, "", "/services");
+      root.render(render("/services"));
+    });
+    expect(container.textContent).toContain("Provider example");
+    expect(container.textContent).not.toContain("missing");
+    await act(async () => resolve({ default: () => <p>Services</p> }));
+    expect(container.textContent).toBe("Services");
+  });
   it("retains the current page and its displayed path until an uncached route is ready", async () => {
     let resolve!: (value: { default: () => React.ReactNode }) => void;
     const Next = lazy(
