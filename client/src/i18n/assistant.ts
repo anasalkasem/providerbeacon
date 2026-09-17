@@ -9,6 +9,7 @@ const en = {
   placeholder: "Describe the service, quantity and target market…",
   send: "Send",
   thinking: "Checking your request and the catalogue…",
+  welcomeTitle: "Let’s find your next provider.",
   welcome:
     "What service are you looking for? Tell me the platform, quantity and target market, and I’ll help you compare the available offers.",
   examples: [
@@ -60,6 +61,7 @@ export const assistantCopy: Record<Locale, typeof en> = {
     placeholder: "احكيلي عن الخدمة والكمية والسوق المستهدف…",
     send: "إرسال",
     thinking: "أفحص طلبك والعروض الموجودة…",
+    welcomeTitle: "خلّينا نلاقي الأنسب إلك.",
     welcome:
       "شو الخدمة اللي عم تدور عليها؟ حدّد المنصة والكمية والسوق المستهدف، وبساعدك تقارن العروض المتاحة.",
     examples: [
@@ -105,6 +107,7 @@ export const assistantCopy: Record<Locale, typeof en> = {
     placeholder: "Describe el servicio, la cantidad y el mercado…",
     send: "Enviar",
     thinking: "Revisando tu solicitud y el catálogo…",
+    welcomeTitle: "Encontremos tu próximo proveedor.",
     welcome:
       "¿Qué servicio buscas? Indica la plataforma, la cantidad y el mercado para comparar ofertas disponibles.",
     examples: [
@@ -152,6 +155,7 @@ export const assistantCopy: Record<Locale, typeof en> = {
     placeholder: "सेवा, मात्रा और लक्षित बाज़ार बताएँ…",
     send: "भेजें",
     thinking: "अनुरोध और कैटलॉग जाँचा जा रहा है…",
+    welcomeTitle: "आइए सही प्रदाता खोजें।",
     welcome:
       "कौन-सी सेवा चाहिए? उपलब्ध ऑफ़र की तुलना के लिए प्लेटफ़ॉर्म, मात्रा और लक्षित बाज़ार बताएँ।",
     examples: [
@@ -198,6 +202,7 @@ export const assistantCopy: Record<Locale, typeof en> = {
     placeholder: "描述服务、数量和目标市场…",
     send: "发送",
     thinking: "正在核对请求与目录…",
+    welcomeTitle: "一起找到合适的服务商。",
     welcome:
       "你在寻找什么服务？请提供平台、数量和目标市场，我会帮你比较现有服务。",
     examples: [

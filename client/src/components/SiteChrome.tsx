@@ -14,8 +14,10 @@ import { copy, localeNames, type Locale, useLocale,
 } from "@/contexts/LocaleContext";
 import { pageCopy } from "@/i18n/messages";
 import { ChevronDown, Globe2, Menu, UserRound, X } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
+import { useSiteTheme } from "@/contexts/SiteAppearanceContext";
+import { usePageEntrance } from "@/hooks/usePageEntrance";
 
 export function Brand({ compact = false, inverse = false }: { compact?: boolean; inverse?: boolean }) {
   return (
@@ -239,10 +241,13 @@ export function PublicLayout({
   children: ReactNode;
   showCatalogueNotice?: boolean;
 }) {
+  const main = useRef<HTMLElement>(null);
+  const [path] = useLocation();
+  usePageEntrance(main, path, useSiteTheme() === "orbit");
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
-      <main id="main-content">
+      <main id="main-content" ref={main}>
         {showCatalogueNotice && <CatalogueNotice />}
         {children}
       </main>

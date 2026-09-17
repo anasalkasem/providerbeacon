@@ -10,7 +10,10 @@ afterEach(() => {
 function setup(reduced = false) {
   const gradient = { addColorStop: vi.fn() };
   const ctx = new Proxy(
-    { createRadialGradient: () => gradient },
+    {
+      createRadialGradient: () => gradient,
+      createLinearGradient: () => gradient,
+    },
     {
       get: (target, key) =>
         key in target ? target[key as keyof typeof target] : vi.fn(),

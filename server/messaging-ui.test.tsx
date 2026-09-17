@@ -10,9 +10,13 @@ const state = vi.hoisted(() => ({
   prepare: vi.fn(),
   handoff: vi.fn(),
   assistantReady: false,
+  theme: "beacon",
   listCalls: vi.fn(),
   notificationCalls: vi.fn(),
   inbox: { items: [], queue: [], nextCursor: null } as any,
+}));
+vi.mock("@/contexts/SiteAppearanceContext", () => ({
+  useSiteTheme: () => state.theme,
 }));
 vi.mock("@/contexts/LocaleContext", () => ({
   useLocale: () => ({
@@ -137,6 +141,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   state.locale = "es";
   state.assistantReady = false;
+  state.theme = "beacon";
   state.inbox = { items: [], queue: [], nextCursor: null };
   state.thread = {
     id: "6ca0f338-51be-47dd-ae53-7c11207d7a2f",
@@ -180,6 +185,43 @@ const click = async (text: string) => {
   await act(async () => button!.click());
 };
 describe("translated messenger", () => {
+  it("keeps an Orbit assistant draft through navigation, dismisses with Escape, and restores launcher focus", async () => {
+    state.locale = "ar";
+    state.theme = "orbit";
+    state.assistantReady = true;
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation(fn => {
+      fn(0);
+      return 1;
+    });
+    await act(async () => root.render(<BeaconAssistant />));
+    const launcher = container.querySelector<HTMLButtonElement>(
+      ".beacon-assistant-launcher"
+    )!;
+    await act(async () => launcher.click());
+    expect(container.textContent).toContain("خلّينا نلاقي الأنسب إلك.");
+    const field = container.querySelector("textarea")!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(
+        HTMLTextAreaElement.prototype,
+        "value"
+      )!.set!.call(field, "طلب محفوظ");
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => window.history.pushState({}, "", "/services"));
+    expect(container.querySelector("textarea")).toBe(field);
+    expect(field.value).toBe("طلب محفوظ");
+    await act(async () =>
+      field.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      )
+    );
+    const closing = container.querySelector('[role="dialog"]')!;
+    expect(closing.getAttribute("aria-hidden")).toBe("true");
+    expect(closing.hasAttribute("inert")).toBe(true);
+    expect(document.activeElement).toBe(launcher);
+    await act(async () => launcher.click());
+    expect(container.querySelector("textarea")!.value).toBe("طلب محفوظ");
+  });
   it("keeps notifications active when minimized and exposes customer supervision with employee names and status filters", async () => {
     state.inbox.items = [
       {
