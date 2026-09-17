@@ -37,7 +37,7 @@ export default function Home() {
             <h1 className="beacon-hero-title mt-6">
               {t.title}
               <br />
-              <span className="text-white">{t.accent}</span>
+              <span className="text-copper">{t.accent}</span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-8 text-muted-foreground">
               {t.intro}

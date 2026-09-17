@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
   <title>ProviderBeacon</title>
-  <rect width="64" height="64" rx="12" fill="#08080a"/>
-  <path fill="#e2e3e9" d="M10 6h21.5C46.7 6 56 14.7 56 28.3 56 42 46.4 50 31.5 50H22v8H10V6Zm12 11v22h9.4C39 39 44 35.3 44 28.4 44 21.2 39 17 31.4 17H22Z"/>
-  <path fill="#9194a1" d="m28 28 17-8v16l-17-8Z"/>
-  <circle cx="22" cy="28" r="3.5" fill="#ffffff"/>
+  <rect width="64" height="64" rx="12" fill="#191d23"/>
+  <path fill="#efb883" d="M10 6h21.5C46.7 6 56 14.7 56 28.3 56 42 46.4 50 31.5 50H22v8H10V6Zm12 11v22h9.4C39 39 44 35.3 44 28.4 44 21.2 39 17 31.4 17H22Z"/>
+  <path fill="#b66f3f" d="m28 28 17-8v16l-17-8Z"/>
+  <circle cx="22" cy="28" r="3.5" fill="#ffe0c2"/>
 </svg>

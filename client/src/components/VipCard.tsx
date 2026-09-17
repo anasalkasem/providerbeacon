@@ -74,7 +74,7 @@ export function VipCard({
           </div>
         </div>
       )}
-      <span className="absolute start-3 top-3 inline-flex items-center gap-1.5 rounded-full border border-brand/40 bg-ink/95 px-3 py-1.5 text-[11px] font-bold tracking-wider text-brand">
+      <span className="absolute start-3 top-3 inline-flex items-center gap-1.5 rounded-full border border-brand/40 bg-primary px-3 py-1.5 text-[11px] font-bold tracking-wider text-primary-foreground">
         <Diamond className="size-3" aria-hidden="true" />
         VIP
       </span>

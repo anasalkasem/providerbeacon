@@ -1,11 +1,9 @@
-# Midnight visual identity
+# Charcoal and copper visual identity
 
-ProviderBeacon uses an obsidian page (#08080a), onyx cards (#040406), carbon panels (#121317), and hairline separators. Copper (#cc9166) is reserved for section labels and editorial links. White filled pills identify primary actions; repeat card actions and account navigation use outlines.
+ProviderBeacon uses a charcoal page (#191d23), raised cards (#252b33), and lighter input and panel surfaces (#303842). Copper headings and logo (#efb883), filled copper primary actions (#e8ad7b), and visible warm borders (#9c7554; inputs #b08a68) establish the brand across public pages, account workspaces and messaging. Body text remains warm ivory (#f2e2d4), with readable secondary copy (#cbbcae). Provider-supplied logos and media retain their original colors.
 
-Inter handles Latin UI copy and Playfair Display is the open-source display substitute for Ivy Presto. Arabic uses IBM Plex Sans Arabic for controls and Noto Naskh Arabic for display headings. Devanagari and Chinese retain their language-specific fonts. Google Fonts uses display=swap with local system fallbacks. Display faces apply to headings at 28px and larger; dashboard controls and smaller titles use sans.
+Inter handles Latin controls and Playfair Display handles large Latin headings. Arabic uses IBM Plex Sans Arabic for controls and Noto Naskh Arabic for display headings. Language-specific fallbacks and display=swap remain in place.
 
-Semantic tokens cover public discovery, provider and owner workspaces, support messages, dialogs, tables, authentication, warnings and empty states. Status colors are subdued and always accompanied by text or icons. Provider-supplied logos and media retain their original colors. Primary text and muted text are tested against all dark surfaces; native text fields keep a visible border and mobile text fields use 16px to avoid focus zoom.
+The owner appearance toggle controls the restored multicolor site frame and continuous VIP-card illumination. Static conic gradients crossfade through compositor opacity; gradient angles do not animate. Offscreen VIP motion is paused and reduced-motion preferences disable animation. The frame never intercepts pointer input.
 
-The owner appearance toggle remains active. It controls a static, subtle page rim and VIP border highlighting on hover/keyboard focus. No animated blur, gradient rotation, or per-card animation was added. The existing continuous VIP ribbon and reduced-motion behavior are preserved.
-
-Analytics use a golden SVG stroke for the main trend, with neutral secondary series and unchanged labels, filters and data. No sample metrics were added.
+The assistant uses a lighter panel, a copper title and border, and copper launch/send controls. Analytics keep their real data and distinguish series while using the warmer palette.

@@ -1,41 +1,127 @@
-.beacon-appearance { display: contents; }
+.beacon-appearance {
+  display: contents;
+}
 
-/* The owner toggle is preserved. A quiet, static rim replaces viewport-wide
-   animated gradients; the moving provider ribbon creates the motion. */
 .beacon-edge-glow {
+  --beacon-edge-width: 8px;
+  --beacon-edge-radius: 22px;
   position: fixed;
   inset: 0;
   z-index: 80;
   pointer-events: none;
   user-select: none;
   contain: strict;
-  border: 3px solid rgb(199 201 209 / 12%);
-  border-radius: 12px;
 }
-.beacon-edge-glow > div { display: none; }
-.vip-card { position: relative; isolation: isolate; }
-[data-beacon-glow="on"] .vip-card::before {
-  content: "";
+
+.beacon-edge-glow > div,
+[data-beacon-glow="on"] .vip-card::before,
+[data-beacon-glow="on"] .vip-card::after {
   position: absolute;
   pointer-events: none;
+  background: conic-gradient(
+    from var(--beacon-gradient-angle, 0deg),
+    #53e5ef,
+    #5287ff 20%,
+    #b774f7 42%,
+    #f78bc8 62%,
+    #ffd3b0 77%,
+    #53e5ef
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+
+.beacon-edge-glow > div {
+  inset: 2px;
+  border-radius: var(--beacon-edge-radius);
+  padding: var(--beacon-edge-width);
+}
+.beacon-edge-glow .beacon-edge-glow__halo {
+  inset: -4px;
+  padding: 20px;
+  filter: blur(10px);
+  opacity: 0.7;
+}
+
+/* Both gradients are painted once. Only blend their opacity; animating a
+   gradient angle repaints the viewport and every moving card on each frame. */
+.beacon-edge-glow .beacon-edge-glow__flow,
+[data-beacon-glow="on"] .vip-card::after {
+  --beacon-gradient-angle: 180deg;
+  animation: beacon-color-blend 12s ease-in-out infinite;
+  will-change: opacity;
+}
+
+.vip-card {
+  position: relative;
+  isolation: isolate;
+}
+[data-beacon-glow="on"] .vip-card::before,
+[data-beacon-glow="on"] .vip-card::after {
+  content: "";
   inset: 0;
   z-index: 2;
-  border: 1px solid #c7c9d1;
   border-radius: inherit;
-  opacity: 0;
-  transition: opacity 180ms ease;
+  padding: 4px;
 }
-[data-beacon-glow="on"] .vip-card:focus-within::before { opacity: 1; }
-@media (hover: hover) {
-  [data-beacon-glow="on"] .vip-card:hover::before { opacity: 1; }
-}
+
 [data-beacon-glow="on"] .vip-card:has(:focus-visible) {
-  outline: 2px solid #c7c9d1;
+  outline: 3px solid #efb883;
   outline-offset: 3px;
 }
+
+.vip-ribbon[data-visible="false"] .vip-card::after {
+  animation-play-state: paused;
+  will-change: auto;
+}
+
+@keyframes beacon-color-blend {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .beacon-edge-glow {
+    --beacon-edge-width: 5px;
+    --beacon-edge-radius: 16px;
+  }
+  .beacon-edge-glow .beacon-edge-glow__halo {
+    padding: 14px;
+    filter: blur(7px);
+  }
+  [data-beacon-glow="on"] .vip-card::before,
+  [data-beacon-glow="on"] .vip-card::after {
+    padding: 3px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
-  [data-beacon-glow="on"] .vip-card::before { transition: none; }
+  .beacon-edge-glow .beacon-edge-glow__flow,
+  [data-beacon-glow="on"] .vip-card::after {
+    animation: none;
+    opacity: 0;
+    will-change: auto;
+  }
 }
 @media (forced-colors: active), print {
-  .beacon-edge-glow, [data-beacon-glow="on"] .vip-card::before { display: none; }
+  .beacon-edge-glow,
+  [data-beacon-glow="on"] .vip-card::before,
+  [data-beacon-glow="on"] .vip-card::after {
+    display: none;
+  }
+  .beacon-edge-glow .beacon-edge-glow__flow,
+  [data-beacon-glow="on"] .vip-card::after {
+    animation: none;
+    will-change: auto;
+  }
 }

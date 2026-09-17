@@ -252,9 +252,9 @@ function AssistantChat({ path }: { path: string }) {
         onClick={() => setOpen(true)}
         aria-expanded={open}
         aria-controls="beacon-assistant"
-        className={`beacon-assistant-launcher fixed end-5 z-[60] items-center gap-2 rounded-full bg-ink px-5 py-3.5 text-sm font-bold text-white shadow-none ring-1 ring-white/30 hover:bg-graphite focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring ${open ? "hidden" : "inline-flex"}`}
+        className={`beacon-assistant-launcher fixed end-5 z-[60] items-center gap-2 rounded-full bg-primary px-5 py-3.5 text-sm font-bold text-primary-foreground shadow-lg ring-1 ring-copper hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring ${open ? "hidden" : "inline-flex"}`}
       >
-        <Sparkles aria-hidden="true" className="size-5 text-foreground" />
+        <Sparkles aria-hidden="true" className="size-5" />
         {t.launcher}
         <UnreadMessages count={notificationData?.unread ?? 0} />
       </button>
@@ -269,10 +269,10 @@ function AssistantChat({ path }: { path: string }) {
               close();
             }
           }}
-          className="fixed inset-x-3 bottom-3 z-[70] flex h-[min(720px,calc(100dvh-24px))] flex-col overflow-hidden rounded-2xl border border-border bg-card text-foreground shadow-none sm:inset-x-auto sm:bottom-5 sm:end-5 sm:w-[430px]"
+          className="fixed inset-x-3 bottom-3 z-[70] flex h-[min(720px,calc(100dvh-24px))] flex-col overflow-hidden rounded-2xl border border-copper/70 bg-card text-foreground shadow-2xl sm:inset-x-auto sm:bottom-5 sm:end-5 sm:w-[430px]"
         >
-          <header className="flex shrink-0 items-center gap-3 bg-ink p-4 text-white">
-            <Sparkles aria-hidden="true" className="size-6 text-foreground" />
+          <header className="flex shrink-0 items-center gap-3 border-b border-copper/50 bg-secondary p-4 text-copper">
+            <Sparkles aria-hidden="true" className="size-6 text-copper" />
             <div className="flex-1">
               <h2 className="font-extrabold" dir="ltr">
                 {supportId ? mt.supportTitle : t.title}
@@ -378,7 +378,7 @@ function AssistantChat({ path }: { path: string }) {
                     key={turn.id}
                     className={
                       turn.role === "user"
-                        ? "ms-8 rounded-2xl bg-ink px-4 py-3 text-sm leading-7 text-white"
+                        ? "ms-8 rounded-2xl bg-secondary px-4 py-3 text-sm leading-7 text-foreground"
                         : "space-y-3 text-sm leading-7"
                     }
                   >
@@ -486,7 +486,7 @@ function AssistantChat({ path }: { path: string }) {
                               <Link
                                 onClick={close}
                                 href={`/compare?services=${turn.result.offers.map(offer => offer.service.id).join(",")}${turn.result.quantity != null ? `&quantity=${turn.result.quantity}` : ""}&currency=${turn.result.displayCurrency}`}
-                                className="block rounded-xl bg-ink p-3 text-center text-sm font-bold text-white"
+                                className="block rounded-xl bg-primary p-3 text-center text-sm font-bold text-primary-foreground"
                               >
                                 {t.compare}
                               </Link>
@@ -605,7 +605,7 @@ function AssistantChat({ path }: { path: string }) {
                       handoff.isPending ||
                       !draft.trim()
                     }
-                    className="mb-1 rounded-xl bg-graphite p-3 text-white hover:bg-graphite disabled:opacity-40"
+                    className="mb-1 rounded-xl bg-primary p-3 text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
                   >
                     <Send
                       aria-hidden="true"
