@@ -123,8 +123,8 @@ export function ServiceScreeningPanel({
               [
                 {
                   filter: undefined,
-                  value: data.checked,
-                  label: ar ? "تم فحصها" : "Screened",
+                  value: data.total,
+                  label: ar ? "كل الخدمات" : "All services",
                 },
                 {
                   filter: "pending",
@@ -158,6 +158,9 @@ export function ServiceScreeningPanel({
             ))}
           </div>
           <p className="mt-3 text-xs text-slate-500">
+            {ar ? "تم فحصها:" : "Screened:"}{" "}
+            {data.checked.toLocaleString(locale)} /{" "}
+            {data.total.toLocaleString(locale)}.{" "}
             {ar
               ? "يشمل المزودين النشطين. الفحص يتم على دفعات ويستأنف بعد الانقطاع. الطلبات اليوم:"
               : "Active providers only. Batches resume after interruptions. Requests today:"}{" "}
