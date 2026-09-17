@@ -316,6 +316,7 @@ export * from "./businessSchema";
 export const siteAppearance = mysqlTable("site_appearance", {
   id: int("id").primaryKey(),
   edgeGlowEnabled: boolean("edge_glow_enabled").default(true).notNull(),
+  theme: varchar("theme", { length: 24 }).default("copper").notNull(),
   revision: int("revision").default(1).notNull(),
   updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
 });

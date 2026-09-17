@@ -517,7 +517,7 @@ export function Messenger({ userId }: { userId: number }) {
                 onBack={() => setActive(null)}
               />
             ) : (
-              <div className="hidden flex-1 flex-col items-center justify-center gap-4 bg-[#08080a] p-8 text-center sm:flex">
+              <div className="hidden flex-1 flex-col items-center justify-center gap-4 bg-[var(--background)] p-8 text-center sm:flex">
                 <span className="grid size-16 place-items-center rounded-2xl bg-secondary">
                   <MessageCircle className="size-8 text-foreground" />
                 </span>

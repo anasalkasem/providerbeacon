@@ -4,6 +4,7 @@ import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { resolveTeamRole } from "../authorization";
 import { readSiteAppearance, updateSiteAppearance } from "../siteAppearance";
 import { assertStaffOrigin } from "../staffOrigin";
+import { siteThemeIds } from "../../shared/siteThemes";
 
 const owner = protectedProcedure.use(async ({ ctx, type, next }) => {
   ctx.res.setHeader("Cache-Control", "no-store");
@@ -22,10 +23,18 @@ export const appearanceAdminRouter = router({
     .input(
       z
         .object({
-          edgeGlowEnabled: z.boolean(),
+          edgeGlowEnabled: z.boolean().optional(),
+          theme: z.enum(siteThemeIds).optional(),
           revision: z.number().int().positive(),
         })
         .strict()
+        .refine(
+          input =>
+            input.edgeGlowEnabled !== undefined || input.theme !== undefined,
+          {
+            message: "An appearance setting is required",
+          }
+        )
     )
     .mutation(({ ctx, input }) => updateSiteAppearance(ctx.user.id, input)),
 });
@@ -33,7 +42,7 @@ export const appearanceAdminRouter = router({
 export const appearanceRouter = router({
   public: publicProcedure.query(async ({ ctx }) => {
     ctx.res.setHeader("Cache-Control", "no-store");
-    const { edgeGlowEnabled } = await readSiteAppearance();
-    return { edgeGlowEnabled };
+    const { edgeGlowEnabled, theme } = await readSiteAppearance();
+    return { edgeGlowEnabled, theme };
   }),
 });

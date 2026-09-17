@@ -71,7 +71,7 @@ export function ProviderAnalyticsPanel() {
                 }}
               />
               <Button
-                className="ms-auto border-[#464853] bg-card text-[#e2e3e9] hover:bg-[#121317]"
+                className="ms-auto border-[var(--input)] bg-card text-[var(--foreground)] hover:bg-[var(--muted)]"
                 variant="outline"
                 onClick={() => void query.refetch()}
                 disabled={!allowed || query.isFetching}
@@ -100,12 +100,12 @@ export function ProviderAnalyticsPanel() {
       ) : (
         <>
           <AnalyticsReport data={data} />
-          <section className="overflow-hidden rounded-2xl border border-[#2e3038] bg-card">
+          <section className="overflow-hidden rounded-2xl border border-[var(--border)] bg-card">
             <div className="flex flex-wrap items-center justify-between gap-2 p-5">
-              <h2 className="text-lg font-extrabold text-[#e2e3e9]">
+              <h2 className="text-lg font-extrabold text-[var(--foreground)]">
                 {t.providers}
               </h2>
-              <span className="rounded-lg bg-[#121317] px-3 py-1 text-xs font-semibold text-[#e3c88e]">
+              <span className="rounded-lg bg-[var(--muted)] px-3 py-1 text-xs font-semibold text-[#e3c88e]">
                 {t.page} <bdi>{n(data.page)}</bdi> {t.of}{" "}
                 <bdi>{n(data.pageCount)}</bdi>
               </span>
@@ -129,7 +129,7 @@ export function ProviderAnalyticsPanel() {
                       <th scope="row" className="max-w-60 text-start">
                         <button
                           type="button"
-                          className="break-words text-start font-bold text-[#e2e3e9] underline-offset-4 hover:underline"
+                          className="break-words text-start font-bold text-[var(--foreground)] underline-offset-4 hover:underline"
                           onClick={() => selectProvider(String(row.id))}
                           aria-label={`${t.details}: ${row.name}`}
                         >
@@ -145,7 +145,7 @@ export function ProviderAnalyticsPanel() {
                           <bdi>{n(row[series.key])}</bdi>
                         </td>
                       ))}
-                      <td className="text-end font-extrabold tabular-nums text-[#c7c9d1]">
+                      <td className="text-end font-extrabold tabular-nums text-[var(--secondary-foreground)]">
                         <bdi>{n(row.website + row.telegram)}</bdi>
                       </td>
                     </tr>
@@ -165,7 +165,7 @@ export function ProviderAnalyticsPanel() {
             </div>
             <nav
               aria-label={t.page}
-              className="flex flex-wrap items-center justify-between gap-3 border-t border-[#2e3038] p-4"
+              className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border)] p-4"
             >
               <p className="text-xs text-muted-foreground">
                 {t.page} <bdi>{n(data.page)}</bdi> {t.of}{" "}
@@ -191,13 +191,13 @@ export function ProviderAnalyticsPanel() {
               </div>
             </nav>
           </section>
-          <details className="rounded-xl border border-[#2e3038] bg-[#121317] p-5 text-xs leading-6 text-muted-foreground">
-            <summary className="cursor-pointer font-semibold text-[#acafb9]">
+          <details className="rounded-xl border border-[var(--border)] bg-[var(--muted)] p-5 text-xs leading-6 text-muted-foreground">
+            <summary className="cursor-pointer font-semibold text-[var(--secondary-foreground)]">
               {t.method}
             </summary>
             <p className="mt-3">{t.methodBody}</p>
             <p className="mt-2">{t.scope}</p>
-            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 border-t border-[#2e3038] pt-3">
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 border-t border-[var(--border)] pt-3">
               {data.startedAt && (
                 <p>
                   {t.started}: <bdi>{date(data.startedAt)}</bdi>

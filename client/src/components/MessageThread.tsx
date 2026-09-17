@@ -266,7 +266,7 @@ export default function MessageThread({
       data?.kind === "direct" ||
       data?.assignedUserId === userId);
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[#08080a]">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[var(--background)]">
       <header className="flex shrink-0 items-center gap-2 border-b bg-card px-3 py-3">
         <button
           type="button"

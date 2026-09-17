@@ -43,7 +43,7 @@ export default function MessageAlertControls({
     t = messagingCopy[locale];
   const audible = alerts.enabled && alerts.ready;
   return (
-    <div className="shrink-0 border-b border-border bg-[#121317] px-4 py-2.5 text-xs">
+    <div className="shrink-0 border-b border-border bg-[var(--muted)] px-4 py-2.5 text-xs">
       <div className="flex flex-wrap items-center gap-2">
         <BellRing className="size-4 text-foreground" aria-hidden="true" />
         <span className="me-auto font-semibold">{t.messageAlerts}</span>

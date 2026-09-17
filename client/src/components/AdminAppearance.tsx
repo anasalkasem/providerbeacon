@@ -7,6 +7,7 @@ import { appearanceCopy } from "@/i18n/appearance";
 import { trpc } from "@/lib/trpc";
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
+import AdminThemePicker from "./AdminThemePicker";
 
 export default function AdminAppearance() {
   const { locale } = useLocale();
@@ -15,16 +16,25 @@ export default function AdminAppearance() {
   const settings = trpc.admin.appearance.get.useQuery(undefined, {
     retry: false,
   });
-  const { preview, setPreview } = useSiteAppearancePreview();
-  useEffect(() => () => setPreview(false), [setPreview]);
+  const { preview, setPreview, previewTheme, setPreviewTheme } =
+    useSiteAppearancePreview();
+  useEffect(
+    () => () => {
+      setPreview(false);
+      setPreviewTheme(null);
+    },
+    [setPreview, setPreviewTheme]
+  );
   const update = trpc.admin.appearance.update.useMutation({
-    onSuccess(data) {
+    onSuccess(data, input) {
       utils.admin.appearance.get.setData(undefined, data);
       utils.appearance.public.setData(undefined, {
         edgeGlowEnabled: data.edgeGlowEnabled,
+        theme: data.theme,
       });
       void utils.admin.audit.list.invalidate();
-      setPreview(false);
+      if (input.edgeGlowEnabled !== undefined) setPreview(false);
+      if (input.theme !== undefined) setPreviewTheme(null);
       toast.success(t.saved);
     },
     onError(error) {
@@ -41,8 +51,21 @@ export default function AdminAppearance() {
         <h2 id="appearance-title" className="font-extrabold text-foreground">
           {t.title}
         </h2>
-        <span className="text-xs font-medium text-muted-foreground">{t.owner}</span>
+        <span className="text-xs font-medium text-muted-foreground">
+          {t.owner}
+        </span>
       </div>
+      <AdminThemePicker
+        active={settings.isError ? undefined : settings.data?.theme}
+        preview={previewTheme}
+        onPreview={setPreviewTheme}
+        onApply={theme => {
+          if (settings.data && !settings.isError)
+            update.mutate({ theme, revision: settings.data.revision });
+        }}
+        busy={update.isPending}
+        canSave={!!settings.data && !settings.isError && !settings.isFetching}
+      />
       <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center">
         <div
           aria-hidden="true"

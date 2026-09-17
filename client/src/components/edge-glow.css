@@ -72,7 +72,7 @@
 }
 
 [data-beacon-glow="on"] .vip-card:has(:focus-visible) {
-  outline: 3px solid #efb883;
+  outline: 3px solid var(--ring);
   outline-offset: 3px;
 }
 

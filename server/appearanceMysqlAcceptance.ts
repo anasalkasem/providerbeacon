@@ -33,6 +33,7 @@ export function appearanceAcceptanceCases(
     it("persists both switch directions for fresh visitors and audits the owner's changes", async () => {
       await role("owner");
       expect(await caller().admin.appearance.get()).toEqual({
+        theme: "copper",
         edgeGlowEnabled: true,
         revision: 1,
       });
@@ -41,11 +42,13 @@ export function appearanceAcceptanceCases(
           edgeGlowEnabled: false,
           revision: 1,
         })
-      ).toEqual({ edgeGlowEnabled: false, revision: 2 });
+      ).toEqual({ edgeGlowEnabled: false, theme: "copper", revision: 2 });
       expect(await caller(false).appearance.public()).toEqual({
+        theme: "copper",
         edgeGlowEnabled: false,
       });
       expect(await readSiteAppearance()).toEqual({
+        theme: "copper",
         edgeGlowEnabled: false,
         revision: 2,
       });
@@ -54,6 +57,7 @@ export function appearanceAcceptanceCases(
         revision: 2,
       });
       expect(await caller(false).appearance.public()).toEqual({
+        theme: "copper",
         edgeGlowEnabled: true,
       });
       const entries = await database()
@@ -73,6 +77,7 @@ export function appearanceAcceptanceCases(
       await expect(
         caller(false).admin.appearance.update({
           edgeGlowEnabled: false,
+          theme: "summer",
           revision: 1,
         })
       ).rejects.toMatchObject({ code: "UNAUTHORIZED" });
@@ -91,6 +96,7 @@ export function appearanceAcceptanceCases(
         await expect(
           caller().admin.appearance.update({
             edgeGlowEnabled: false,
+            theme: "summer",
             revision: 1,
           })
         ).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -99,10 +105,12 @@ export function appearanceAcceptanceCases(
       await expect(
         caller().admin.appearance.update({
           edgeGlowEnabled: false,
+          theme: "summer",
           revision: 1,
         })
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
       expect(await readSiteAppearance()).toEqual({
+        theme: "copper",
         edgeGlowEnabled: true,
         revision: 1,
       });
@@ -112,6 +120,7 @@ export function appearanceAcceptanceCases(
       await expect(
         caller(true, "https://other.example").admin.appearance.update({
           edgeGlowEnabled: false,
+          theme: "summer",
           revision: 1,
         })
       ).rejects.toMatchObject({ code: "FORBIDDEN" });
@@ -123,6 +132,7 @@ export function appearanceAcceptanceCases(
         caller().admin.appearance.update({ edgeGlowEnabled: true, revision: 1 })
       ).rejects.toMatchObject({ code: "CONFLICT" });
       expect(await caller(false).appearance.public()).toEqual({
+        theme: "copper",
         edgeGlowEnabled: false,
       });
     });
@@ -131,6 +141,87 @@ export function appearanceAcceptanceCases(
       await expect(caller(false).appearance.public()).rejects.toMatchObject({
         code: "SERVICE_UNAVAILABLE",
       });
+    });
+    it("persists all four themes independently from glow and audits only actual changes", async () => {
+      await role("owner");
+      await caller().admin.appearance.update({
+        edgeGlowEnabled: false,
+        revision: 1,
+      });
+      let revision = 2;
+      for (const theme of ["summer", "midnight", "pearl", "copper"] as const) {
+        const saved = await caller().admin.appearance.update({
+          theme,
+          revision,
+        });
+        revision += 1;
+        expect(saved).toEqual({ theme, edgeGlowEnabled: false, revision });
+        expect(await caller(false).appearance.public()).toEqual({
+          theme,
+          edgeGlowEnabled: false,
+        });
+        const [row] = await database().select().from(siteAppearance);
+        expect(row.theme).toBe(theme);
+        expect(
+          await caller().admin.appearance.update({ theme, revision })
+        ).toEqual(saved);
+      }
+      const entries = await database()
+        .select()
+        .from(auditEntries)
+        .where(eq(auditEntries.action, "appearance.theme_changed"));
+      expect(entries).toHaveLength(4);
+      expect(
+        entries.every((entry: any) => entry.actorUserId === actorId())
+      ).toBe(true);
+      expect(entries.map((entry: any) => entry.metadata)).toEqual(
+        expect.arrayContaining([
+          { before: "copper", after: "summer" },
+          { before: "summer", after: "midnight" },
+          { before: "midnight", after: "pearl" },
+          { before: "pearl", after: "copper" },
+        ])
+      );
+      await caller().admin.appearance.update({ theme: "pearl", revision });
+      revision += 1;
+      expect(
+        await caller().admin.appearance.update({
+          edgeGlowEnabled: true,
+          revision,
+        })
+      ).toEqual({
+        theme: "pearl",
+        edgeGlowEnabled: true,
+        revision: revision + 1,
+      });
+    });
+    it("rejects invalid themes, empty patches and stale theme changes", async () => {
+      await role("owner");
+      for (const input of [
+        { theme: "unknown", revision: 1 },
+        { revision: 1 },
+        { theme: "summer", extra: true, revision: 1 },
+      ]) {
+        await expect(
+          caller().admin.appearance.update(input as any)
+        ).rejects.toMatchObject({ code: "BAD_REQUEST" });
+      }
+      const writes = await Promise.allSettled([
+        caller().admin.appearance.update({ theme: "summer", revision: 1 }),
+        caller().admin.appearance.update({ theme: "pearl", revision: 1 }),
+      ]);
+      expect(
+        writes.filter(result => result.status === "fulfilled")
+      ).toHaveLength(1);
+      const rejected = writes.find(
+        result => result.status === "rejected"
+      ) as PromiseRejectedResult;
+      expect(rejected.reason).toMatchObject({ code: "CONFLICT" });
+      const winner = writes.find(
+        result => result.status === "fulfilled"
+      ) as PromiseFulfilledResult<any>;
+      expect(await readSiteAppearance()).toEqual(winner.value);
+      expect(winner.value.edgeGlowEnabled).toBe(true);
     });
   });
 }
