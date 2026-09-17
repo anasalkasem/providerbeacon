@@ -1,3 +1,4 @@
+import { trustAcceptanceCases } from "./trustMysqlAcceptance";
 import { linkMetadataAcceptanceCases } from "./linkMetadataMysqlAcceptance";
 import { providerVipAcceptanceCases } from "./providerVipMysqlAcceptance";
 import { providerBusinessAcceptanceCases } from "./providerBusinessMysqlAcceptance";
@@ -78,6 +79,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.restoreAllMocks();
   });
   afterAll(async () => { if (pool) await pool.end(); });
+  trustAcceptanceCases(() => state.db, () => actorId, () => providerId, addIntegration);
   memberAcceptanceCases(() => state.db, () => actorId);
   workspaceAcceptanceCases(() => state.db, () => providerId);
   priceAlertAcceptanceCases(() => state.db, () => providerId);

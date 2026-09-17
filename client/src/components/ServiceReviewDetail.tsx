@@ -1,3 +1,4 @@
+import { ServiceScreeningDetail } from "./ServiceScreening";
 import { pricingCopy, formatPrice, unitLabel } from "@/i18n/pricing";
 import {
   priceCurrencies,
@@ -152,6 +153,7 @@ export default function ServiceReviewDetail({
           <p>{text("loading")}</p>
         ) : (
           <>
+            <ServiceScreeningDetail key={`${row.id}:${row.revision}`} row={row} onSaved={() => { void query.refetch(); onSaved(); }}/>
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline">
                 <bdi>{query.data?.providerName}</bdi>

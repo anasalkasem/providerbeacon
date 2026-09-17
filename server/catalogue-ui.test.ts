@@ -7,6 +7,7 @@ import { providers, services } from "./testFixtures";
 const state = vi.hoisted(() => ({ data: null as any, slug: "real-provider", search: "", quotes: undefined as any,
 }));
 vi.mock("@/lib/trpc", () => ({trpc:{assistant:{quotes:{useQuery:()=>({data:state.quotes})}},
+    ratings: { summary: { useQuery: () => ({ data: { rating: null, reviews: 0 } }) } },
     member: { me: { useQuery: () => ({ data: { member: null } }) } },
     business: {
       promotions: { list: { useQuery: () => ({ data: { items: [] } }) } },

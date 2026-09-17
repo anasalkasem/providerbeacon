@@ -188,7 +188,7 @@ export async function applyServiceReview(
         throw notReady();
       if (
         raw.action === "publish" &&
-        (before.reviewStatus !== "approved" ||
+        (before.screeningStatus === "held" || before.reviewStatus !== "approved" ||
           providers.find(provider => provider.id === before.providerId)
             ?.status !== "active" ||
           ["paused", "archived"].includes(before.status))

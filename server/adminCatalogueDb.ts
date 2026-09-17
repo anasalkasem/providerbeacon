@@ -1,10 +1,10 @@
 import { AsyncResultCache, registerCatalogueCache } from "./catalogueCache";
-import { and, count, desc, eq, gt, like, lt, or, sql, type SQL } from "drizzle-orm";
+import { and, count, desc, eq, ne, gt, like, lt, or, sql, type SQL } from "drizzle-orm";
 import { auditEntries, providerRecords, providerIntegrations, providerSyncJobs, serviceRecords, teamMembers } from "../drizzle/schema";
 import { adminServicesInput, searchPattern, type AdminServicesInput } from "../shared/catalogueQuery";
 import { getDb } from "./db";
 import type { Permission } from "./authorization";
-import { catalogueViewFilter, reviewNeedFilter } from "./catalogueRules";
+import { catalogueViewFilter, reviewNeedFilter, screeningQueued } from "./catalogueRules";
 import { visibleCatalogueProvider, visibleCatalogueService } from "./apiCatalogue";
 import { reviewNeeds, type ReviewNeed } from "../shared/serviceReview";
 import { isStale, reviewBlockers } from "./serviceNormalizer";
@@ -26,6 +26,7 @@ export function getCachedAdminOverview(permissions: readonly Permission[]) {
 function adminServiceFilter(input: AdminServicesInput) {
   return and(
     publicViewFilter(input.view),
+    input.screening === "pending" ? screeningQueued() : input.screening ? eq(serviceRecords.screeningStatus, input.screening) : undefined,
     input.countryCode ? eq(serviceRecords.countryCode, input.countryCode) : undefined,
     input.providerId ? eq(serviceRecords.providerId, input.providerId) : undefined,
     input.status ? eq(serviceRecords.status, input.status) : undefined,
@@ -66,6 +67,7 @@ export async function listAdminServices(raw?: Partial<AdminServicesInput>) {
       priceCurrency: serviceRecords.priceCurrency, priceUnit: serviceRecords.priceUnit,
       packageDescription: serviceRecords.packageDescription, quality: serviceRecords.quality,
       updatedAt: serviceRecords.updatedAt, countryCode: serviceRecords.countryCode, reviewStatus: serviceRecords.reviewStatus,
+      screeningStatus: serviceRecords.screeningStatus, screeningReason: serviceRecords.screeningReason,
       revision: serviceRecords.revision, incomplete: serviceRecords.incomplete, available: serviceRecords.available,
       sourceUpdatedAt: serviceRecords.sourceUpdatedAt, priceCheckedAt: serviceRecords.priceCheckedAt,
       lastPriceChangeAt: serviceRecords.lastPriceChangeAt, pricingConfirmed: serviceRecords.pricingConfirmed,
@@ -83,7 +85,7 @@ export async function listAdminServices(raw?: Partial<AdminServicesInput>) {
     const blockers = reviewBlockers({ ...row, ...reviewFields, evidenceUrl: reviewFields.hasEvidence ? "retained" : null });
     const stale = isStale(row, now);
     const canApprove = blockers.length === 0 && !stale;
-    const canPublish = canApprove && row.reviewStatus === "approved" && row.providerStatus === "active" && !["paused", "archived"].includes(row.status);
+    const canPublish = row.screeningStatus !== "held" && canApprove && row.reviewStatus === "approved" && row.providerStatus === "active" && !["paused", "archived"].includes(row.status);
     return { ...row, blockers, stale, canApprove, canPublish };
   });
   return { items, total: totals[0]?.total ?? 0, nextCursor: rows.length > input.limit ? items.at(-1)!.id : null };

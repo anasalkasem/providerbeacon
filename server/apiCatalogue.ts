@@ -6,6 +6,7 @@ import {
   isNotNull,
   lte,
   notInArray,
+  ne,
   or,
   sql,
 } from "drizzle-orm";
@@ -56,6 +57,7 @@ export function connectedApiCatalogue() {
 
 export function sourceCatalogueRecord() {
   return and(
+    ne(serviceRecords.screeningStatus, "held"),
     eq(serviceRecords.sourceKind, "provider_api"),
     eq(serviceRecords.reviewStatus, "pending"),
     inArray(serviceRecords.status, ["draft", "active"]),
