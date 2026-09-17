@@ -37,6 +37,7 @@ export function createOrbitRenderer(canvas: HTMLCanvasElement) {
     destroyed = false;
   let sculpture: Paint[] | null = null;
   let sculptureImage: Paint | null = null;
+  let artwork: HTMLImageElement | null = null;
   const media = window.matchMedia("(prefers-reduced-motion: reduce)");
   const canRun = () =>
     running && inView && !document.hidden && !media.matches && !destroyed;
@@ -273,7 +274,7 @@ export function createOrbitRenderer(canvas: HTMLCanvasElement) {
     // Camera and sculpture are stationary: cache their projection/material work.
     // Only the small orbital signals and beam are recomputed each frame.
     const sculptureStart = queue.length;
-    if (!sculpture) {
+    if (!artwork && !sculpture) {
       // Turned, bevelled metal, a tapering pearl body and a suspended glass lens.
       lathe(
         [
@@ -399,14 +400,31 @@ export function createOrbitRenderer(canvas: HTMLCanvasElement) {
         sculpture = [];
       }
     }
-    if (sculptureImage) queue.push(sculptureImage);
-    else queue.push(...sculpture);
+    if (artwork) {
+      const image = artwork;
+      const size = Math.min(width, height) * 0.68;
+      queue.push({
+        depth: 0,
+        draw: surface => {
+          surface.globalAlpha = 1;
+          surface.drawImage(
+            image,
+            (width - size) / 2,
+            height * 0.49 - size / 2,
+            size,
+            size
+          );
+        },
+      });
+    } else if (sculptureImage) queue.push(sculptureImage);
+    else queue.push(...(sculpture ?? []));
     // Soft, slowly sweeping light. No strobing and no full-screen bloom.
     const beamAngle = -Math.PI * 0.55 + Math.sin(elapsed * 0.14) * 0.75;
-    const source: V3 = [0, 1.15, -0.15];
+    const signalHeight = artwork ? 1.4 : 1.15;
+    const source: V3 = [0, signalHeight, -0.15];
     const tip: V3 = [
       Math.cos(beamAngle) * 3.2,
-      1.15,
+      signalHeight,
       Math.sin(beamAngle) * 3.2,
     ];
     const origin = project(source),
@@ -480,6 +498,14 @@ export function createOrbitRenderer(canvas: HTMLCanvasElement) {
   resize();
   sync();
   return {
+    setArtwork(image: HTMLImageElement) {
+      if (destroyed || !image.complete || !image.naturalWidth) return;
+      artwork = image;
+      sculpture = null;
+      sculptureImage = null;
+      canvas.dataset.artwork = "lighthouse";
+      paint();
+    },
     setRunning(value: boolean) {
       running = value;
       sync();

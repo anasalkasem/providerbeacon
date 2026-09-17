@@ -3,12 +3,16 @@ import { createOrbitRenderer } from "./renderer";
 
 export default function OrbitScene({ paused }: { paused: boolean }) {
   const canvas = useRef<HTMLCanvasElement>(null);
+  const artwork = useRef<HTMLImageElement>(null);
   const renderer = useRef<ReturnType<typeof createOrbitRenderer>>(null);
   const [available, setAvailable] = useState(true);
+  const [artworkReady, setArtworkReady] = useState(false);
   useEffect(() => {
     if (!canvas.current) return;
     try {
       renderer.current = createOrbitRenderer(canvas.current);
+      if (artwork.current?.complete && artwork.current.naturalWidth)
+        renderer.current?.setArtwork(artwork.current);
     } catch {
       renderer.current = null;
     }
@@ -23,6 +27,22 @@ export default function OrbitScene({ paused }: { paused: boolean }) {
   }, [paused]);
   return (
     <>
+      <img
+        ref={artwork}
+        src="/images/orbit-lighthouse.webp"
+        alt=""
+        aria-hidden="true"
+        width={960}
+        height={960}
+        fetchPriority="high"
+        className={
+          available || !artworkReady ? "orbit-art-source" : "orbit-art-fallback"
+        }
+        onLoad={event => {
+          setArtworkReady(true);
+          renderer.current?.setArtwork(event.currentTarget);
+        }}
+      />
       <canvas
         ref={canvas}
         className="orbit-canvas"
@@ -30,7 +50,7 @@ export default function OrbitScene({ paused }: { paused: boolean }) {
         hidden={!available}
         data-orbit-renderer="perspective-canvas"
       />
-      {!available && (
+      {!available && !artworkReady && (
         <svg
           className="orbit-scene-fallback"
           viewBox="0 0 400 400"

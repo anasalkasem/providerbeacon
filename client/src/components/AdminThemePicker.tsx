@@ -1,6 +1,8 @@
 import { Check, ExternalLink } from "lucide-react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { siteThemeCopy } from "@/i18n/siteThemes";
+import { workspaceCopy } from "@/i18n/workspace";
+import { landingCopy } from "@/i18n/landing";
 import { siteThemeIds, type SiteThemeId } from "../../../shared/siteThemes";
 
 export default function AdminThemePicker({
@@ -14,6 +16,8 @@ export default function AdminThemePicker({
 }) {
   const { locale } = useLocale();
   const t = siteThemeCopy[locale];
+  const w = workspaceCopy[locale];
+  const l = landingCopy[locale];
   return (
     <div className="border-b border-border p-5">
       <p className="mb-5 text-sm leading-7">{t.scope}</p>
@@ -22,25 +26,54 @@ export default function AdminThemePicker({
           <article
             key={theme}
             data-theme-option={theme}
+            data-active={savedTheme === theme}
             className="theme-choice"
           >
             <div
               className={`theme-thumbnail theme-thumbnail--${theme}`}
               aria-hidden="true"
             >
-              <span className="theme-thumbnail-brand">ProviderBeacon</span>
+              <div className="theme-thumbnail-toolbar">
+                <i />
+                <i />
+                <i />
+                <span>providerbeacon.com</span>
+              </div>
+              <div className="theme-thumbnail-nav">
+                <span>ProviderBeacon</span>
+                <i />
+                <i />
+                <i />
+              </div>
               <div className="theme-thumbnail-copy">
-                <i />
-                <i />
-                <b />
+                <strong>
+                  {theme === "orbit" ? t.hero.title : w.title}
+                  <br />
+                  {theme === "orbit" ? t.hero.accent : w.accent}
+                </strong>
+                <div className="theme-thumbnail-search">
+                  <span>{w.ask}</span>
+                  <b>{l.search}</b>
+                </div>
               </div>
               {theme === "orbit" && (
                 <div className="theme-thumbnail-orbit">
                   <i />
                   <i />
-                  <b />
+                  <img
+                    src="/images/orbit-lighthouse.webp"
+                    alt=""
+                    width={960}
+                    height={960}
+                    loading="lazy"
+                  />
                 </div>
               )}
+              <div className="theme-thumbnail-offers">
+                <i />
+                <i />
+                <i />
+              </div>
             </div>
             <div className="p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -48,7 +81,7 @@ export default function AdminThemePicker({
                   {t.themes[theme].name}
                 </h3>
                 {savedTheme === theme && (
-                  <span className="inline-flex items-center gap-1.5 text-xs">
+                  <span className="theme-active-badge inline-flex items-center gap-1.5 text-xs">
                     <Check className="size-4" />
                     {t.current}
                   </span>
@@ -57,7 +90,23 @@ export default function AdminThemePicker({
               <p className="mt-3 min-h-14 text-sm leading-7">
                 {t.themes[theme].description}
               </p>
-              <div className="mt-5 flex flex-wrap items-center gap-3">
+              <div className="theme-palette" aria-hidden="true">
+                <i
+                  style={{ background: theme === "orbit" ? "#000" : "#080b10" }}
+                />
+                <i style={{ background: "#fff" }} />
+                <i
+                  style={{
+                    background: theme === "orbit" ? "#8052ff" : "#0285fe",
+                  }}
+                />
+                <i
+                  style={{
+                    background: theme === "orbit" ? "#9adfff" : "#1e2f48",
+                  }}
+                />
+              </div>
+              <div className="theme-choice-actions mt-5 flex flex-wrap items-center gap-3">
                 <button
                   className="beacon-button min-h-11 px-5 py-2 disabled:cursor-default disabled:opacity-50"
                   data-apply-theme={theme}

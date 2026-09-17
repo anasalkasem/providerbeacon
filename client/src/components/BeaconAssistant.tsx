@@ -2,7 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   ArrowUpRight,
+  ArrowUp,
   Headphones,
+  Search,
+  Play,
+  Scale,
   Loader2,
   MessageCircle,
   RotateCcw,
@@ -391,22 +395,32 @@ function AssistantChat({ path }: { path: string }) {
                     )}
                     <p className="text-sm leading-7">{t.welcome}</p>
                     <div className="beacon-assistant-suggestions flex flex-col gap-2">
-                      {t.examples.map(example => (
-                        <button
-                          key={example}
-                          disabled={chat.isPending}
-                          onClick={() => send(example)}
-                          className="rounded-xl border border-border p-3 text-start text-sm font-medium hover:border-input hover:bg-secondary disabled:opacity-50"
-                        >
-                          <span>{example}</span>
-                          {isOrbit && (
-                            <ArrowUpRight
-                              aria-hidden="true"
-                              className="size-4 shrink-0 rtl:-scale-x-100"
-                            />
-                          )}
-                        </button>
-                      ))}
+                      {t.examples.map((example, index) => {
+                        const Icon = [Search, Play, Scale][index % 3];
+                        return (
+                          <button
+                            key={example}
+                            disabled={chat.isPending}
+                            onClick={() => send(example)}
+                            className="rounded-xl border border-border p-3 text-start text-sm font-medium hover:border-input hover:bg-secondary disabled:opacity-50"
+                          >
+                            {isOrbit && (
+                              <span className="beacon-prompt-icon">
+                                <Icon aria-hidden="true" className="size-4" />
+                              </span>
+                            )}
+                            <span className="beacon-prompt-label">
+                              {example}
+                            </span>
+                            {isOrbit && (
+                              <ArrowUpRight
+                                aria-hidden="true"
+                                className="size-4 shrink-0 rtl:-scale-x-100"
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -450,7 +464,7 @@ function AssistantChat({ path }: { path: string }) {
                             {turn.result.offers.map(offer => (
                               <div
                                 key={offer.service.id}
-                                className="space-y-2 rounded-xl border border-border p-3"
+                                className="beacon-assistant-offer space-y-2 rounded-xl border border-border p-3"
                               >
                                 <Link
                                   href={`/providers/${offer.provider.slug}`}
@@ -656,10 +670,14 @@ function AssistantChat({ path }: { path: string }) {
                     }
                     className="mb-1 rounded-xl bg-primary p-3 text-primary-foreground hover:bg-primary/90 disabled:opacity-40"
                   >
-                    <Send
-                      aria-hidden="true"
-                      className="size-5 rtl:-scale-x-100"
-                    />
+                    {isOrbit ? (
+                      <ArrowUp aria-hidden="true" className="size-5" />
+                    ) : (
+                      <Send
+                        aria-hidden="true"
+                        className="size-5 rtl:-scale-x-100"
+                      />
+                    )}
                   </button>
                 </div>
                 <p className="mt-2 text-[10px] leading-4 text-muted-foreground">

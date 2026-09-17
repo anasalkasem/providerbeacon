@@ -13,6 +13,7 @@ function setup(reduced = false) {
     {
       createRadialGradient: () => gradient,
       createLinearGradient: () => gradient,
+      drawImage: vi.fn(),
     },
     {
       get: (target, key) =>
@@ -57,6 +58,7 @@ function setup(reduced = false) {
   const renderer = createOrbitRenderer(canvas)!;
   return {
     renderer,
+    drawImage: ctx.drawImage,
     canvas,
     media,
     frames,
@@ -118,5 +120,29 @@ describe("Orbit theme motion and preview boundaries", () => {
   it("allows a static fallback when canvas is unavailable", () => {
     vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
     expect(createOrbitRenderer(document.createElement("canvas"))).toBeNull();
+  });
+  it("reveals late-loading artwork while paused without restarting motion or drawing after disposal", () => {
+    const s = setup(true);
+    const artwork = document.createElement("img");
+    s.renderer.setArtwork(artwork);
+    expect(s.canvas.dataset.artwork).toBeUndefined();
+    Object.defineProperties(artwork, {
+      complete: { value: true },
+      naturalWidth: { value: 960 },
+    });
+    s.drawImage.mockClear();
+    s.renderer.setArtwork(artwork);
+    expect(s.drawImage).toHaveBeenCalledWith(
+      artwork,
+      expect.any(Number),
+      expect.any(Number),
+      expect.any(Number),
+      expect.any(Number)
+    );
+    expect(s.frames.size).toBe(0);
+    s.renderer.dispose();
+    s.drawImage.mockClear();
+    s.renderer.setArtwork(artwork);
+    expect(s.drawImage).not.toHaveBeenCalled();
   });
 });
