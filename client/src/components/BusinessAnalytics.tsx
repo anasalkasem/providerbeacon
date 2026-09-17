@@ -48,7 +48,7 @@ export function BusinessAnalytics({
               type="button"
               onClick={() => void query.refetch()}
               disabled={query.isFetching}
-              className="ms-auto inline-flex items-center gap-2 rounded-xl border border-[#D9E1ED] bg-white px-3 py-2.5 text-xs font-bold text-[#243650] hover:bg-[#EEF3FB] disabled:opacity-50"
+              className="ms-auto inline-flex items-center gap-2 rounded-xl border border-[#464853] bg-card px-3 py-2.5 text-xs font-bold text-[#e2e3e9] hover:bg-[#121317] disabled:opacity-50"
             >
               <RefreshCw
                 className={`size-4 ${query.isFetching ? "animate-spin" : ""}`}
@@ -62,14 +62,14 @@ export function BusinessAnalytics({
       {query.isError ? (
         <BusinessError message={query.error.message} />
       ) : !query.data ? (
-        <p className="analytics-panel text-sm text-slate-500" role="status">
+        <p className="analytics-panel text-sm text-muted-foreground" role="status">
           {t.loading}
         </p>
       ) : (
         <>
           <AnalyticsReport data={query.data} compact={compact} />
-          <details className="rounded-xl border border-[#E3E8F0] bg-[#F3F6FA] p-4 text-xs leading-6 text-slate-500">
-            <summary className="cursor-pointer font-semibold text-[#4E617E]">
+          <details className="rounded-xl border border-[#2e3038] bg-[#121317] p-4 text-xs leading-6 text-muted-foreground">
+            <summary className="cursor-pointer font-semibold text-[#acafb9]">
               {a.method}
             </summary>
             <p className="mt-2">{a.methodBody}</p>

@@ -16,7 +16,7 @@ export default function ConvertedQuote({
   const t = assistantCopy[locale];
   return (
     <div
-      className={`mt-2 rounded-lg px-3 py-2 text-xs leading-5 ${lowest ? "bg-emerald-50 text-emerald-900" : "bg-blue-50 text-slate-700"}`}
+      className={`mt-2 rounded-lg px-3 py-2 text-xs leading-5 ${lowest ? "bg-success-muted text-success" : "bg-secondary text-secondary-foreground"}`}
     >
       <p>{t.conversion}</p>
       <bdi dir="ltr" className="block break-all text-base font-extrabold">

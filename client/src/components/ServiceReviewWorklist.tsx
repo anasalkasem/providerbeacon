@@ -29,10 +29,10 @@ export default function ServiceReviewWorklist({
   return (
     <section
       aria-label={text("reviewWorklist")}
-      className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5"
+      className="rounded-2xl border border-border bg-card p-4 sm:p-5"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg font-bold text-slate-950">
+        <h2 className="text-lg font-bold text-foreground">
           {text("reviewWorklist")}
         </h2>
         <Button
@@ -44,11 +44,11 @@ export default function ServiceReviewWorklist({
           {text("allReviewNeeds")} ({number(summary.data?.total)})
         </Button>
       </div>
-      <p className="mt-2 text-xs leading-5 text-slate-500">
+      <p className="mt-2 text-xs leading-5 text-muted-foreground">
         {text("reviewWorklistBody")}
       </p>
       {summary.isError && (
-        <p role="alert" className="mt-3 text-sm text-red-700">
+        <p role="alert" className="mt-3 text-sm text-danger">
           {text("loadError")}{" "}
           <Button
             variant="outline"
@@ -70,14 +70,14 @@ export default function ServiceReviewWorklist({
             aria-pressed={filters.need === need}
             disabled={!summary.data || summary.isError}
             onClick={() => onSelect(need)}
-            className={`min-w-0 rounded-xl border px-3 py-3 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-beacon-600 disabled:opacity-50 ${filters.need === need ? "border-beacon-600 bg-beacon-50" : "border-slate-200 hover:border-beacon-400"}`}
+            className={`min-w-0 rounded-xl border px-3 py-3 text-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 ${filters.need === need ? "border-ring bg-secondary" : "border-border hover:border-input"}`}
           >
             <span
-              className={`block text-xl font-extrabold ${need === "ready" ? "text-emerald-700" : "text-slate-950"}`}
+              className={`block text-xl font-extrabold ${need === "ready" ? "text-success" : "text-foreground"}`}
             >
               {number(summary.data?.[need])}
             </span>
-            <span className="mt-1 block text-xs font-semibold leading-5 text-slate-600">
+            <span className="mt-1 block text-xs font-semibold leading-5 text-secondary-foreground">
               {text(`need_${need}`)}
             </span>
           </button>
@@ -86,7 +86,7 @@ export default function ServiceReviewWorklist({
       {filters.need && (
         <p
           role="status"
-          className="mt-4 rounded-xl bg-beacon-50 px-4 py-3 text-sm leading-6 text-beacon-950"
+          className="mt-4 rounded-xl bg-secondary px-4 py-3 text-sm leading-6 text-foreground"
         >
           {text(`needHelp_${filters.need}`)}
         </p>

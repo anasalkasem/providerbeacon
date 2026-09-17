@@ -74,7 +74,7 @@ function Router() {
       fallback={
         <div className="grid min-h-screen place-items-center bg-background">
           <div
-            className="size-10 animate-spin rounded-full border-4 border-slate-200 border-t-beacon-500"
+            className="size-10 animate-spin rounded-full border-4 border-border border-t-ring"
             aria-label="Loading page"
           />
         </div>
@@ -124,7 +124,7 @@ function Router() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="light">
+      <ThemeProvider defaultTheme="dark">
         <LocaleProvider>
           <MarketplaceDataProvider>
             <TooltipProvider>

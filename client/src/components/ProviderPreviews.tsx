@@ -86,11 +86,11 @@ export function ProviderAccessNotice({
     },
   }[access];
   return (
-    <BusinessCard className="border-beacon-200 bg-beacon-50/60">
+    <BusinessCard className="border-input bg-secondary/60">
       <div className="flex flex-wrap items-center justify-between gap-5">
         <div className="flex min-w-0 flex-1 items-start gap-3 sm:gap-4">
           <span
-            className="rounded-xl bg-white p-3 text-beacon-700"
+            className="rounded-xl bg-card p-3 text-foreground"
             aria-hidden="true"
           >
             {access === "ownership" || access === "email" ? (
@@ -100,8 +100,8 @@ export function ProviderAccessNotice({
             )}
           </span>
           <div className="max-w-2xl">
-            <h2 className="font-bold text-ink">{message.title}</h2>
-            <p className="mt-2 text-sm leading-7 text-slate-600">
+            <h2 className="font-bold text-foreground">{message.title}</h2>
+            <p className="mt-2 text-sm leading-7 text-secondary-foreground">
               {message.help}
             </p>
           </div>
@@ -160,18 +160,18 @@ export function ProviderFeaturePreview({
               <LockKeyhole className="size-3.5 text-brand" aria-hidden="true" />
               {p.paid}
             </span>
-            <h2 className="mt-5 max-w-xl text-2xl font-extrabold leading-snug text-ink">
+            <h2 className="mt-5 max-w-xl text-2xl font-extrabold leading-snug text-foreground">
               {f.title}
             </h2>
-            <p className="mt-3 max-w-xl text-base leading-8 text-slate-600">
+            <p className="mt-3 max-w-xl text-base leading-8 text-secondary-foreground">
               {f.help}
             </p>
-            <p className="mt-5 border-s-2 border-beacon-300 ps-3 text-sm leading-7 text-slate-500">
+            <p className="mt-5 border-s-2 border-input ps-3 text-sm leading-7 text-muted-foreground">
               {f.note}
             </p>
           </div>
-          <div className="min-w-0 rounded-2xl border border-slate-200 bg-background p-4 sm:p-5">
-            <div className="mb-4 flex items-center justify-between gap-3 text-xs font-semibold text-slate-500">
+          <div className="min-w-0 rounded-2xl border border-border bg-background p-4 sm:p-5">
+            <div className="mb-4 flex items-center justify-between gap-3 text-xs font-semibold text-muted-foreground">
               <span>{p.preview}</span>
               <f.icon className="size-4" aria-hidden="true" />
             </div>
@@ -185,15 +185,15 @@ export function ProviderFeaturePreview({
                   ].map(metric => (
                     <div
                       key={metric.label}
-                      className="rounded-xl border border-slate-200 bg-white p-3"
+                      className="rounded-xl border border-border bg-card p-3"
                     >
                       <metric.icon
-                        className="mb-3 size-4 text-beacon-700"
+                        className="mb-3 size-4 text-foreground"
                         aria-hidden="true"
                       />
-                      <p className="text-sm text-slate-600">{metric.label}</p>
+                      <p className="text-sm text-secondary-foreground">{metric.label}</p>
                       <p
-                        className="mt-2 text-2xl font-bold text-slate-400"
+                        className="mt-2 text-2xl font-bold text-muted-foreground"
                         aria-label={p.noData}
                       >
                         —
@@ -201,45 +201,45 @@ export function ProviderFeaturePreview({
                     </div>
                   ))}
                 </div>
-                <div className="mt-3 rounded-xl border border-dashed border-slate-300 px-4 py-5">
-                  <p className="text-sm font-bold text-ink">{a.trend}</p>
-                  <p className="mt-2 text-sm text-slate-500">
+                <div className="mt-3 rounded-xl border border-dashed border-input px-4 py-5">
+                  <p className="text-sm font-bold text-foreground">{a.trend}</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
                     {a.days7} · {a.days30} · {a.days90}
                   </p>
-                  <p className="mt-4 flex items-center gap-2 text-sm text-beacon-700">
+                  <p className="mt-4 flex items-center gap-2 text-sm text-foreground">
                     <LockKeyhole className="size-4" aria-hidden="true" />
                     {p.noData}
                   </p>
                 </div>
               </>
             ) : feature === "vip" ? (
-              <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+              <div className="overflow-hidden rounded-xl border border-border bg-card">
                 <div className="flex min-h-36 items-center justify-center gap-3 bg-ink px-5 py-8 text-brand">
                   <Image className="size-7" aria-hidden="true" />
                   <span className="text-sm font-semibold">{p.cover}</span>
                 </div>
                 <div className="p-4">
-                  <p dir="auto" className="font-bold text-ink">
+                  <p dir="auto" className="font-bold text-foreground">
                     {providerName ?? p.yourProvider}
                   </p>
-                  <p className="mt-3 text-sm leading-6 text-slate-500">
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
                     {p.reviewFlow}
                   </p>
                 </div>
               </div>
             ) : (
-              <div className="rounded-xl border border-slate-200 bg-white p-5">
-                <f.icon className="size-8 text-beacon-700" aria-hidden="true" />
-                <p className="mt-4 font-bold text-ink">{f.label}</p>
-                <p className="mt-3 text-sm leading-7 text-slate-600">
+              <div className="rounded-xl border border-border bg-card p-5">
+                <f.icon className="size-8 text-foreground" aria-hidden="true" />
+                <p className="mt-4 font-bold text-foreground">{f.label}</p>
+                <p className="mt-3 text-sm leading-7 text-secondary-foreground">
                   {feature === "groups" ? p.groupDetails : p.offerDetails}
                 </p>
-                <p className="mt-5 border-t border-slate-100 pt-4 text-sm leading-7 text-beacon-700">
+                <p className="mt-5 border-t border-border pt-4 text-sm leading-7 text-foreground">
                   {p.reviewFlow}
                 </p>
               </div>
             )}
-            <p className="mt-4 text-xs leading-6 text-slate-500">
+            <p className="mt-4 text-xs leading-6 text-muted-foreground">
               {p.previewHelp}
             </p>
           </div>
@@ -264,10 +264,10 @@ export function ProviderFreeOverview({
     <div className="space-y-7">
       <ProviderAccessNotice access={access} onNavigate={onNavigate} />
       <section aria-labelledby="provider-explore-title">
-        <h2 id="provider-explore-title" className="text-xl font-bold text-ink">
+        <h2 id="provider-explore-title" className="text-xl font-bold text-foreground">
           {p.explore}
         </h2>
-        <p className="mt-2 text-sm leading-7 text-slate-500">{p.exploreHelp}</p>
+        <p className="mt-2 text-sm leading-7 text-muted-foreground">{p.exploreHelp}</p>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           {premiumProviderSections.map(section => {
             const f = features[section];
@@ -275,24 +275,24 @@ export function ProviderFreeOverview({
               <button
                 key={section}
                 onClick={() => onNavigate(section)}
-                className="group flex flex-col items-start rounded-2xl border border-slate-200 bg-white p-5 text-start transition-colors hover:border-beacon-400 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-beacon-600 sm:p-6"
+                className="group flex flex-col items-start rounded-2xl border border-border bg-card p-5 text-start transition-colors hover:border-input focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring sm:p-6"
               >
                 <span className="flex w-full items-center justify-between gap-3">
                   <span className="rounded-xl bg-ink p-3 text-brand">
                     <f.icon className="size-5" aria-hidden="true" />
                   </span>
-                  <span className="inline-flex items-center gap-1.5 text-xs text-slate-500">
+                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                     <LockKeyhole className="size-3.5" aria-hidden="true" />
                     {p.paid}
                   </span>
                 </span>
-                <span className="mt-4 text-lg font-bold text-ink">
+                <span className="mt-4 text-lg font-bold text-foreground">
                   {f.label}
                 </span>
-                <span className="mb-5 mt-2 text-sm leading-7 text-slate-500">
+                <span className="mb-5 mt-2 text-sm leading-7 text-muted-foreground">
                   {f.help}
                 </span>
-                <span className="mt-auto inline-flex items-center gap-2 text-sm font-bold text-beacon-700">
+                <span className="mt-auto inline-flex items-center gap-2 text-sm font-bold text-foreground">
                   {p.seePreview}
                   <ArrowUpRight className="size-4" aria-hidden="true" />
                 </span>

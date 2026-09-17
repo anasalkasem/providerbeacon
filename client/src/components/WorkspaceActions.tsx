@@ -8,7 +8,7 @@ import { workspaceCopy } from "@/i18n/workspace";
 import type { PriceCurrency } from "../../../shared/pricing";
 
 const button =
-  "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-700 hover:border-beacon-500 hover:text-beacon-800 disabled:opacity-40";
+  "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-bold text-secondary-foreground hover:border-ring hover:text-foreground disabled:opacity-40";
 function followReturnPath(quantity: number) {
   const params = new URLSearchParams(window.location.search);
   if (
@@ -69,7 +69,7 @@ export function FollowPrice({
       onClick={() => save.mutate({ serviceId, quantity })}
     >
       {saved ? (
-        <Check className="size-4 text-beacon-700" />
+        <Check className="size-4 text-foreground" />
       ) : (
         <Bookmark className="size-4" />
       )}

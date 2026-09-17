@@ -32,10 +32,10 @@ export default function OfferPrice({
       }
       className={
         showLowest
-          ? "rounded-xl bg-emerald-100 p-3 text-emerald-900 ring-1 ring-inset ring-emerald-300"
+          ? "rounded-xl bg-success-muted p-3 text-success ring-1 ring-inset ring-success-border"
           : service.featured
-            ? "rounded-xl bg-violet-100 p-3 text-violet-900 ring-1 ring-inset ring-violet-300"
-            : "rounded-xl bg-slate-50 p-3 text-slate-900 ring-1 ring-inset ring-slate-200"
+            ? "rounded-xl bg-secondary p-3 text-foreground ring-1 ring-inset ring-ring"
+            : "rounded-xl bg-muted p-3 text-foreground ring-1 ring-inset ring-border"
       }
     >
       <bdi
@@ -44,13 +44,13 @@ export default function OfferPrice({
       >
         {formatPrice(locale, service)}
       </bdi>
-      <p className="mt-1 text-xs leading-5 text-slate-600">
+      <p className="mt-1 text-xs leading-5 text-secondary-foreground">
         {unitLabel(locale, service)}
       </p>
       {(showLowest || service.featured) && (
         <div className="mt-2 flex flex-wrap gap-1.5 text-xs font-bold">
           {showLowest && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-700 px-2 py-1 text-white">
+            <span className="inline-flex items-center gap-1 rounded-md bg-success-muted px-2 py-1 text-white">
               <ArrowDown aria-hidden="true" className="size-3.5 shrink-0" />
               <span>{pageCopy[locale].lowestPrice}</span>
             </span>
@@ -58,7 +58,7 @@ export default function OfferPrice({
           {service.featured && (
             <span
               title={t.featuredHint}
-              className="inline-flex items-center gap-1 rounded-md bg-violet-700 px-2 py-1 text-white"
+              className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-white"
             >
               <Sparkles aria-hidden="true" className="size-3.5 shrink-0" />
               <span>{t.featured}</span>
@@ -67,8 +67,8 @@ export default function OfferPrice({
         </div>
       )}
       {unconfirmed && (
-        <details className="mt-2 max-w-64 text-xs leading-5 text-slate-600">
-          <summary className="cursor-pointer font-semibold text-beacon-800">
+        <details className="mt-2 max-w-64 text-xs leading-5 text-secondary-foreground">
+          <summary className="cursor-pointer font-semibold text-foreground">
             {t.unconfirmed}
           </summary>
           <p className="mt-2">
@@ -81,7 +81,7 @@ export default function OfferPrice({
           <p className="mt-1">{t.unconfirmedHint}</p>
           {service.sourceUrl && (
             <a
-              className="mt-2 inline-block font-semibold text-beacon-800 underline underline-offset-4"
+              className="mt-2 inline-block font-semibold text-foreground underline underline-offset-4"
               href={service.sourceUrl}
               target="_blank"
               rel="noopener noreferrer"
@@ -108,33 +108,33 @@ export function PriceLegend({
   const { locale } = useLocale();
   const t = priceHighlightCopy[locale];
   return (
-    <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4">
-      <p className="mb-3 text-sm font-bold text-slate-900">{t.legend}</p>
+    <div className="mb-4 rounded-xl border border-border bg-card p-4">
+      <p className="mb-3 text-sm font-bold text-foreground">{t.legend}</p>
       <ul
         aria-label={t.legend}
         className="flex flex-wrap gap-2 text-xs font-bold"
       >
-        <li className="flex items-center gap-1.5 rounded-lg bg-emerald-100 px-3 py-2 text-emerald-900">
+        <li className="flex items-center gap-1.5 rounded-lg bg-success-muted px-3 py-2 text-success">
           <ArrowDown aria-hidden="true" className="size-3.5" />
           {t.lowest}
         </li>
         <li
           title={t.featuredHint}
-          className="flex items-center gap-1.5 rounded-lg bg-violet-100 px-3 py-2 text-violet-900"
+          className="flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-2 text-foreground"
         >
           <Sparkles aria-hidden="true" className="size-3.5" />
           {t.featured}
         </li>
-        <li className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-3 py-2 text-slate-700">
+        <li className="flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-2 text-secondary-foreground">
           <span
             aria-hidden="true"
-            className="size-2 rounded-full bg-slate-500"
+            className="size-2 rounded-full bg-smoke"
           />
           {t.regular}
         </li>
       </ul>
       {hasUnconfirmed && (
-        <p className="mt-3 text-xs leading-6 text-slate-500">
+        <p className="mt-3 text-xs leading-6 text-muted-foreground">
           {t.pendingNotice}
         </p>
       )}

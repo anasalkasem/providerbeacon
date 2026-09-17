@@ -21,7 +21,7 @@ export function ServiceGuide() {
       <div className="container py-12" lang={locale === "ar" ? "ar" : "en"}>
         <Link
           href="/services"
-          className="inline-flex items-center gap-2 text-sm font-bold text-slate-500"
+          className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground"
         >
           <ArrowLeft className="size-4 rtl:rotate-180" />
           {t.back}
@@ -31,21 +31,21 @@ export function ServiceGuide() {
             <p className="section-kicker">
               {guide.platform} · {t.guideLabel}
             </p>
-            <h1 className="mt-4 text-4xl font-extrabold leading-relaxed text-slate-950 sm:text-5xl">
+            <h1 className="mt-4 text-4xl font-extrabold leading-relaxed text-foreground sm:text-5xl">
               {local(guide.title, locale)}
             </h1>
-            <p className="mt-5 text-lg leading-8 text-slate-600">
+            <p className="mt-5 text-lg leading-8 text-secondary-foreground">
               {local(guide.summary, locale)}
             </p>
-            <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
+            <section className="mt-8 rounded-2xl border border-border bg-card p-6">
               <h2 className="text-xl font-extrabold">{t.checklist}</h2>
               <ol className="mt-6 space-y-5">
                 {checks.map((c, i) => (
                   <li key={c} className="flex items-start gap-4">
-                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-beacon-50 text-sm font-bold text-beacon-700">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary text-sm font-bold text-foreground">
                       {i + 1}
                     </span>
-                    <span className="leading-7 text-slate-600">{c}</span>
+                    <span className="leading-7 text-secondary-foreground">{c}</span>
                   </li>
                 ))}
               </ol>
@@ -54,24 +54,24 @@ export function ServiceGuide() {
           <aside className="space-y-5">
             <div className="rounded-2xl bg-ink p-6 text-white">
               <h2 className="font-extrabold">{t.scope}</h2>
-              <p className="mt-3 text-lg leading-8 text-beacon-200">
+              <p className="mt-3 text-lg leading-8 text-foreground">
                 {local(guide.unit, locale)}
               </p>
               <Link
                 href="/compare"
-                className="mt-6 flex items-center justify-between rounded-xl bg-brand p-4 text-sm font-extrabold text-slate-950"
+                className="mt-6 flex items-center justify-between rounded-xl bg-secondary p-4 text-sm font-extrabold text-foreground"
               >
                 {t.compare}
                 <ArrowRight className="size-4 rtl:rotate-180" />
               </Link>
             </div>
-            <section className="rounded-2xl border border-slate-200 bg-white p-6">
+            <section className="rounded-2xl border border-border bg-card p-6">
               <h2 className="text-xl font-extrabold">{t.brief}</h2>
-              <p className="mt-4 whitespace-pre-line text-sm leading-7 text-slate-600">
+              <p className="mt-4 whitespace-pre-line text-sm leading-7 text-secondary-foreground">
                 {brief}
               </p>
               <button
-                className="mt-5 inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold"
+                className="mt-5 inline-flex items-center gap-2 rounded-xl border border-border px-4 py-3 text-sm font-bold"
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(brief);
@@ -84,7 +84,7 @@ export function ServiceGuide() {
                 <Copy className="size-4" />
                 {t.copyBrief}
               </button>
-              <p role="status" className="mt-2 text-xs text-beacon-700">
+              <p role="status" className="mt-2 text-xs text-foreground">
                 {copyState}
               </p>
             </section>
@@ -92,7 +92,7 @@ export function ServiceGuide() {
         </div>
         <section className="mt-14">
           <h2 className="text-2xl font-extrabold">{t.related}</h2>
-          <p className="mb-7 mt-3 text-sm leading-7 text-slate-500">
+          <p className="mb-7 mt-3 text-sm leading-7 text-muted-foreground">
             {t.relatedBody}
           </p>
           <ReferenceGrid limit={3} />
@@ -115,12 +115,12 @@ export function DirectoryProfile() {
       >
         <Link
           href="/providers"
-          className="inline-flex items-center gap-2 text-sm font-bold text-slate-500"
+          className="inline-flex items-center gap-2 text-sm font-bold text-muted-foreground"
         >
           <ArrowLeft className="size-4 rtl:rotate-180" />
           {t.allProfiles}
         </Link>
-        <div className="mt-8 rounded-3xl border border-slate-200 bg-white p-7 sm:p-10">
+        <div className="mt-8 rounded-3xl border border-border bg-card p-7 sm:p-10">
           <div className="flex items-start gap-5">
             <span
               className="grid size-16 shrink-0 place-items-center rounded-2xl text-lg font-extrabold text-white"
@@ -131,14 +131,14 @@ export function DirectoryProfile() {
             <div>
               <p className="section-kicker">{local(profile.type, locale)}</p>
               <h1
-                className="mt-3 text-3xl font-extrabold text-slate-950 sm:text-5xl"
+                className="mt-3 text-3xl font-extrabold text-foreground sm:text-5xl"
                 dir="ltr"
               >
                 {profile.name}
               </h1>
             </div>
           </div>
-          <p className="mt-7 text-lg leading-8 text-slate-600">
+          <p className="mt-7 text-lg leading-8 text-secondary-foreground">
             {local(profile.summary, locale)}
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
@@ -146,38 +146,38 @@ export function DirectoryProfile() {
               <Link
                 key={tag}
                 href={`/services?q=${tag}`}
-                className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600"
+                className="rounded-full bg-secondary px-3 py-1.5 text-xs font-bold text-secondary-foreground"
               >
                 {tag}
               </Link>
             ))}
           </div>
-          <div className="mt-7 border-t border-slate-100 pt-5">
+          <div className="mt-7 border-t border-border pt-5">
             <SourceLink href={profile.source}>{t.official}</SourceLink>
-            <p className="mt-3 text-xs text-slate-500">{t.checked}</p>
+            <p className="mt-3 text-xs text-muted-foreground">{t.checked}</p>
           </div>
         </div>
         <div className="mt-6 grid gap-6 sm:grid-cols-2">
-          <section className="rounded-2xl border border-slate-200 bg-white p-6">
+          <section className="rounded-2xl border border-border bg-card p-6">
             <h2 className="text-lg font-extrabold">{t.ask}</h2>
-            <p className="mt-4 text-sm leading-8 text-slate-600">
+            <p className="mt-4 text-sm leading-8 text-secondary-foreground">
               {local(profile.question, locale)}
             </p>
             <h3 className="mt-6 font-bold">{t.pricing}</h3>
-            <p className="mt-3 text-sm leading-7 text-slate-500">
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">
               {t.pricingBody}
             </p>
           </section>
-          <section className="rounded-2xl border border-amber-200 bg-amber-50/50 p-6">
-            <p className="text-xs font-bold text-amber-900">{t.publicSource}</p>
+          <section className="rounded-2xl border border-warning-border bg-warning-muted/50 p-6">
+            <p className="text-xs font-bold text-warning">{t.publicSource}</p>
             <h2 className="mt-3 text-lg font-extrabold">{t.unverified}</h2>
-            <p className="mt-5 font-bold text-slate-700">{t.noScore}</p>
-            <p className="mt-2 text-sm leading-7 text-slate-600">
+            <p className="mt-5 font-bold text-secondary-foreground">{t.noScore}</p>
+            <p className="mt-2 text-sm leading-7 text-secondary-foreground">
               {t.noScoreBody}
             </p>
             <Link
               href="/#methodology"
-              className="mt-4 inline-block text-sm font-bold text-beacon-700 underline"
+              className="mt-4 inline-block text-sm font-bold text-foreground underline"
             >
               {t.methodLink}
             </Link>

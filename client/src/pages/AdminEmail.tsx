@@ -117,7 +117,7 @@ export default function AdminEmail() {
   const langSelect = (value: Locale, set: (value: Locale) => void) => (
     <select
       aria-label={t("Email language", "لغة الرسالة", "Idioma del correo")}
-      className="h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 sm:w-auto"
+      className="h-11 w-full min-w-0 rounded-lg border border-input bg-card px-3 sm:w-auto"
       value={value}
       onChange={e => set(e.target.value as Locale)}
     >
@@ -132,17 +132,17 @@ export default function AdminEmail() {
     <DashboardLayout>
       <div className="mx-auto w-full min-w-0 max-w-6xl space-y-5 p-1 sm:space-y-7 sm:p-7">
         <header className="flex items-center gap-4">
-          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-beacon-50 text-beacon-800 sm:size-14">
+          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-secondary text-foreground sm:size-14">
             <Mail />
           </span>
           <div className="min-w-0">
-            <p className="text-xs font-bold tracking-wider text-beacon-700">
+            <p className="text-xs font-bold tracking-wider text-foreground">
               ProviderBeacon
             </p>
             <h1 className="text-2xl font-extrabold sm:text-3xl">
               {t("Customer email", "بريد العملاء", "Correo a clientes")}
             </h1>
-            <p className="mt-1 text-sm text-slate-500">
+            <p className="mt-1 text-sm text-muted-foreground">
               {t(
                 "Welcome, account security and customer updates",
                 "الترحيب وأمان الحساب وتحديثات العملاء",
@@ -165,12 +165,12 @@ export default function AdminEmail() {
               recipients.isError ||
               history.isError ||
               template.isError) && (
-              <p role="alert" className="text-red-700">
+              <p role="alert" className="text-danger">
                 {errorText()}
               </p>
             )}
             <section
-              className={`rounded-2xl border p-4 sm:p-6 ${status.data?.enabled ? "border-beacon-200 bg-beacon-50" : "border-amber-200 bg-amber-50"}`}
+              className={`rounded-2xl border p-4 sm:p-6 ${status.data?.enabled ? "border-input bg-secondary" : "border-warning-border bg-warning-muted"}`}
             >
               <h2 className="flex items-center gap-2 font-bold">
                 {status.data?.enabled ? (
@@ -214,7 +214,7 @@ export default function AdminEmail() {
                 {status.data?.counts.map(c => (
                   <span
                     key={c.status}
-                    className="rounded-lg bg-white px-3 py-2 text-xs"
+                    className="rounded-lg bg-card px-3 py-2 text-xs"
                   >
                     <span>{`${statusText[c.status] || c.status}: `}</span>
                     <strong>{c.count}</strong>
@@ -222,7 +222,7 @@ export default function AdminEmail() {
                 ))}
               </div>
             </section>
-            <section className="min-w-0 space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
+            <section className="min-w-0 space-y-4 rounded-2xl border border-border bg-card p-4 sm:p-6">
               <h2 className="text-xl font-bold">
                 {t(
                   "Automatic email templates",
@@ -234,7 +234,7 @@ export default function AdminEmail() {
                 {langSelect(language, setLanguage)}
                 <select
                   aria-label={t("Template", "القالب", "Plantilla")}
-                  className="h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3 sm:w-auto"
+                  className="h-11 w-full min-w-0 rounded-lg border border-input bg-card px-3 sm:w-auto"
                   value={kind}
                   onChange={e => setKind(e.target.value as typeof kind)}
                 >
@@ -277,12 +277,12 @@ export default function AdminEmail() {
                   sandbox=""
                   referrerPolicy="no-referrer"
                   srcDoc={template.data.html}
-                  className="block h-[70svh] max-h-[620px] min-h-96 w-full min-w-0 rounded-xl border border-slate-200"
+                  className="block h-[70svh] max-h-[620px] min-h-96 w-full min-w-0 rounded-xl border border-border"
                 />
               )}
             </section>
             {canSend && (
-              <section className="min-w-0 space-y-5 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6">
+              <section className="min-w-0 space-y-5 rounded-2xl border border-border bg-card p-4 sm:p-6">
                 <h2 className="text-xl font-bold">
                   {t(
                     "Write a customer update",
@@ -290,7 +290,7 @@ export default function AdminEmail() {
                     "Escribir a un cliente"
                   )}
                 </h2>
-                <p className="text-sm leading-7 text-slate-600">
+                <p className="text-sm leading-7 text-secondary-foreground">
                   {t(
                     "Choose one customer who has confirmed their email and subscribed to news and offers. Preview the full message before confirming delivery.",
                     "اختر عميلًا أكّد بريده واشترك بالأخبار والعروض. عاين الرسالة كاملة قبل تأكيد الإرسال.",
@@ -310,11 +310,11 @@ export default function AdminEmail() {
                     }}
                   />
                 </label>
-                <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-slate-200 p-3">
+                <div className="max-h-56 space-y-2 overflow-y-auto rounded-xl border border-border p-3">
                   {recipients.data?.items.map(m => (
                     <label
                       key={m.id}
-                      className={`flex items-start gap-3 rounded-lg p-3 text-sm ${message.memberId === m.id ? "bg-blue-50" : "bg-slate-50"}`}
+                      className={`flex items-start gap-3 rounded-lg p-3 text-sm ${message.memberId === m.id ? "bg-secondary" : "bg-muted"}`}
                     >
                       <input
                         type="radio"
@@ -338,7 +338,7 @@ export default function AdminEmail() {
                           {m.email}
                         </span>
                         {(!m.verified || !m.subscribed) && (
-                          <small className="text-amber-800">
+                          <small className="text-warning">
                             {t(
                               "Verification and subscription required",
                               "يتطلب تأكيد البريد والاشتراك",
@@ -350,7 +350,7 @@ export default function AdminEmail() {
                     </label>
                   ))}
                   {recipients.data?.items.length === 0 && (
-                    <p className="p-3 text-sm text-slate-500">
+                    <p className="p-3 text-sm text-muted-foreground">
                       {t(
                         "No customers found.",
                         "لا يوجد عملاء مطابقون.",
@@ -421,7 +421,7 @@ export default function AdminEmail() {
                       )}
                     </span>
                     <select
-                      className="h-11 w-full min-w-0 rounded-lg border border-slate-300 bg-white px-3"
+                      className="h-11 w-full min-w-0 rounded-lg border border-input bg-card px-3"
                       value={message.action}
                       onChange={e =>
                         change({
@@ -461,7 +461,7 @@ export default function AdminEmail() {
                   </Button>
                 </form>
                 {preview.data && (
-                  <div className="space-y-4 border-t border-slate-200 pt-5">
+                  <div className="space-y-4 border-t border-border pt-5">
                     <p dir="ltr" className="break-all text-sm">
                       {`${preview.data.from} → ${preview.data.recipient.email}`}
                     </p>
@@ -474,7 +474,7 @@ export default function AdminEmail() {
                       sandbox=""
                       referrerPolicy="no-referrer"
                       srcDoc={preview.data.html}
-                      className="block h-[70svh] max-h-[620px] min-h-96 w-full min-w-0 rounded-xl border border-slate-200"
+                      className="block h-[70svh] max-h-[620px] min-h-96 w-full min-w-0 rounded-xl border border-border"
                     />
                     <label className="flex items-start gap-3 text-sm leading-6">
                       <input
@@ -516,21 +516,21 @@ export default function AdminEmail() {
                   </div>
                 )}
                 {(preview.isError || send.isError) && (
-                  <p role="alert" className="text-red-700">
+                  <p role="alert" className="text-danger">
                     {errorText(preview.error?.message || send.error?.message)}
                   </p>
                 )}
                 {notice && (
                   <p
                     role="status"
-                    className="rounded-lg bg-beacon-50 p-3 text-beacon-900"
+                    className="rounded-lg bg-secondary p-3 text-foreground"
                   >
                     {notice}
                   </p>
                 )}
               </section>
             )}
-            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+            <section className="overflow-hidden rounded-2xl border border-border bg-card">
               <h2 className="p-4 text-xl font-bold sm:p-6">
                 {t("Email log", "سجل الرسائل", "Registro de correos")}
               </h2>
@@ -545,7 +545,7 @@ export default function AdminEmail() {
                 tabIndex={0}
               >
                 <table className="w-full min-w-[750px] text-start text-sm">
-                  <thead className="bg-slate-50 text-slate-500">
+                  <thead className="bg-muted text-muted-foreground">
                     <tr>
                       {[
                         t("Recipient", "المستلم", "Destinatario"),
@@ -561,32 +561,32 @@ export default function AdminEmail() {
                   </thead>
                   <tbody>
                     {history.data?.items.map(row => (
-                      <tr key={row.id} className="border-t border-slate-100">
+                      <tr key={row.id} className="border-t border-border">
                         <td dir="ltr" className="p-4">
                           {row.email}
                         </td>
                         <td className="p-4">
                           <span>{row.subject}</span>
-                          <small className="mt-1 block text-slate-400">
+                          <small className="mt-1 block text-muted-foreground">
                             {`#${row.id} · ${row.locale}`}
                           </small>
                         </td>
                         <td className="p-4">
                           <span
-                            className={`rounded-lg px-2 py-1 ${row.status === "delivered" ? "bg-beacon-50 text-beacon-800" : ["failed", "bounced", "complained"].includes(row.status) ? "bg-red-50 text-red-700" : "bg-slate-100 text-slate-700"}`}
+                            className={`rounded-lg px-2 py-1 ${row.status === "delivered" ? "bg-secondary text-foreground" : ["failed", "bounced", "complained"].includes(row.status) ? "bg-danger-muted text-danger" : "bg-secondary text-secondary-foreground"}`}
                           >
                             {statusText[row.status] || row.status}
                           </span>
                           {row.error && (
                             <small
                               dir="ltr"
-                              className="mt-2 block text-slate-500"
+                              className="mt-2 block text-muted-foreground"
                             >
                               {row.error}
                             </small>
                           )}
                         </td>
-                        <td className="p-4 text-xs text-slate-500">
+                        <td className="p-4 text-xs text-muted-foreground">
                           {new Date(row.createdAt).toLocaleString(locale)}
                         </td>
                       </tr>
@@ -595,7 +595,7 @@ export default function AdminEmail() {
                       <tr>
                         <td
                           colSpan={4}
-                          className="p-10 text-center text-slate-500"
+                          className="p-10 text-center text-muted-foreground"
                         >
                           {t(
                             "No emails have been queued yet.",

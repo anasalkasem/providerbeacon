@@ -56,7 +56,7 @@ export default function ProviderCataloguePublication({
   return (
     <div className="min-w-52 max-w-xs space-y-2">
       <p
-        className={`text-sm font-bold ${published ? "text-beacon-700" : "text-slate-600"}`}
+        className={`text-sm font-bold ${published ? "text-foreground" : "text-secondary-foreground"}`}
       >
         {published
           ? ar
@@ -66,7 +66,7 @@ export default function ProviderCataloguePublication({
             ? "كتالوج API غير ظاهر"
             : "API catalogue not visible"}
       </p>
-      <p className="text-xs leading-5 text-slate-500">
+      <p className="text-xs leading-5 text-muted-foreground">
         {provider.status === "suspended"
           ? ar
             ? "المزود موقوف"

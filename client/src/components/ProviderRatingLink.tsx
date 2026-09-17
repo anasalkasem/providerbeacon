@@ -23,12 +23,12 @@ export function ProviderRatingLink({
   return (
     <Link
       href={`/providers/${slug}#visitor-ratings`}
-      className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg px-1 py-2 text-xs font-semibold text-slate-700 hover:bg-beacon-50 focus-visible:outline-2 focus-visible:outline-beacon-700"
+      className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg px-1 py-2 text-xs font-semibold text-secondary-foreground hover:bg-secondary focus-visible:outline-2 focus-visible:outline-ring"
     >
       <span className="inline-flex items-center gap-1.5">
         <Star
           aria-hidden="true"
-          className={`size-4 shrink-0 text-amber-600 ${hasRatings ? "fill-amber-400" : ""}`}
+          className={`size-4 shrink-0 text-warning ${hasRatings ? "fill-warning" : ""}`}
         />
         {summary ? (
           hasRatings ? (
@@ -47,7 +47,7 @@ export function ProviderRatingLink({
           t.title
         )}
       </span>
-      <span className="font-bold text-beacon-800 underline underline-offset-4">
+      <span className="font-bold text-foreground underline underline-offset-4">
         {t.rateProvider}
         <span className="sr-only"> · {name}</span>
       </span>

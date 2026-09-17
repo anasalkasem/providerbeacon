@@ -71,7 +71,7 @@ export function ProviderAnalyticsPanel() {
                 }}
               />
               <Button
-                className="ms-auto border-[#D9E1ED] bg-white text-[#243650] hover:bg-[#EEF3FB]"
+                className="ms-auto border-[#464853] bg-card text-[#e2e3e9] hover:bg-[#121317]"
                 variant="outline"
                 onClick={() => void query.refetch()}
                 disabled={!allowed || query.isFetching}
@@ -89,23 +89,23 @@ export function ProviderAnalyticsPanel() {
       {access.isError || (access.data && !allowed) || query.isError ? (
         <p
           role="alert"
-          className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800"
+          className="rounded-xl border border-danger-border bg-danger-muted p-4 text-sm text-danger"
         >
           {t.failed}
         </p>
       ) : !data ? (
-        <p role="status" className="analytics-panel text-sm text-slate-500">
+        <p role="status" className="analytics-panel text-sm text-muted-foreground">
           {t.loading}
         </p>
       ) : (
         <>
           <AnalyticsReport data={data} />
-          <section className="overflow-hidden rounded-2xl border border-[#E3E8F0] bg-white">
+          <section className="overflow-hidden rounded-2xl border border-[#2e3038] bg-card">
             <div className="flex flex-wrap items-center justify-between gap-2 p-5">
-              <h2 className="text-lg font-extrabold text-[#243650]">
+              <h2 className="text-lg font-extrabold text-[#e2e3e9]">
                 {t.providers}
               </h2>
-              <span className="rounded-lg bg-[#EEF3FB] px-3 py-1 text-xs font-semibold text-[#507DB7]">
+              <span className="rounded-lg bg-[#121317] px-3 py-1 text-xs font-semibold text-[#e3c88e]">
                 {t.page} <bdi>{n(data.page)}</bdi> {t.of}{" "}
                 <bdi>{n(data.pageCount)}</bdi>
               </span>
@@ -129,7 +129,7 @@ export function ProviderAnalyticsPanel() {
                       <th scope="row" className="max-w-60 text-start">
                         <button
                           type="button"
-                          className="break-words text-start font-bold text-[#243650] underline-offset-4 hover:underline"
+                          className="break-words text-start font-bold text-[#e2e3e9] underline-offset-4 hover:underline"
                           onClick={() => selectProvider(String(row.id))}
                           aria-label={`${t.details}: ${row.name}`}
                         >
@@ -145,7 +145,7 @@ export function ProviderAnalyticsPanel() {
                           <bdi>{n(row[series.key])}</bdi>
                         </td>
                       ))}
-                      <td className="text-end font-extrabold tabular-nums text-[#327D70]">
+                      <td className="text-end font-extrabold tabular-nums text-[#c7c9d1]">
                         <bdi>{n(row.website + row.telegram)}</bdi>
                       </td>
                     </tr>
@@ -154,7 +154,7 @@ export function ProviderAnalyticsPanel() {
                     <tr>
                       <td
                         colSpan={5}
-                        className="!p-6 text-center text-slate-500"
+                        className="!p-6 text-center text-muted-foreground"
                       >
                         {t.noProviders}
                       </td>
@@ -165,9 +165,9 @@ export function ProviderAnalyticsPanel() {
             </div>
             <nav
               aria-label={t.page}
-              className="flex flex-wrap items-center justify-between gap-3 border-t border-[#E3E8F0] p-4"
+              className="flex flex-wrap items-center justify-between gap-3 border-t border-[#2e3038] p-4"
             >
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-muted-foreground">
                 {t.page} <bdi>{n(data.page)}</bdi> {t.of}{" "}
                 <bdi>{n(data.pageCount)}</bdi>
               </p>
@@ -191,13 +191,13 @@ export function ProviderAnalyticsPanel() {
               </div>
             </nav>
           </section>
-          <details className="rounded-xl border border-[#E3E8F0] bg-[#F3F6FA] p-5 text-xs leading-6 text-slate-500">
-            <summary className="cursor-pointer font-semibold text-[#4E617E]">
+          <details className="rounded-xl border border-[#2e3038] bg-[#121317] p-5 text-xs leading-6 text-muted-foreground">
+            <summary className="cursor-pointer font-semibold text-[#acafb9]">
               {t.method}
             </summary>
             <p className="mt-3">{t.methodBody}</p>
             <p className="mt-2">{t.scope}</p>
-            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 border-t border-[#E3E8F0] pt-3">
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 border-t border-[#2e3038] pt-3">
               {data.startedAt && (
                 <p>
                   {t.started}: <bdi>{date(data.startedAt)}</bdi>

@@ -60,7 +60,7 @@ export function VipCard({
           className="size-full object-contain"
         />
       ) : (
-        <div className="grid size-full place-items-center bg-[radial-gradient(ellipse_at_top_right,#526c31,transparent)] p-5 text-center text-white">
+        <div className="grid size-full place-items-center bg-carbon p-5 text-center text-white">
           <div>
             <ProviderLogo
               src={card.logoUrl}
@@ -84,7 +84,7 @@ export function VipCard({
     return (
       <article
         ref={ref}
-        className="vip-card vip-spotlight flex w-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white"
+        className="vip-card vip-spotlight flex w-full flex-col overflow-hidden rounded-3xl border border-border bg-card"
         aria-label={card.name}
       >
         <Link
@@ -92,11 +92,11 @@ export function VipCard({
           onClick={click}
           onAuxClick={click}
           aria-label={`${t.explore}: ${card.name}`}
-          className="flex flex-1 flex-col rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-beacon-700"
+          className="flex flex-1 flex-col rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         >
           {artwork}
           <div className="flex flex-1 flex-col p-5">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
               <span>{placementLabel}</span>
               {card.ownershipVerified && (
                 <span className="inline-flex items-center gap-1">
@@ -113,13 +113,13 @@ export function VipCard({
                 className="size-10 text-sm"
               />
               <h3
-                className="min-w-0 flex-1 truncate text-xl font-extrabold text-ink"
+                className="min-w-0 flex-1 truncate text-xl font-extrabold text-foreground"
                 dir="auto"
               >
                 {card.name}
               </h3>
               <span
-                className="grid size-10 shrink-0 place-items-center rounded-full bg-brand text-ink"
+                className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary text-foreground"
                 aria-hidden="true"
               >
                 <ArrowUpRight className="size-5 rtl:-scale-x-100" />
@@ -127,7 +127,7 @@ export function VipCard({
             </div>
             <p
               dir="auto"
-              className="mt-3 line-clamp-2 break-words text-sm leading-6 text-slate-600"
+              className="mt-3 line-clamp-2 break-words text-sm leading-6 text-secondary-foreground"
             >
               {card.tagline}
             </p>
@@ -136,7 +136,7 @@ export function VipCard({
               new Date(card.offerEndsAt).getTime() > now && (
                 <p
                   dir="auto"
-                  className="mt-3 flex items-start gap-2 rounded-lg bg-beacon-50 px-3 py-2 text-xs leading-5 text-beacon-900"
+                  className="mt-3 flex items-start gap-2 rounded-lg bg-secondary px-3 py-2 text-xs leading-5 text-foreground"
                 >
                   <Tag className="mt-1 size-3 shrink-0" />
                   {card.offer}
@@ -144,7 +144,7 @@ export function VipCard({
               )}
           </div>
         </Link>
-        <div className="mx-5 border-t border-slate-100 py-2">
+        <div className="mx-5 border-t border-border py-2">
           <ProviderRatingLink slug={card.slug} name={card.name} />
         </div>
       </article>
@@ -152,12 +152,12 @@ export function VipCard({
   return (
     <article
       ref={ref}
-      className="vip-card group flex h-full min-w-0 flex-col overflow-hidden rounded-[1.4rem] border border-slate-200 bg-white"
+      className="vip-card group flex h-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-card"
       aria-label={card.name}
     >
       {artwork}
       <div className="flex flex-1 flex-col p-5">
-        <p className="mb-3 text-[11px] font-semibold text-slate-500">
+        <p className="mb-3 text-[11px] font-semibold text-muted-foreground">
           {placementLabel}
         </p>
         <div className="flex items-center gap-3">
@@ -168,11 +168,11 @@ export function VipCard({
             className="size-11 text-sm"
           />
           <div className="min-w-0">
-            <h3 className="truncate text-lg font-extrabold text-ink" dir="auto">
+            <h3 className="truncate text-lg font-extrabold text-foreground" dir="auto">
               {card.name}
             </h3>
             {card.ownershipVerified && (
-              <span className="mt-1 flex items-center gap-1 text-[11px] text-slate-600">
+              <span className="mt-1 flex items-center gap-1 text-[11px] text-secondary-foreground">
                 <ShieldCheck className="size-3.5 shrink-0" />
                 {t.verified}
               </span>
@@ -181,7 +181,7 @@ export function VipCard({
         </div>
         <p
           dir="auto"
-          className="mt-4 line-clamp-3 min-h-[4.5rem] break-words text-sm leading-6 text-slate-600"
+          className="mt-4 line-clamp-3 min-h-[4.5rem] break-words text-sm leading-6 text-secondary-foreground"
         >
           {card.tagline}
         </p>
@@ -190,7 +190,7 @@ export function VipCard({
             <span
               key={tag}
               dir="auto"
-              className="max-w-full break-words rounded-md bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-600"
+              className="max-w-full break-words rounded-md bg-secondary px-2 py-1 text-[11px] font-semibold text-secondary-foreground"
             >
               {tag}
             </span>
@@ -201,14 +201,14 @@ export function VipCard({
           new Date(card.offerEndsAt).getTime() > now && (
             <p
               dir="auto"
-              className="mt-4 flex items-start gap-2 rounded-lg border border-beacon-200 bg-beacon-50 p-3 text-xs leading-6 text-beacon-900"
+              className="mt-4 flex items-start gap-2 rounded-lg border border-input bg-secondary p-3 text-xs leading-6 text-foreground"
             >
               <Tag className="mt-1 size-3.5 shrink-0" />
               {card.offer}
             </p>
           )}
         {preview ? (
-          <span className="beacon-button mt-5 flex items-center justify-between rounded-xl px-4 py-3 text-sm font-bold">
+          <span className="beacon-ghost mt-5 flex items-center justify-between rounded-xl px-4 py-3 text-sm font-bold">
             {t.explore}
             <ArrowUpRight className="size-4 rtl:-scale-x-100" />
           </span>
@@ -218,12 +218,12 @@ export function VipCard({
               href={`/providers/${card.slug}`}
               onClick={click}
               onAuxClick={click}
-              className="beacon-button mt-auto flex min-h-11 items-center justify-between rounded-xl px-4 py-3 text-sm font-bold group-hover:shadow-sm"
+              className="beacon-ghost mt-auto flex min-h-11 items-center justify-between rounded-xl px-4 py-3 text-sm font-bold shadow-none"
             >
               <span className="pt-0.5">{t.explore}</span>
               <ArrowUpRight className="size-4 rtl:-scale-x-100" />
             </Link>
-            <div className="mt-3 border-t border-slate-100 pt-2">
+            <div className="mt-3 border-t border-border pt-2">
               <ProviderRatingLink slug={card.slug} name={card.name} />
             </div>
           </div>

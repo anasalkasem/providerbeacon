@@ -1,7 +1,7 @@
 export const analyticsSeries = [
-  { key: "views", color: "#C35C6B", tint: "#FCF0F2" },
-  { key: "website", color: "#507DB7", tint: "#EEF3FB" },
-  { key: "telegram", color: "#8564AD", tint: "#F4F0FA" },
+  { key: "views", color: "#e3c88e", tint: "#121317" },
+  { key: "website", color: "#c7c9d1", tint: "#121317" },
+  { key: "telegram", color: "#9497a5", tint: "#121317" },
 ] as const;
 
 export type AnalyticsMetric = (typeof analyticsSeries)[number]["key"];

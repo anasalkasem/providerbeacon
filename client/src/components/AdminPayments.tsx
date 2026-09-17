@@ -30,8 +30,8 @@ export function AdminPayments({ manage }: { manage: boolean }) {
     <div className="space-y-6">
       {manage && (
         <>
-          <h2 className="text-xl font-bold text-ink">{t.gates}</h2>
-          <p className="max-w-3xl text-sm leading-7 text-slate-600">
+          <h2 className="text-xl font-bold text-foreground">{t.gates}</h2>
+          <p className="max-w-3xl text-sm leading-7 text-secondary-foreground">
             {t.settingsHelp}
           </p>
           {settings.isError && (
@@ -47,11 +47,11 @@ export function AdminPayments({ manage }: { manage: boolean }) {
           </div>
         </>
       )}
-      <h2 className="text-xl font-bold text-ink">{t.history}</h2>
+      <h2 className="text-xl font-bold text-foreground">{t.history}</h2>
       {history.isError ? (
         <p role="alert">{paymentError(history.error.message, locale)}</p>
       ) : history.data?.items.length === 0 ? (
-        <p className="text-sm text-slate-500">{t.noPayments}</p>
+        <p className="text-sm text-muted-foreground">{t.noPayments}</p>
       ) : (
         <div className="space-y-4">
           {history.data?.items.map(payment => (
@@ -61,14 +61,14 @@ export function AdminPayments({ manage }: { manage: boolean }) {
               </h3>
               <PaymentStatusCard payment={payment} readOnly />
               {payment.transactionId && (
-                <p className="mt-3 break-all text-xs text-slate-500">
+                <p className="mt-3 break-all text-xs text-muted-foreground">
                   <bdi>
                     {payment.gateway} · {payment.transactionId}
                   </bdi>
                 </p>
               )}
               {payment.reviewReason && (
-                <p className="mt-2 text-xs text-amber-800">
+                <p className="mt-2 text-xs text-warning">
                   <bdi>{payment.reviewReason}</bdi>
                 </p>
               )}
@@ -133,14 +133,14 @@ function GatewayForm({ setting }: { setting: Output["settings"][number] }) {
   return (
     <BusinessCard>
       <div className="flex flex-wrap justify-between gap-3">
-        <h3 className="text-lg font-extrabold text-ink">
+        <h3 className="text-lg font-extrabold text-foreground">
           {setting.gateway === "paypal" ? "PayPal" : "NOWPayments"}
         </h3>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-muted-foreground">
           {setting.configured ? t.configured : t.missing}
         </span>
       </div>
-      <p className="mt-3 text-sm leading-7 text-slate-600">
+      <p className="mt-3 text-sm leading-7 text-secondary-foreground">
         {setting.gateway === "paypal" ? t.paypalSetup : t.nowSetup}
       </p>
       <form
@@ -224,14 +224,14 @@ function GatewayForm({ setting }: { setting: Output["settings"][number] }) {
             {t.enabled}
           </label>
           {environment === "sandbox" && (
-            <p className="text-sm text-amber-800">{t.sandbox}</p>
+            <p className="text-sm text-warning">{t.sandbox}</p>
           )}
           <button className={businessPrimary} type="submit">
             {t.save}
           </button>
         </fieldset>
         {save.error && (
-          <p role="alert" className="text-sm text-red-700">
+          <p role="alert" className="text-sm text-danger">
             {paymentError(save.error.message, locale)}
           </p>
         )}
@@ -264,16 +264,16 @@ function ApplyPayment({
   });
   return (
     <form
-      className="mt-4 space-y-3 border-t border-slate-100 pt-4"
+      className="mt-4 space-y-3 border-t border-border pt-4"
       onSubmit={e => {
         e.preventDefault();
         if (verified) apply.mutate({ paymentId, note });
       }}
     >
       {verified && (
-        <p className="text-sm leading-7 text-slate-600">{t.applyHelp}</p>
+        <p className="text-sm leading-7 text-secondary-foreground">{t.applyHelp}</p>
       )}
-      <p className="text-sm leading-7 text-slate-600">{t.closeHelp}</p>
+      <p className="text-sm leading-7 text-secondary-foreground">{t.closeHelp}</p>
       <label className="block text-sm font-semibold">
         {t.note}
         <input
@@ -306,17 +306,17 @@ function ApplyPayment({
         </button>
       </div>
       {apply.data?.state === "review" && (
-        <p role="status" className="text-sm text-amber-800">
+        <p role="status" className="text-sm text-warning">
           {t.suspended}
         </p>
       )}
       {apply.error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {paymentError(apply.error.message, locale)}
         </p>
       )}
       {close.error && (
-        <p role="alert" className="text-sm text-red-700">
+        <p role="alert" className="text-sm text-danger">
           {paymentError(close.error.message, locale)}
         </p>
       )}

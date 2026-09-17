@@ -108,20 +108,20 @@ export default function Find() {
     : "/compare";
   return (
     <PublicLayout showCatalogueNotice={false}>
-      <section className="border-b border-slate-200 bg-ink text-white">
+      <section className="border-b border-border bg-ink text-white">
         <div className="container max-w-5xl py-10 sm:py-14">
-          <p className="flex items-center gap-2 text-xs font-bold tracking-wide text-beacon-300">
+          <p className="flex items-center gap-2 text-xs font-bold tracking-wide text-foreground">
             <Sparkles className="size-4" />
             BEACON AI
           </p>
           <h1 className="mt-4 text-3xl font-extrabold leading-tight sm:text-4xl">
             {t.ask}
           </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-silver">
             {t.intro}
           </p>
           <form
-            className="mt-6 rounded-2xl border border-white/15 bg-white p-3 text-slate-950 shadow-xl"
+            className="mt-6 rounded-2xl border border-white/15 bg-card p-3 text-foreground shadow-none"
             onSubmit={e => {
               e.preventDefault();
               send(draft);
@@ -140,15 +140,15 @@ export default function Find() {
               onChange={e => setDraft(e.target.value)}
               placeholder={result ? t.refine : a.placeholder}
               disabled={chat.isPending}
-              className="w-full resize-y rounded-xl p-3 text-base leading-7 outline-none focus:ring-2 focus:ring-beacon-400"
+              className="w-full resize-y rounded-xl p-3 text-base leading-7 outline-none focus:ring-2 focus:ring-input"
             />
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
-              <p className="max-w-xl text-[11px] leading-5 text-slate-500">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
+              <p className="max-w-xl text-[11px] leading-5 text-muted-foreground">
                 {a.privacy}
               </p>
               <button
                 disabled={!ready || chat.isPending || !draft.trim()}
-                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-beacon-700 px-5 py-3 text-sm font-bold text-white hover:bg-beacon-800 disabled:opacity-50"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-graphite px-5 py-3 text-sm font-bold text-white hover:bg-graphite disabled:opacity-50"
               >
                 {chat.isPending ? (
                   <Loader2 className="size-4 animate-spin" />
@@ -170,7 +170,7 @@ export default function Find() {
                     setDraft(example);
                     send(example);
                   }}
-                  className="rounded-full border border-white/20 px-3 py-2 text-xs text-slate-200 hover:border-beacon-300 disabled:opacity-50"
+                  className="rounded-full border border-white/20 px-3 py-2 text-xs text-foreground hover:border-input disabled:opacity-50"
                 >
                   {example}
                 </button>
@@ -182,10 +182,10 @@ export default function Find() {
       <section className="container py-8 sm:py-10">
         {status.isLoading && <p role="status">{a.thinking}</p>}
         {!status.isLoading && !ready && (
-          <div className="rounded-2xl border border-slate-200 bg-white p-6">
+          <div className="rounded-2xl border border-border bg-card p-6">
             <p>{status.isError ? a.error : a.unavailable}</p>
             <Link
-              className="mt-3 inline-flex font-bold text-beacon-800 underline"
+              className="mt-3 inline-flex font-bold text-foreground underline"
               href="/services"
             >
               {t.browse}
@@ -195,7 +195,7 @@ export default function Find() {
         {chat.isPending && (
           <p
             role="status"
-            className="mb-5 flex items-center gap-3 rounded-xl bg-beacon-50 p-5 text-beacon-900"
+            className="mb-5 flex items-center gap-3 rounded-xl bg-secondary p-5 text-foreground"
           >
             <Loader2 className="size-5 animate-spin" />
             {a.thinking}
@@ -204,7 +204,7 @@ export default function Find() {
         {failure && (
           <div
             role="alert"
-            className="mb-6 rounded-xl bg-amber-50 p-5 text-amber-900"
+            className="mb-6 rounded-xl bg-warning-muted p-5 text-warning"
           >
             <p>{failure}</p>
             <button
@@ -224,7 +224,7 @@ export default function Find() {
           >
             <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-beacon-700">
+                <p className="text-xs font-bold uppercase tracking-wide text-foreground">
                   {t.request}
                 </p>
                 <p
@@ -245,7 +245,7 @@ export default function Find() {
                   setDraft("");
                   field.current?.focus();
                 }}
-                className="inline-flex items-center gap-2 text-sm font-bold text-slate-600"
+                className="inline-flex items-center gap-2 text-sm font-bold text-secondary-foreground"
               >
                 <RotateCcw className="size-4" />
                 {a.clear}
@@ -272,13 +272,13 @@ export default function Find() {
                 .map((value, index) => (
                   <span
                     key={index}
-                    className="rounded-full border border-slate-200 bg-white px-3 py-2"
+                    className="rounded-full border border-border bg-card px-3 py-2"
                   >
                     {value}
                   </span>
                 ))}
             </div>
-            <div className="mb-6 rounded-2xl border border-slate-200 bg-white p-5">
+            <div className="mb-6 rounded-2xl border border-border bg-card p-5">
               <p dir="auto" className="whitespace-pre-wrap text-sm leading-8">
                 {result.answer || a.explanationUnavailable}
               </p>
@@ -287,7 +287,7 @@ export default function Find() {
               <>
                 <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                   <h2 className="text-xl font-extrabold">{t.choices}</h2>
-                  <span className="text-xs text-slate-500">
+                  <span className="text-xs text-muted-foreground">
                     {a.currency}: <bdi>{result.displayCurrency}</bdi>
                   </span>
                 </div>
@@ -326,7 +326,7 @@ export default function Find() {
                   </>
                 )}
                 {result.partial && (
-                  <p className="mb-3 text-xs leading-6 text-slate-500">
+                  <p className="mb-3 text-xs leading-6 text-muted-foreground">
                     {a.partial}
                   </p>
                 )}
@@ -334,7 +334,7 @@ export default function Find() {
             )}
             <Link
               href={result.catalogueUrl}
-              className="inline-flex items-center gap-2 font-bold text-beacon-800"
+              className="inline-flex items-center gap-2 font-bold text-foreground"
             >
               {t.browse}
               <ArrowRight className="size-4 rtl:rotate-180" />

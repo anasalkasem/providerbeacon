@@ -29,10 +29,10 @@ export function MessageBubble({
     message.translation?.status === "done" && message.translation.text;
   return (
     <article
-      className={`max-w-[90%] rounded-2xl border px-3.5 py-3 sm:max-w-[84%] ${message.own ? "ms-auto rounded-ee-sm border-transparent bg-[#dce8ad] text-[#1e2917]" : "me-auto rounded-es-sm border-slate-200 bg-white text-slate-900"}`}
+      className={`max-w-[90%] rounded-2xl border px-3.5 py-3 sm:max-w-[84%] ${message.own ? "ms-auto rounded-ee-sm border-transparent bg-secondary text-foreground" : "me-auto rounded-es-sm border-border bg-card text-foreground"}`}
     >
       {!message.own && (
-        <p className="mb-1 text-xs font-bold text-slate-500">
+        <p className="mb-1 text-xs font-bold text-muted-foreground">
           {message.sender === "assistant"
             ? t.assistant
             : (message.name ?? t.visitor)}
@@ -45,7 +45,7 @@ export function MessageBubble({
         {translated && !original ? message.translation!.text : message.original}
       </p>
       {message.translation && (
-        <div className="mt-2 text-xs leading-5 text-slate-600">
+        <div className="mt-2 text-xs leading-5 text-secondary-foreground">
           {translated ? (
             <button
               type="button"
@@ -64,7 +64,7 @@ export function MessageBubble({
           )}
           {translated && !original && <span>{t.translated}</span>}
           {message.translation.needsReview && (
-            <p className="text-amber-800">{t.review}</p>
+            <p className="text-warning">{t.review}</p>
           )}
           {message.translation.status === "failed" && (
             <button
@@ -77,7 +77,7 @@ export function MessageBubble({
           )}
         </div>
       )}
-      <footer className="mt-2 flex items-center justify-end gap-1 text-[11px] text-slate-500">
+      <footer className="mt-2 flex items-center justify-end gap-1 text-[11px] text-muted-foreground">
         <time dateTime={new Date(message.createdAt).toISOString()}>
           {new Date(message.createdAt).toLocaleTimeString(locale, {
             hour: "2-digit",
@@ -86,7 +86,7 @@ export function MessageBubble({
         </time>
         {message.own &&
           (message.read ? (
-            <CheckCheck aria-label={t.read} className="size-4 text-blue-700" />
+            <CheckCheck aria-label={t.read} className="size-4 text-foreground" />
           ) : (
             <Check aria-label={t.sent} className="size-4" />
           ))}
@@ -266,13 +266,13 @@ export default function MessageThread({
       data?.kind === "direct" ||
       data?.assignedUserId === userId);
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[#f4f6ef]">
-      <header className="flex shrink-0 items-center gap-2 border-b bg-white px-3 py-3">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[#08080a]">
+      <header className="flex shrink-0 items-center gap-2 border-b bg-card px-3 py-3">
         <button
           type="button"
           aria-label={t.back}
           onClick={onBack}
-          className="rounded-lg p-2 hover:bg-slate-100"
+          className="rounded-lg p-2 hover:bg-secondary"
         >
           <ChevronLeft className="size-5 rtl:rotate-180" />
         </button>
@@ -280,7 +280,7 @@ export default function MessageThread({
           <h3 className="truncate text-sm font-bold">
             {data?.name ?? (mode === "visitor" ? t.supportTitle : t.visitor)}
           </h3>
-          <p className="mt-0.5 text-xs text-slate-500">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {data?.kind === "support"
               ? data.status === "waiting"
                 ? t.waiting
@@ -296,19 +296,19 @@ export default function MessageThread({
           <button
             type="button"
             onClick={() => setConfirmEnd(true)}
-            className="rounded-lg px-2 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+            className="rounded-lg px-2 py-2 text-xs font-semibold text-secondary-foreground hover:bg-secondary"
           >
             {t.finish}
           </button>
         )}
       </header>
       {data?.kind === "support" && (
-        <p className="shrink-0 border-b bg-white px-4 py-2 text-[11px] leading-5 text-slate-500">
+        <p className="shrink-0 border-b bg-card px-4 py-2 text-[11px] leading-5 text-muted-foreground">
           {t.supportSupervision}
         </p>
       )}
       {confirmEnd && (
-        <div className="border-b border-amber-200 bg-amber-50 p-3 text-sm">
+        <div className="border-b border-warning-border bg-warning-muted p-3 text-sm">
           <p>{t.finishConfirm}</p>
           <div className="mt-2 flex gap-2">
             <button
@@ -342,11 +342,11 @@ export default function MessageThread({
         mode === "staff" &&
         canAssign &&
         data.status !== "closed" && (
-          <label className="flex items-center gap-2 border-b bg-white px-4 py-2 text-xs">
+          <label className="flex items-center gap-2 border-b bg-card px-4 py-2 text-xs">
             {t.reassign}
             <select
               aria-label={t.reassign}
-              className="min-w-0 flex-1 rounded-md border bg-white p-1.5"
+              className="min-w-0 flex-1 rounded-md border bg-card p-1.5"
               value={data.assignedUserId ?? ""}
               disabled={assign.isPending}
               onChange={async e => {
@@ -380,7 +380,7 @@ export default function MessageThread({
           </label>
         )}
       {thread.isError && (
-        <div role="alert" className="bg-amber-50 p-3 text-sm text-amber-900">
+        <div role="alert" className="bg-warning-muted p-3 text-sm text-warning">
           {data ? t.connectionError : t.conversationError}
           <button
             type="button"
@@ -410,7 +410,7 @@ export default function MessageThread({
         {data?.nextCursor && (
           <button
             type="button"
-            className="mx-auto block rounded-full border bg-white px-4 py-2 text-xs font-semibold"
+            className="mx-auto block rounded-full border bg-card px-4 py-2 text-xs font-semibold"
             onClick={() => {
               setBefore(data.nextCursor!);
               setAtBottom(false);
@@ -434,7 +434,7 @@ export default function MessageThread({
         {data?.status === "waiting" && (
           <p
             role="status"
-            className="rounded-xl border border-beacon-200 bg-beacon-50 p-3 text-sm leading-6 text-beacon-900"
+            className="rounded-xl border border-input bg-secondary p-3 text-sm leading-6 text-foreground"
           >
             {t.waitHint}
           </p>
@@ -459,25 +459,25 @@ export default function MessageThread({
       {failure && (
         <div
           role="alert"
-          className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-900"
+          className="border-t border-warning-border bg-warning-muted px-4 py-2 text-sm text-warning"
         >
           {failure}
         </div>
       )}
       {data?.status === "closed" ? (
-        <div className="border-t bg-white p-4 text-center text-sm text-slate-500">
+        <div className="border-t bg-card p-4 text-center text-sm text-muted-foreground">
           {t.closed}
         </div>
       ) : (
         <form
-          className="shrink-0 border-t bg-white p-3"
+          className="shrink-0 border-t bg-card p-3"
           onSubmit={e => {
             e.preventDefault();
             void submit();
           }}
         >
           {!writable && data && (
-            <p className="mb-2 text-xs text-amber-800">{t.claimFirst}</p>
+            <p className="mb-2 text-xs text-warning">{t.claimFirst}</p>
           )}
           <div className="flex items-end gap-2">
             <textarea
@@ -500,13 +500,13 @@ export default function MessageThread({
                   void submit();
                 }
               }}
-              className="max-h-32 min-h-14 min-w-0 flex-1 resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-[15px] leading-6 focus:border-beacon-500 focus:outline-none disabled:opacity-50"
+              className="max-h-32 min-h-14 min-w-0 flex-1 resize-none rounded-xl border border-border bg-muted px-3 py-2 text-[15px] leading-6 focus:border-ring focus:outline-none disabled:opacity-50"
             />
             <button
               type="submit"
               aria-label={send.isPending ? t.pending : t.send}
               disabled={!data || !writable || send.isPending || !draft.trim()}
-              className="rounded-xl bg-ink p-3 text-beacon-300 disabled:opacity-40"
+              className="rounded-xl bg-ink p-3 text-foreground disabled:opacity-40"
             >
               {send.isPending ? (
                 <Loader2 className="size-5 animate-spin" />

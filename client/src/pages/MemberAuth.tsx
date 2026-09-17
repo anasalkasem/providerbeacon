@@ -45,7 +45,7 @@ function PasswordInput({
   const t = useMemberText();
   const [show, setShow] = useState(false);
   return (
-    <label className="grid gap-2 text-sm font-semibold text-slate-700">
+    <label className="grid gap-2 text-sm font-semibold text-secondary-foreground">
       {label}
       <span className="relative">
         <Input
@@ -62,7 +62,7 @@ function PasswordInput({
           type="button"
           aria-label={show ? t.hide : t.show}
           onClick={() => setShow(!show)}
-          className="absolute inset-y-0 end-0 grid w-12 place-items-center text-slate-500"
+          className="absolute inset-y-0 end-0 grid w-12 place-items-center text-muted-foreground"
         >
           {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
         </button>
@@ -85,7 +85,7 @@ function GoogleButton({
       type="button"
       disabled={disabled || busy}
       onClick={onClick}
-      className="flex min-h-12 w-full items-center justify-center gap-[10px] rounded-full border border-[#747775] bg-white px-3 py-3 text-sm font-medium text-[#1F1F1F] transition hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-60"
+      className="flex min-h-12 w-full items-center justify-center gap-[10px] rounded-full border border-input bg-card px-3 py-3 text-sm font-medium text-foreground transition hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-60"
       style={{ fontFamily: '"Google Sans", Arial, sans-serif' }}
     >
       <img
@@ -93,7 +93,7 @@ function GoogleButton({
         alt=""
         width="20"
         height="20"
-        className="size-5 bg-white"
+        className="size-5 bg-card"
         referrerPolicy="no-referrer"
       />
       {busy && <Loader2 className="size-4 animate-spin" />}
@@ -112,19 +112,19 @@ function AuthFrame({
   return (
     <PublicLayout showCatalogueNotice={false}>
       <div className="container py-10 sm:py-16">
-        <div className="mx-auto grid max-w-5xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/40 lg:grid-cols-[.85fr_1fr]">
+        <div className="mx-auto grid max-w-5xl overflow-hidden rounded-3xl border border-border bg-card shadow-none shadow-slate-200/40 lg:grid-cols-[.85fr_1fr]">
           <aside className="bg-ink p-7 text-white sm:p-10 lg:flex lg:flex-col lg:justify-center">
-            <div className="mb-6 grid size-12 place-items-center rounded-2xl bg-beacon-300/10 text-beacon-300">
+            <div className="mb-6 grid size-12 place-items-center rounded-2xl bg-secondary/10 text-foreground">
               <UserRound />
             </div>
-            <p className="text-sm font-semibold tracking-wide text-beacon-300">
+            <p className="text-sm font-semibold tracking-wide text-foreground">
               ProviderBeacon
             </p>
             <h1 className="mt-3 text-3xl font-extrabold leading-snug">
               {title}
             </h1>
-            <p className="mt-4 leading-7 text-slate-300">{t.intro}</p>
-            <p className="mt-6 text-sm leading-6 text-slate-400">{t.browse}</p>
+            <p className="mt-4 leading-7 text-silver">{t.intro}</p>
+            <p className="mt-6 text-sm leading-6 text-muted-foreground">{t.browse}</p>
           </aside>
           <section className="p-6 sm:p-10">{children}</section>
         </div>
@@ -136,7 +136,7 @@ function ErrorMessage({ message }: { message?: string }) {
   return message ? (
     <p
       role="alert"
-      className="rounded-xl border border-red-100 bg-red-50 p-3 text-sm leading-6 text-red-700"
+      className="rounded-xl border border-danger-border bg-danger-muted p-3 text-sm leading-6 text-danger"
     >
       {message}
     </p>
@@ -154,14 +154,14 @@ function RecoverySaved({
     [copied, setCopied] = useState(false);
   return (
     <section className="space-y-5">
-      <div className="grid size-12 place-items-center rounded-xl bg-beacon-50 text-beacon-700">
+      <div className="grid size-12 place-items-center rounded-xl bg-secondary text-foreground">
         <KeyRound />
       </div>
       <h2 className="text-2xl font-bold">{t.recoveryTitle}</h2>
-      <p className="text-sm leading-7 text-slate-600">{t.recoveryBody}</p>
+      <p className="text-sm leading-7 text-secondary-foreground">{t.recoveryBody}</p>
       <code
         dir="ltr"
-        className="block break-all rounded-xl border border-beacon-200 bg-beacon-50 p-4 text-center text-lg font-semibold text-beacon-950 select-all"
+        className="block break-all rounded-xl border border-input bg-secondary p-4 text-center text-lg font-semibold text-foreground select-all"
       >
         {code}
       </code>
@@ -281,13 +281,13 @@ function CredentialsPage({ mode }: { mode: "login" | "register" }) {
             }}
           />
           {me.data && !me.data.googleEnabled && (
-            <p className="text-xs leading-6 text-slate-500">{t.googleOff}</p>
+            <p className="text-xs leading-6 text-muted-foreground">{t.googleOff}</p>
           )}
           {me.isError && <ErrorMessage message={t.unavailable} />}
-          <div className="flex items-center gap-3 text-xs text-slate-400">
-            <span className="h-px flex-1 bg-slate-200" />
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-accent" />
             {t.or}
-            <span className="h-px flex-1 bg-slate-200" />
+            <span className="h-px flex-1 bg-accent" />
           </div>
           <form
             className="space-y-4"
@@ -315,7 +315,7 @@ function CredentialsPage({ mode }: { mode: "login" | "register" }) {
             }}
           >
             {mode === "register" && (
-              <label className="grid gap-2 text-sm font-semibold text-slate-700">
+              <label className="grid gap-2 text-sm font-semibold text-secondary-foreground">
                 {t.name}
                 <Input
                   autoComplete="name"
@@ -328,7 +328,7 @@ function CredentialsPage({ mode }: { mode: "login" | "register" }) {
                 />
               </label>
             )}
-            <label className="grid gap-2 text-sm font-semibold text-slate-700">
+            <label className="grid gap-2 text-sm font-semibold text-secondary-foreground">
               {t.email}
               <Input
                 dir="ltr"
@@ -351,7 +351,7 @@ function CredentialsPage({ mode }: { mode: "login" | "register" }) {
             />
             {mode === "register" && (
               <>
-                <p className="text-xs text-slate-500">{t.passwordHint}</p>
+                <p className="text-xs text-muted-foreground">{t.passwordHint}</p>
                 <label className="flex items-start gap-3 text-sm leading-7"><input type="checkbox" className="mt-2 size-4 shrink-0" checked={marketingOptIn} onChange={e => setMarketingOptIn(e.target.checked)}/>{emailText.consent}</label>
                 <PasswordInput
                   label={t.confirmPassword}
@@ -382,30 +382,30 @@ function CredentialsPage({ mode }: { mode: "login" | "register" }) {
             </Button>
           </form>
           {mode === "login" && (
-            <Link href="/login" className="block text-center text-sm font-medium text-blue-800 hover:underline">
+            <Link href="/login" className="block text-center text-sm font-medium text-foreground hover:underline">
               {staffText("signIn")}
             </Link>
           )}
           {mode === "login" && (
             <Link
               href={me.data?.emailEnabled ? "/forgot-password" : "/recover-account"}
-              className="block text-center text-sm font-medium text-blue-800 hover:underline"
+              className="block text-center text-sm font-medium text-foreground hover:underline"
             >
               {me.data?.emailEnabled ? emailText.forgot : t.recover}
             </Link>
           )}
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-muted-foreground">
             {mode === "login" ? t.noAccount : t.haveAccount}{" "}
             <Link
               href={`${mode === "login" ? "/sign-up" : "/sign-in"}?next=${encodeURIComponent(next)}`}
-              className="font-semibold text-blue-800 hover:underline"
+              className="font-semibold text-foreground hover:underline"
             >
               {mode === "login" ? t.signUp : t.signIn}
             </Link>
           </p>
-          <p className="border-t border-slate-100 pt-4 text-center text-xs leading-6 text-slate-500">
+          <p className="border-t border-border pt-4 text-center text-xs leading-6 text-muted-foreground">
             {t.privacyHint}{" "}
-            <Link href="/privacy" className="text-blue-800 underline">
+            <Link href="/privacy" className="text-foreground underline">
               {t.privacy}
             </Link>
           </p>
@@ -456,7 +456,7 @@ export function MemberRecovery() {
           }}
         >
           <h2 className="text-xl font-bold">{t.recover}</h2>
-          <p className="text-sm leading-7 text-slate-600">{t.recoveryIntro}</p>
+          <p className="text-sm leading-7 text-secondary-foreground">{t.recoveryIntro}</p>
           <label className="grid gap-2 text-sm font-semibold">
             {t.email}
             <Input
@@ -486,7 +486,7 @@ export function MemberRecovery() {
             onChange={setPassword}
             autoComplete="new-password"
           />
-          <p className="text-xs text-slate-500">{t.passwordHint}</p>
+          <p className="text-xs text-muted-foreground">{t.passwordHint}</p>
           <PasswordInput
             label={t.confirmPassword}
             value={confirm}
@@ -500,7 +500,7 @@ export function MemberRecovery() {
           </Button>
           <Link
             href="/sign-in"
-            className="block text-center text-sm text-blue-800"
+            className="block text-center text-sm text-foreground"
           >
             {t.signIn}
           </Link>
@@ -532,7 +532,7 @@ export function MemberAccount() {
             googleEnabled={me.data.googleEnabled}
           />
         ) : (
-          <p role="status" className="text-center text-slate-500">
+          <p role="status" className="text-center text-muted-foreground">
             {t.loading}
           </p>
         )}
@@ -616,16 +616,16 @@ function AccountDetails({
   return (
     <div className="mx-auto max-w-3xl">
       <div className="mb-8 flex items-center gap-4">
-        <div className="grid size-14 place-items-center rounded-2xl bg-blue-100 text-blue-900">
+        <div className="grid size-14 place-items-center rounded-2xl bg-secondary text-foreground">
           <UserRound />
         </div>
         <div>
           <h1 className="text-3xl font-extrabold">{t.account}</h1>
-          <p className="mt-1 text-slate-500">{member.name}</p>
+          <p className="mt-1 text-muted-foreground">{member.name}</p>
         </div>
       </div>
       {recovery ? (
-        <div className="rounded-2xl border border-beacon-200 bg-white p-6 sm:p-8">
+        <div className="rounded-2xl border border-input bg-card p-6 sm:p-8">
           <RecoverySaved
             key={recovery}
             code={recovery}
@@ -638,14 +638,14 @@ function AccountDetails({
           {notice && (
             <p
               role="status"
-              className="flex items-center gap-2 rounded-xl bg-beacon-50 p-4 text-sm text-beacon-800"
+              className="flex items-center gap-2 rounded-xl bg-secondary p-4 text-sm text-foreground"
             >
               <Check className="size-4" />
               {notice}
             </p>
           )}
           <form
-            className="space-y-4 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8"
+            className="space-y-4 rounded-2xl border border-border bg-card p-6 sm:p-8"
             onSubmit={e => {
               e.preventDefault();
               clear();
@@ -665,16 +665,16 @@ function AccountDetails({
               />
             </label>
             <div>
-              <p className="text-sm font-semibold text-slate-700">{t.email}</p>
+              <p className="text-sm font-semibold text-secondary-foreground">{t.email}</p>
               <p dir="ltr" className="mt-2 break-all text-start">
                 {member.email}
               </p>
               <span
-                className={`mt-2 inline-block rounded-full px-3 py-1 text-xs ${member.emailVerified ? "bg-beacon-50 text-beacon-800" : "bg-amber-50 text-amber-800"}`}
+                className={`mt-2 inline-block rounded-full px-3 py-1 text-xs ${member.emailVerified ? "bg-secondary text-foreground" : "bg-warning-muted text-warning"}`}
               >
                 {member.emailVerified ? t.verified : t.unverified}
               </span>
-              <p className="mt-2 text-xs leading-6 text-slate-500">
+              <p className="mt-2 text-xs leading-6 text-muted-foreground">
                 {t.emailNote}
               </p>
             </div>
@@ -684,11 +684,11 @@ function AccountDetails({
             </Button>
           </form>
           <EmailPreferences member={member} />
-          <section className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 sm:p-8">
+          <section className="space-y-5 rounded-2xl border border-border bg-card p-6 sm:p-8">
             <h2 className="text-xl font-bold">{t.security}</h2>
             {member.hasPassword ? (
               <>
-                <p className="text-sm text-slate-500">{t.proofHint}</p>
+                <p className="text-sm text-muted-foreground">{t.proofHint}</p>
                 <PasswordInput
                   label={t.currentPassword}
                   value={currentPassword}
@@ -697,15 +697,15 @@ function AccountDetails({
                 />
               </>
             ) : (
-              <p className="rounded-xl bg-blue-50 p-3 text-sm leading-6 text-blue-900">
+              <p className="rounded-xl bg-secondary p-3 text-sm leading-6 text-foreground">
                 {t.googleProof}
               </p>
             )}
-            <div className="space-y-3 rounded-xl border border-slate-200 p-4">
+            <div className="space-y-3 rounded-xl border border-border p-4">
               <p className="font-semibold">
                 {member.googleLinked ? t.googleLinked : t.googleUnlinked}
               </p>
-              <p className="text-xs leading-6 text-slate-500">{t.linkHint}</p>
+              <p className="text-xs leading-6 text-muted-foreground">{t.linkHint}</p>
               {!member.googleLinked && (
                 <p className="text-sm font-medium">{t.linkGoogle}</p>
               )}
@@ -723,11 +723,11 @@ function AccountDetails({
                 }}
               />
               {!googleEnabled && (
-                <p className="text-xs text-slate-500">{t.googleOff}</p>
+                <p className="text-xs text-muted-foreground">{t.googleOff}</p>
               )}
             </div>
             <form
-              className="space-y-4 border-t border-slate-100 pt-5"
+              className="space-y-4 border-t border-border pt-5"
               onSubmit={e => {
                 e.preventDefault();
                 clear();
@@ -748,7 +748,7 @@ function AccountDetails({
                 onChange={setPassword}
                 autoComplete="new-password"
               />
-              <p className="text-xs text-slate-500">{t.passwordHint}</p>
+              <p className="text-xs text-muted-foreground">{t.passwordHint}</p>
               <PasswordInput
                 label={t.confirmPassword}
                 value={confirm}
@@ -762,7 +762,7 @@ function AccountDetails({
                 {t.changePassword}
               </Button>
             </form>
-            <div className="border-t border-slate-100 pt-5">
+            <div className="border-t border-border pt-5">
               <Button
                 variant="outline"
                 disabled={busy}
@@ -797,10 +797,10 @@ function AccountDetails({
               {t.logoutAll}
             </Button>
           </div>
-          <div className="border-t border-slate-200 pt-6">
+          <div className="border-t border-border pt-6">
             <Button
               variant="ghost"
-              className="text-red-700 hover:bg-red-50 hover:text-red-800"
+              className="text-danger hover:bg-danger-muted hover:text-danger"
               disabled={busy}
               onClick={() => {
                 clear();
@@ -823,10 +823,10 @@ export function MemberPrivacy() {
   return (
     <PublicLayout showCatalogueNotice={false}>
       <article className="container py-12">
-        <div className="mx-auto max-w-3xl rounded-2xl border border-slate-200 bg-white p-7 sm:p-10">
+        <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-7 sm:p-10">
           <h1 className="text-3xl font-extrabold">{t.privacyTitle}</h1>
-          <p className="mt-3 text-xs text-slate-400">{t.privacyUpdated}</p>
-          <div className="mt-8 space-y-6 leading-8 text-slate-600">
+          <p className="mt-3 text-xs text-muted-foreground">{t.privacyUpdated}</p>
+          <div className="mt-8 space-y-6 leading-8 text-secondary-foreground">
             {[
               t.privacyData,
               t.privacyGoogle,
@@ -842,7 +842,7 @@ export function MemberPrivacy() {
           </div>
           <Link
             href="/account"
-            className="mt-8 inline-block font-semibold text-blue-800 underline"
+            className="mt-8 inline-block font-semibold text-foreground underline"
           >
             {t.account}
           </Link>

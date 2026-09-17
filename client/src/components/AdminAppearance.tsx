@@ -34,40 +34,40 @@ export default function AdminAppearance() {
   });
   return (
     <section
-      className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+      className="mt-6 overflow-hidden rounded-2xl border border-border bg-card shadow-none"
       aria-labelledby="appearance-title"
     >
-      <div className="flex items-center justify-between gap-3 border-b border-slate-100 px-5 py-4">
-        <h2 id="appearance-title" className="font-extrabold text-slate-950">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+        <h2 id="appearance-title" className="font-extrabold text-foreground">
           {t.title}
         </h2>
-        <span className="text-xs font-medium text-slate-500">{t.owner}</span>
+        <span className="text-xs font-medium text-muted-foreground">{t.owner}</span>
       </div>
       <div className="flex flex-col gap-5 p-5 sm:flex-row sm:items-center">
         <div
           aria-hidden="true"
-          className="grid size-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-cyan-100 via-violet-100 to-pink-100 text-violet-700"
+          className="grid size-14 shrink-0 place-items-center rounded-2xl border border-input bg-secondary text-foreground"
         >
           <Sparkles className="size-6" />
         </div>
         <div className="flex-1">
           <label
             htmlFor="edge-glow-switch"
-            className="font-bold text-slate-950"
+            className="font-bold text-foreground"
           >
             {t.name}
           </label>
           <p
             id="edge-glow-description"
-            className="mt-1 max-w-2xl text-sm leading-relaxed text-slate-600"
+            className="mt-1 max-w-2xl text-sm leading-relaxed text-secondary-foreground"
           >
             {t.description}
           </p>
-          <p className="mt-2 text-xs text-slate-500">{t.scope}</p>
+          <p className="mt-2 text-xs text-muted-foreground">{t.scope}</p>
         </div>
         <div className="flex shrink-0 items-center justify-between gap-5 sm:flex-col sm:items-end">
           {settings.isError ? (
-            <p role="alert" className="text-sm text-red-700">
+            <p role="alert" className="text-sm text-danger">
               {t.loadError}{" "}
               <button
                 onClick={() => void settings.refetch()}
@@ -77,14 +77,14 @@ export default function AdminAppearance() {
               </button>
             </p>
           ) : !settings.data ? (
-            <p role="status" className="text-sm text-slate-500">
+            <p role="status" className="text-sm text-muted-foreground">
               {t.loading}
             </p>
           ) : (
             <div className="flex items-center gap-3">
               <span
                 aria-live="polite"
-                className="text-sm font-semibold text-slate-600"
+                className="text-sm font-semibold text-secondary-foreground"
               >
                 {update.isPending
                   ? t.saving

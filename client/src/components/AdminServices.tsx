@@ -32,7 +32,7 @@ import {
 import type { AdminServicesInput } from "../../../shared/catalogueQuery";
 
 export const catalogueSelectClass =
-  "h-10 max-w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700";
+  "h-10 max-w-full rounded-lg border border-border bg-card px-3 text-sm text-secondary-foreground";
 type ReviewAction = "approve" | "requestChanges" | "publish";
 
 export default function AdminServices({
@@ -163,11 +163,11 @@ export default function AdminServices({
   return (
     <section className="space-y-4" aria-label={text("serviceCatalogue")}>
       <SourcedOfferImport/>
-      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-slate-200 bg-white p-4">
-        <label className="min-w-52 flex-1 text-xs font-semibold text-slate-600">
+      <div className="flex flex-wrap items-end gap-3 rounded-2xl border border-border bg-card p-4">
+        <label className="min-w-52 flex-1 text-xs font-semibold text-secondary-foreground">
           {text("searchServices")}
           <div className="relative mt-2">
-            <Search className="absolute start-3 top-3 size-4 text-slate-400" />
+            <Search className="absolute start-3 top-3 size-4 text-muted-foreground" />
             <Input
               className="ps-9"
               value={search}
@@ -177,7 +177,7 @@ export default function AdminServices({
             />
           </div>
         </label>
-        <label className="grid gap-2 text-xs font-semibold text-slate-600">
+        <label className="grid gap-2 text-xs font-semibold text-secondary-foreground">
           {text("reviewState")}
           <select
             className={catalogueSelectClass}
@@ -193,7 +193,7 @@ export default function AdminServices({
             ))}
           </select>
         </label>
-        <label className="grid gap-2 text-xs font-semibold text-slate-600">
+        <label className="grid gap-2 text-xs font-semibold text-secondary-foreground">
           {text("platform")}
           <select
             className={catalogueSelectClass}
@@ -210,7 +210,7 @@ export default function AdminServices({
             ))}
           </select>
         </label>
-        <label className="grid gap-2 text-xs font-semibold text-slate-600">
+        <label className="grid gap-2 text-xs font-semibold text-secondary-foreground">
           {text("status")}
           <select
             className={catalogueSelectClass}
@@ -232,7 +232,7 @@ export default function AdminServices({
             )}
           </select>
         </label>
-        <label className="grid gap-2 text-xs font-semibold text-slate-600">
+        <label className="grid gap-2 text-xs font-semibold text-secondary-foreground">
           {text("country")}
           <Input
             dir="ltr"
@@ -250,7 +250,7 @@ export default function AdminServices({
             }}
           />
         </label>
-        <label className="grid gap-2 text-xs font-semibold text-slate-600">
+        <label className="grid gap-2 text-xs font-semibold text-secondary-foreground">
           {text("rowsPerPage")}
           <select
             className={catalogueSelectClass}
@@ -284,21 +284,21 @@ export default function AdminServices({
         />
       )}
       <div
-        className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-500"
+        className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground"
         role="status"
         aria-live="polite"
       >
         <p>
           {text("matchingServices")}:{" "}
-          <strong className="text-slate-900">
+          <strong className="text-foreground">
             {query.data ? number(query.data.total) : "—"}
           </strong>
         </p>
         <p>{text("publicationHint")}</p>
       </div>
       {canReview && (
-        <div className="rounded-2xl border border-beacon-200 bg-beacon-50/50 p-4">
-          <p className="text-sm leading-6 text-slate-600">
+        <div className="rounded-2xl border border-input bg-secondary/50 p-4">
+          <p className="text-sm leading-6 text-secondary-foreground">
             {text("reviewHint")}
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -349,12 +349,12 @@ export default function AdminServices({
         </div>
       )}
       <div
-        className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+        className="overflow-hidden rounded-2xl border border-border bg-card shadow-none"
         aria-busy={busy}
       >
         <div className="max-h-[65vh] overflow-auto">
           <table className="w-full min-w-[960px] text-start">
-            <thead className="sticky top-0 z-10 bg-slate-50">
+            <thead className="sticky top-0 z-10 bg-muted">
               <tr>
                 {canReview && (
                   <th className="p-4">
@@ -392,17 +392,17 @@ export default function AdminServices({
                 ].map(header => (
                   <th
                     key={header}
-                    className="border-b px-4 py-3 text-start text-xs font-semibold text-slate-500"
+                    className="border-b px-4 py-3 text-start text-xs font-semibold text-muted-foreground"
                   >
                     {text(header as AdminTextKey)}
                   </th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-border">
               {query.isError ? (
                 <tr>
-                  <td colSpan={6} className="p-10 text-center text-red-700">
+                  <td colSpan={6} className="p-10 text-center text-danger">
                     {text("loadError")}{" "}
                     <Button
                       variant="outline"
@@ -420,7 +420,7 @@ export default function AdminServices({
                 </tr>
               ) : !rows.length ? (
                 <tr>
-                  <td colSpan={6} className="p-10 text-center text-slate-500">
+                  <td colSpan={6} className="p-10 text-center text-muted-foreground">
                     {text("noServices")}
                   </td>
                 </tr>
@@ -435,7 +435,7 @@ export default function AdminServices({
                     <tr
                       key={service.id}
                       className={
-                        checked ? "bg-beacon-50/70" : "hover:bg-slate-50/70"
+                        checked ? "bg-secondary/70" : "hover:bg-muted/70"
                       }
                     >
                       {canReview && (
@@ -468,17 +468,17 @@ export default function AdminServices({
                       <td className="max-w-sm px-4 py-4">
                         <p
                           dir="auto"
-                          className="break-words text-start text-sm font-semibold text-slate-900"
+                          className="break-words text-start text-sm font-semibold text-foreground"
                         >
                           {service.name}
                         </p>
-                        <p className="mt-1 text-xs text-slate-500">
+                        <p className="mt-1 text-xs text-muted-foreground">
                           <bdi>
                             {service.providerName} · #
                             {service.externalId ?? service.id}
                           </bdi>
                         </p>
-                        <p className="mt-2 text-xs text-beacon-800">
+                        <p className="mt-2 text-xs text-foreground">
                           <bdi>
                             {catalogueLabel(locale, service.platform)} ·{" "}
                             {catalogueLabel(locale, service.category)} ·{" "}
@@ -491,7 +491,7 @@ export default function AdminServices({
                           {formatPrice(locale, service)}
                         </bdi>
                         <p
-                          className={`mt-1 max-w-36 text-xs ${service.pricingConfirmed ? "text-emerald-700" : "text-amber-700"}`}
+                          className={`mt-1 max-w-36 text-xs ${service.pricingConfirmed ? "text-success" : "text-warning"}`}
                         >
                           {text(
                             service.pricingConfirmed
@@ -499,33 +499,33 @@ export default function AdminServices({
                               : "unconfirmedPrice"
                           )}
                         </p>
-                        <p className="mt-1 text-xs text-slate-500">{unitLabel(locale, service)}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{unitLabel(locale, service)}</p>
                       </td>
                       <td className="px-4 py-4">
                         <Badge
                           variant="outline"
                           className={
                             service.reviewStatus === "approved"
-                              ? "bg-emerald-50 text-emerald-800"
-                              : "bg-amber-50 text-amber-800"
+                              ? "bg-success-muted text-success"
+                              : "bg-warning-muted text-warning"
                           }
                         >
                           {text(service.reviewStatus)}
                         </Badge>
                         <ScreeningBadge status={service.screeningStatus} reason={service.screeningReason}/>
-                        <p className="mt-2 text-xs text-slate-500">
+                        <p className="mt-2 text-xs text-muted-foreground">
                           {text(service.status)}
                           {service.incomplete ? ` · ${text("incomplete")}` : ""}
                         </p>
                         {!service.available && (
-                          <p className="mt-1 text-xs text-red-700">
+                          <p className="mt-1 text-xs text-danger">
                             {text("missing")}
                           </p>
                         )}
                         {service.blockers.length > 0 && (
                           <ul
                             aria-label={text("blockers")}
-                            className="mt-2 max-w-64 space-y-1 text-xs leading-5 text-amber-800"
+                            className="mt-2 max-w-64 space-y-1 text-xs leading-5 text-warning"
                           >
                             {service.blockers.map(blocker => (
                               <li key={blocker}>
@@ -535,18 +535,18 @@ export default function AdminServices({
                           </ul>
                         )}
                         {service.stale && (
-                          <p className="mt-2 text-xs font-semibold text-amber-800">
+                          <p className="mt-2 text-xs font-semibold text-warning">
                             {text("stale")}
                           </p>
                         )}
                         {service.canApprove &&
                           service.reviewStatus !== "approved" && (
-                            <p className="mt-2 text-xs font-semibold text-emerald-700">
+                            <p className="mt-2 text-xs font-semibold text-success">
                               {text("need_ready")}
                             </p>
                           )}
                       </td>
-                      <td className="px-4 py-4 text-xs text-slate-500">
+                      <td className="px-4 py-4 text-xs text-muted-foreground">
                         {last ? new Date(last).toLocaleDateString(locale) : "—"}
                       </td>
                       <td className="px-4 py-4">
@@ -571,7 +571,7 @@ export default function AdminServices({
           className="flex flex-wrap items-center justify-between gap-3 border-t p-4"
           aria-label={text("pagination")}
         >
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-muted-foreground">
             {text("page")} {number(cursors.length)} · {number(rows.length)}{" "}
             {text("services")}
           </p>

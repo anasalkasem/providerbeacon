@@ -114,7 +114,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
           <Button
             onClick={() => startLogin()}
             size="lg"
-            className="w-full shadow-lg hover:shadow-xl transition-all"
+            className="w-full shadow-none shadow-none transition-all"
           >
             {text("signIn")}
           </Button>
@@ -125,11 +125,11 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 
   if (access.isError || !access.data?.role) {
     return (
-      <div className="grid min-h-screen place-items-center bg-slate-50 p-6">
-        <div className="max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-xl shadow-slate-200/50">
-          <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-red-50 text-red-600"><PanelLeft /></div>
-          <h1 className="mt-5 text-2xl font-extrabold text-slate-950">{text("accessRestricted")}</h1>
-          <p className="mt-3 text-sm leading-6 text-slate-500">{text("accessBody")}</p>
+      <div className="grid min-h-screen place-items-center bg-muted p-6">
+        <div className="max-w-md rounded-3xl border border-border bg-card p-8 text-center shadow-none shadow-slate-200/50">
+          <div className="mx-auto grid size-14 place-items-center rounded-2xl bg-danger-muted text-danger"><PanelLeft /></div>
+          <h1 className="mt-5 text-2xl font-extrabold text-foreground">{text("accessRestricted")}</h1>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">{text("accessBody")}</p>
           <Button className="mt-6 w-full" onClick={() => window.location.assign("/")}>{text("returnHome")}</Button>
         </div>
       </div>
@@ -249,7 +249,7 @@ function DashboardLayoutContent({
                       isActive={isActive}
                       onClick={() => { setLocation(item.path); if (isMobile) setOpenMobile(false); }}
                       tooltip={text(item.label)}
-                      className="h-11 rounded-xl font-semibold text-slate-300 hover:bg-sidebar-accent hover:text-sidebar-foreground data-[active=true]:bg-brand data-[active=true]:text-ink data-[active=true]:hover:bg-beacon-300"
+                      className="h-11 rounded-xl font-semibold text-silver hover:bg-sidebar-accent hover:text-sidebar-foreground data-[active=true]:bg-secondary data-[active=true]:text-foreground data-[active=true]:hover:bg-secondary"
                     >
                       <item.icon
                         className="h-4 w-4"
@@ -275,7 +275,7 @@ function DashboardLayoutContent({
                     <p className="text-sm font-medium truncate leading-none">
                       {user?.name || "-"}
                     </p>
-                    <p className="text-xs text-slate-300 truncate mt-1.5">
+                    <p className="text-xs text-silver truncate mt-1.5">
                       {user?.email || "-"}
                     </p>
                   </div>
@@ -310,7 +310,7 @@ function DashboardLayoutContent({
       <SidebarInset className="min-w-0 bg-background">
         <div className="workspace-header flex min-h-[72px] flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-7">
           <Brand compact />
-          <label className="flex items-center gap-2 text-sm text-slate-600"><Languages className="hidden size-4 sm:block"/><span className="sr-only">{text("language")}</span><select aria-label={text("language")} className="h-9 max-w-24 rounded-lg border border-slate-200 bg-white px-2 sm:max-w-none" value={locale} onChange={event => setLocale(event.target.value as Locale)}>{(Object.keys(localeNames) as Locale[]).map(value => <option key={value} value={value}>{localeNames[value]}</option>)}</select></label>
+          <label className="flex items-center gap-2 text-sm text-secondary-foreground"><Languages className="hidden size-4 sm:block"/><span className="sr-only">{text("language")}</span><select aria-label={text("language")} className="h-9 max-w-24 rounded-lg border border-border bg-card px-2 sm:max-w-none" value={locale} onChange={event => setLocale(event.target.value as Locale)}>{(Object.keys(localeNames) as Locale[]).map(value => <option key={value} value={value}>{localeNames[value]}</option>)}</select></label>
         </div>
         {isMobile && (
           <div className="flex border-b h-14 items-center justify-between bg-background/95 px-2 backdrop-blur supports-[backdrop-filter]:backdrop-blur sticky top-0 z-40">

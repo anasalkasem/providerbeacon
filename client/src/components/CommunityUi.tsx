@@ -28,11 +28,11 @@ import { communityCopy, communityError } from "@/i18n/community";
 import { trpc } from "@/lib/trpc";
 
 export const fieldClass =
-  "w-full rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm text-slate-900 focus:border-beacon-500 focus:outline-none focus:ring-2 focus:ring-beacon-100 disabled:opacity-60";
+  "w-full rounded-xl border border-border bg-card px-3 py-3 text-sm text-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-input disabled:opacity-60";
 export const primaryClass =
   "inline-flex items-center justify-center gap-2 rounded-xl beacon-button px-5 py-3 text-sm font-bold disabled:opacity-50";
 export const secondaryClass =
-  "inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm font-semibold text-secondary-foreground hover:bg-muted disabled:opacity-50";
 export function GroupField({
   label,
   children,
@@ -41,7 +41,7 @@ export function GroupField({
   children: ReactNode;
 }) {
   return (
-    <label className="grid content-start gap-2 text-sm font-semibold text-slate-700">
+    <label className="grid content-start gap-2 text-sm font-semibold text-secondary-foreground">
       <span>{label}</span>
       {children}
     </label>
@@ -53,9 +53,9 @@ export const platformIcons = {
   discord: MessagesSquare,
 };
 const tones: Record<GroupPlatform, string> = {
-  telegram: "bg-sky-50 text-sky-700",
-  whatsapp: "bg-emerald-50 text-emerald-700",
-  discord: "bg-indigo-50 text-indigo-700",
+  telegram: "bg-secondary text-foreground",
+  whatsapp: "bg-success-muted text-success",
+  discord: "bg-secondary text-foreground",
 };
 type PublicGroup =
   inferRouterOutputs<AppRouter>["community"]["list"]["items"][number];
@@ -71,7 +71,7 @@ export function CommunityCard({
   const Icon = platformIcons[group.platform];
   const kind = communityKind(group.url, group.linkMetadata?.audience?.kind);
   return (
-    <article className="flex min-w-0 flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+    <article className="flex min-w-0 flex-col rounded-2xl border border-border bg-card p-6 shadow-none transition-shadow shadow-none">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <span
@@ -82,35 +82,35 @@ export function CommunityCard({
           </span>
           <CommunityKindBadge url={group.url} data={group.linkMetadata} />
         </div>
-        <span className="text-xs font-medium text-slate-500">
+        <span className="text-xs font-medium text-muted-foreground">
           {t.topics[group.topic]}
         </span>
       </div>
       <GroupSourceDetails data={group.linkMetadata} />
       <h2
         dir="auto"
-        className="mt-5 break-words text-xl font-extrabold leading-8 text-ink"
+        className="mt-5 break-words text-xl font-extrabold leading-8 text-foreground"
       >
         {group.name}
       </h2>
       <p
         dir="auto"
-        className="mt-2 whitespace-pre-line break-words text-sm leading-7 text-slate-600"
+        className="mt-2 whitespace-pre-line break-words text-sm leading-7 text-secondary-foreground"
       >
         {group.description}
       </p>
-      <div className="mt-5 flex items-center gap-2 text-xs text-slate-500">
+      <div className="mt-5 flex items-center gap-2 text-xs text-muted-foreground">
         <Globe2 className="size-4" />
         {t.languages[group.language]}
       </div>
-      <div className="mt-4 border-t border-slate-100 pt-4 text-xs leading-6 text-slate-600">
+      <div className="mt-4 border-t border-border pt-4 text-xs leading-6 text-secondary-foreground">
         {group.provider ? (
           <div>
             <p>
               {t.association}:{" "}
               <Link
                 href={`/providers/${group.provider.slug}`}
-                className="font-bold text-beacon-800 underline underline-offset-4"
+                className="font-bold text-foreground underline underline-offset-4"
               >
                 {group.provider.name}
               </Link>
@@ -120,7 +120,7 @@ export function CommunityCard({
                 href={group.evidenceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-beacon-700 underline underline-offset-4"
+                className="text-foreground underline underline-offset-4"
               >
                 {t.source}
               </a>
@@ -131,7 +131,7 @@ export function CommunityCard({
         )}
         {group.reviewedAt && (
           <p className="mt-2 flex flex-wrap items-center gap-1.5">
-            <CheckCircle2 className="size-3.5 text-beacon-600" />
+            <CheckCircle2 className="size-3.5 text-foreground" />
             {t.reviewed}
             <span>
               · {new Date(group.reviewedAt).toLocaleDateString(locale)}
@@ -157,7 +157,7 @@ export function CommunityCard({
         </a>
         <button
           onClick={() => onReport(group.id)}
-          className="rounded-lg p-3 text-slate-400 hover:bg-amber-50 hover:text-amber-800"
+          className="rounded-lg p-3 text-muted-foreground hover:bg-warning-muted hover:text-warning"
           aria-label={`${t.report}: ${group.name}`}
           title={t.report}
         >
@@ -256,11 +256,11 @@ export function GroupForm({
         setInvalid(false);
         onSave(parsed.data);
       }}
-      className="grid gap-5 rounded-2xl border border-slate-200 bg-white p-5 sm:p-7"
+      className="grid gap-5 rounded-2xl border border-border bg-card p-5 sm:p-7"
     >
       <div>
-        <h2 className="text-xl font-extrabold text-ink">{t.formTitle}</h2>
-        <p className="mt-2 text-sm leading-7 text-slate-500">
+        <h2 className="text-xl font-extrabold text-foreground">{t.formTitle}</h2>
+        <p className="mt-2 text-sm leading-7 text-muted-foreground">
           {initial ? t.editHint : t.formHint}
         </p>
       </div>
@@ -276,7 +276,7 @@ export function GroupForm({
             value={values.url}
             onChange={e => change("url", e.target.value)}
           />
-          <span className="text-xs font-normal leading-6 text-slate-500">
+          <span className="text-xs font-normal leading-6 text-muted-foreground">
             {t.linkHint}
           </span>
         </GroupField>
@@ -362,7 +362,7 @@ export function GroupForm({
             </select>
           </GroupField>
         </div>
-        <div className="grid gap-3 rounded-xl bg-slate-50 p-4">
+        <div className="grid gap-3 rounded-xl bg-muted p-4">
           {!fixedProvider && (
             <GroupField label={t.providerSearch}>
               <input
@@ -406,7 +406,7 @@ export function GroupForm({
           {providers.isError && (
             <button
               type="button"
-              className="text-start text-xs text-red-700 underline"
+              className="text-start text-xs text-danger underline"
               onClick={() => providers.refetch()}
             >
               {t.error} {t.retry}
@@ -423,7 +423,7 @@ export function GroupForm({
                 value={values.evidenceUrl}
                 onChange={e => change("evidenceUrl", e.target.value)}
               />
-              <span className="text-xs font-normal leading-6 text-slate-500">
+              <span className="text-xs font-normal leading-6 text-muted-foreground">
                 {t.evidenceHint}
               </span>
             </GroupField>
@@ -433,7 +433,7 @@ export function GroupForm({
       {(invalid || error) && (
         <p
           role="alert"
-          className="rounded-xl bg-red-50 p-3 text-sm text-red-800"
+          className="rounded-xl bg-danger-muted p-3 text-sm text-danger"
         >
           {invalid ? t.invalid : communityError(error!, locale)}
         </p>

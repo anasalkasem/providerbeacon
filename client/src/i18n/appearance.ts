@@ -4,7 +4,7 @@ const en = {
   title: "Site appearance",
   name: "Beacon edge glow",
   description:
-    "Continuous flowing colors illuminate the site edges and VIP provider cards.",
+    "A subtle frame around the site, with illuminated VIP card borders on hover or keyboard focus.",
   scope: "Applies to all visitors. Open pages update within 30 seconds.",
   on: "Enabled",
   off: "Disabled",
@@ -26,7 +26,7 @@ export const appearanceCopy: Record<Locale, typeof en> = {
     title: "مظهر الموقع",
     name: "الإطار الضوئي الذكي",
     description:
-      "إضاءة مستمرة بألوان متحركة حول الموقع وإطارات بطاقات مزوّدي VIP.",
+      "إطار هادئ حول الموقع، وإضاءة لحدود بطاقات VIP عند تمرير المؤشر أو التنقل بلوحة المفاتيح.",
     scope: "يُطبَّق على جميع الزوار. تتحدّث الصفحات المفتوحة خلال 30 ثانية.",
     on: "مفعّل",
     off: "متوقف",
@@ -45,7 +45,7 @@ export const appearanceCopy: Record<Locale, typeof en> = {
     title: "Apariencia del sitio",
     name: "Borde luminoso de Beacon",
     description:
-      "Colores en movimiento iluminan continuamente los bordes del sitio y las tarjetas de proveedores VIP.",
+      "Un marco sutil alrededor del sitio; los bordes de las tarjetas VIP se iluminan al pasar el cursor o enfocarlas con el teclado.",
     scope:
       "Se aplica a todos los visitantes. Las páginas abiertas se actualizan en 30 segundos.",
     on: "Activado",
@@ -66,7 +66,7 @@ export const appearanceCopy: Record<Locale, typeof en> = {
     title: "साइट का रूप",
     name: "Beacon का चमकता किनारा",
     description:
-      "साइट और VIP प्रदाताओं के कार्ड के किनारे लगातार बदलते रंगों से रोशन रहते हैं।",
+      "साइट के चारों ओर हल्का फ्रेम; माउस या कीबोर्ड से फ़ोकस करने पर VIP कार्ड के किनारे चमकते हैं।",
     scope: "सभी आगंतुकों पर लागू। खुले पृष्ठ 30 सेकंड के अंदर अपडेट होंगे।",
     on: "चालू",
     off: "बंद",
@@ -85,7 +85,7 @@ export const appearanceCopy: Record<Locale, typeof en> = {
   zh: {
     title: "网站外观",
     name: "Beacon 边缘光效",
-    description: "流动的色彩持续点亮网站边缘和 VIP 服务商卡片边框。",
+    description: "网站边缘采用柔和边框；鼠标悬停或键盘聚焦时，VIP 卡片边框会亮起。",
     scope: "对所有访客生效。已打开的页面将在 30 秒内更新。",
     on: "已开启",
     off: "已关闭",

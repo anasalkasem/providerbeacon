@@ -102,10 +102,10 @@ function GroupModeration() {
     );
   return (
     <section className="mx-auto max-w-[1450px] p-2 sm:p-5">
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-6">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-border pb-6">
         <div>
           <h1 className="text-3xl font-extrabold">{t.admin}</h1>
-          <p className="mt-3 text-sm leading-7 text-slate-500">
+          <p className="mt-3 text-sm leading-7 text-muted-foreground">
             {t.adminIntro}
           </p>
         </div>
@@ -167,7 +167,7 @@ function GroupModeration() {
           {query.isLoading ? (
             <p role="status">{t.loading}</p>
           ) : query.isError ? (
-            <p role="alert" className="text-red-700">
+            <p role="alert" className="text-danger">
               {t.error}
               <button
                 className={`${secondaryClass} ms-3`}
@@ -177,7 +177,7 @@ function GroupModeration() {
               </button>
             </p>
           ) : !query.data?.items.length ? (
-            <p className="rounded-2xl border bg-white p-8 text-slate-500">
+            <p className="rounded-2xl border bg-card p-8 text-muted-foreground">
               {t.noQueue}
             </p>
           ) : (
@@ -185,20 +185,20 @@ function GroupModeration() {
               <button
                 key={group.id}
                 onClick={() => select(group)}
-                className={`rounded-2xl border bg-white p-5 text-start ${selected !== "new" && selected?.id === group.id ? "border-beacon-500 ring-2 ring-beacon-50" : "border-slate-200"}`}
+                className={`rounded-2xl border bg-card p-5 text-start ${selected !== "new" && selected?.id === group.id ? "border-ring ring-2 ring-input" : "border-border"}`}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span
                     dir="auto"
-                    className="break-words text-lg font-bold text-ink"
+                    className="break-words text-lg font-bold text-foreground"
                   >
                     {group.name}
                   </span>
-                  <span className="text-xs font-semibold text-beacon-700">
+                  <span className="text-xs font-semibold text-foreground">
                     {t.statuses[group.status]}
                   </span>
                 </div>
-                <p className="mt-3 text-xs text-slate-500">
+                <p className="mt-3 text-xs text-muted-foreground">
                   <CommunityKindBadge
                     url={group.url}
                     data={group.linkMetadata}
@@ -207,7 +207,7 @@ function GroupModeration() {
                   {t.languages[group.language]}
                 </p>
                 {group.openReports > 0 && (
-                  <p className="mt-3 text-sm font-bold text-amber-800">
+                  <p className="mt-3 text-sm font-bold text-warning">
                     {t.reports}: {group.openReports}
                   </p>
                 )}
@@ -312,13 +312,13 @@ function ReviewPanel({
       providerConfirmed,
     });
   return (
-    <div className="grid gap-5 rounded-2xl border border-slate-200 bg-white p-6">
+    <div className="grid gap-5 rounded-2xl border border-border bg-card p-6">
       <h2 dir="auto" className="break-words text-xl font-extrabold">
         {group.name}
       </h2>
       <p
         dir="auto"
-        className="whitespace-pre-line break-words text-sm leading-7 text-slate-600"
+        className="whitespace-pre-line break-words text-sm leading-7 text-secondary-foreground"
       >
         {group.description}
       </p>
@@ -328,12 +328,12 @@ function ReviewPanel({
         target="_blank"
         rel="noopener noreferrer nofollow"
         dir="ltr"
-        className="break-all text-sm text-beacon-700 underline"
+        className="break-all text-sm text-foreground underline"
       >
         {group.url}
       </a>
       {group.providerId && (
-        <div className="rounded-xl bg-beacon-50 p-4 text-sm">
+        <div className="rounded-xl bg-secondary p-4 text-sm">
           <p className="font-bold">{t.evidence}</p>
           {group.evidenceUrl && (
             <a
@@ -341,7 +341,7 @@ function ReviewPanel({
               target="_blank"
               rel="noopener noreferrer"
               dir="ltr"
-              className="mt-2 block break-all text-beacon-800 underline"
+              className="mt-2 block break-all text-foreground underline"
             >
               {group.evidenceUrl}
             </a>
@@ -349,7 +349,7 @@ function ReviewPanel({
         </div>
       )}
       {group.reviewNote && (
-        <div className="rounded-xl bg-slate-50 p-4 text-sm">
+        <div className="rounded-xl bg-muted p-4 text-sm">
           <strong>{t.note}</strong>
           <p dir="auto" className="mt-2 whitespace-pre-line break-words">
             {group.reviewNote}
@@ -395,9 +395,9 @@ function ReviewPanel({
               {t.confirmProvider}
             </label>
           )}
-          <p className="text-xs leading-6 text-slate-500">{t.reviewRequired}</p>
+          <p className="text-xs leading-6 text-muted-foreground">{t.reviewRequired}</p>
           {mutation.error && (
-            <p role="alert" className="text-sm text-red-700">
+            <p role="alert" className="text-sm text-danger">
               {communityError(mutation.error.message, locale)}
             </p>
           )}
@@ -462,24 +462,24 @@ function ReportQueue({
     onError: e => toast.error(communityError(e.message, locale)),
   });
   return (
-    <div className="border-t border-slate-200 pt-5">
+    <div className="border-t border-border pt-5">
       <h3 className="font-bold">{t.reports}</h3>
       {query.isLoading ? (
         <p className="mt-3 text-sm">{t.loading}</p>
       ) : query.isError ? (
-        <p role="alert" className="mt-3 text-sm text-red-700">
+        <p role="alert" className="mt-3 text-sm text-danger">
           {t.error}
           <button onClick={() => query.refetch()} className="ms-2 underline">
             {t.retry}
           </button>
         </p>
       ) : !query.data?.items.length ? (
-        <p className="mt-3 text-sm text-slate-500">{t.noReports}</p>
+        <p className="mt-3 text-sm text-muted-foreground">{t.noReports}</p>
       ) : (
         query.data.items.map(report => (
           <div
             key={report.id}
-            className="mt-4 grid gap-3 rounded-xl border border-amber-100 bg-amber-50/50 p-4"
+            className="mt-4 grid gap-3 rounded-xl border border-warning-border bg-warning-muted/50 p-4"
           >
             <strong className="text-sm">{t.reasons[report.reason]}</strong>
             <p
@@ -488,7 +488,7 @@ function ReportQueue({
             >
               {report.note}
             </p>
-            <time className="text-xs text-slate-500">
+            <time className="text-xs text-muted-foreground">
               {new Date(report.createdAt).toLocaleString(locale)}
             </time>
             {canReview && (

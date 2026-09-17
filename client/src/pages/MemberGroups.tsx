@@ -26,8 +26,8 @@ export default function MemberGroups() {
       <section className="container py-10">
         <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Users className="size-8 text-beacon-700" />
-            <h1 className="text-3xl font-extrabold text-ink">{t.mine}</h1>
+            <Users className="size-8 text-foreground" />
+            <h1 className="text-3xl font-extrabold text-foreground">{t.mine}</h1>
           </div>
           <Link href="/groups" className={secondaryClass}>
             {t.directory}
@@ -46,8 +46,8 @@ export default function MemberGroups() {
             </button>
           </p>
         ) : !me.data?.member ? (
-          <div className="max-w-xl rounded-2xl border border-slate-200 bg-white p-7">
-            <p className="mb-5 leading-8 text-slate-600">{t.signInBody}</p>
+          <div className="max-w-xl rounded-2xl border border-border bg-card p-7">
+            <p className="mb-5 leading-8 text-secondary-foreground">{t.signInBody}</p>
             <Link href="/sign-in?next=/account/groups" className={primaryClass}>
               {t.signIn}
             </Link>
@@ -113,7 +113,7 @@ function MyGroups({
     <div className="grid items-start gap-6 lg:grid-cols-[1.2fr_1fr]">
       <div className="grid gap-4">
         {!verified && (
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm leading-7 text-amber-900">
+          <div className="rounded-2xl border border-warning-border bg-warning-muted p-5 text-sm leading-7 text-warning">
             {t.verify}
             <Link
               href="/account/settings"
@@ -133,29 +133,29 @@ function MyGroups({
             </button>
           </p>
         ) : !query.data?.length ? (
-          <p className="rounded-2xl border border-slate-200 bg-white p-8 text-slate-500">
+          <p className="rounded-2xl border border-border bg-card p-8 text-muted-foreground">
             {t.noMine}
           </p>
         ) : (
           query.data.map(group => (
             <article
               key={group.id}
-              className="rounded-2xl border border-slate-200 bg-white p-5"
+              className="rounded-2xl border border-border bg-card p-5"
             >
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h2
                   dir="auto"
-                  className="break-words text-lg font-bold text-ink"
+                  className="break-words text-lg font-bold text-foreground"
                 >
                   {group.name}
                 </h2>
                 <span
-                  className={`rounded-full px-3 py-1 text-xs font-bold ${group.status === "approved" ? "bg-beacon-50 text-beacon-800" : group.status === "pending" ? "bg-amber-50 text-amber-800" : "bg-slate-100 text-slate-600"}`}
+                  className={`rounded-full px-3 py-1 text-xs font-bold ${group.status === "approved" ? "bg-secondary text-foreground" : group.status === "pending" ? "bg-warning-muted text-warning" : "bg-secondary text-secondary-foreground"}`}
                 >
                   {t.statuses[group.status]}
                 </span>
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                 <CommunityKindBadge url={group.url} data={group.linkMetadata} />
                 <span>
                   {t.platforms[group.platform]} · {t.topics[group.topic]} ·{" "}
@@ -167,16 +167,16 @@ function MyGroups({
                 target="_blank"
                 rel="noopener noreferrer nofollow"
                 dir="ltr"
-                className="mt-3 block break-all text-sm text-beacon-700 underline"
+                className="mt-3 block break-all text-sm text-foreground underline"
               >
                 {group.url}
               </a>
               {group.reviewNote && (
-                <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm leading-7">
+                <div className="mt-4 rounded-xl bg-muted p-4 text-sm leading-7">
                   <p className="font-bold">{t.note}</p>
                   <p
                     dir="auto"
-                    className="whitespace-pre-line break-words text-slate-600"
+                    className="whitespace-pre-line break-words text-secondary-foreground"
                   >
                     {group.reviewNote}
                   </p>
@@ -234,9 +234,9 @@ function MyGroups({
             error={(editing === "new" ? submit.error : edit.error)?.message}
           />
         ) : (
-          <div className="rounded-2xl border border-beacon-100 bg-beacon-50/50 p-7">
-            <h2 className="text-xl font-extrabold text-ink">{t.formTitle}</h2>
-            <p className="mt-3 text-sm leading-7 text-slate-600">
+          <div className="rounded-2xl border border-input bg-secondary/50 p-7">
+            <h2 className="text-xl font-extrabold text-foreground">{t.formTitle}</h2>
+            <p className="mt-3 text-sm leading-7 text-secondary-foreground">
               {t.formHint}
             </p>
             <button
