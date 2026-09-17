@@ -11,6 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { useLocale, localeNames, type Locale } from "@/contexts/LocaleContext";
 import { messagingCopy, messagingError } from "@/i18n/messaging";
 import { usePageVisible } from "@/hooks/usePageVisible";
+import { usePageActive } from "@/hooks/usePageActive";
 import type { ChatMessage } from "../../../shared/messaging";
 
 export function MessageBubble({
@@ -102,6 +103,7 @@ export default function MessageThread({
   userId,
   canAssign = false,
   directory = [],
+  onReadingChange,
 }: {
   id: string;
   mode: "staff" | "visitor";
@@ -109,6 +111,7 @@ export default function MessageThread({
   onDone?: () => void;
   userId?: number;
   canAssign?: boolean;
+  onReadingChange?: (reading: boolean) => void;
   directory?: {
     id: number;
     name: string | null;
@@ -119,6 +122,7 @@ export default function MessageThread({
   const { locale } = useLocale(),
     t = messagingCopy[locale],
     visible = usePageVisible(),
+    pageActive = usePageActive(),
     utils = trpc.useUtils();
   const api = mode === "staff" ? trpc.messaging : trpc.messaging.support;
   const [before, setBefore] = useState<number | undefined>(),
@@ -146,7 +150,7 @@ export default function MessageThread({
     finish = api.close.useMutation();
   const assign = trpc.messaging.assign.useMutation(),
     language = trpc.messaging.support.language.useMutation();
-  const data = thread.data,
+  const data = thread.isError ? undefined : thread.data,
     lastId = data?.items.at(-1)?.id ?? 0;
   const pendingTranslations =
     data?.items
@@ -178,14 +182,27 @@ export default function MessageThread({
       });
   }, [lastId, before]);
   useEffect(() => {
+    onReadingChange?.(pageActive && !before && atBottom && !!data);
+    return () => onReadingChange?.(false);
+  }, [pageActive, before, atBottom, !!data, onReadingChange]);
+  useEffect(() => {
     const key = `${id}:${lastId}`;
-    if (visible && !before && atBottom && lastId && readKey.current !== key) {
+    if (
+      pageActive &&
+      !before &&
+      atBottom &&
+      lastId &&
+      readKey.current !== key
+    ) {
       readKey.current = key;
       read.mutate(
         { conversationId: id, messageId: lastId },
         {
           onSuccess: () => {
-            if (mode === "staff") void utils.messaging.list.invalidate();
+            if (mode === "staff") {
+              void utils.messaging.list.invalidate();
+              void utils.messaging.notifications.invalidate();
+            } else void utils.messaging.support.current.invalidate();
           },
           onError: () => {
             readKey.current = "";
@@ -193,7 +210,7 @@ export default function MessageThread({
         }
       );
     }
-  }, [visible, before, atBottom, lastId, id]);
+  }, [pageActive, before, atBottom, lastId, id]);
   useEffect(() => {
     if (
       mode === "visitor" &&
@@ -212,7 +229,10 @@ export default function MessageThread({
   }, [mode, data?.locale, locale, id]);
   const refresh = async () => {
     await thread.refetch();
-    if (mode === "staff") await utils.messaging.list.invalidate();
+    if (mode === "staff") {
+      await utils.messaging.list.invalidate();
+      await utils.messaging.notifications.invalidate();
+    } else await utils.messaging.support.current.invalidate();
   };
   async function submit() {
     const text = draft.trim();
@@ -268,7 +288,7 @@ export default function MessageThread({
                   ? t.closed
                   : mode === "visitor"
                     ? `${t.assigned} ${data.agentName ?? ""}`
-                    : t.joined
+                    : `${t.responsibleEmployee}: ${data.agentName ?? t.waiting}`
               : `${t.language}: ${localeNames[data?.locale ?? locale]}`}
           </p>
         </div>
@@ -282,6 +302,11 @@ export default function MessageThread({
           </button>
         )}
       </header>
+      {data?.kind === "support" && (
+        <p className="shrink-0 border-b bg-white px-4 py-2 text-[11px] leading-5 text-slate-500">
+          {t.supportSupervision}
+        </p>
+      )}
       {confirmEnd && (
         <div className="border-b border-amber-200 bg-amber-50 p-3 text-sm">
           <p>{t.finishConfirm}</p>

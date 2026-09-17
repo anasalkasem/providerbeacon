@@ -10,6 +10,9 @@ const state = vi.hoisted(() => ({
   prepare: vi.fn(),
   handoff: vi.fn(),
   assistantReady: false,
+  listCalls: vi.fn(),
+  notificationCalls: vi.fn(),
+  inbox: { items: [], queue: [], nextCursor: null } as any,
 }));
 vi.mock("@/contexts/LocaleContext", () => ({
   useLocale: () => ({
@@ -50,9 +53,43 @@ vi.mock("@/lib/trpc", () => {
   };
   return {
     trpc: {
-      useUtils: () => ({ messaging: { list: { invalidate: vi.fn() } } }),
+      useUtils: () => ({
+        messaging: {
+          list: { invalidate: vi.fn() },
+          notifications: { invalidate: vi.fn() },
+          support: { current: { invalidate: vi.fn() } },
+        },
+      }),
       messaging: {
         ...api,
+        profile: {
+          useQuery: () => ({
+            data: {
+              userId: 10,
+              locale: "es",
+              available: true,
+              canSupport: true,
+              canAssign: true,
+              translationAvailable: true,
+            },
+            refetch: vi.fn(),
+          }),
+        },
+        presence: { useMutation: () => mutation(vi.fn()) },
+        directory: { useQuery: () => ({ data: [] }) },
+        direct: { useMutation: () => mutation(vi.fn()) },
+        list: {
+          useQuery: (input: any, options: any) => {
+            state.listCalls(input, options);
+            return { data: state.inbox, refetch: vi.fn() };
+          },
+        },
+        notifications: {
+          useQuery: (input: any, options: any) => {
+            state.notificationCalls(input, options);
+            return { data: { unread: 4, items: [] }, refetch: vi.fn() };
+          },
+        },
         assign: { useMutation: () => mutation(vi.fn()) },
         support: {
           ...api,
@@ -77,6 +114,7 @@ import MessageThread, {
   MessageBubble,
 } from "../client/src/components/MessageThread";
 import BeaconAssistant from "../client/src/components/BeaconAssistant";
+import { Messenger } from "../client/src/components/StaffMessenger";
 let container: HTMLDivElement, root: Root;
 const message = () => ({
   id: 1,
@@ -96,6 +134,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   state.locale = "es";
   state.assistantReady = false;
+  state.inbox = { items: [], queue: [], nextCursor: null };
   state.thread = {
     id: "6ca0f338-51be-47dd-ae53-7c11207d7a2f",
     kind: "direct",
@@ -119,6 +158,7 @@ beforeEach(() => {
     configurable: true,
     value: "visible",
   });
+  vi.spyOn(document, "hasFocus").mockReturnValue(true);
   window.history.replaceState({}, "", "/");
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -137,6 +177,62 @@ const click = async (text: string) => {
   await act(async () => button!.click());
 };
 describe("translated messenger", () => {
+  it("keeps notifications active when minimized and exposes customer supervision with employee names and status filters", async () => {
+    state.inbox.items = [
+      {
+        id: "support-id",
+        kind: "support",
+        status: "assigned",
+        name: "Customer",
+        agentName: "Nizar",
+        assignedUserId: 11,
+        unread: 2,
+        updatedAt: new Date(),
+        lastMessageId: 3,
+      },
+    ];
+    await act(async () => root.render(<Messenger userId={10} />));
+    expect(container.textContent).toContain("4");
+    expect(state.listCalls.mock.calls.at(-1)![1].enabled).toBe(false);
+    expect(state.notificationCalls.mock.calls.at(-1)![1]).toMatchObject({
+      enabled: true,
+      refetchInterval: 4000,
+    });
+    await click("Mensajes");
+    expect(container.textContent).toContain("Activar sonido");
+    await click("Conversaciones con clientes");
+    expect(state.listCalls.mock.calls.at(-1)![0]).toMatchObject({
+      kind: "support",
+      status: "all",
+    });
+    expect(container.textContent).toContain("Empleado responsable: Nizar");
+    const status = container.querySelector(
+      'select[aria-label="Estado"]'
+    ) as HTMLSelectElement;
+    await act(async () => {
+      status.value = "closed";
+      status.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    expect(state.listCalls.mock.calls.at(-1)![0]).toMatchObject({
+      kind: "support",
+      status: "closed",
+    });
+  });
+  it("does not mark a conversation read while the browser window is unfocused", async () => {
+    vi.mocked(document.hasFocus).mockReturnValue(false);
+    await act(async () =>
+      root.render(
+        <MessageThread id={state.thread.id} mode="staff" onBack={() => {}} />
+      )
+    );
+    expect(state.read).not.toHaveBeenCalled();
+    vi.mocked(document.hasFocus).mockReturnValue(true);
+    await act(async () => window.dispatchEvent(new Event("focus")));
+    expect(state.read).toHaveBeenCalledWith({
+      conversationId: state.thread.id,
+      messageId: 1,
+    });
+  });
   it("shows the recipient translation first and reveals the unchanged original on request", async () => {
     await act(async () =>
       root.render(

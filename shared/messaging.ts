@@ -8,6 +8,16 @@ export const conversationCursor = z
   .object({ messageId: z.number().int().nonnegative(), id: conversationId })
   .strict();
 export type ConversationCursor = z.infer<typeof conversationCursor>;
+export type MessageAlert = {
+  conversationId: string;
+  kind: "direct" | "support";
+  messageId: number;
+  name: string | null;
+};
+export type MessageNotificationSnapshot = {
+  unread: number;
+  items: MessageAlert[];
+};
 export const messageText = z.string().trim().min(1).max(2000);
 export const sendMessageInput = z
   .object({

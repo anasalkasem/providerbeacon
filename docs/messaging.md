@@ -20,6 +20,25 @@ Translation jobs are durable, have 60-second leases, retry up to three attempts,
 
 ## Load and operations
 
-The open thread polls every three seconds; a minimized staff messenger polls every 12 seconds. Background page polling and heartbeats stop. Staff messenger code is loaded only on dashboard routes. Expired quota buckets are cleaned hourly. Sender, public handoff/IP and translation preparation budgets bound abuse. Existing unread messages and pending jobs survive deployment.
+The open thread polls every three seconds while visible. A lightweight notification summary polls every four seconds while visible and every 15 seconds while the browser permits background execution. The paged inbox polls only while open. Heartbeats and thread polling stop in the background. Staff messenger code is loaded only on dashboard routes. Expired quota buckets are cleaned hourly. Sender, public handoff/IP and translation preparation budgets bound abuse. Existing unread messages and pending jobs survive deployment.
 
 Validation covers both translation directions, original-text controls, refusal/negative handoff intent, queue assignment, capacity, reassignment, suspended/nonparticipant access, guest session isolation, cookie expiration, repeated sends, durable translation failures, atomic budgets, concurrent workers, and pagination. Automated model tests use deterministic responses; they do not establish perfect linguistic accuracy or a live employee-to-customer session.
+
+
+## Message notifications and sound
+
+Both employees and visitors receive an in-site banner with an action to open the conversation and a persistent unread badge, including while the messenger is minimized. Staff unread totals cover all assigned/support and participating/direct conversations, independently of inbox pagination. Notification responses contain only conversation identifiers, incoming message identifiers, kind and names, never message text. Own messages and imported assistant history do not trigger alerts. Customer alerts include employee replies only.
+
+The first snapshot is silent so existing unread messages do not produce a burst of old alerts. Later incoming message identifiers are tracked across read-state changes. A conversation counts as being read only when the page is visible and focused, the latest page is open, and the thread is scrolled to the bottom. Reading invalidates the notification summary. Active reading suppresses redundant alerts. Web Locks and bounded local identifiers coordinate alerts across tabs where available; storage-restricted browsers retain local notifications without guaranteed cross-tab coordination.
+
+**Enable sound** starts a short two-tone Web Audio chime from a user gesture, with **Test sound** and **Mute sound** controls. The preference is scoped to the staff identity or support conversation on the device. Suspended browser audio is shown as needing activation. Audio contexts are released when the identity or messaging surface is removed, and rapid arrivals are grouped with a sound cooldown. Visual alerts remain available if sound is muted or unavailable.
+
+This release does not register a service worker or push subscription. Notifications depend on the site remaining running; suspended or closed iPhone/Safari pages do not receive background push alerts. The UI states this limitation. Web Push would require a separate opt-in flow, service worker and durable push delivery; iPhone home-screen installation and permission requirements are described in the [WebKit documentation](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/). Sound activation follows [browser autoplay requirements](https://developer.mozilla.org/en-US/docs/Web/Media/Guides/Autoplay).
+
+## Owner supervision
+
+Owners and administrators see all customer support conversations in **Customer conversations**, including conversations handled by other employees. Waiting requests can be opened without taking assignment. Open/closed filters, assigned employee names, the message history and automatic translation are available. An owner who reviews a conversation receives an independent read marker; neither the assigned employee's unread count nor the customer's receipt is altered. Replying still requires assignment, and existing reassignment controls remain available.
+
+Other staff continue to see their assigned customer conversations only. Private team conversations remain limited to their participants. The support thread informs customers and employees that the owner and administrators may review the conversation. The notification badge and sound cover personal incoming messages, so owner supervision does not ring for every employee's response.
+
+Regression coverage includes unread totals beyond 60 inbox entries, self-message/history exclusion, suspended staff, guest isolation, manager filters and read independence, private-team isolation, minimized notifications, focus/read behavior, sound activation/mute/failure, first-load silence and repeated-event/tab deduplication.

@@ -19,6 +19,7 @@ import {
   closeChat,
   getChatThread,
   listConversations,
+  messageNotifications,
   messagingBudget,
   messagingDirectory,
   messagingPresence,
@@ -110,9 +111,21 @@ export const messagingRouter = router({
       return messagingPresence(ctx.user.id, input.locale, input.available);
     }),
   directory: staff.query(({ ctx }) => messagingDirectory(ctx.user.id)),
+  notifications: staff.query(({ ctx }) => messageNotifications(ctx.chatActor)),
   list: staff
-    .input(z.object({ before: conversationCursor.optional() }).optional())
-    .query(({ ctx, input }) => listConversations(ctx.chatActor, input?.before)),
+    .input(
+      z
+        .object({
+          before: conversationCursor.optional(),
+          kind: z.enum(["direct", "support"]).optional(),
+          status: z.enum(["all", "open", "closed"]).optional(),
+        })
+        .strict()
+        .optional()
+    )
+    .query(({ ctx, input }) =>
+      listConversations(ctx.chatActor, input?.before, input)
+    ),
   direct: staff
     .input(z.object({ recipientId: z.number().int().positive() }).strict())
     .mutation(async ({ ctx, input }) => {
