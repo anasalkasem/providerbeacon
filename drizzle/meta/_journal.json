@@ -260,6 +260,13 @@
       "when": 1789682400001,
       "tag": "0036_site_themes",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "5",
+      "when": 1789682400002,
+      "tag": "0037_adopt_beacon_design",
+      "breakpoints": true
     }
   ]
 }

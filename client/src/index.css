@@ -3,7 +3,7 @@
 @import "./themes.css";
 @custom-variant dark (&:is(.dark *));
 
-/* ProviderBeacon — luminous charcoal, copper typography and visible depth. */
+/* ProviderBeacon — white typography and vivid blue on black. */
 @theme inline {
   --font-sans: var(--beacon-font-body);
   --font-display: var(--beacon-font-display);
@@ -220,6 +220,70 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="r
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 
-/* Legacy white-on-dark badges follow their surfaces in light themes. */
-:root:is([data-site-theme="summer"], [data-site-theme="pearl"]) :is(.bg-ink, .bg-graphite, .bg-carbon, .bg-secondary).text-white { color: var(--foreground); }
-:root:is([data-site-theme="summer"], [data-site-theme="pearl"]) .bg-success-muted.text-white { color: var(--success); }
+
+/* The approved landing composition: one clear request, real offers, then the next step. */
+.beacon-landing { background: var(--hero-wash), var(--background); }
+.landing-hero { padding-block: clamp(3rem, 6vw, 5rem) 2.5rem; text-align: center; }
+.landing-title { margin: 1.2rem auto; max-width: 1050px; font-family: var(--font-sans); font-size: clamp(2.25rem, 4.5vw, 4.2rem); font-weight: 700; letter-spacing: -.035em; line-height: 1.15; }
+.landing-title span { display: block; }
+:lang(ar) .landing-title { line-height: 1.55; letter-spacing: 0; }
+.landing-intro { max-width: 760px; margin: 1rem auto 1.75rem; font-size: 1.05rem; line-height: 1.9; }
+.landing-search { display: flex; align-items: center; gap: .85rem; max-width: 900px; margin: 0 auto; padding: .7rem; padding-inline-start: 1.3rem; border: 1px solid var(--input); border-radius: 18px; background: rgb(8 11 16 / 80%); box-shadow: 0 0 26px #0285fe0c; }
+.landing-search:focus-within { box-shadow: 0 0 0 3px #0285fe26; }
+.landing-search-icon { flex-shrink: 0; }
+.landing-search input { min-width: 0; flex: 1; width: 100%; border: 0; background: transparent; padding: .9rem .25rem; font-size: 1rem; outline: none; color: white; }
+.landing-search input::placeholder { color: #fff; opacity: .9; }
+.landing-search .beacon-button { display: inline-flex; align-items: center; justify-content: center; gap: .65rem; min-height: 54px; padding: .8rem 2rem; flex-shrink: 0; font-size: 1.2rem; font-weight: 700; }
+.landing-examples { display: flex; flex-wrap: wrap; justify-content: center; gap: .65rem; margin-top: 1rem; }
+.landing-examples button { border: 1px solid var(--input); border-radius: 10px; padding: .65rem 1rem; font-size: .8rem; line-height: 1.7; background: transparent; }
+.landing-examples button:hover { background: var(--accent); }
+.landing-comparison { border: 1px solid var(--input); border-radius: 18px; padding: clamp(1rem, 2.3vw, 2rem); background: linear-gradient(135deg, #0285fe08, transparent), #0b121b; box-shadow: 0 12px 42px #0003; }
+.landing-comparison-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; }
+.landing-comparison h2, .landing-process h2 { font-size: clamp(1.5rem, 2.5vw, 2rem); font-weight: 700; line-height: 1.5; }
+.landing-source { border: 1px solid #0285fe80; border-radius: 999px; padding: .4rem .9rem; font-size: .75rem; }
+.landing-comparison-scroll { overflow-x: auto; border: 1px solid #0285fe66; border-radius: 12px; overscroll-behavior-inline: contain; }
+.landing-comparison-table { width: 100%; min-width: 650px; table-layout: fixed; border-collapse: collapse; text-align: center; }
+.landing-comparison-table th, .landing-comparison-table td { padding: 1rem; border-inline-end: 1px solid #0285fe40; border-block-end: 1px solid #0285fe40; overflow-wrap: anywhere; font-size: .875rem; }
+.landing-comparison-table th:first-child { width: 19%; text-align: start; }
+.landing-comparison-table th { font-weight: 700; }
+.landing-comparison-table tr > :last-child { border-inline-end: 0; }
+.landing-comparison-table tr:last-child > * { border-block-end: 0; }
+.landing-comparison-table tbody tr:hover { background: #0285fe0a; }
+.landing-comparison-table [data-price-status] { background: transparent; --tw-ring-shadow: 0 0 #0000; }
+.landing-comparison-footer { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; margin-top: 1.25rem; }
+.landing-process { padding-block: 3rem; text-align: center; }
+.landing-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; margin-top: 2rem; }
+.landing-step { display: block; padding: 1rem; border-radius: 14px; }
+.landing-step:hover { background: #0285fe0d; }
+.landing-step-symbol { display: flex; align-items: center; justify-content: center; gap: 1rem; color: var(--highlight); font-family: Inter, sans-serif; font-size: 1.7rem; font-weight: 600; }
+.landing-step-symbol svg { width: 38px; height: 38px; }
+.landing-step h3 { margin-top: 1rem; font-size: 1.25rem; font-weight: 700; }
+.landing-step p { margin-top: .6rem; font-size: .9rem; line-height: 1.9; }
+.beacon-landing .editorial-section { padding-block: 2rem; }
+.beacon-landing .vip-spotlight > a > div:first-child { aspect-ratio: 2.3 / 1; }
+.landing-closing { padding-block: 3rem; text-align: center; }
+.landing-closing h2 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 700; }
+.landing-closing .beacon-button { font-size: 1.2rem; font-weight: 700; }
+.landing-closing p { margin: .8rem auto 1.5rem; max-width: 620px; line-height: 1.9; }
+.landing-details { padding-block: 1rem 3rem; }
+.landing-details details { padding-block: 1.25rem; border-top: 1px solid #0285fe55; }
+.landing-details summary { cursor: pointer; font-size: 1rem; font-weight: 600; }
+.landing-details h3 { font-weight: 700; }
+.landing-details p { margin-top: .85rem; max-width: 850px; font-size: .9rem; line-height: 2; }
+.site-header { background: rgb(8 11 16 / 96%); border-color: #0285fe40; }
+.site-footer { border-color: #0285fe55; }
+@media (max-width: 639px) {
+  .landing-hero { padding-top: 2.5rem; }
+  .landing-title { font-size: clamp(1.9rem, 7.1vw, 2.75rem); }
+  .landing-intro { font-size: .9rem; }
+  .landing-search { flex-wrap: wrap; gap: .3rem .65rem; padding: .65rem; border-radius: 14px; }
+  .landing-search-icon { margin-inline-start: .45rem; }
+  .landing-search input { flex-basis: calc(100% - 3rem); font-size: 1rem; }
+  .landing-search .beacon-button { width: 100%; min-height: 48px; }
+  .landing-examples button { max-width: 100%; padding: .5rem .65rem; font-size: .75rem; }
+  .landing-comparison h2 { width: 100%; }
+  .landing-comparison-footer a { width: 100%; justify-content: center; }
+  .landing-steps { grid-template-columns: 1fr; gap: .5rem; margin-top: 1rem; }
+  .landing-step { padding: 1.2rem; border-bottom: 1px solid #0285fe33; }
+  .landing-step:last-child { border-bottom: 0; }
+}

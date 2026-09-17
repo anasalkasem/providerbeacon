@@ -59,7 +59,7 @@ export async function updateSiteAppearance(
       revision: row.revision,
     };
     const glowChanged = row.edgeGlowEnabled !== result.edgeGlowEnabled;
-    const themeChanged = previousTheme !== result.theme;
+    const themeChanged = row.theme !== result.theme;
     if (!glowChanged && !themeChanged) return result;
     result.revision += 1;
     await tx.update(siteAppearance).set(result).where(eq(siteAppearance.id, 1));
@@ -83,8 +83,8 @@ export async function updateSiteAppearance(
         action: "appearance.theme_changed",
         entityType: "site",
         entityId: "1",
-        summary: `Changed site theme from ${previousTheme} to ${result.theme}`,
-        metadata: { before: previousTheme, after: result.theme },
+        summary: `Changed site theme from ${row.theme} to ${result.theme}`,
+        metadata: { before: row.theme, after: result.theme },
       });
     return result;
   });
