@@ -18,6 +18,7 @@ import { useRef, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import { useSiteTheme } from "@/contexts/SiteAppearanceContext";
 import { usePageEntrance } from "@/hooks/usePageEntrance";
+import { useDisplayedPagePath } from "./PageTransition";
 
 export function Brand({ compact = false, inverse = false }: { compact?: boolean; inverse?: boolean }) {
   return (
@@ -243,7 +244,7 @@ export function PublicLayout({
 }) {
   const main = useRef<HTMLElement>(null);
   const [path] = useLocation();
-  usePageEntrance(main, path, useSiteTheme() === "orbit");
+  usePageEntrance(main, useDisplayedPagePath(path), useSiteTheme() === "orbit");
   return (
     <div className="min-h-screen bg-background text-foreground">
       <SiteHeader />
