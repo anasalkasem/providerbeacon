@@ -35,7 +35,7 @@ export default function AdminThemePicker({
         {t.description}
       </p>
       <div
-        className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+        className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
         role="group"
         aria-labelledby="site-themes-title"
       >

@@ -142,14 +142,21 @@ export function appearanceAcceptanceCases(
         code: "SERVICE_UNAVAILABLE",
       });
     });
-    it("persists all four themes independently from glow and audits only actual changes", async () => {
+    it("persists all six themes independently from glow and audits only actual changes", async () => {
       await role("owner");
       await caller().admin.appearance.update({
         edgeGlowEnabled: false,
         revision: 1,
       });
       let revision = 2;
-      for (const theme of ["summer", "midnight", "pearl", "copper"] as const) {
+      for (const theme of [
+        "summer",
+        "midnight",
+        "pearl",
+        "fire",
+        "navy",
+        "copper",
+      ] as const) {
         const saved = await caller().admin.appearance.update({
           theme,
           revision,
@@ -170,7 +177,7 @@ export function appearanceAcceptanceCases(
         .select()
         .from(auditEntries)
         .where(eq(auditEntries.action, "appearance.theme_changed"));
-      expect(entries).toHaveLength(4);
+      expect(entries).toHaveLength(6);
       expect(
         entries.every((entry: any) => entry.actorUserId === actorId())
       ).toBe(true);
@@ -179,7 +186,9 @@ export function appearanceAcceptanceCases(
           { before: "copper", after: "summer" },
           { before: "summer", after: "midnight" },
           { before: "midnight", after: "pearl" },
-          { before: "pearl", after: "copper" },
+          { before: "pearl", after: "fire" },
+          { before: "fire", after: "navy" },
+          { before: "navy", after: "copper" },
         ])
       );
       await caller().admin.appearance.update({ theme: "pearl", revision });
