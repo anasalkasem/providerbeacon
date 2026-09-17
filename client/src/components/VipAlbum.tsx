@@ -63,7 +63,7 @@ export function VipAlbum({ full = false }: { full?: boolean }) {
         {!full && Boolean(items.length) && (
           <Link
             href="/vip"
-            className="flex min-h-11 items-center gap-2 text-sm text-copper"
+            className="flex min-h-11 items-center gap-2 text-sm text-heading"
           >
             {t.all}
             <ArrowUpRight className="size-4 rtl:-scale-x-100" />

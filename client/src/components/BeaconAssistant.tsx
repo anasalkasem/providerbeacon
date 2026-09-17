@@ -271,7 +271,7 @@ function AssistantChat({ path }: { path: string }) {
           }}
           className="fixed inset-x-3 bottom-3 z-[70] flex h-[min(720px,calc(100dvh-24px))] flex-col overflow-hidden rounded-2xl border border-copper/70 bg-card text-foreground shadow-2xl sm:inset-x-auto sm:bottom-5 sm:end-5 sm:w-[430px]"
         >
-          <header className="flex shrink-0 items-center gap-3 border-b border-copper/50 bg-secondary p-4 text-copper">
+          <header className="flex shrink-0 items-center gap-3 border-b border-copper/50 bg-secondary p-4 text-heading">
             <Sparkles aria-hidden="true" className="size-6 text-copper" />
             <div className="flex-1">
               <h2 className="font-extrabold" dir="ltr">
