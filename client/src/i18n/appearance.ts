@@ -1,0 +1,98 @@
+import type { Locale } from "@/contexts/LocaleContext";
+
+const en = {
+  title: "Site appearance",
+  name: "Beacon edge glow",
+  description:
+    "A soft, flowing border welcomes visitors and lights up when they use Beacon AI.",
+  scope: "Applies to all visitors. Open pages update within 30 seconds.",
+  on: "Enabled",
+  off: "Disabled",
+  loading: "Loading appearance…",
+  saving: "Saving…",
+  saved: "Appearance saved",
+  error: "Could not save. Please try again.",
+  loadError: "Could not load appearance settings.",
+  conflict:
+    "This setting changed in another session. Review the current value and try again.",
+  preview: "Preview glow",
+  retry: "Try again",
+  owner: "Owner control",
+};
+export const appearanceCopy: Record<Locale, typeof en> = {
+  en,
+  ar: {
+    title: "مظهر الموقع",
+    name: "الإطار الضوئي الذكي",
+    description:
+      "إضاءة ناعمة بألوان متحركة ترحّب بالزائر وتتفاعل معه عند استخدام مساعد Beacon.",
+    scope: "يُطبَّق على جميع الزوار. تتحدّث الصفحات المفتوحة خلال 30 ثانية.",
+    on: "مفعّل",
+    off: "متوقف",
+    loading: "جارٍ تحميل الإعداد…",
+    saving: "جارٍ الحفظ…",
+    saved: "تم حفظ المظهر",
+    error: "تعذّر الحفظ. حاول مرة أخرى.",
+    loadError: "تعذّر تحميل إعدادات المظهر.",
+    conflict: "تغيّر الإعداد من جلسة أخرى. راجع القيمة الحالية وحاول مجددًا.",
+    preview: "معاينة الإضاءة",
+    retry: "إعادة المحاولة",
+    owner: "تحكّم المالك",
+  },
+  es: {
+    title: "Apariencia del sitio",
+    name: "Borde luminoso de Beacon",
+    description:
+      "Un borde suave de colores da la bienvenida y se ilumina al usar Beacon AI.",
+    scope:
+      "Se aplica a todos los visitantes. Las páginas abiertas se actualizan en 30 segundos.",
+    on: "Activado",
+    off: "Desactivado",
+    loading: "Cargando apariencia…",
+    saving: "Guardando…",
+    saved: "Apariencia guardada",
+    error: "No se pudo guardar. Inténtalo de nuevo.",
+    loadError: "No se pudo cargar la configuración.",
+    conflict:
+      "El ajuste cambió en otra sesión. Revisa el valor actual e inténtalo de nuevo.",
+    preview: "Vista previa",
+    retry: "Reintentar",
+    owner: "Control del propietario",
+  },
+  hi: {
+    title: "साइट का रूप",
+    name: "Beacon का चमकता किनारा",
+    description:
+      "हल्के रंगों वाला किनारा आगंतुकों का स्वागत करता है और Beacon AI इस्तेमाल करते समय चमकता है।",
+    scope: "सभी आगंतुकों पर लागू। खुले पृष्ठ 30 सेकंड के अंदर अपडेट होंगे।",
+    on: "चालू",
+    off: "बंद",
+    loading: "सेटिंग लोड हो रही है…",
+    saving: "सहेजा जा रहा है…",
+    saved: "सेटिंग सहेजी गई",
+    error: "सहेज नहीं सके। फिर प्रयास करें।",
+    loadError: "सेटिंग लोड नहीं हो सकी।",
+    conflict:
+      "दूसरे सत्र में सेटिंग बदली गई है। वर्तमान मान देखें और फिर प्रयास करें।",
+    preview: "चमक का पूर्वावलोकन",
+    retry: "फिर प्रयास करें",
+    owner: "मालिक का नियंत्रण",
+  },
+  zh: {
+    title: "网站外观",
+    name: "Beacon 边缘光效",
+    description: "柔和流动的彩色边框欢迎访客，并在使用 Beacon AI 时亮起。",
+    scope: "对所有访客生效。已打开的页面将在 30 秒内更新。",
+    on: "已开启",
+    off: "已关闭",
+    loading: "正在加载设置…",
+    saving: "正在保存…",
+    saved: "外观已保存",
+    error: "保存失败，请重试。",
+    loadError: "无法加载外观设置。",
+    conflict: "其他会话已更改此设置。请查看当前值后重试。",
+    preview: "预览光效",
+    retry: "重试",
+    owner: "所有者控制",
+  },
+};

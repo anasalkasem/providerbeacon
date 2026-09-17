@@ -311,3 +311,10 @@ export type AuditEntry = typeof auditEntries.$inferSelect;
 export * from "./workspaceSchema";
 export * from "./communitySchema";
 export * from "./businessSchema";
+
+export const siteAppearance = mysqlTable("site_appearance", {
+  id: int("id").primaryKey(),
+  edgeGlowEnabled: boolean("edge_glow_enabled").default(true).notNull(),
+  revision: int("revision").default(1).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+});

@@ -1,4 +1,5 @@
 import { screeningDecisionInput } from "../../shared/serviceScreening";
+import { appearanceAdminRouter } from "./appearance";
 import { serviceScreeningSummary, setServiceScreeningEnabled, decideServiceScreening } from "../serviceScreening";
 import { metadataKeyInput, websitePreviewInput } from "../../shared/linkMetadata";
 import { metadataBudget, previewLink } from "../linkMetadata";
@@ -60,6 +61,7 @@ const analysisErrors = {
 };
 
 export const adminRouter = router({
+  appearance: appearanceAdminRouter,
   analytics: permissionProcedure("providers.read").input(providerAnalyticsInput).query(({ ctx, input }) => {
     ctx.res.setHeader("Cache-Control", "no-store");
     return getProviderAnalytics(input);
