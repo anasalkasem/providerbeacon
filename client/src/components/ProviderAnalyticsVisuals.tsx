@@ -52,19 +52,19 @@ export function AnalyticsHeader({
     <header className="analytics-header">
       <div className="analytics-header-copy flex items-center gap-4">
         <span
-          className="grid size-12 shrink-0 place-items-center rounded-2xl border border-white/15 bg-white/10 text-[#e3c5ae]"
+          className="grid size-12 shrink-0 place-items-center rounded-2xl border border-white/15 bg-white/10 text-[var(--secondary-foreground)]"
           aria-hidden="true"
         >
           <BarChart3 className="size-6" />
         </span>
         <div className="min-w-0">
-          <p className="mb-1 text-[11px] font-bold uppercase tracking-[.12em] text-[#cbbcae]">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-[.12em] text-[var(--muted-foreground)]">
             ProviderBeacon · {providerAnalyticsCopy[locale].overview}
           </p>
           <Heading className="display-heading text-3xl text-white sm:text-4xl">
             {title}
           </Heading>
-          <p className="mt-2 max-w-2xl text-xs leading-6 text-[#e3c5ae] sm:text-sm">
+          <p className="mt-2 max-w-2xl text-xs leading-6 text-[var(--secondary-foreground)] sm:text-sm">
             {subtitle}
           </p>
         </div>
@@ -88,7 +88,7 @@ export function AnalyticsPeriodSelect({
       {t.period}
       <select
         aria-label={t.period}
-        className="mt-2 w-full rounded-xl border border-[#947253] bg-card px-3 py-2.5 text-sm text-[#f2e2d4] focus:outline-2 focus:outline-offset-2 focus:outline-ring"
+        className="mt-2 w-full rounded-xl border border-[var(--border)] bg-card px-3 py-2.5 text-sm text-[var(--foreground)] focus:outline-2 focus:outline-offset-2 focus:outline-ring"
         value={days}
         onChange={e => onChange(Number(e.target.value) as 7 | 30 | 90)}
       >
@@ -134,8 +134,8 @@ export function AnalyticsReport({
     })),
     {
       key: "contacts",
-      color: "#e3c5ae",
-      tint: "#303842",
+      color: "var(--secondary-foreground)",
+      tint: "var(--muted)",
       label: t.clicks,
       icon: MousePointerClick,
       value: model.contacts,
@@ -179,13 +179,13 @@ export function AnalyticsReport({
                 </p>
                 <span
                   className="shrink-0 rounded-xl p-2"
-                  style={{ color: "#e3c5ae", background: metric.tint }}
+                  style={{ color: "var(--secondary-foreground)", background: metric.tint }}
                   aria-hidden="true"
                 >
                   <metric.icon className="size-4" />
                 </span>
               </div>
-              <p className="mt-3 analytics-number text-[clamp(1.75rem,4cqi,2.75rem)] leading-tight tabular-nums tracking-tight text-[#f2e2d4]">
+              <p className="mt-3 analytics-number text-[clamp(1.75rem,4cqi,2.75rem)] leading-tight tabular-nums tracking-tight text-[var(--foreground)]">
                 <bdi>{n(metric.value)}</bdi>
               </p>
               <div className="mt-3 flex min-h-5 flex-wrap items-center gap-1 text-[11px] leading-5 text-muted-foreground">
@@ -244,7 +244,7 @@ export function AnalyticsReport({
                 type="button"
                 aria-pressed={selected === "all"}
                 onClick={() => setSelected("all")}
-                className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${selected === "all" ? "border-input bg-secondary text-white" : "border-[#9c7554] bg-card text-secondary-foreground"}`}
+                className={`rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold ${selected === "all" ? "border-input bg-secondary text-secondary-foreground" : "border-[var(--border)] bg-card text-secondary-foreground"}`}
               >
                 {t.allMetrics}
               </button>
@@ -256,11 +256,11 @@ export function AnalyticsReport({
                   onClick={() =>
                     setSelected(selected === series.key ? "all" : series.key)
                   }
-                  className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold text-[#f2e2d4]"
+                  className="flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[11px] font-semibold text-[var(--foreground)]"
                   style={{
                     borderColor:
-                      selected === series.key ? series.color : "#9c7554",
-                    background: selected === series.key ? series.tint : "#252b33",
+                      selected === series.key ? series.color : "var(--border)",
+                    background: selected === series.key ? series.tint : "var(--card)",
                   }}
                 >
                   <span
@@ -274,10 +274,10 @@ export function AnalyticsReport({
             </div>
           </div>
           {activity === 0 ? (
-            <div className="mt-6 grid min-h-52 place-items-center rounded-xl border border-dashed border-[#9c7554] bg-[#303842] p-6 text-center">
+            <div className="mt-6 grid min-h-52 place-items-center rounded-xl border border-dashed border-[var(--border)] bg-[var(--muted)] p-6 text-center">
               <div>
                 <Eye
-                  className="mx-auto size-7 text-[#cbbcae]"
+                  className="mx-auto size-7 text-[var(--muted-foreground)]"
                   aria-hidden="true"
                 />
                 <h4 className="mt-3 text-sm font-bold">{t.empty}</h4>
@@ -299,20 +299,20 @@ export function AnalyticsReport({
                 >
                   <defs>
                     <linearGradient id={`${labelId}-gilded`} x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stopColor="#ae9357" />
-                      <stop offset="40%" stopColor="#fff0cc" />
-                      <stop offset="100%" stopColor="#ae9357" />
+                      <stop offset="0%" stopColor="var(--chart-1)" />
+                      <stop offset="40%" stopColor="var(--chart-2)" />
+                      <stop offset="100%" stopColor="var(--chart-1)" />
                     </linearGradient>
                   </defs>
                   <CartesianGrid
-                    stroke="#9c7554"
+                    stroke="var(--border)"
                     strokeDasharray="3 5"
                     vertical={false}
                   />
                   <XAxis
                     dataKey="day"
                     tickFormatter={date}
-                    tick={{ fill: "#cbbcae", fontSize: 12 }}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
                     tickLine={false}
                     axisLine={false}
                     minTickGap={42}
@@ -321,7 +321,7 @@ export function AnalyticsReport({
                   <YAxis
                     domain={[0, "auto"]}
                     allowDecimals={false}
-                    tick={{ fill: "#cbbcae", fontSize: 12 }}
+                    tick={{ fill: "var(--muted-foreground)", fontSize: 12 }}
                     tickFormatter={value =>
                       new Intl.NumberFormat(locale, {
                         notation: "compact",
@@ -337,13 +337,13 @@ export function AnalyticsReport({
                     formatter={(value: number) => n(value)}
                     contentStyle={{
                       borderRadius: 10,
-                      border: "1px solid #9c7554",
-                      backgroundColor: "#303842", color: "#f2e2d4", boxShadow: "none",
+                      border: "1px solid var(--border)",
+                      backgroundColor: "var(--muted)", color: "var(--foreground)", boxShadow: "none",
                       fontSize: 12,
                       direction: locale === "ar" ? "rtl" : "ltr",
                     }}
                     labelStyle={{
-                      color: "#f2e2d4",
+                      color: "var(--foreground)",
                       fontWeight: 700,
                       marginBottom: 8,
                     }}
@@ -391,7 +391,7 @@ export function AnalyticsReport({
               <span className="flex items-center gap-1.5">
                 <span
                   className="analytics-key"
-                  style={accent("#efb883")}
+                  style={accent("var(--heading)")}
                   aria-hidden="true"
                 />
                 {t.currentPeriod}
@@ -399,7 +399,7 @@ export function AnalyticsReport({
               <span className="flex items-center gap-1.5">
                 <span
                   className="analytics-key"
-                  style={accent("#777a88")}
+                  style={accent("var(--steel)")}
                   aria-hidden="true"
                 />
                 {t.previousPeriod}
@@ -446,7 +446,7 @@ export function AnalyticsReport({
             ))}
           </div>
           {data.previous && (
-            <p className="mt-5 border-t border-[#9c7554] pt-3 text-[11px] leading-5 text-muted-foreground">
+            <p className="mt-5 border-t border-[var(--border)] pt-3 text-[11px] leading-5 text-muted-foreground">
               {model.comparable ? (
                 <>
                   {t.previousPeriod}:{" "}
@@ -481,7 +481,7 @@ export function AnalyticsReport({
                       outerRadius={96}
                       startAngle={90}
                       endAngle={-270}
-                      stroke="#252b33"
+                      stroke="var(--card)"
                       strokeWidth={4}
                       paddingAngle={
                         model.channels.every(channel => channel.value > 0)
@@ -502,11 +502,11 @@ export function AnalyticsReport({
             ) : (
               <div
                 aria-hidden="true"
-                className="absolute inset-0 m-auto size-48 rounded-full border-[24px] border-[#39414b]"
+                className="absolute inset-0 m-auto size-48 rounded-full border-[24px] border-[var(--secondary)]"
               />
             )}
             <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-              <bdi className="analytics-number text-3xl tabular-nums text-[#f2e2d4]">
+              <bdi className="analytics-number text-3xl tabular-nums text-[var(--foreground)]">
                 {n(model.contacts)}
               </bdi>
               <span className="mt-1 max-w-32 text-center text-[11px] text-muted-foreground">

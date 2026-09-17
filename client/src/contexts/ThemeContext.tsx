@@ -14,20 +14,23 @@ interface ThemeProviderProps {
   children: React.ReactNode;
   defaultTheme?: Theme;
   switchable?: boolean;
+  forcedTheme?: Theme;
 }
 
 export function ThemeProvider({
   children,
   defaultTheme = "dark",
   switchable = false,
+  forcedTheme,
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(() => {
+  const [selectedTheme, setTheme] = useState<Theme>(() => {
     if (switchable) {
       const stored = localStorage.getItem("theme");
       return (stored as Theme) || defaultTheme;
     }
     return defaultTheme;
   });
+  const theme = forcedTheme ?? selectedTheme;
 
   useEffect(() => {
     const root = document.documentElement;

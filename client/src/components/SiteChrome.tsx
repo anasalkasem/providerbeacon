@@ -22,8 +22,8 @@ export function Brand({ compact = false, inverse = false }: { compact?: boolean;
     <Link href="/" className={`brand-link ${inverse ? "brand-inverse" : ""}`} aria-label="ProviderBeacon">
       <svg aria-hidden="true" viewBox="0 0 64 64" className={`brand-mark ${compact ? "size-10" : "size-11"}`}>
         <path fill="currentColor" d="M10 6h21.5C46.7 6 56 14.7 56 28.3 56 42 46.4 50 31.5 50H22v8H10V6Zm12 11v22h9.4C39 39 44 35.3 44 28.4 44 21.2 39 17 31.4 17H22Z"/>
-        <path fill="#b66f3f" d="m28 28 17-8v16l-17-8Z"/>
-        <circle cx="22" cy="28" r="3.5" fill="#ffe0c2"/>
+        <path fill="var(--logo-inner)" d="m28 28 17-8v16l-17-8Z"/>
+        <circle cx="22" cy="28" r="3.5" fill="var(--logo-highlight)"/>
       </svg>
       <span dir="ltr" className={`brand-wordmark ${compact ? "text-[17px]" : "text-xl"} font-extrabold tracking-[-.045em]`}
       >

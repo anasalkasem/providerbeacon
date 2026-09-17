@@ -5,7 +5,6 @@ import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { LocaleProvider } from "./contexts/LocaleContext";
 import { MarketplaceDataProvider } from "./contexts/MarketplaceDataContext";
-import { ThemeProvider } from "./contexts/ThemeContext";
 import { SiteAppearanceProvider } from "./contexts/SiteAppearanceContext";
 
 const Find = lazy(() => import("@/pages/Find"));
@@ -124,22 +123,20 @@ function Router() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="dark">
-        <LocaleProvider>
-          <MarketplaceDataProvider>
-            <TooltipProvider>
-              <SiteAppearanceProvider>
-                <Toaster richColors />
-                <Router />
-                <MessagingMount />
-                <Suspense fallback={null}>
-                  <BeaconAssistant />
-                </Suspense>
-              </SiteAppearanceProvider>
-            </TooltipProvider>
-          </MarketplaceDataProvider>
-        </LocaleProvider>
-      </ThemeProvider>
+      <LocaleProvider>
+        <MarketplaceDataProvider>
+          <TooltipProvider>
+            <SiteAppearanceProvider>
+              <Toaster richColors />
+              <Router />
+              <MessagingMount />
+              <Suspense fallback={null}>
+                <BeaconAssistant />
+              </Suspense>
+            </SiteAppearanceProvider>
+          </TooltipProvider>
+        </MarketplaceDataProvider>
+      </LocaleProvider>
     </ErrorBoundary>
   );
 }
