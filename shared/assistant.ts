@@ -40,7 +40,7 @@ export type AssistantTurnInput = z.infer<typeof assistantTurnInput>;
 // All fields are explicit/nullable so the same schema works in strict model output.
 export const assistantPlanSchema = z
   .object({
-    action: z.enum(["search", "compare", "help", "clarify"]),
+    action: z.enum(["search", "compare", "help", "clarify", "handoff"]),
     market: z.enum(["smm", "packages"]),
     platform: z.enum(platforms).nullable(),
     category: z.enum(serviceTypes).nullable(),

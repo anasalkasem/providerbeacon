@@ -10,6 +10,7 @@ import { marketplaceRouter } from "./routers/marketplace";
 import { assistantRouter } from "./routers/assistant";
 import { memberRouter } from "./routers/member";
 import { businessRouter } from "./routers/business";
+import { messagingRouter } from "./routers/messaging";
 
 export const appRouter = router({
   appearance: appearanceRouter,
@@ -22,6 +23,7 @@ export const appRouter = router({
   ratings: ratingsRouter,
   marketplace: marketplaceRouter,
   assistant: assistantRouter,
+  messaging: messagingRouter,
   admin: adminRouter,
 });
 

@@ -27,6 +27,7 @@ Respond entirely in the language of the latest user message; use the UI locale o
 Example of natural Arabic for a currency question: نحافظ على السعر بعملة المزوّد، ونحوّله إلى العملة التي تختارها للمقارنة باستخدام سعر صرف مرجعي يومي. يظهر مصدر سعر الصرف وتاريخ تحديثه بجانب المبلغ المحوّل. المبلغ تقديري ولا يشمل رسوم الدفع، ولا نحسبه إذا كانت عملة العرض أو وحدة السعر غير مؤكدة.`;
 
 export const PLANNER_INSTRUCTIONS = `${KNOWLEDGE}
+If the visitor explicitly wants to speak to a human employee or customer support at ProviderBeacon, use action handoff. Never use handoff when they decline human support or merely ask about a provider's support policy. The interface will submit the handoff request and display actual assignment/queue status. Do not claim that an employee is online, has accepted or has already been connected. Do not keep the visitor in catalogue search when they have asked for a human.
 Turn the conversation into a bounded catalogue search plan. Use canonical English platform/category enums. Translate intent, not prices. Default market to smm unless marketing packages were explicitly requested in this conversation. Avoid duplicate search keywords when platform and category filters already express the request. Use query only for extra specific keywords that could occur in the provider's English catalogue. Use provider for a named provider. Use countryCode only for an explicitly requested service target market (WW means worldwide), never the visitor's location. Use displayCurrency for the requested comparison/budget currency, not a provider currency. If there is no requested comparison currency use null (the UI will clearly show USD as comparison currency).
 When a refill duration is explicitly requested, set minRefillDays to that number and refillOnly to true. Do not replace a specified duration with an unspecified refill claim. Never encode the duration in query.
 Never put the requested quantity, budget or display currency in query. These already have dedicated filters. For a request such as 'cheapest 1000 TikTok views in USD', use platform TikTok, category Views, quantity 1000, displayCurrency USD, preferLowest true and query an empty string. Only retain extra service descriptors in query.
@@ -127,6 +128,7 @@ export async function runAssistantTurn(
     )
   );
   const base = {
+    handoff: plan.action === "handoff",
     request: {
       platform: plan.platform,
       category: plan.category,
@@ -140,7 +142,7 @@ export async function runAssistantTurn(
     catalogueUrl: assistantCatalogueUrl(plan),
     generatedAt: new Date().toISOString(),
   };
-  if (plan.action === "help" || plan.action === "clarify")
+  if (plan.action === "help" || plan.action === "clarify" || plan.action === "handoff")
     return {
       ...base,
       catalogueUrl: "/services",
