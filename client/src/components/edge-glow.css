@@ -4,9 +4,18 @@
   inherits: true;
 }
 
-.beacon-edge-glow {
+.beacon-appearance {
+  display: contents;
+}
+
+.beacon-edge-glow,
+[data-beacon-glow="on"] .vip-card {
   --beacon-edge-angle: 0deg;
-  --beacon-edge-width: 3px;
+  animation: beacon-edge-flow 12s linear infinite;
+}
+
+.beacon-edge-glow {
+  --beacon-edge-width: 8px;
   --beacon-edge-radius: 22px;
   position: fixed;
   inset: 0;
@@ -14,15 +23,13 @@
   pointer-events: none;
   user-select: none;
   contain: strict;
-  animation:
-    beacon-edge-flow 12s linear infinite,
-    beacon-edge-hello 3.2s ease-in-out both;
 }
-.beacon-edge-glow > div {
+
+.beacon-edge-glow > div,
+[data-beacon-glow="on"] .vip-card::before,
+[data-beacon-glow="on"] .vip-card::after {
   position: absolute;
-  inset: 2px;
-  border-radius: var(--beacon-edge-radius);
-  padding: var(--beacon-edge-width);
+  pointer-events: none;
   background: conic-gradient(
     from var(--beacon-edge-angle),
     #53e5ef,
@@ -41,86 +48,71 @@
     linear-gradient(#fff 0 0);
   mask-composite: exclude;
 }
+
+.beacon-edge-glow > div {
+  inset: 2px;
+  border-radius: var(--beacon-edge-radius);
+  padding: var(--beacon-edge-width);
+}
 .beacon-edge-glow .beacon-edge-glow__halo {
   inset: -4px;
+  padding: 20px;
+  filter: blur(10px);
+  opacity: 0.7;
+}
+
+.vip-card {
+  position: relative;
+  isolation: isolate;
+}
+[data-beacon-glow="on"] .vip-card::before,
+[data-beacon-glow="on"] .vip-card::after {
+  content: "";
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+}
+[data-beacon-glow="on"] .vip-card::before {
   padding: 12px;
-  filter: blur(9px);
-  opacity: 0.6;
+  filter: blur(6px);
+  opacity: 0.65;
 }
-.beacon-edge-glow[data-phase="thinking"] {
-  animation:
-    beacon-edge-flow 12s linear infinite,
-    beacon-edge-appear 0.45s ease-out both;
+[data-beacon-glow="on"] .vip-card::after {
+  padding: 4px;
 }
-.beacon-edge-glow[data-phase="reply"] {
-  animation:
-    beacon-edge-flow 12s linear infinite,
-    beacon-edge-hello 1.8s ease-in-out both;
-}
-.beacon-edge-glow[data-phase="leaving"] {
-  animation:
-    beacon-edge-flow 12s linear infinite,
-    beacon-edge-leave 0.45s ease-out both;
-}
+
 @keyframes beacon-edge-flow {
   to {
     --beacon-edge-angle: 360deg;
   }
 }
-@keyframes beacon-edge-appear {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 0.85;
-  }
-}
-@keyframes beacon-edge-leave {
-  from {
-    opacity: 0.85;
-  }
-  to {
-    opacity: 0;
-  }
-}
-@keyframes beacon-edge-hello {
-  0%,
-  100% {
-    opacity: 0;
-  }
-  20%,
-  58% {
-    opacity: 0.85;
-  }
-}
+
 @media (max-width: 640px) {
   .beacon-edge-glow {
-    --beacon-edge-width: 2px;
+    --beacon-edge-width: 5px;
     --beacon-edge-radius: 16px;
   }
   .beacon-edge-glow .beacon-edge-glow__halo {
-    padding: 7px;
-    filter: blur(5px);
-    opacity: 0.45;
+    padding: 14px;
+    filter: blur(7px);
+  }
+  [data-beacon-glow="on"] .vip-card::after {
+    padding: 3px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .beacon-edge-glow,
-  .beacon-edge-glow[data-phase] {
+  [data-beacon-glow="on"] .vip-card {
     animation: none;
-    opacity: 0.55;
-  }
-  .beacon-edge-glow[data-phase="leaving"] {
-    opacity: 0;
   }
 }
-@media (forced-colors: active) {
-  .beacon-edge-glow {
+@media (forced-colors: active), print {
+  .beacon-edge-glow,
+  [data-beacon-glow="on"] .vip-card::before,
+  [data-beacon-glow="on"] .vip-card::after {
     display: none;
   }
-}
-@media print {
-  .beacon-edge-glow {
-    display: none;
+  [data-beacon-glow="on"] .vip-card {
+    animation: none;
   }
 }

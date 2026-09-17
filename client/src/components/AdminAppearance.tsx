@@ -1,12 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect } from "react";
 import { Eye, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { useLocale } from "@/contexts/LocaleContext";
+import { useSiteAppearancePreview } from "@/contexts/SiteAppearanceContext";
 import { appearanceCopy } from "@/i18n/appearance";
 import { trpc } from "@/lib/trpc";
 import { Button } from "./ui/button";
 import { Switch } from "./ui/switch";
-import { EdgeGlow } from "./EdgeGlow";
 
 export default function AdminAppearance() {
   const { locale } = useLocale();
@@ -15,9 +15,8 @@ export default function AdminAppearance() {
   const settings = trpc.admin.appearance.get.useQuery(undefined, {
     retry: false,
   });
-  const [preview, setPreview] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
+  const { preview, setPreview } = useSiteAppearancePreview();
+  useEffect(() => () => setPreview(false), [setPreview]);
   const update = trpc.admin.appearance.update.useMutation({
     onSuccess(data) {
       utils.admin.appearance.get.setData(undefined, data);
@@ -25,7 +24,7 @@ export default function AdminAppearance() {
         edgeGlowEnabled: data.edgeGlowEnabled,
       });
       void utils.admin.audit.list.invalidate();
-      if (!data.edgeGlowEnabled) setPreview(false);
+      setPreview(false);
       toast.success(t.saved);
     },
     onError(error) {
@@ -33,11 +32,6 @@ export default function AdminAppearance() {
       void settings.refetch();
     },
   });
-  function showPreview() {
-    clearTimeout(timer.current);
-    setPreview(true);
-    timer.current = setTimeout(() => setPreview(false), 3200);
-  }
   return (
     <section
       className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
@@ -116,16 +110,15 @@ export default function AdminAppearance() {
           <Button
             variant="outline"
             size="sm"
-            onClick={showPreview}
-            disabled={preview}
+            onClick={() => setPreview(value => !value)}
+            aria-pressed={preview}
             className="gap-2 rounded-xl"
           >
             <Eye className="size-4" />
-            {t.preview}
+            {preview ? t.stopPreview : t.preview}
           </Button>
         </div>
       </div>
-      <EdgeGlow phase={preview ? "welcome" : null} />
     </section>
   );
 }

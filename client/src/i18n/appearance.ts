@@ -4,7 +4,7 @@ const en = {
   title: "Site appearance",
   name: "Beacon edge glow",
   description:
-    "A soft, flowing border welcomes visitors and lights up when they use Beacon AI.",
+    "Continuous flowing colors illuminate the site edges and VIP provider cards.",
   scope: "Applies to all visitors. Open pages update within 30 seconds.",
   on: "Enabled",
   off: "Disabled",
@@ -16,6 +16,7 @@ const en = {
   conflict:
     "This setting changed in another session. Review the current value and try again.",
   preview: "Preview glow",
+  stopPreview: "Stop preview",
   retry: "Try again",
   owner: "Owner control",
 };
@@ -25,7 +26,7 @@ export const appearanceCopy: Record<Locale, typeof en> = {
     title: "مظهر الموقع",
     name: "الإطار الضوئي الذكي",
     description:
-      "إضاءة ناعمة بألوان متحركة ترحّب بالزائر وتتفاعل معه عند استخدام مساعد Beacon.",
+      "إضاءة مستمرة بألوان متحركة حول الموقع وإطارات بطاقات مزوّدي VIP.",
     scope: "يُطبَّق على جميع الزوار. تتحدّث الصفحات المفتوحة خلال 30 ثانية.",
     on: "مفعّل",
     off: "متوقف",
@@ -36,6 +37,7 @@ export const appearanceCopy: Record<Locale, typeof en> = {
     loadError: "تعذّر تحميل إعدادات المظهر.",
     conflict: "تغيّر الإعداد من جلسة أخرى. راجع القيمة الحالية وحاول مجددًا.",
     preview: "معاينة الإضاءة",
+    stopPreview: "إيقاف المعاينة",
     retry: "إعادة المحاولة",
     owner: "تحكّم المالك",
   },
@@ -43,7 +45,7 @@ export const appearanceCopy: Record<Locale, typeof en> = {
     title: "Apariencia del sitio",
     name: "Borde luminoso de Beacon",
     description:
-      "Un borde suave de colores da la bienvenida y se ilumina al usar Beacon AI.",
+      "Colores en movimiento iluminan continuamente los bordes del sitio y las tarjetas de proveedores VIP.",
     scope:
       "Se aplica a todos los visitantes. Las páginas abiertas se actualizan en 30 segundos.",
     on: "Activado",
@@ -56,6 +58,7 @@ export const appearanceCopy: Record<Locale, typeof en> = {
     conflict:
       "El ajuste cambió en otra sesión. Revisa el valor actual e inténtalo de nuevo.",
     preview: "Vista previa",
+    stopPreview: "Detener vista previa",
     retry: "Reintentar",
     owner: "Control del propietario",
   },
@@ -63,7 +66,7 @@ export const appearanceCopy: Record<Locale, typeof en> = {
     title: "साइट का रूप",
     name: "Beacon का चमकता किनारा",
     description:
-      "हल्के रंगों वाला किनारा आगंतुकों का स्वागत करता है और Beacon AI इस्तेमाल करते समय चमकता है।",
+      "साइट और VIP प्रदाताओं के कार्ड के किनारे लगातार बदलते रंगों से रोशन रहते हैं।",
     scope: "सभी आगंतुकों पर लागू। खुले पृष्ठ 30 सेकंड के अंदर अपडेट होंगे।",
     on: "चालू",
     off: "बंद",
@@ -75,13 +78,14 @@ export const appearanceCopy: Record<Locale, typeof en> = {
     conflict:
       "दूसरे सत्र में सेटिंग बदली गई है। वर्तमान मान देखें और फिर प्रयास करें।",
     preview: "चमक का पूर्वावलोकन",
+    stopPreview: "पूर्वावलोकन रोकें",
     retry: "फिर प्रयास करें",
     owner: "मालिक का नियंत्रण",
   },
   zh: {
     title: "网站外观",
     name: "Beacon 边缘光效",
-    description: "柔和流动的彩色边框欢迎访客，并在使用 Beacon AI 时亮起。",
+    description: "流动的色彩持续点亮网站边缘和 VIP 服务商卡片边框。",
     scope: "对所有访客生效。已打开的页面将在 30 秒内更新。",
     on: "已开启",
     off: "已关闭",
@@ -92,6 +96,7 @@ export const appearanceCopy: Record<Locale, typeof en> = {
     loadError: "无法加载外观设置。",
     conflict: "其他会话已更改此设置。请查看当前值后重试。",
     preview: "预览光效",
+    stopPreview: "停止预览",
     retry: "重试",
     owner: "所有者控制",
   },

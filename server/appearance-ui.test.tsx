@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   role: "owner",
   settings: { edgeGlowEnabled: true, revision: 1 },
+  publicSettings: { edgeGlowEnabled: true },
   error: false,
   pending: false,
   save: vi.fn(),
@@ -33,6 +34,9 @@ vi.mock("@/lib/trpc", () => ({
       },
       appearance: { public: { setData: state.publicCache } },
     }),
+    appearance: {
+      public: { useQuery: () => ({ data: state.publicSettings }) },
+    },
     admin: {
       access: {
         useQuery: () => ({ data: { role: state.role, permissions: [] } }),
@@ -58,12 +62,17 @@ vi.mock("@/lib/trpc", () => ({
   },
 }));
 import Admin from "../client/src/pages/Admin";
+import { SiteAppearanceProvider } from "../client/src/contexts/SiteAppearanceContext";
 let container: HTMLDivElement, root: Root;
 beforeEach(() => {
   (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
   vi.clearAllMocks();
   state.role = "owner";
   state.settings = { edgeGlowEnabled: true, revision: 1 };
+  state.publicSettings = { edgeGlowEnabled: true };
+  state.publicCache.mockImplementation((_: any, value: any) => {
+    state.publicSettings = value;
+  });
   state.error = false;
   state.pending = false;
   container = document.createElement("div");
@@ -73,8 +82,16 @@ beforeEach(() => {
 afterEach(async () => {
   await act(() => root.unmount());
   container.remove();
+  vi.useRealTimers();
 });
-const render = () => act(async () => root.render(<Admin />));
+const render = () =>
+  act(async () =>
+    root.render(
+      <SiteAppearanceProvider>
+        <Admin />
+      </SiteAppearanceProvider>
+    )
+  );
 const toggle = () =>
   container.querySelector<HTMLButtonElement>('[role="switch"]');
 describe("owner appearance panel", () => {
@@ -107,9 +124,17 @@ describe("owner appearance panel", () => {
     expect(state.publicCache).toHaveBeenCalledWith(undefined, {
       edgeGlowEnabled: false,
     });
+    expect(container.querySelector(".beacon-edge-glow")).toBeNull();
+    expect(
+      container
+        .querySelector("[data-beacon-glow]")
+        ?.getAttribute("data-beacon-glow")
+    ).toBe("off");
   });
   it("does not offer a guessed toggle on a load error, and preview never saves", async () => {
+    vi.useFakeTimers();
     state.error = true;
+    state.publicSettings = { edgeGlowEnabled: false };
     await render();
     expect(toggle()).toBeNull();
     expect(container.querySelector('[role="alert"]')?.textContent).toContain(
@@ -119,9 +144,21 @@ describe("owner appearance panel", () => {
       b.textContent?.includes("معاينة الإضاءة")
     )!;
     await act(() => preview.click());
+    expect(container.querySelectorAll(".beacon-edge-glow")).toHaveLength(1);
+    await act(() => vi.advanceTimersByTime(60_000));
+    expect(container.querySelectorAll(".beacon-edge-glow")).toHaveLength(1);
+    expect(preview.getAttribute("aria-pressed")).toBe("true");
+    await act(() => preview.click());
+    expect(container.querySelector(".beacon-edge-glow")).toBeNull();
+    await act(() => preview.click());
+    state.role = "administrator";
+    await render();
+    expect(container.querySelector(".beacon-edge-glow")).toBeNull();
     expect(
-      container.querySelector(".beacon-edge-glow")?.getAttribute("data-phase")
-    ).toBe("welcome");
+      container
+        .querySelector("[data-beacon-glow]")
+        ?.getAttribute("data-beacon-glow")
+    ).toBe("off");
     expect(state.save).not.toHaveBeenCalled();
   });
 });
