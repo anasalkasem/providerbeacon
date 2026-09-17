@@ -26,6 +26,18 @@ for orbital paths. No text, sea, cliffs, UI, cartoon geometry or opaque backgrou
 Optimize the single final asset; static artwork does not require continuous redraw.
 Respect reduced motion, pause, offscreen suspension and the existing route transition.
 
+Release evidence: the transparent lighthouse is `client/public/images/orbit-lighthouse.webp`
+(960 × 960, 50,830 bytes), generated with the built-in image tool from the asset lock
+above and compressed without changing the artwork. The scene is 3.93 kB gzip, lazy
+loaded. TypeScript/build and the full CI gate passed; the targeted UI suite has 31 tests.
+Live Arabic desktop review confirmed the artwork loaded, the search composer and
+assistant layout were readable, and a 5,000-view TikTok request returned actual offers.
+The browser's available API does not provide device viewport emulation, and the owner
+session is not signed in; mobile and owner-gallery visual review remain unverified.
+Owner activation, preview isolation and conflict handling are covered by UI tests.
+Live pointer hit-testing revealed the decorative canvas overlapped the caption's pause
+button. The scene now ignores pointer events and the caption paints above it.
+
 Add a second owner-selectable design. Keep Beacon Classic published until the owner activates Orbit; removed legacy themes stay removed.
 
 Primary source: the user's supplied DESIGN.md (Dala style reference). Preserve its pure black canvas, white regular-weight display typography, spacious asymmetric hero, violet pill CTA, and colorful procedural particles. The file is a visual reference, not a request to remove product features.
