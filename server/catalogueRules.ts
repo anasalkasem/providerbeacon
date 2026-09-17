@@ -90,6 +90,7 @@ export function reviewNeedFilter(need?: ReviewNeed, now = Date.now()) {
 }
 export function approvedService() {
   return and(
+    ne(serviceRecords.screeningStatus, "held"),
     eq(serviceRecords.status, "active"),
     eq(serviceRecords.reviewStatus, "approved"),
     eq(serviceRecords.available, true),
@@ -119,4 +120,12 @@ export function catalogueViewFilter(view?: (typeof catalogueViews)[number]) {
     default:
       return undefined;
   }
+}
+
+// Explicit human holds stay in place until released or deliberately requeued.
+export function screeningQueued() {
+  return and(
+    or(eq(serviceRecords.screeningStatus, "pending"), ne(serviceRecords.screeningRevision, serviceRecords.revision)),
+    not(and(eq(serviceRecords.screeningStatus, "held"), sql`coalesce(${serviceRecords.screeningModel}, '') = 'manual'`)!)
+  );
 }

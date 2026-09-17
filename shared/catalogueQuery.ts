@@ -5,6 +5,7 @@ import { catalogueViews, reviewNeeds, serviceTypes } from "./serviceReview";
 // Limits are enforced at the API boundary; the browser cannot request the full catalogue.
 export const adminServicesInput = z
   .object({
+    screening: z.enum(["held", "review", "pending"]).optional(),
     limit: z.number().int().min(1).max(100).default(25),
     cursor: z.number().int().positive().optional(),
     q: z.string().trim().max(100).default(""),

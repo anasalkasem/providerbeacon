@@ -1,3 +1,4 @@
+import { visitorRatingSummaries } from "./providerRatings";
 import { savedLinkMetadata } from "./linkMetadata";
 import { currentProviderTelegram } from "./providerEntitlements";
 import { priceHistoryKey } from "./priceHistory";
@@ -144,6 +145,7 @@ async function buildMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       : input.scope !== "home" && input.scope !== "compare" && servicePage.length > limit ? { id: last!.service.id, rank: input.sort === "price" ? String(last!.rank) : Number(last!.rank) } : null;
     const connectedRows = providerIds.length ? await db.select({id: providerRecords.id}).from(providerRecords).where(and(inArray(providerRecords.id, providerIds), connectedApiCatalogue())) : [];
     const connectedIds = new Set(connectedRows.map(row => row.id));
+    const visitorRatings = await visitorRatingSummaries(providerIds);
     const providers = providerRows.map(row => ({
       apiConnected: connectedIds.has(row.id),
       id: `provider-${row.id}`, slug: row.slug, name: row.name, initials: row.initials, location: row.location ?? "",
@@ -152,7 +154,7 @@ async function buildMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       verified: row.verified, tier: tierFromDb[row.tier],
       // Public scores remain unavailable until the evidence-backed scoring pipeline exists.
       score: null, auditSignals: null,
-      rating: row.reviewCount > 0 ? row.ratingBasisPoints / 100 : null, reviews: row.reviewCount,
+      rating: visitorRatings.get(row.id)?.rating ?? null, reviews: visitorRatings.get(row.id)?.reviews ?? 0,
       responseTime: row.responseMinutes == null ? "—" : `${row.responseMinutes} min`,
       apiLatency: row.apiLatencyMs == null ? "—" : `${row.apiLatencyMs}ms`,
       apiUptime: row.apiUptimeBasisPoints == null ? "—" : `${(row.apiUptimeBasisPoints / 100).toFixed(2)}%`,

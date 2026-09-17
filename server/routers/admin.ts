@@ -1,3 +1,5 @@
+import { screeningDecisionInput } from "../../shared/serviceScreening";
+import { serviceScreeningSummary, setServiceScreeningEnabled, decideServiceScreening } from "../serviceScreening";
 import { metadataKeyInput, websitePreviewInput } from "../../shared/linkMetadata";
 import { metadataBudget, previewLink } from "../linkMetadata";
 import { providerAnalyticsInput } from "../../shared/providerAnalytics";
@@ -97,6 +99,9 @@ export const adminRouter = router({
       }),
   }),
   services: router({
+    screeningSummary: permissionProcedure("services.read").query(() => serviceScreeningSummary()),
+    screeningToggle: permissionProcedure("services.review").input(z.object({ enabled: z.boolean() }).strict()).mutation(({ ctx, input }) => { assertStaffOrigin(ctx.req); return setServiceScreeningEnabled(input.enabled, ctx.user!.id); }),
+    screeningDecide: permissionProcedure("services.review").input(screeningDecisionInput).mutation(({ ctx, input }) => { assertStaffOrigin(ctx.req); return decideServiceScreening(input, ctx.user!.id); }),
     confirmSourcePricing: permissionProcedure("services.review").input(sourcePricingInput).mutation(({ctx,input}) => confirmSourcePricing({...input,actorUserId:ctx.user!.id,ipAddress:ctx.req.ip})),
     createSourcedDrafts: permissionProcedure("services.write").input(sourcedBatchInput).mutation(({ ctx, input }) => createSourcedDrafts({ ...input, actorUserId: ctx.user!.id, ipAddress: ctx.req.ip })),
     reviewSummary: permissionProcedure("services.read").input(adminServicesInput).query(({ input }) => getCachedServiceReviewSummary(input)),

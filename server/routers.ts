@@ -1,3 +1,4 @@
+import { ratingsRouter } from "./routers/ratings";
 import { workspaceRouter } from "./routers/workspace";
 import { communityRouter } from "./routers/community";
 import { systemRouter } from "./_core/systemRouter";
@@ -16,6 +17,7 @@ export const appRouter = router({
   business: businessRouter,
   workspace: workspaceRouter,
   community: communityRouter,
+  ratings: ratingsRouter,
   marketplace: marketplaceRouter,
   assistant: assistantRouter,
   admin: adminRouter,

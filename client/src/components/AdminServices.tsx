@@ -1,3 +1,4 @@
+import { ServiceScreeningPanel, ScreeningBadge } from "./ServiceScreening";
 import SourcedOfferImport from "./SourcedOfferImport";
 import SourcePricingEditor from "./SourcePricingEditor";
 import { formatPrice, unitLabel } from "@/i18n/pricing";
@@ -275,6 +276,7 @@ export default function AdminServices({
           {text("refresh")}
         </Button>
       </div>
+      <ServiceScreeningPanel selected={filters.screening} onFilter={screening => change({ screening, view: "all", need: undefined })}/>
       {reviewMode && (
         <ServiceReviewWorklist
           filters={filters}
@@ -510,6 +512,7 @@ export default function AdminServices({
                         >
                           {text(service.reviewStatus)}
                         </Badge>
+                        <ScreeningBadge status={service.screeningStatus} reason={service.screeningReason}/>
                         <p className="mt-2 text-xs text-slate-500">
                           {text(service.status)}
                           {service.incomplete ? ` · ${text("incomplete")}` : ""}
