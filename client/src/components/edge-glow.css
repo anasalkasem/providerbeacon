@@ -1,0 +1,126 @@
+@property --beacon-edge-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: true;
+}
+
+.beacon-edge-glow {
+  --beacon-edge-angle: 0deg;
+  --beacon-edge-width: 3px;
+  --beacon-edge-radius: 22px;
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  user-select: none;
+  contain: strict;
+  animation:
+    beacon-edge-flow 12s linear infinite,
+    beacon-edge-hello 3.2s ease-in-out both;
+}
+.beacon-edge-glow > div {
+  position: absolute;
+  inset: 2px;
+  border-radius: var(--beacon-edge-radius);
+  padding: var(--beacon-edge-width);
+  background: conic-gradient(
+    from var(--beacon-edge-angle),
+    #53e5ef,
+    #5287ff 20%,
+    #b774f7 42%,
+    #f78bc8 62%,
+    #ffd3b0 77%,
+    #53e5ef
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+.beacon-edge-glow .beacon-edge-glow__halo {
+  inset: -4px;
+  padding: 12px;
+  filter: blur(9px);
+  opacity: 0.6;
+}
+.beacon-edge-glow[data-phase="thinking"] {
+  animation:
+    beacon-edge-flow 9s linear infinite,
+    beacon-edge-appear 0.45s ease-out both;
+}
+.beacon-edge-glow[data-phase="reply"] {
+  animation:
+    beacon-edge-flow 12s linear infinite,
+    beacon-edge-hello 1.8s ease-in-out both;
+}
+.beacon-edge-glow[data-phase="leaving"] {
+  animation:
+    beacon-edge-flow 12s linear infinite,
+    beacon-edge-leave 0.45s ease-out both;
+}
+@keyframes beacon-edge-flow {
+  to {
+    --beacon-edge-angle: 360deg;
+  }
+}
+@keyframes beacon-edge-appear {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 0.85;
+  }
+}
+@keyframes beacon-edge-leave {
+  from {
+    opacity: 0.85;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes beacon-edge-hello {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  20%,
+  58% {
+    opacity: 0.85;
+  }
+}
+@media (max-width: 640px) {
+  .beacon-edge-glow {
+    --beacon-edge-width: 2px;
+    --beacon-edge-radius: 16px;
+  }
+  .beacon-edge-glow .beacon-edge-glow__halo {
+    padding: 7px;
+    filter: blur(5px);
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .beacon-edge-glow,
+  .beacon-edge-glow[data-phase] {
+    animation: none;
+    opacity: 0.55;
+  }
+  .beacon-edge-glow[data-phase="leaving"] {
+    opacity: 0;
+  }
+}
+@media (forced-colors: active) {
+  .beacon-edge-glow {
+    display: none;
+  }
+}
+@media print {
+  .beacon-edge-glow {
+    display: none;
+  }
+}

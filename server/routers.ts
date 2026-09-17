@@ -1,4 +1,5 @@
 import { ratingsRouter } from "./routers/ratings";
+import { appearanceRouter } from "./routers/appearance";
 import { workspaceRouter } from "./routers/workspace";
 import { communityRouter } from "./routers/community";
 import { systemRouter } from "./_core/systemRouter";
@@ -11,6 +12,7 @@ import { memberRouter } from "./routers/member";
 import { businessRouter } from "./routers/business";
 
 export const appRouter = router({
+  appearance: appearanceRouter,
   system: systemRouter,
   auth: authRouter,
   member: memberRouter,
