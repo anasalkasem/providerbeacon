@@ -6,6 +6,7 @@ import { vipText } from "@/i18n/providerVip";
 import { trackVipEvent, useVipImpression } from "@/lib/vipAnalytics";
 import { useBusinessClock } from "./BusinessUi";
 import { ProviderLogo } from "./ProviderMedia";
+import { ProviderRatingLink } from "./ProviderRatingLink";
 
 export type VipCardData = {
   providerId: number;
@@ -83,7 +84,7 @@ export function VipCard({
     return (
       <article
         ref={ref}
-        className="vip-card vip-spotlight w-full overflow-hidden rounded-3xl border border-slate-200 bg-white"
+        className="vip-card vip-spotlight flex w-full flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white"
         aria-label={card.name}
       >
         <Link
@@ -91,7 +92,7 @@ export function VipCard({
           onClick={click}
           onAuxClick={click}
           aria-label={`${t.explore}: ${card.name}`}
-          className="flex h-full flex-col rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-beacon-700"
+          className="flex flex-1 flex-col rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-beacon-700"
         >
           {artwork}
           <div className="flex flex-1 flex-col p-5">
@@ -143,6 +144,9 @@ export function VipCard({
               )}
           </div>
         </Link>
+        <div className="mx-5 border-t border-slate-100 py-2">
+          <ProviderRatingLink slug={card.slug} name={card.name} />
+        </div>
       </article>
     );
   return (
@@ -219,6 +223,9 @@ export function VipCard({
               <span className="pt-0.5">{t.explore}</span>
               <ArrowUpRight className="size-4 rtl:-scale-x-100" />
             </Link>
+            <div className="mt-3 border-t border-slate-100 pt-2">
+              <ProviderRatingLink slug={card.slug} name={card.name} />
+            </div>
           </div>
         )}
       </div>

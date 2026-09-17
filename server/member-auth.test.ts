@@ -60,6 +60,13 @@ describe("member authentication boundaries", () => {
     expect(safeMemberNext("/services?q=views")).toBe("/services?q=views");
     expect(safeMemberNext("/groups")).toBe("/groups");
     expect(safeMemberNext("/account/groups")).toBe("/account/groups");
+    expect(safeMemberNext("/providers/real-provider#visitor-ratings")).toBe(
+      "/providers/real-provider#visitor-ratings"
+    );
+    expect(safeMemberNext("/providers/real-provider#untrusted")).toBe(
+      "/providers/real-provider"
+    );
+    expect(safeMemberNext("/account#visitor-ratings")).toBe("/account");
   });
   it("requires the exact canonical origin for every mutation including anonymous login", async () => {
     for (const origin of [

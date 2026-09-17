@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Star } from "lucide-react";
 import { Link } from "wouter";
 import { toast } from "sonner";
@@ -18,16 +18,37 @@ export default function VisitorRatings({
   const { locale } = useLocale();
   const t = ratingsCopy[locale];
   const me = useMember();
+  const section = useRef<HTMLElement>(null);
+  useEffect(() => {
+    // The provider and this section mount after the catalogue request resolves.
+    // Handle direct links and the return from sign-in after that content exists.
+    if (window.location.hash === "#visitor-ratings") {
+      section.current?.scrollIntoView({ block: "start" });
+      section.current?.focus({ preventScroll: true });
+    }
+  }, [providerId]);
   const summary = trpc.ratings.summary.useQuery(
     { providerId },
     { staleTime: 10000, retry: false }
   );
   return (
-    <section id="visitor-ratings" className="container scroll-mt-24 pt-8">
+    <section
+      ref={section}
+      id="visitor-ratings"
+      tabIndex={-1}
+      aria-labelledby="visitor-ratings-title"
+      className="container scroll-mt-24 pt-8"
+    >
       <div className="rounded-2xl border border-beacon-200 bg-white p-6 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div className="max-w-xl">
-            <h2 className="text-xl font-extrabold text-ink">{t.title}</h2>
+            <h2
+              id="visitor-ratings-title"
+              className="flex items-center gap-2 text-xl font-extrabold text-ink"
+            >
+              <Star aria-hidden="true" className="size-6 text-amber-600" />
+              {t.title}
+            </h2>
             <p className="mt-2 text-sm leading-7 text-slate-600">{t.note}</p>
           </div>
           <div aria-live="polite">
@@ -71,17 +92,12 @@ export default function VisitorRatings({
               </Button>
             </p>
           ) : !me.data?.member ? (
-            <Button asChild>
-              <Link
-                href={`/sign-in?next=${encodeURIComponent(`/providers/${slug}#visitor-ratings`)}`}
-              >
-                {t.signIn}
-              </Link>
-            </Button>
+            <RatingAccessPreview
+              href={`/sign-in?next=${encodeURIComponent(`/providers/${slug}#visitor-ratings`)}`}
+              label={t.signIn}
+            />
           ) : !me.data.member.emailVerified ? (
-            <Button asChild variant="outline">
-              <Link href="/verify-email">{t.verify}</Link>
-            </Button>
+            <RatingAccessPreview href="/verify-email" label={t.verify} />
           ) : (
             <RatingForm
               key={`${providerId}:${me.data.member.id}`}
@@ -94,6 +110,31 @@ export default function VisitorRatings({
     </section>
   );
 }
+
+function RatingAccessPreview({ href, label }: { href: string; label: string }) {
+  const { locale } = useLocale();
+  const t = ratingsCopy[locale];
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-slate-50 p-4">
+      <div>
+        <p className="font-bold text-slate-800">{t.your}</p>
+        <div
+          role="img"
+          aria-label={t.scale}
+          className="mt-3 flex gap-2 text-amber-600"
+        >
+          {[1, 2, 3, 4, 5].map(value => (
+            <Star key={value} aria-hidden="true" className="size-8" />
+          ))}
+        </div>
+      </div>
+      <Button asChild className="h-auto min-h-11 whitespace-normal text-center">
+        <Link href={href}>{label}</Link>
+      </Button>
+    </div>
+  );
+}
+
 function RatingForm({
   providerId,
   accountId,

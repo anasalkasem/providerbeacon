@@ -43,6 +43,7 @@ beforeEach(() => {
   state.member = null;
   state.own = { rating: null, isOwner: false };
   state.summaryError = false;
+  window.history.replaceState({}, "", "/providers/real-provider");
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -50,23 +51,52 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   container.remove();
+  vi.restoreAllMocks();
 });
 const render = () =>
   act(async () =>
     root.render(<VisitorRatings providerId={7} slug="real-provider" />)
   );
 describe("visitor rating controls", () => {
-  it("shows honest empty-state and sign-in/verification gates before any voting controls", async () => {
+  it("shows the five-star section to guests and unverified visitors without allowing an unauthenticated vote", async () => {
     await render();
     expect(container.textContent).toContain("لا توجد تقييمات");
     expect(container.textContent).toContain("ليست إثبات شراء");
     expect(container.querySelectorAll('input[type="radio"]')).toHaveLength(0);
-    expect(container.querySelector("a")?.href).toContain("sign-in?next=");
+    expect(container.querySelectorAll('[role="img"] svg')).toHaveLength(5);
+    expect(
+      container.querySelector('[role="img"]')?.getAttribute("aria-label")
+    ).toBe("التقييم من نجمة إلى خمس نجوم");
+    expect(container.querySelector("a")?.getAttribute("href")).toBe(
+      "/sign-in?next=%2Fproviders%2Freal-provider%23visitor-ratings"
+    );
+    expect(state.save).not.toHaveBeenCalled();
     state.member = { id: 12, emailVerified: false };
     await render();
     expect(container.querySelector("a")?.getAttribute("href")).toBe(
       "/verify-email"
     );
+    expect(container.querySelectorAll('[role="img"] svg')).toHaveLength(5);
+    expect(container.querySelectorAll('input[type="radio"]')).toHaveLength(0);
+    expect(state.save).not.toHaveBeenCalled();
+  });
+  it("lands on and focuses the ratings section when it mounts after a deep link or sign-in return", async () => {
+    const scroll = vi.fn();
+    Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+      configurable: true,
+      value: scroll,
+    });
+    window.history.replaceState(
+      {},
+      "",
+      "/providers/real-provider#visitor-ratings"
+    );
+    await render();
+    expect(scroll).toHaveBeenCalledWith({ block: "start" });
+    expect(document.activeElement).toBe(
+      container.querySelector("#visitor-ratings")
+    );
+    delete (HTMLElement.prototype as any).scrollIntoView;
   });
   it("lets a verified visitor pick accessible stars, update and remove their existing vote", async () => {
     state.member = { id: 12, emailVerified: true };

@@ -109,6 +109,27 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 describe("VIP visitor album and provider preview", () => {
+  it.each([true, false])(
+    "provides a separate ratings link on public VIP cards (compact: %s)",
+    async compact => {
+      await act(() =>
+        root.render(React.createElement(VipCard, { card: card(), compact }))
+      );
+      const ratings = container.querySelector(
+        'a[href="/providers/actual#visitor-ratings"]'
+      );
+      expect(ratings?.textContent).toContain("قيّم المزود");
+      expect(ratings?.parentElement?.closest("a")).toBeNull();
+      await act(() =>
+        root.render(
+          React.createElement(VipCard, { card: card(), compact, preview: true })
+        )
+      );
+      expect(
+        container.querySelector('a[href="/providers/actual#visitor-ratings"]')
+      ).toBeNull();
+    }
+  );
   it("labels paid placement and ownership separately and links to the local provider profile", async () => {
     await act(() => root.render(React.createElement(VipAlbum)));
     expect(container.textContent).toContain("ظهور مدفوع");
