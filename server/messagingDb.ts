@@ -32,6 +32,7 @@ import {
   type ChatMessage,
   type MessageLocale,
   type ConversationCursor,
+  type MessageNotificationSnapshot,
 } from "../shared/messaging";
 import { getDb } from "./db";
 import { writeAudit } from "./marketplaceDb";
@@ -419,8 +420,21 @@ export async function visitorConversation(key: string | null) {
   if (!key) return null;
   const db = await messagingDatabase();
   const [row] = await db
-    .select({ id: chats.id, status: chats.status })
+    .select({
+      id: chats.id,
+      status: chats.status,
+      name: users.name,
+      unread:
+        sql<number>`(select count(*) from messaging_messages mm where mm.conversation_id = ${chats.id} and mm.id > ${chats.visitorReadId} and mm.sender = 'staff' and mm.imported = false)`.mapWith(
+          Number
+        ),
+      lastIncomingId:
+        sql<number>`coalesce((select max(mm.id) from messaging_messages mm where mm.conversation_id = ${chats.id} and mm.id > ${chats.visitorReadId} and mm.sender = 'staff' and mm.imported = false),0)`.mapWith(
+          Number
+        ),
+    })
     .from(chats)
+    .leftJoin(users, eq(users.id, chats.assignedUserId))
     .where(
       and(eq(chats.visitorKey, key), gt(chats.visitorExpiresAt, new Date()))
     )
@@ -623,7 +637,8 @@ export async function changeSupportAssignment(
 
 export async function listConversations(
   actor: Extract<ChatActor, { kind: "staff" }>,
-  before?: ConversationCursor
+  before?: ConversationCursor,
+  filters?: { kind?: "direct" | "support"; status?: "all" | "open" | "closed" }
 ) {
   const db = await messagingDatabase();
   const rows = await db
@@ -632,6 +647,8 @@ export async function listConversations(
       kind: chats.kind,
       status: chats.status,
       visitorName: chats.visitorName,
+      assignedUserId: chats.assignedUserId,
+      agentName: users.name,
       updatedAt: chats.updatedAt,
       lastMessageId: chats.lastMessageId,
       unread:
@@ -647,12 +664,24 @@ export async function listConversations(
         eq(members.userId, actor.userId)
       )
     )
+    .leftJoin(users, eq(users.id, chats.assignedUserId))
     .where(
       and(
         or(
           and(eq(chats.kind, "direct"), eq(members.userId, actor.userId)),
-          and(eq(chats.kind, "support"), eq(chats.assignedUserId, actor.userId))
+          and(
+            eq(chats.kind, "support"),
+            manager(actor)
+              ? ne(chats.status, "waiting")
+              : eq(chats.assignedUserId, actor.userId)
+          )
         ),
+        filters?.kind ? eq(chats.kind, filters.kind) : undefined,
+        filters?.status === "closed"
+          ? eq(chats.status, "closed")
+          : filters?.status === "open"
+            ? ne(chats.status, "closed")
+            : undefined,
         before
           ? or(
               lt(chats.lastMessageId, before.messageId),
@@ -688,7 +717,9 @@ export async function listConversations(
     name: row.kind === "direct" ? (names.get(row.id) ?? null) : row.visitorName,
   }));
   const queue =
-    actor.role === "auditor"
+    actor.role === "auditor" ||
+    filters?.kind === "direct" ||
+    filters?.status === "closed"
       ? []
       : await db
           .select({
@@ -709,6 +740,91 @@ export async function listConversations(
         : null,
     queue,
   };
+}
+
+// Independent of inbox pagination. Only incoming unread messages from the
+// actor's own direct chats and assigned support conversations are counted.
+// No message content is returned to the notification client.
+export async function messageNotifications(
+  actor: Extract<ChatActor, { kind: "staff" }>
+): Promise<MessageNotificationSnapshot> {
+  const db = await messagingDatabase();
+  return db.transaction(async tx => {
+    const access = or(
+      and(eq(chats.kind, "direct"), eq(members.userId, actor.userId)),
+      and(eq(chats.kind, "support"), eq(chats.assignedUserId, actor.userId))
+    );
+    const memberJoin = and(
+      eq(members.conversationId, chats.id),
+      eq(members.userId, actor.userId)
+    );
+    const incoming = and(
+      eq(messages.conversationId, chats.id),
+      gt(messages.id, sql`coalesce(${members.readId},0)`),
+      or(
+        isNull(messages.senderUserId),
+        ne(messages.senderUserId, actor.userId)
+      ),
+      eq(messages.imported, false)
+    );
+    const [total] = await tx
+      .select({ n: sql<number>`count(*)`.mapWith(Number) })
+      .from(chats)
+      .leftJoin(members, memberJoin)
+      .innerJoin(messages, incoming)
+      .where(access);
+    const [queue] =
+      actor.role === "auditor"
+        ? [{ n: 0 }]
+        : await tx
+            .select({ n: sql<number>`count(*)`.mapWith(Number) })
+            .from(chats)
+            .where(and(eq(chats.kind, "support"), eq(chats.status, "waiting")));
+    if (!total.n) return { unread: 0, waiting: queue.n, items: [] };
+    const rows = await tx
+      .select({
+        conversationId: chats.id,
+        kind: chats.kind,
+        name: chats.visitorName,
+        messageId: sql<number>`max(${messages.id})`.mapWith(Number),
+      })
+      .from(chats)
+      .leftJoin(members, memberJoin)
+      .innerJoin(messages, incoming)
+      .where(access)
+      .groupBy(chats.id, chats.kind, chats.visitorName)
+      .orderBy(desc(sql`max(${messages.id})`))
+      .limit(60);
+    const directIds = rows
+      .filter(row => row.kind === "direct")
+      .map(row => row.conversationId);
+    const peers = directIds.length
+      ? await tx
+          .select({ id: members.conversationId, name: users.name })
+          .from(members)
+          .innerJoin(users, eq(users.id, members.userId))
+          .where(
+            and(
+              inArray(members.conversationId, directIds),
+              ne(members.userId, actor.userId)
+            )
+          )
+      : [];
+    const names = new Map(peers.map(peer => [peer.id, peer.name]));
+    return {
+      unread: total.n,
+      waiting: queue.n,
+      items: rows.map(row => ({
+        conversationId: row.conversationId,
+        kind: row.kind,
+        messageId: row.messageId,
+        name:
+          row.kind === "direct"
+            ? (names.get(row.conversationId) ?? null)
+            : row.name,
+      })),
+    };
+  });
 }
 
 export async function getChatThread(
@@ -834,11 +950,11 @@ export async function readChat(
         .where(eq(chats.id, id));
     else
       await tx
-        .update(members)
-        .set({ readId: sql`greatest(${members.readId},${readId})` })
-        .where(
-          and(eq(members.conversationId, id), eq(members.userId, actor.userId))
-        );
+        .insert(members)
+        .values({ conversationId: id, userId: actor.userId, readId })
+        .onDuplicateKeyUpdate({
+          set: { readId: sql`greatest(${members.readId},${readId})` },
+        });
   });
   return { ok: true };
 }

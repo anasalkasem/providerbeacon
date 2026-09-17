@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Loader2,
@@ -14,6 +14,9 @@ import { assistantCopy } from "@/i18n/assistant";
 import { messagingCopy, messagingError } from "@/i18n/messaging";
 import { explicitHumanRequest } from "../../../shared/messaging";
 import MessageThread from "./MessageThread";
+import { usePageVisible } from "@/hooks/usePageVisible";
+import { useMessageAlerts } from "@/hooks/useMessageAlerts";
+import MessageAlertControls, { UnreadMessages } from "./MessageAlertControls";
 import { unitLabel } from "@/i18n/pricing";
 import { serviceName } from "./OfferEvidence";
 import OfferPrice from "./OfferPrice";
@@ -56,11 +59,49 @@ function AssistantChat({ path }: { path: string }) {
   const mt = messagingCopy[locale];
   const [open, setOpen] = useState(false);
   const [supportId, setSupportId] = useState<string | null>(null);
+  const [reading, setReading] = useState(false);
+  const visible = usePageVisible();
   const handoffIdentity = useRef<{ text: string; id: string } | null>(null);
   const support = trpc.messaging.support.current.useQuery(undefined, {
-    enabled: open,
     retry: false,
     staleTime: 0,
+    refetchInterval: query =>
+      query.state.data?.id &&
+      (query.state.data.status !== "closed" || query.state.data.unread > 0)
+        ? visible
+          ? 4000
+          : 15000
+        : false,
+    refetchIntervalInBackground: true,
+  });
+  const notificationData = useMemo(
+    () =>
+      support.isError || support.data === undefined
+        ? undefined
+        : {
+            unread: support.data?.unread ?? 0,
+            items: support.data?.unread
+              ? [
+                  {
+                    conversationId: support.data.id,
+                    kind: "support" as const,
+                    messageId: support.data.lastIncomingId,
+                    name: support.data.name,
+                  },
+                ]
+              : [],
+          },
+    [support.data, support.isError]
+  );
+  const alerts = useMessageAlerts({
+    scope: support.data?.id ? `visitor:${support.data.id}` : null,
+    data: notificationData,
+    readingId: open && reading ? supportId : null,
+    locale,
+    onOpen: id => {
+      setSupportId(id);
+      setOpen(true);
+    },
   });
   const handoff = trpc.messaging.support.start.useMutation({ retry: false });
   const [draft, setDraft] = useState("");
@@ -215,6 +256,7 @@ function AssistantChat({ path }: { path: string }) {
       >
         <Sparkles aria-hidden="true" className="size-5 text-beacon-300" />
         {t.launcher}
+        <UnreadMessages count={notificationData?.unread ?? 0} />
       </button>
       {open && (
         <section
@@ -239,6 +281,7 @@ function AssistantChat({ path }: { path: string }) {
                 {supportId ? mt.supportIntro : t.subtitle}
               </p>
             </div>
+            <UnreadMessages count={notificationData?.unread ?? 0} />
             <button
               type="button"
               title={t.clear}
@@ -264,11 +307,13 @@ function AssistantChat({ path }: { path: string }) {
               <X className="size-5" />
             </button>
           </header>
+          {support.data?.id && <MessageAlertControls alerts={alerts} />}
           {supportId ? (
             <MessageThread
               key={supportId}
               id={supportId}
               mode="visitor"
+              onReadingChange={setReading}
               onBack={() => {
                 setSupportId(null);
               }}

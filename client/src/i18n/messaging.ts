@@ -1,5 +1,26 @@
 import type { Locale } from "@/contexts/LocaleContext";
 const en = {
+  messageAlerts: "Message notifications",
+  unreadMessages: "Unread messages",
+  multipleMessages: "New messages in several conversations.",
+  enableSound: "Enable sound",
+  muteSound: "Mute sound",
+  testSound: "Test sound",
+  soundUnavailable:
+    "Sound could not start. Try again after checking your device sound settings.",
+  soundActivation: "Tap Enable sound to activate it in this browser session.",
+  alertScope:
+    "Notifications work while the site is running. Sound preference is saved on this device; alerts are not delivered after the site is closed.",
+  customerConversations: "Customer conversations",
+  supervision:
+    "Review all customer conversations and the employee handling each one.",
+  conversationStatus: "Status",
+  allConversations: "All conversations",
+  openConversations: "Open conversations",
+  responsibleEmployee: "Assigned employee",
+  supportSupervision:
+    "The owner and administrators can review customer support conversations for follow-up and service quality.",
+
   title: "Messages",
   team: "Team",
   customers: "Customers",
@@ -80,6 +101,26 @@ const en = {
 };
 type Copy = { [K in keyof typeof en]: string };
 const ar: Copy = {
+  messageAlerts: "إشعارات الرسائل",
+  unreadMessages: "رسائل غير مقروءة",
+  multipleMessages: "وصلت رسائل جديدة في عدة محادثات.",
+  enableSound: "تفعيل الصوت",
+  muteSound: "كتم الصوت",
+  testSound: "تجربة الصوت",
+  soundUnavailable:
+    "تعذر تشغيل الصوت. تحقق من إعدادات صوت جهازك ثم حاول مجددًا.",
+  soundActivation: "اضغط تفعيل الصوت لتشغيله في جلسة المتصفح الحالية.",
+  alertScope:
+    "تعمل التنبيهات أثناء تشغيل الموقع. يُحفظ اختيار الصوت على هذا الجهاز، ولا تصل التنبيهات بعد إغلاق الموقع.",
+  customerConversations: "محادثات العملاء",
+  supervision: "تابع جميع محادثات العملاء والموظف المسؤول عن كل محادثة.",
+  conversationStatus: "الحالة",
+  allConversations: "جميع المحادثات",
+  openConversations: "المحادثات المفتوحة",
+  responsibleEmployee: "الموظف المسؤول",
+  supportSupervision:
+    "يمكن للمالك والإدارة مراجعة محادثات دعم العملاء للمتابعة وضمان جودة الخدمة.",
+
   title: "المراسلات",
   team: "الفريق",
   customers: "العملاء",
@@ -157,6 +198,28 @@ const ar: Copy = {
   newConversation: "محادثة دعم جديدة",
 };
 const es: Copy = {
+  messageAlerts: "Notificaciones de mensajes",
+  unreadMessages: "Mensajes sin leer",
+  multipleMessages: "Hay mensajes nuevos en varias conversaciones.",
+  enableSound: "Activar sonido",
+  muteSound: "Silenciar",
+  testSound: "Probar sonido",
+  soundUnavailable:
+    "No se pudo activar el sonido. Revisa el audio de tu dispositivo e inténtalo de nuevo.",
+  soundActivation:
+    "Pulsa Activar sonido para habilitarlo en esta sesión del navegador.",
+  alertScope:
+    "Los avisos funcionan mientras el sitio está en ejecución. La preferencia de sonido se guarda en este dispositivo; no llegan avisos después de cerrar el sitio.",
+  customerConversations: "Conversaciones con clientes",
+  supervision:
+    "Revisa todas las conversaciones con clientes y el empleado responsable.",
+  conversationStatus: "Estado",
+  allConversations: "Todas las conversaciones",
+  openConversations: "Conversaciones abiertas",
+  responsibleEmployee: "Empleado responsable",
+  supportSupervision:
+    "El propietario y los administradores pueden revisar las conversaciones de soporte para dar seguimiento y asegurar la calidad del servicio.",
+
   title: "Mensajes",
   team: "Equipo",
   customers: "Clientes",
@@ -240,6 +303,26 @@ const es: Copy = {
 };
 const hi: Copy = {
   ...en,
+  messageAlerts: "संदेश सूचनाएँ",
+  unreadMessages: "अपठित संदेश",
+  multipleMessages: "कई बातचीत में नए संदेश आए हैं।",
+  enableSound: "ध्वनि चालू करें",
+  muteSound: "ध्वनि बंद करें",
+  testSound: "ध्वनि जाँचें",
+  soundUnavailable:
+    "ध्वनि शुरू नहीं हुई। डिवाइस की आवाज़ की सेटिंग जाँचकर फिर कोशिश करें।",
+  soundActivation:
+    "इस ब्राउज़र सत्र में ध्वनि के लिए ध्वनि चालू करें पर टैप करें।",
+  alertScope:
+    "साइट चलने के दौरान सूचनाएँ मिलती हैं। ध्वनि की पसंद इस डिवाइस पर सहेजी जाती है; साइट बंद करने के बाद सूचनाएँ नहीं मिलतीं।",
+  customerConversations: "ग्राहकों की बातचीत",
+  supervision: "सभी ग्राहकों की बातचीत और उनके जिम्मेदार कर्मचारी देखें।",
+  conversationStatus: "स्थिति",
+  allConversations: "सभी बातचीत",
+  openConversations: "खुली बातचीत",
+  responsibleEmployee: "जिम्मेदार कर्मचारी",
+  supportSupervision:
+    "मालिक और व्यवस्थापक सहायता और सेवा की गुणवत्ता के लिए ग्राहकों की बातचीत की समीक्षा कर सकते हैं।",
   title: "संदेश",
   team: "टीम",
   customers: "ग्राहक",
@@ -319,6 +402,24 @@ const hi: Copy = {
 };
 const zh: Copy = {
   ...en,
+  messageAlerts: "消息通知",
+  unreadMessages: "未读消息",
+  multipleMessages: "多个对话收到新消息。",
+  enableSound: "开启声音",
+  muteSound: "静音",
+  testSound: "测试声音",
+  soundUnavailable: "无法播放声音。请检查设备声音设置后重试。",
+  soundActivation: "点击开启声音，在本次浏览器会话中启用声音。",
+  alertScope:
+    "通知仅在网站运行时生效。声音偏好保存在此设备上；关闭网站后不会收到通知。",
+  customerConversations: "客户对话",
+  supervision: "查看所有客户对话及负责员工。",
+  conversationStatus: "状态",
+  allConversations: "所有对话",
+  openConversations: "进行中的对话",
+  responsibleEmployee: "负责员工",
+  supportSupervision:
+    "所有者和管理员可查看客户支持对话，以便跟进并保障服务质量。",
   title: "消息",
   team: "团队",
   customers: "客户",

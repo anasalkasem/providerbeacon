@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, Plus, Search, Users, X } from "lucide-react";
-import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ConversationCursor } from "../../../shared/messaging";
 import { trpc } from "@/lib/trpc";
@@ -9,6 +8,11 @@ import { useLocale, localeNames, type Locale } from "@/contexts/LocaleContext";
 import { usePageVisible } from "@/hooks/usePageVisible";
 import { messagingCopy, messagingError } from "@/i18n/messaging";
 import MessageThread from "./MessageThread";
+import { useMessageAlerts } from "@/hooks/useMessageAlerts";
+import MessageAlertControls, {
+  UnreadMessages,
+  WaitingCustomers,
+} from "./MessageAlertControls";
 
 export default function StaffMessenger() {
   const { user } = useAuth();
@@ -29,10 +33,11 @@ export default function StaffMessenger() {
     enabled: !!user,
     retry: false,
   });
-  if (!user || readyUser !== user.id || !access.data?.role) return null;
-  return <Messenger key={user.id} />;
+  if (!user || readyUser !== user.id || access.isError || !access.data?.role)
+    return null;
+  return <Messenger key={user.id} userId={user.id} />;
 }
-function Messenger() {
+export function Messenger({ userId }: { userId: number }) {
   const { locale, dir } = useLocale(),
     t = messagingCopy[locale],
     visible = usePageVisible(),
@@ -43,22 +48,56 @@ function Messenger() {
     [showPeople, setShowPeople] = useState(false),
     [search, setSearch] = useState(""),
     [before, setBefore] = useState<ConversationCursor | undefined>(),
+    [customerStatus, setCustomerStatus] = useState<"all" | "open" | "closed">(
+      "all"
+    ),
+    [reading, setReading] = useState(false),
     [failure, setFailure] = useState<string | null>(null);
-  const launcher = useRef<HTMLButtonElement>(null),
-    observed = useRef<Map<string, number> | null>(null);
+  const launcher = useRef<HTMLButtonElement>(null);
   const profile = trpc.messaging.profile.useQuery(undefined, {
     retry: false,
     staleTime: 30000,
   });
   const list = trpc.messaging.list.useQuery(
-    before === undefined ? undefined : { before },
     {
-      enabled: visible && !!profile.data,
-      refetchInterval: visible ? (open && !before ? 3000 : 12000) : false,
+      before,
+      kind: tab === "team" ? "direct" : "support",
+      status: tab === "team" ? "all" : customerStatus,
+    },
+    {
+      enabled: open && visible && !!profile.data && !profile.isError,
+      refetchInterval: open && visible ? (!before ? 4000 : 12000) : false,
       refetchIntervalInBackground: false,
       retry: 1,
     }
   );
+  const notifications = trpc.messaging.notifications.useQuery(undefined, {
+    enabled: !!profile.data && !profile.isError,
+    refetchInterval: visible ? 4000 : 15000,
+    refetchIntervalInBackground: true,
+    retry: 1,
+  });
+  const notificationData =
+    notifications.isError || profile.isError ? undefined : notifications.data;
+  const alerts = useMessageAlerts({
+    scope: `staff:${userId}`,
+    data: notificationData,
+    readingId: open && reading ? active : null,
+    locale,
+    onOpen: id => {
+      setTab(
+        notificationData?.items.find(item => item.conversationId === id)
+          ?.kind === "support"
+          ? "customers"
+          : "team"
+      );
+      setBefore(undefined);
+      setCustomerStatus("all");
+      setActive(id);
+      setOpen(true);
+      setShowPeople(false);
+    },
+  });
   const people = trpc.messaging.directory.useQuery(undefined, {
     enabled: open,
     staleTime: 15000,
@@ -75,35 +114,10 @@ function Messenger() {
     const timer = setInterval(pulse, 30000);
     return () => clearInterval(timer);
   }, [visible, !!profile.data, language]);
-  useEffect(() => {
-    if (!list.data || before !== undefined) return;
-    const next = new Map(
-      list.data.items.map(item => [item.id, item.lastMessageId])
-    );
-    if (observed.current) {
-      const changed = list.data.items.find(
-        item =>
-          item.unread > 0 &&
-          item.lastMessageId > (observed.current!.get(item.id) ?? 0) &&
-          (!open || active !== item.id)
-      );
-      if (changed)
-        toast(t.newMessage, {
-          description: changed.name ?? t.visitor,
-          action: {
-            label: t.open,
-            onClick: () => {
-              setActive(changed.id);
-              setOpen(true);
-            },
-          },
-        });
-    }
-    observed.current = next;
-  }, [list.data, open, active, before]);
-  const unread =
-    (list.data?.items.reduce((sum, item) => sum + item.unread, 0) ?? 0) +
-    (list.data?.queue.length ?? 0);
+  const unread = notificationData?.unread ?? 0;
+  const waiting = notificationData?.waiting ?? 0;
+  // Avoid continuing to display private cached inbox data after access fails.
+  const inbox = list.isError || profile.isError ? undefined : list.data;
   const close = () => {
     setOpen(false);
     launcher.current?.focus();
@@ -126,7 +140,7 @@ function Messenger() {
       <button
         ref={launcher}
         type="button"
-        aria-label={t.title}
+        aria-label={`${t.title}${unread ? ` · ${t.unreadMessages}: ${unread}` : ""}${waiting ? ` · ${t.queue}: ${waiting}` : ""}`}
         aria-expanded={open}
         aria-controls="staff-messenger"
         onClick={() => setOpen(!open)}
@@ -134,11 +148,8 @@ function Messenger() {
       >
         <MessageCircle className="size-5 text-beacon-300" />
         {t.title}
-        {unread > 0 && (
-          <span className="rounded-full bg-beacon-300 px-2 py-0.5 text-xs text-ink">
-            {unread > 99 ? "99+" : unread}
-          </span>
-        )}
+        <UnreadMessages count={unread} />
+        <WaitingCustomers count={waiting} />
       </button>
       {open && (
         <section
@@ -156,6 +167,8 @@ function Messenger() {
           <header className="flex items-center gap-3 bg-ink px-4 py-3 text-white">
             <MessageCircle className="size-5 text-beacon-300" />
             <h2 className="flex-1 font-bold">{t.title}</h2>
+            <UnreadMessages count={unread} />
+            <WaitingCustomers count={waiting} />
             <button
               type="button"
               aria-label={t.close}
@@ -165,6 +178,7 @@ function Messenger() {
               <X className="size-5" />
             </button>
           </header>
+          <MessageAlertControls alerts={alerts} />
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b bg-slate-50 px-4 py-3 text-xs sm:text-sm">
             <label className="flex items-center gap-2">
               {t.language}
@@ -204,7 +218,10 @@ function Messenger() {
               </label>
             )}
           </div>
-          {(failure || list.isError || profile.isError) && (
+          {(failure ||
+            list.isError ||
+            profile.isError ||
+            notifications.isError) && (
             <p
               role="alert"
               className="bg-amber-50 px-4 py-2 text-sm text-amber-900"
@@ -215,6 +232,7 @@ function Messenger() {
                 onClick={() => {
                   void profile.refetch();
                   void list.refetch();
+                  void notifications.refetch();
                 }}
               >
                 {t.retry}
@@ -253,10 +271,39 @@ function Messenger() {
                   }}
                   className={`flex-1 rounded-lg px-3 py-2 text-sm font-bold ${tab === "customers" ? "bg-beacon-100 text-beacon-900" : "text-slate-500"}`}
                 >
-                  {t.customers}
-                  {!!list.data?.queue.length && ` (${list.data.queue.length})`}
+                  {profile.data?.canAssign
+                    ? t.customerConversations
+                    : t.customers}
+                  {!!waiting && ` (${waiting})`}
                 </button>
               </div>
+              {tab === "customers" && (
+                <div className="border-b px-3 py-2 text-xs">
+                  {profile.data?.canAssign && (
+                    <p className="mb-2 leading-5 text-slate-500">
+                      {t.supervision}
+                    </p>
+                  )}
+                  <label className="flex items-center gap-2">
+                    {t.conversationStatus}
+                    <select
+                      aria-label={t.conversationStatus}
+                      value={customerStatus}
+                      className="min-w-0 flex-1 rounded-lg border bg-white px-2 py-1.5"
+                      onChange={e => {
+                        setCustomerStatus(
+                          e.target.value as typeof customerStatus
+                        );
+                        setBefore(undefined);
+                      }}
+                    >
+                      <option value="all">{t.allConversations}</option>
+                      <option value="open">{t.openConversations}</option>
+                      <option value="closed">{t.closed}</option>
+                    </select>
+                  </label>
+                </div>
+              )}
               {tab === "team" && (
                 <button
                   type="button"
@@ -336,7 +383,7 @@ function Messenger() {
                               {t.leaveOffline}
                             </p>
                           )}
-                        {list.data?.queue.map(item => (
+                        {inbox?.queue.map(item => (
                           <div
                             key={item.id}
                             className="mb-2 rounded-xl border border-amber-200 bg-amber-50 p-3"
@@ -349,6 +396,15 @@ function Messenger() {
                               {localeNames[item.locale as Locale] ??
                                 item.locale}
                             </p>
+                            {profile.data?.canAssign && (
+                              <button
+                                type="button"
+                                onClick={() => setActive(item.id)}
+                                className="me-2 mt-2 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs font-bold"
+                              >
+                                {t.open}
+                              </button>
+                            )}
                             <button
                               type="button"
                               disabled={
@@ -374,7 +430,7 @@ function Messenger() {
                         ))}
                       </div>
                     )}
-                    {list.data?.items
+                    {inbox?.items
                       .filter(
                         item =>
                           item.kind === (tab === "team" ? "direct" : "support")
@@ -401,6 +457,12 @@ function Messenger() {
                                     { month: "short", day: "numeric" }
                                   )}
                             </span>
+                            {item.kind === "support" && (
+                              <span className="mt-1 block text-xs text-slate-500">
+                                {t.responsibleEmployee}:{" "}
+                                {item.agentName ?? t.waiting}
+                              </span>
+                            )}
                           </span>
                           {item.unread > 0 && (
                             <span className="rounded-full bg-beacon-600 px-2 py-0.5 text-xs text-white">
@@ -410,7 +472,7 @@ function Messenger() {
                         </button>
                       ))}
                     {!list.isLoading &&
-                      !list.data?.items.some(
+                      !inbox?.items.some(
                         item =>
                           item.kind === (tab === "team" ? "direct" : "support")
                       ) && (
@@ -418,10 +480,10 @@ function Messenger() {
                           {t.empty}
                         </p>
                       )}
-                    {list.data?.nextCursor != null && (
+                    {inbox?.nextCursor != null && (
                       <button
                         type="button"
-                        onClick={() => setBefore(list.data!.nextCursor!)}
+                        onClick={() => setBefore(inbox!.nextCursor!)}
                         className="p-3 text-xs font-bold underline"
                       >
                         {t.more}
@@ -451,6 +513,7 @@ function Messenger() {
                 userId={profile.data?.userId}
                 canAssign={profile.data?.canAssign}
                 directory={people.data}
+                onReadingChange={setReading}
                 onBack={() => setActive(null)}
               />
             ) : (

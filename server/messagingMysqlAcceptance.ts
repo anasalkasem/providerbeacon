@@ -97,6 +97,21 @@ export function messagingAcceptanceCases(
       expect(await caller(arabic).messaging.send(first)).toEqual(saved);
       expect(await database().select().from(messages)).toHaveLength(1);
       expect((await caller(spanish).messaging.list()).items[0].unread).toBe(1);
+      expect(await caller(spanish).messaging.notifications()).toMatchObject({
+        unread: 1,
+        items: [
+          {
+            conversationId: starts[0].id,
+            messageId: saved.id,
+            name: "موظف عربي",
+          },
+        ],
+      });
+      expect(await caller(arabic).messaging.notifications()).toEqual({
+        unread: 0,
+        waiting: 0,
+        items: [],
+      });
       vi.stubGlobal(
         "fetch",
         vi.fn(
@@ -137,6 +152,11 @@ export function messagingAcceptanceCases(
         messageId: saved.id,
       });
       expect((await caller(spanish).messaging.list()).items[0].unread).toBe(0);
+      expect(await caller(spanish).messaging.notifications()).toEqual({
+        unread: 0,
+        waiting: 0,
+        items: [],
+      });
       expect(
         (
           await caller(arabic).messaging.thread({
@@ -225,6 +245,17 @@ export function messagingAcceptanceCases(
       expect(thread.items).toHaveLength(3);
       expect(thread.items.filter(m => m.imported)).toHaveLength(2);
       expect((await caller(arabic).messaging.list()).queue[0].id).toBe(id);
+      expect(await caller(arabic).messaging.notifications()).toEqual({
+        unread: 0,
+        waiting: 1,
+        items: [],
+      });
+      const auditor = await staff("Auditor", "auditor");
+      expect(await caller(auditor).messaging.notifications()).toEqual({
+        unread: 0,
+        waiting: 0,
+        items: [],
+      });
       await expect(
         caller(spanish).messaging.thread({ conversationId: id })
       ).rejects.toMatchObject({ code: "NOT_FOUND" });
@@ -459,6 +490,149 @@ export function messagingAcceptanceCases(
       vi.stubGlobal("fetch", fetch);
       await Promise.all([runTranslationStep(), runTranslationStep()]);
       expect(fetch).toHaveBeenCalledTimes(1);
+    });
+    it("lets managers follow every customer conversation without exposing private team chats or changing others' receipts", async () => {
+      await caller(arabic).messaging.presence({
+        locale: "ar",
+        available: true,
+      });
+      const guest = caller(null, "a".repeat(64));
+      const { id } = await guest.messaging.support.start(handoff());
+      const reply = await caller(arabic).messaging.send(
+        input(id, "كيف أساعدك؟")
+      );
+      const owner = caller(ownerId());
+      const managed = await owner.messaging.list({
+        kind: "support",
+        status: "open",
+      });
+      expect(managed.items).toHaveLength(1);
+      expect(managed.items[0]).toMatchObject({
+        id,
+        assignedUserId: arabic,
+        agentName: "موظف عربي",
+        unread: 2,
+      });
+      expect(
+        (await caller(spanish).messaging.list({ kind: "support" })).items
+      ).toHaveLength(0);
+      expect(
+        (await owner.messaging.thread({ conversationId: id })).items.some(
+          item => item.id === reply.id
+        )
+      ).toBe(true);
+      await owner.messaging.read({ conversationId: id, messageId: reply.id });
+      expect(
+        (await owner.messaging.list({ kind: "support" })).items[0].unread
+      ).toBe(0);
+      expect((await caller(arabic).messaging.notifications()).unread).toBe(1);
+      expect((await owner.messaging.notifications()).unread).toBe(0);
+      expect(await guest.messaging.support.current()).toMatchObject({
+        id,
+        unread: 1,
+        lastIncomingId: reply.id,
+      });
+      await guest.messaging.support.send({
+        ...input(id, "Gracias"),
+        locale: "es",
+      });
+      expect(await guest.messaging.support.current()).toMatchObject({
+        unread: 1,
+        lastIncomingId: reply.id,
+      });
+      expect(
+        await caller(null, "b".repeat(64)).messaging.support.current()
+      ).toBeNull();
+      const privateChat = await caller(arabic).messaging.direct({
+        recipientId: spanish,
+      });
+      await caller(arabic).messaging.send(input(privateChat.id));
+      expect(
+        (await owner.messaging.list({ kind: "direct" })).items
+      ).toHaveLength(0);
+      await expect(
+        owner.messaging.thread({ conversationId: privateChat.id })
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await expect(
+        owner.messaging.read({
+          conversationId: privateChat.id,
+          messageId: reply.id,
+        })
+      ).rejects.toMatchObject({ code: "NOT_FOUND" });
+      await guest.messaging.support.read({
+        conversationId: id,
+        messageId: reply.id,
+      });
+      expect((await guest.messaging.support.current())?.unread).toBe(0);
+      await guest.messaging.support.close({ conversationId: id });
+      expect(
+        (await owner.messaging.list({ kind: "support", status: "open" })).items
+      ).toHaveLength(0);
+      expect(
+        (await owner.messaging.list({ kind: "support", status: "closed" }))
+          .items[0].id
+      ).toBe(id);
+    });
+    it("counts incoming notifications beyond inbox pagination and denies suspended staff", async () => {
+      const rows = Array.from({ length: 65 }, () => ({
+        id: randomUUID(),
+        kind: "support" as const,
+        status: "closed" as const,
+        assignedUserId: spanish,
+      }));
+      await database().insert(chats).values(rows);
+      await database()
+        .insert(messages)
+        .values(
+          rows.map((chat, n) => ({
+            conversationId: chat.id,
+            clientId: `notification-seed-${n}`,
+            sender: "visitor",
+            original: "Customer message",
+            sourceLocale: "es",
+          }))
+        );
+      await database().insert(messages).values({
+        conversationId: rows[0].id,
+        clientId: "own-reply",
+        sender: "staff",
+        senderUserId: spanish,
+        original: "My reply",
+        sourceLocale: "es",
+      });
+      await database().insert(messages).values({
+        conversationId: rows[0].id,
+        clientId: "imported-history",
+        sender: "assistant",
+        imported: true,
+        original: "Old history",
+        sourceLocale: "es",
+      });
+      const page = await caller(spanish).messaging.list({ kind: "support" });
+      expect(page.items).toHaveLength(60);
+      const unread = await caller(spanish).messaging.notifications();
+      expect(unread.unread).toBe(65);
+      expect(unread.items).toHaveLength(60);
+      expect(Object.keys(unread.items[0]).sort()).toEqual([
+        "conversationId",
+        "kind",
+        "messageId",
+        "name",
+      ]);
+      expect((await caller(arabic).messaging.notifications()).unread).toBe(0);
+      const next = await caller(spanish).messaging.list({
+        kind: "support",
+        before: page.nextCursor!,
+      });
+      expect(next.items).toHaveLength(5);
+      expect((await caller(spanish).messaging.notifications()).unread).toBe(65);
+      await database()
+        .update(teamMembers)
+        .set({ status: "suspended" })
+        .where(eq(teamMembers.userId, spanish));
+      await expect(
+        caller(spanish).messaging.notifications()
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
     });
     it("paginates messages and queues translations only for authorized requested rows", async () => {
       const { id } = await caller(arabic).messaging.direct({
