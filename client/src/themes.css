@@ -1,4 +1,4 @@
-/* The single approved ProviderBeacon identity, including the initial page paint. */
+/* Classic remains the initial paint and the fallback for retired themes. */
 :root {
   color-scheme: dark;
   --beacon-font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
