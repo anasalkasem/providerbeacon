@@ -206,43 +206,43 @@
 }
 
 :root[data-site-theme="navy"], [data-theme-sample="navy"] {
-  color-scheme: light;
-  --background: #ffffff;
-  --foreground: #132746;
-  --card: #f4f7fc;
-  --popover: #ffffff;
-  --heading: #142e54;
-  --primary: #142e54;
+  color-scheme: dark;
+  --background: #080b10;
+  --foreground: #f5f8ff;
+  --card: #111822;
+  --popover: #182230;
+  --heading: #5b9cff;
+  --primary: #2563eb;
   --primary-foreground: #ffffff;
-  --primary-hover: #23477a;
-  --secondary: #dde6f3;
-  --secondary-foreground: #29476d;
-  --muted: #eaf0f8;
-  --muted-foreground: #4c627f;
-  --accent: #e6efff;
-  --accent-foreground: #23477a;
-  --border: #9aaec8;
-  --input: #7e94b1;
-  --ring: #23477a;
-  --steel: #627995;
-  --fog: #536985;
-  --chart-1: #142e54;
-  --chart-2: #37629b;
-  --chart-3: #67518e;
-  --chart-4: #94713a;
-  --chart-5: #287571;
-  --logo-inner: #416ba3;
-  --logo-highlight: #eef4ff;
+  --primary-hover: #1d4ed8;
+  --secondary: #1e2f48;
+  --secondary-foreground: #dbeafe;
+  --muted: #172333;
+  --muted-foreground: #bccce2;
+  --accent: #152d50;
+  --accent-foreground: #93c5fd;
+  --border: #2d65b4;
+  --input: #397bd4;
+  --ring: #60a5fa;
+  --steel: #809fc8;
+  --fog: #a2b8d7;
+  --chart-1: #5b9cff;
+  --chart-2: #67d1ed;
+  --chart-3: #baa2ff;
+  --chart-4: #f4ce86;
+  --chart-5: #75d8b0;
+  --logo-inner: #2563eb;
+  --logo-highlight: #eff6ff;
   --radius: 12px;
   --control-radius: 8px;
   --beacon-font-display: var(--beacon-font-body);
   --display-weight: 600;
-  --hero-wash: linear-gradient(130deg, #e8effb88, transparent 65%);
-  --card-shadow: 0 8px 24px rgb(20 46 84 / 8%);
+  --hero-wash: radial-gradient(ellipse at 85% 5%, #2563eb20, transparent 65%);
+  --card-shadow: 0 8px 24px rgb(0 0 0 / 28%);
 }
 
-:root:is([data-site-theme="summer"], [data-site-theme="pearl"], [data-site-theme="navy"]),
-[data-theme-sample="summer"], [data-theme-sample="pearl"], [data-theme-sample="navy"] {
+:root:is([data-site-theme="summer"], [data-site-theme="pearl"]),
+[data-theme-sample="summer"], [data-theme-sample="pearl"] {
   --success: #286442;
   --success-muted: #e7f3e9;
   --success-border: #a1bdaa;

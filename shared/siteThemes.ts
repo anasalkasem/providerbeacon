@@ -23,5 +23,5 @@ export const siteThemes: Record<
   midnight: { mode: "dark", background: "#0e192c" },
   pearl: { mode: "light", background: "#f6f3ee" },
   fire: { mode: "dark", background: "#0c0c0e" },
-  navy: { mode: "light", background: "#ffffff" },
+  navy: { mode: "dark", background: "#080b10" },
 };

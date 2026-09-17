@@ -111,7 +111,7 @@ describe("owner appearance panel", () => {
       );
       expect(document.documentElement.dataset.siteTheme).toBe(theme);
       expect(document.documentElement.classList.contains("dark")).toBe(
-        theme === "midnight" || theme === "fire"
+        theme === "midnight" || theme === "fire" || theme === "navy"
       );
       expect(
         container
