@@ -23,6 +23,14 @@ export const siteThemeCopy: Record<Locale, ThemeCopy> = {
     apply: "تفعيل الثيم",
     cancel: "العودة للثيم الحالي",
     themes: {
+      fire: {
+        name: "الأسود الناري",
+        description: "أسود عميق، عناوين وإطارات حمراء نارية وتوهّج دافئ.",
+      },
+      navy: {
+        name: "الأبيض والكحلي",
+        description: "أبيض نقي، عناوين وأزرار كحلية وإطارات زرقاء أنيقة.",
+      },
       copper: {
         name: "النحاسي",
         description: "فحمي دافئ، عناوين وإطارات نحاسية وخط كلاسيكي.",
@@ -53,6 +61,16 @@ export const siteThemeCopy: Record<Locale, ThemeCopy> = {
     apply: "Activate theme",
     cancel: "Return to active theme",
     themes: {
+      fire: {
+        name: "Fire black",
+        description:
+          "Deep black, fiery red headings and borders, with a warm glow.",
+      },
+      navy: {
+        name: "White and navy",
+        description:
+          "Pure white, navy headings and buttons, and refined blue borders.",
+      },
       copper: {
         name: "Copper",
         description:
@@ -86,6 +104,16 @@ export const siteThemeCopy: Record<Locale, ThemeCopy> = {
     apply: "Activar tema",
     cancel: "Volver al tema activo",
     themes: {
+      fire: {
+        name: "Negro fuego",
+        description:
+          "Negro profundo, títulos y bordes rojo fuego con un brillo cálido.",
+      },
+      navy: {
+        name: "Blanco y azul marino",
+        description:
+          "Blanco puro, títulos y botones azul marino con bordes azules elegantes.",
+      },
       copper: {
         name: "Cobre",
         description:
@@ -119,6 +147,14 @@ export const siteThemeCopy: Record<Locale, ThemeCopy> = {
     apply: "थीम सक्रिय करें",
     cancel: "सक्रिय थीम पर लौटें",
     themes: {
+      fire: {
+        name: "अग्नि काला",
+        description: "गहरा काला, आग जैसे लाल शीर्षक और किनारे, हल्की गर्म चमक।",
+      },
+      navy: {
+        name: "सफ़ेद और नेवी",
+        description: "शुद्ध सफ़ेद, नेवी शीर्षक और बटन, सुंदर नीले किनारे।",
+      },
       copper: {
         name: "तांबा",
         description: "गहरा चारकोल, तांबे के शीर्षक और किनारे, क्लासिक अक्षर।",
@@ -149,6 +185,14 @@ export const siteThemeCopy: Record<Locale, ThemeCopy> = {
     apply: "启用主题",
     cancel: "返回当前主题",
     themes: {
+      fire: {
+        name: "烈焰黑",
+        description: "深黑底色、火红标题与边框，搭配温暖光晕。",
+      },
+      navy: {
+        name: "纯白海军蓝",
+        description: "纯白底色、海军蓝标题和按钮，搭配雅致蓝色边框。",
+      },
       copper: {
         name: "暖铜",
         description: "温暖炭灰、铜色标题与边框，搭配经典字体。",

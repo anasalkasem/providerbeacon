@@ -218,6 +218,6 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="r
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
 
-/* Legacy white-on-dark badges follow their surfaces in the two light themes. */
-:root:is([data-site-theme="summer"], [data-site-theme="pearl"]) :is(.bg-ink, .bg-graphite, .bg-carbon, .bg-secondary).text-white { color: var(--foreground); }
-:root:is([data-site-theme="summer"], [data-site-theme="pearl"]) .bg-success-muted.text-white { color: var(--success); }
+/* Legacy white-on-dark badges follow their surfaces in light themes. */
+:root:is([data-site-theme="summer"], [data-site-theme="pearl"], [data-site-theme="navy"]) :is(.bg-ink, .bg-graphite, .bg-carbon, .bg-secondary).text-white { color: var(--foreground); }
+:root:is([data-site-theme="summer"], [data-site-theme="pearl"], [data-site-theme="navy"]) .bg-success-muted.text-white { color: var(--success); }

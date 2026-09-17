@@ -102,8 +102,8 @@ const toggle = () =>
 describe("owner appearance panel", () => {
   it("previews every theme privately, cancels cleanly and clears preview on loss of owner access", async () => {
     await render();
-    expect(container.querySelectorAll("[data-theme-option]")).toHaveLength(4);
-    for (const theme of ["summer", "midnight", "pearl"]) {
+    expect(container.querySelectorAll("[data-theme-option]")).toHaveLength(6);
+    for (const theme of ["summer", "midnight", "pearl", "fire", "navy"]) {
       await act(() =>
         container
           .querySelector<HTMLButtonElement>(`[data-theme-option="${theme}"]`)!
@@ -111,7 +111,7 @@ describe("owner appearance panel", () => {
       );
       expect(document.documentElement.dataset.siteTheme).toBe(theme);
       expect(document.documentElement.classList.contains("dark")).toBe(
-        theme === "midnight"
+        theme === "midnight" || theme === "fire"
       );
       expect(
         container
