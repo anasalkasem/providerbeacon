@@ -13,7 +13,7 @@ export function pwaPlugin(): Plugin {
       const worker = fs.readFileSync(path.join(root, "sw.js"), "utf8");
       const hash = createHash("sha256").update(worker);
       for (const name of Object.keys(bundle).sort()) hash.update(name);
-      for (const name of ["offline.html", "offline.js", "manifest.json"])
+      for (const name of ["offline.html", "offline.js", "manifest.json", "icon-192.png"])
         hash.update(fs.readFileSync(path.join(root, "public", name)));
       this.emitFile({
         type: "asset",

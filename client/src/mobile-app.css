@@ -78,6 +78,16 @@
   text-decoration: underline;
   text-underline-offset: 6px;
 }
+.app-install-intro > .beacon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .65rem;
+  min-height: 48px;
+  padding: .8rem 1.5rem;
+  font-size: 1rem;
+  line-height: 1.5;
+}
 .app-install-details {
   border: 1px solid var(--border);
   border-radius: 28px;
