@@ -20,7 +20,7 @@ export default function InstallApp() {
       <div className="app-install-page container">
         <section className="app-install-intro">
           <img
-            src="/icon-192.png?v=pb1"
+            src="/icon-192.png?v=lighthouse-1"
             width="80"
             height="80"
             alt=""

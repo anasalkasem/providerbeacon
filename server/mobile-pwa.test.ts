@@ -55,7 +55,7 @@ describe("mobile app service worker", () => {
     expect(w.cache.addAll).toHaveBeenCalledWith([
       "/offline.html",
       "/offline.js",
-      "/icon-192.png?v=pb1",
+      "/icon-192.png?v=lighthouse-1",
     ]);
     expect(w.self.skipWaiting).not.toHaveBeenCalled();
   });
