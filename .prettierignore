@@ -33,3 +33,9 @@ pnpm-lock.yaml
 # OS files
 .DS_Store
 Thumbs.db
+
+# Pinned third-party Agent Skills: preserve upstream bytes and hashes
+/.agents/skills/
+/.agents/references/
+/.agents/agent-skills.lock.json
+/.agents/LICENSE.addy-agent-skills
