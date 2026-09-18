@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Search } from "lucide-react";
 import { PublicLayout } from "@/components/SiteChrome";
 import { ProviderCard } from "@/components/Marketplace";
+import ProviderPrices from "@/components/ProviderPrices";
 import { CataloguePagination } from "@/components/CataloguePagination";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
@@ -73,7 +74,10 @@ export default function Providers() {
             <h2 className="mb-6 text-2xl font-extrabold">{t.liveProfiles}</h2>
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
               {providers.map(p => (
-                <ProviderCard key={p.id} provider={p} />
+                <div key={p.id} className="flex min-w-0 flex-col gap-3">
+                  <ProviderCard provider={p} />
+                  <ProviderPrices summary={p.pricingSummary} slug={p.slug} name={p.name} />
+                </div>
               ))}
             </div>
             <CataloguePagination />

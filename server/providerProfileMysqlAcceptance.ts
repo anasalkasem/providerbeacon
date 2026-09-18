@@ -1,3 +1,4 @@
+import { providerCataloguePricingAcceptanceCases } from "./providerCataloguePricingMysqlAcceptance";
 import { describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import {
@@ -20,6 +21,7 @@ export function providerProfileAcceptanceCases(
   providerId: () => number,
   addIntegration: () => Promise<number>
 ) {
+  providerCataloguePricingAcceptanceCases(database, providerId, addIntegration);
   describe("provider public profile persistence", () => {
     const input = () => ({
       id: providerId(),

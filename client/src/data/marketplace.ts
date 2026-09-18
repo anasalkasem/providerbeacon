@@ -1,3 +1,5 @@
+import type { ProviderCataloguePricing } from "../../../shared/providerCataloguePricing";
+
 export type ProviderTier =
   | "Tier 1 Direct Source" | "Verified Enterprise" | "Certified Wholesale" | "Specialized Partner";
 
@@ -10,6 +12,7 @@ export type AuditSignals = {
 };
 
 export type Provider = {
+  pricingSummary?: ProviderCataloguePricing | null;
   apiConnected?: boolean;
   id: string;
   slug: string;
