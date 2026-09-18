@@ -30,6 +30,7 @@ export function useMessageAlerts({
   const current = useRef({ scope, data, readingId, onOpen, locale, enabled });
   current.current = { scope, data, readingId, onOpen, locale, enabled };
   const lastSound = useRef(0);
+  const soundAction = useRef(0);
   const toastId = `message-alert:${scope}`;
   useEffect(() => {
     tracker.current = createMessageAlertTracker();
@@ -52,6 +53,7 @@ export function useMessageAlerts({
     const chime = createMessageChime(setReady);
     engine.current = chime;
     return () => {
+      soundAction.current += 1;
       window.removeEventListener("storage", sync);
       chime.dispose();
       engine.current = null;
@@ -132,10 +134,12 @@ export function useMessageAlerts({
   async function enableSound() {
     if (!scope) return;
     const target = scope;
+    const action = ++soundAction.current;
     setSoundFailed(false);
     // resume() is called synchronously from the click, before any await.
     const unlocked = await engine.current?.unlock();
-    if (current.current.scope !== target) return;
+    if (current.current.scope !== target || action !== soundAction.current)
+      return;
     if (!unlocked) {
       setSoundFailed(true);
       return;
@@ -148,6 +152,8 @@ export function useMessageAlerts({
     engine.current?.play();
   }
   function mute() {
+    soundAction.current += 1;
+    engine.current?.stop();
     current.current.enabled = false;
     setEnabled(false);
     setSoundFailed(false);
