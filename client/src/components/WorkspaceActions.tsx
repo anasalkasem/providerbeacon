@@ -9,6 +9,8 @@ import type { PriceCurrency } from "../../../shared/pricing";
 
 const button =
   "inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-sm font-bold text-secondary-foreground hover:border-ring hover:text-foreground disabled:opacity-40";
+const validQuantity = (quantity: number) =>
+  Number.isSafeInteger(quantity) && quantity >= 1 && quantity <= 2147483647;
 function followReturnPath(quantity: number) {
   const params = new URLSearchParams(window.location.search);
   if (
@@ -45,7 +47,7 @@ export function FollowPrice({
     onError: e =>
       toast.error(e.message === "workspace_limit" ? t.limit : t.error),
   });
-  if (!member.data?.member)
+  if (!member.data?.member && validQuantity(quantity))
     return (
       <Link
         className={button}
@@ -62,9 +64,8 @@ export function FollowPrice({
       disabled={
         save.isPending ||
         saved ||
-        !Number.isSafeInteger(quantity) ||
-        quantity < 1 ||
-        quantity > 2147483647
+        !member.data?.member ||
+        !validQuantity(quantity)
       }
       onClick={() => save.mutate({ serviceId, quantity })}
     >
@@ -73,7 +74,7 @@ export function FollowPrice({
       ) : (
         <Bookmark className="size-4" />
       )}
-      {saved ? t.saved : t.save}
+      {!member.data?.member ? t.signIn : saved ? t.saved : t.save}
     </button>
   );
 }
@@ -100,7 +101,7 @@ export function SaveComparison({
     onError: e =>
       toast.error(e.message === "workspace_limit" ? t.limit : t.error),
   });
-  if (!member.data?.member)
+  if (!member.data?.member && validQuantity(quantity))
     return (
       <Link
         href={`/sign-in?next=${encodeURIComponent(`/compare?${new URLSearchParams({ services: serviceIds.join(","), quantity: String(quantity), currency })}`)}`}
@@ -114,10 +115,7 @@ export function SaveComparison({
     <button
       className={button}
       disabled={
-        save.isPending ||
-        !Number.isSafeInteger(quantity) ||
-        quantity < 1 ||
-        quantity > 2147483647
+        save.isPending || !member.data?.member || !validQuantity(quantity)
       }
       type="button"
       onClick={() =>
@@ -130,7 +128,7 @@ export function SaveComparison({
       }
     >
       <Bookmark className="size-4" />
-      {t.saveComparison}
+      {member.data?.member ? t.saveComparison : t.signIn}
     </button>
   );
 }

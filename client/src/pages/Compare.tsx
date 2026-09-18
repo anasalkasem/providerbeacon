@@ -17,7 +17,6 @@ import ConvertedQuote from "@/components/ConvertedQuote";
 import { assistantCopy } from "@/i18n/assistant";
 import { trpc } from "@/lib/trpc";
 import Services from "./Services";
-import { useState } from "react";
 import {
   comparablePrices,
   hasPricingBasis,
@@ -55,7 +54,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation, useSearch } from "wouter";
 
 export default function Compare() {
   const { locale } = useLocale();
@@ -63,51 +62,49 @@ export default function Compare() {
   const wt = workspaceCopy[locale];
   const ar = locale === "ar";
   const assistantText = assistantCopy[locale];
-  const initialQuantity = Number(
-    new URLSearchParams(window.location.search).get("quantity") ?? 1000
-  );
-  const [quantity, setQuantity] = useState(
-    Number.isSafeInteger(initialQuantity) && initialQuantity > 0
-      ? initialQuantity
-      : 1000
-  );
-  const requestedCurrency = new URLSearchParams(window.location.search).get(
-    "currency"
-  );
-  const [currency, setCurrency] = useState<PriceCurrency>(
-    priceCurrencies.includes(requestedCurrency as PriceCurrency)
-      ? (requestedCurrency as PriceCurrency)
-      : "USD"
-  );
-  const requestedIds = (
-    new URLSearchParams(window.location.search).get("services") ?? ""
+  const [, navigate] = useLocation();
+  const params = new URLSearchParams(useSearch());
+  const requestedQuantity = params.get("quantity");
+  const quantity =
+    requestedQuantity === null
+      ? 1000
+      : requestedQuantity.trim()
+        ? Number(requestedQuantity)
+        : NaN;
+  const validQuantity =
+    Number.isSafeInteger(quantity) && quantity > 0 && quantity <= 2147483647;
+  const requestedCurrency = params.get("currency");
+  const currency: PriceCurrency = priceCurrencies.includes(
+    requestedCurrency as PriceCurrency
   )
+    ? (requestedCurrency as PriceCurrency)
+    : "USD";
+  function updateOption(key: "quantity" | "currency", value: string) {
+    params.set(key, value);
+    navigate(`/compare?${params}${window.location.hash}`, {
+      replace: true,
+      state: window.history.state,
+    });
+  }
+  const requestedIds = (params.get("services") ?? "")
     .split(",")
     .filter(id => /^service-[1-9]\d{0,9}$/.test(id))
     .slice(0, 4);
   const convertedQuotes = trpc.assistant.quotes.useQuery(
     { serviceIds: requestedIds, quantity, currency },
     {
-      enabled:
-        requestedIds.length >= 2 &&
-        Number.isSafeInteger(quantity) &&
-        quantity > 0 &&
-        quantity <= 2147483647,
+      enabled: requestedIds.length >= 2 && validQuantity,
       staleTime: 10000,
       retry: false,
     }
   );
   const { providerFor, serviceFor } = useMarketplaceData();
   const { selected: compared, missing } = comparisonSelection(
-    new URLSearchParams(window.location.search).get("services"),
+    params.get("services"),
     serviceFor
   );
-  if (!new URLSearchParams(window.location.search).get("services"))
-    return new URLSearchParams(window.location.search).get("manual") === "1" ? (
-      <QuoteWorkbench />
-    ) : (
-      <Services />
-    );
+  if (!params.get("services"))
+    return params.get("manual") === "1" ? <QuoteWorkbench /> : <Services />;
   if (missing || compared.length < 2)
     return (
       <PublicLayout>
@@ -331,7 +328,11 @@ export default function Compare() {
     <PublicLayout>
       <section className="border-b border-border bg-card">
         <div className="container py-10">
-          <Button variant="ghost" asChild className="mb-5 -ms-3 text-muted-foreground">
+          <Button
+            variant="ghost"
+            asChild
+            className="mb-5 -ms-3 text-muted-foreground"
+          >
             <Link href="/services">
               <ArrowLeft className="size-4 rtl:rotate-180" />
               {t.backServices}
@@ -346,7 +347,9 @@ export default function Compare() {
               <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
                 {t.compareTitle}
               </h1>
-              <p className="mt-3 max-w-2xl text-secondary-foreground">{t.compareBody}</p>
+              <p className="mt-3 max-w-2xl text-secondary-foreground">
+                {t.compareBody}
+              </p>
             </div>
             <p className="text-sm font-semibold text-muted-foreground">
               <bdi>{formatNumber(locale, compared.length)}</bdi>{" "}
@@ -362,9 +365,7 @@ export default function Compare() {
               {assistantText.currency}
               <select
                 value={currency}
-                onChange={event =>
-                  setCurrency(event.target.value as PriceCurrency)
-                }
+                onChange={event => updateOption("currency", event.target.value)}
                 className="h-12 rounded-xl border border-border px-3"
                 dir="ltr"
               >
@@ -383,9 +384,24 @@ export default function Compare() {
                 max={2147483647}
                 step={1}
                 value={Number.isFinite(quantity) ? quantity : ""}
-                onChange={event => setQuantity(event.target.valueAsNumber)}
+                onChange={event => updateOption("quantity", event.target.value)}
+                aria-invalid={!validQuantity}
+                aria-describedby={
+                  !validQuantity ? "comparison-quantity-error" : undefined
+                }
                 className="h-12 w-48 rounded-xl border border-border px-3"
               />
+              {!validQuantity && (
+                <span
+                  id="comparison-quantity-error"
+                  role="alert"
+                  className="text-sm font-normal text-danger"
+                >
+                  {ar
+                    ? "أدخل عددًا صحيحًا من 1 إلى 2,147,483,647."
+                    : "Enter a whole number from 1 to 2,147,483,647."}
+                </span>
+              )}
             </label>
             <p className="max-w-xl text-sm leading-6 text-muted-foreground">
               {assistantText.priceNote}
@@ -417,7 +433,7 @@ export default function Compare() {
                 key={service.id}
                 service={service}
                 provider={providerFor(service)}
-                quantity={quantity}
+                quantity={validQuantity ? quantity : null}
                 lowest={isLowest(service)}
                 convertedTotal={quote?.convertedTotal}
                 fxAsOf={quote?.fxAsOf}
@@ -522,10 +538,7 @@ export default function Compare() {
                         key={service.id}
                         className="border-s border-border p-6"
                       >
-                        <Button
-                          asChild
-                          className="w-full rounded-xl"
-                        >
+                        <Button asChild className="w-full rounded-xl">
                           <Link href={`/providers/${provider.slug}`}>
                             {t.viewProvider}
                           </Link>

@@ -100,48 +100,50 @@ function Router() {
       }
     >
       {displayedPath => (
-        <Switch location={displayedPath}>
-          <Route path="/" component={Home} />
-          <Route path="/find" component={Find} />
-          <Route path="/install" component={InstallApp} />
-          <Route path="/groups" component={Groups} />
-          <Route path="/offers" component={ProviderOffers} />
-          <Route path="/vip" component={VipProviders} />
-          <Route path="/services" component={Services} />
-          <Route path="/services/:slug" component={ServiceGuide} />
-          <Route path="/directory/:slug" component={DirectoryProfile} />
-          <Route path="/compare" component={Compare} />
-          <Route path="/providers" component={Providers} />
-          <Route path="/providers/:slug" component={Provider} />
-          <Route path="/login" component={Login} />
-          <Route path="/sign-in" component={MemberSignIn} />
-          <Route path="/sign-up" component={MemberSignUp} />
-          <Route path="/account" component={MemberWorkspace} />
-          <Route path="/account/groups" component={MemberGroups} />
-          <Route path="/account/provider" component={ProviderBusiness} />
-          <Route path="/account/settings" component={MemberAccount} />
-          <Route path="/recover-account" component={MemberRecovery} />
-          <Route path="/privacy" component={MemberPrivacy} />
-          <Route path="/verify-email" component={MemberEmailPage} />
-          <Route path="/forgot-password" component={MemberEmailPage} />
-          <Route path="/reset-password" component={MemberEmailPage} />
-          <Route path="/unsubscribe" component={MemberEmailPage} />
-          <Route path="/setup" component={Setup} />
-          <Route path="/admin" component={Admin} />
-          <Route path="/admin/themes" component={AdminThemes} />
-          <Route path="/admin/security" component={Security} />
-          <Route path="/admin/email" component={AdminEmail} />
-          <Route path="/admin/groups" component={AdminGroups} />
-          <Route path="/admin/analytics" component={AdminProviderAnalytics} />
-          <Route
-            path="/admin/subscriptions"
-            component={AdminProviderBusiness}
-          />
-          <Route path="/admin/:module" component={AdminModule} />
-          <Route path="/team/accept" component={AcceptInvite} />
-          <Route path="/404" component={NotFound} />
-          <Route component={NotFound} />
-        </Switch>
+        <MarketplaceDataProvider>
+          <Switch location={displayedPath}>
+            <Route path="/" component={Home} />
+            <Route path="/find" component={Find} />
+            <Route path="/install" component={InstallApp} />
+            <Route path="/groups" component={Groups} />
+            <Route path="/offers" component={ProviderOffers} />
+            <Route path="/vip" component={VipProviders} />
+            <Route path="/services" component={Services} />
+            <Route path="/services/:slug" component={ServiceGuide} />
+            <Route path="/directory/:slug" component={DirectoryProfile} />
+            <Route path="/compare" component={Compare} />
+            <Route path="/providers" component={Providers} />
+            <Route path="/providers/:slug" component={Provider} />
+            <Route path="/login" component={Login} />
+            <Route path="/sign-in" component={MemberSignIn} />
+            <Route path="/sign-up" component={MemberSignUp} />
+            <Route path="/account" component={MemberWorkspace} />
+            <Route path="/account/groups" component={MemberGroups} />
+            <Route path="/account/provider" component={ProviderBusiness} />
+            <Route path="/account/settings" component={MemberAccount} />
+            <Route path="/recover-account" component={MemberRecovery} />
+            <Route path="/privacy" component={MemberPrivacy} />
+            <Route path="/verify-email" component={MemberEmailPage} />
+            <Route path="/forgot-password" component={MemberEmailPage} />
+            <Route path="/reset-password" component={MemberEmailPage} />
+            <Route path="/unsubscribe" component={MemberEmailPage} />
+            <Route path="/setup" component={Setup} />
+            <Route path="/admin" component={Admin} />
+            <Route path="/admin/themes" component={AdminThemes} />
+            <Route path="/admin/security" component={Security} />
+            <Route path="/admin/email" component={AdminEmail} />
+            <Route path="/admin/groups" component={AdminGroups} />
+            <Route path="/admin/analytics" component={AdminProviderAnalytics} />
+            <Route
+              path="/admin/subscriptions"
+              component={AdminProviderBusiness}
+            />
+            <Route path="/admin/:module" component={AdminModule} />
+            <Route path="/team/accept" component={AcceptInvite} />
+            <Route path="/404" component={NotFound} />
+            <Route component={NotFound} />
+          </Switch>
+        </MarketplaceDataProvider>
       )}
     </PageTransition>
   );
@@ -151,21 +153,19 @@ export default function App() {
   return (
     <ErrorBoundary>
       <LocaleProvider>
-        <MarketplaceDataProvider>
-          <TooltipProvider>
-            <SiteAppearanceProvider>
-              <MobileAppProvider>
-                <MobileViewport />
-                <Toaster richColors />
-                <Router />
-                <MessagingMount />
-                <Suspense fallback={null}>
-                  <BeaconAssistant />
-                </Suspense>
-              </MobileAppProvider>
-            </SiteAppearanceProvider>
-          </TooltipProvider>
-        </MarketplaceDataProvider>
+        <TooltipProvider>
+          <SiteAppearanceProvider>
+            <MobileAppProvider>
+              <MobileViewport />
+              <Toaster richColors />
+              <Router />
+              <MessagingMount />
+              <Suspense fallback={null}>
+                <BeaconAssistant />
+              </Suspense>
+            </MobileAppProvider>
+          </SiteAppearanceProvider>
+        </TooltipProvider>
       </LocaleProvider>
     </ErrorBoundary>
   );

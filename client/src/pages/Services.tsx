@@ -26,7 +26,7 @@ function ServicesPage() {
   const { locale } = useLocale();
   const ar = locale === "ar";
   const wt = workspaceCopy[locale];
-  const params = new URLSearchParams(window.location.search);
+  const params = new URLSearchParams(useSearch());
   const { services, setFilters, pagination, isLoading, source } =
     useMarketplaceData();
   const [, navigate] = useLocation();
