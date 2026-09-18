@@ -10,8 +10,11 @@ import {
   useSiteTheme,
 } from "./contexts/SiteAppearanceContext";
 import { PageTransition } from "./components/PageTransition";
+import { MobileAppProvider } from "./contexts/MobileAppContext";
+import { MobileViewport } from "./components/MobileApp";
 
 const Find = lazy(() => import("@/pages/Find"));
+const InstallApp = lazy(() => import("@/pages/InstallApp"));
 const Groups = lazy(() => import("@/pages/Groups"));
 const MemberGroups = lazy(() => import("@/pages/MemberGroups"));
 const AdminGroups = lazy(() => import("@/pages/AdminGroups"));
@@ -100,6 +103,7 @@ function Router() {
         <Switch location={displayedPath}>
           <Route path="/" component={Home} />
           <Route path="/find" component={Find} />
+          <Route path="/install" component={InstallApp} />
           <Route path="/groups" component={Groups} />
           <Route path="/offers" component={ProviderOffers} />
           <Route path="/vip" component={VipProviders} />
@@ -150,12 +154,15 @@ export default function App() {
         <MarketplaceDataProvider>
           <TooltipProvider>
             <SiteAppearanceProvider>
-              <Toaster richColors />
-              <Router />
-              <MessagingMount />
-              <Suspense fallback={null}>
-                <BeaconAssistant />
-              </Suspense>
+              <MobileAppProvider>
+                <MobileViewport />
+                <Toaster richColors />
+                <Router />
+                <MessagingMount />
+                <Suspense fallback={null}>
+                  <BeaconAssistant />
+                </Suspense>
+              </MobileAppProvider>
             </SiteAppearanceProvider>
           </TooltipProvider>
         </MarketplaceDataProvider>

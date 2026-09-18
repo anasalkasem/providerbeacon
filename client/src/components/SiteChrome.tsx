@@ -19,6 +19,7 @@ import { Link, useLocation } from "wouter";
 import { useSiteTheme } from "@/contexts/SiteAppearanceContext";
 import { usePageEntrance } from "@/hooks/usePageEntrance";
 import { useDisplayedPagePath } from "./PageTransition";
+import { InstallAppLink, MobileAppStatus, MobileNavigation } from "./MobileApp";
 
 export function Brand({ compact = false, inverse = false }: { compact?: boolean; inverse?: boolean }) {
   return (
@@ -77,6 +78,7 @@ export function SiteHeader() {
             </Link>
           ))}
         </nav>
+        <InstallAppLink compact />
         <div className="hidden items-center gap-2 sm:flex">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -109,13 +111,15 @@ export function SiteHeader() {
         <button
           className="touch-target rounded-lg p-2 text-secondary-foreground xl:hidden"
           aria-label={open ? "×" : p.mobileNav}
+          aria-expanded={open}
+          aria-controls="site-mobile-menu"
           onClick={() => setOpen(!open)}
         >
           {open ? <X /> : <Menu />}
         </button>
       </div>
       {open && (
-        <div className="border-t border-border bg-card p-4 xl:hidden">
+        <div id="site-mobile-menu" className="site-mobile-menu border-t border-border bg-card p-4 xl:hidden">
           <nav className="grid gap-2" aria-label={p.mobileNav}>
             {links.map(([href, label]) => (
               <Link
@@ -168,6 +172,7 @@ export function SiteFooter() {
           <p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">
             {p.footerTagline}
           </p>
+          <InstallAppLink />
         </div>
         <FooterColumn
           title={p.footerPlatform}
@@ -246,13 +251,15 @@ export function PublicLayout({
   const [path] = useLocation();
   usePageEntrance(main, useDisplayedPagePath(path), useSiteTheme() === "orbit");
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="public-layout min-h-screen bg-background text-foreground">
       <SiteHeader />
+      <MobileAppStatus />
       <main id="main-content" ref={main}>
         {showCatalogueNotice && <CatalogueNotice />}
         {children}
       </main>
       <SiteFooter />
+      <MobileNavigation />
     </div>
   );
 }
