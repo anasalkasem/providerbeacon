@@ -1,3 +1,4 @@
+import { startPushWorker } from "../messagePush";
 import { startServiceScreeningWorker } from "../serviceScreening";
 import { startMessagingWorker } from "../messageTranslation";
 import { registerImportedMediaRoutes, startImportedMediaCleanup } from "../importedMediaRoutes";
@@ -136,6 +137,7 @@ async function startServer() {
     server.on("close", startPriceAlertWorker());
     server.on("close", startServiceScreeningWorker());
     server.on("close", startMessagingWorker());
+    server.on("close", startPushWorker());
   });
 }
 

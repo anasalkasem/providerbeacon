@@ -1,3 +1,11 @@
+import { pushDeviceInput, pushSubscribeInput } from "../../shared/push";
+import {
+  pushIdentity,
+  pushStatus,
+  subscribePush,
+  unsubscribePush,
+  testDevicePush,
+} from "../messagePush";
 import { createHash, randomBytes } from "node:crypto";
 import { parse } from "cookie";
 import { TRPCError } from "@trpc/server";
@@ -90,6 +98,38 @@ const prepareInput = z
   .strict();
 
 export const messagingRouter = router({
+  push: router({
+    status: staff
+      .input(z.object({ scope: z.string().max(100) }).strict())
+      .query(async ({ ctx }) =>
+        pushStatus(await pushIdentity(ctx.chatActor, ctx.staffSessionToken))
+      ),
+    subscribe: staff
+      .input(pushSubscribeInput)
+      .mutation(async ({ ctx, input }) => {
+        const identity = await pushIdentity(
+          ctx.chatActor,
+          ctx.staffSessionToken
+        );
+        await messagingBudget(`push:${identity.actor}`, 12);
+        return subscribePush(identity, input);
+      }),
+    unsubscribe: staff
+      .input(pushDeviceInput)
+      .mutation(async ({ ctx, input }) =>
+        unsubscribePush(
+          await pushIdentity(ctx.chatActor, ctx.staffSessionToken),
+          input.endpoint,
+          input.identity
+        )
+      ),
+    test: staff.input(pushDeviceInput).mutation(async ({ ctx, input }) => {
+      const identity = await pushIdentity(ctx.chatActor, ctx.staffSessionToken);
+      await messagingBudget(`push-test:${identity.actor}`, 3);
+      return testDevicePush(identity, input.endpoint, input.identity);
+    }),
+  }),
+
   profile: staff.query(async ({ ctx }) => ({
     ...(await messagingProfile(ctx.user.id)),
     userId: ctx.user.id,
@@ -168,6 +208,41 @@ export const messagingRouter = router({
       closeChat(ctx.chatActor, input.conversationId)
     ),
   support: router({
+    push: router({
+      status: visitor
+        .input(z.object({ scope: z.string().max(100) }).strict())
+        .query(async ({ ctx }) =>
+          pushStatus(await pushIdentity(ctx.chatActor, ctx.staffSessionToken))
+        ),
+      subscribe: visitor
+        .input(pushSubscribeInput)
+        .mutation(async ({ ctx, input }) => {
+          const identity = await pushIdentity(
+            ctx.chatActor,
+            ctx.staffSessionToken
+          );
+          await messagingBudget(`push:${identity.actor}`, 12);
+          return subscribePush(identity, input);
+        }),
+      unsubscribe: visitor
+        .input(pushDeviceInput)
+        .mutation(async ({ ctx, input }) =>
+          unsubscribePush(
+            await pushIdentity(ctx.chatActor, ctx.staffSessionToken),
+            input.endpoint,
+            input.identity
+          )
+        ),
+      test: visitor.input(pushDeviceInput).mutation(async ({ ctx, input }) => {
+        const identity = await pushIdentity(
+          ctx.chatActor,
+          ctx.staffSessionToken
+        );
+        await messagingBudget(`push-test:${identity.actor}`, 3);
+        return testDevicePush(identity, input.endpoint, input.identity);
+      }),
+    }),
+
     current: publicChat.query(({ ctx }) =>
       visitorConversation(visitorKey(ctx))
     ),

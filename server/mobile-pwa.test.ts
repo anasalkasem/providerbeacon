@@ -22,7 +22,12 @@ function worker() {
   const fetch = vi.fn(async (_request: any) => new Response("fresh network"));
   const self = {
     location: { origin },
-    clients: { claim: vi.fn(async () => {}) },
+    clients: {
+      claim: vi.fn(async () => {}),
+      matchAll: vi.fn(async () => [] as any[]),
+      openWindow: vi.fn(async () => {}),
+    },
+    registration: { showNotification: vi.fn(async () => {}) },
     skipWaiting: vi.fn(async () => {}),
     addEventListener: (name: string, handler: any) =>
       handlers.set(name, handler),
@@ -49,6 +54,55 @@ function worker() {
   return { dispatch, fetch, caches, cache, self };
 }
 describe("mobile app service worker", () => {
+  it("shows a private push while closed and safely opens its destination", async () => {
+    const w = worker();
+    await w.dispatch("push", {
+      data: {
+        json: () => ({
+          body: "A new message",
+          url: "/admin?messageThread=test",
+          tag: "providerbeacon-messages",
+        }),
+      },
+    });
+    expect(w.self.registration.showNotification).toHaveBeenCalledWith(
+      "ProviderBeacon",
+      expect.objectContaining({
+        body: "A new message",
+        silent: false,
+        renotify: false,
+        icon: "/icon-192.png?v=lighthouse-1",
+      })
+    );
+    const close = vi.fn();
+    await w.dispatch("notificationclick", {
+      notification: { close, data: { url: "https://evil.example/phishing" } },
+    });
+    expect(close).toHaveBeenCalledOnce();
+    expect(w.self.clients.openWindow).toHaveBeenCalledWith(origin + "/");
+  });
+  it("silences the system alert while a page is visible and reuses an existing window", async () => {
+    const focus = vi.fn(async () => {}),
+      navigate = vi.fn(async () => ({ focus }));
+    const w = worker();
+    w.self.clients.matchAll.mockResolvedValue([
+      { visibilityState: "visible", url: origin + "/", navigate },
+    ]);
+    await w.dispatch("push", {
+      data: { json: () => ({ body: "New message" }) },
+    });
+    expect(w.self.registration.showNotification).toHaveBeenCalledWith(
+      "ProviderBeacon",
+      expect.objectContaining({ silent: true })
+    );
+    await w.dispatch("notificationclick", {
+      notification: { close: vi.fn(), data: { url: "/admin" } },
+    });
+    expect(navigate).toHaveBeenCalledWith(origin + "/admin");
+    expect(focus).toHaveBeenCalledOnce();
+    expect(w.self.clients.openWindow).not.toHaveBeenCalled();
+  });
+
   it("installs only the small public offline document and waits for update approval", async () => {
     const w = worker();
     await w.dispatch("install");

@@ -1,3 +1,4 @@
+import { pushAcceptanceCases } from "./pushMysqlAcceptance";
 import { trustAcceptanceCases } from "./trustMysqlAcceptance";
 import { messagingAcceptanceCases } from "./messagingMysqlAcceptance";
 import { appearanceAcceptanceCases } from "./appearanceMysqlAcceptance";
@@ -84,6 +85,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   trustAcceptanceCases(() => state.db, () => actorId, () => providerId, addIntegration);
   appearanceAcceptanceCases(() => state.db, () => actorId);
   messagingAcceptanceCases(() => state.db, () => actorId);
+  pushAcceptanceCases(() => state.db, () => actorId);
   memberAcceptanceCases(() => state.db, () => actorId);
   workspaceAcceptanceCases(() => state.db, () => providerId);
   priceAlertAcceptanceCases(() => state.db, () => providerId);
