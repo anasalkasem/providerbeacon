@@ -1,3 +1,4 @@
+import PushControls from "./PushControls";
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, Plus, Search, Users, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -54,6 +55,16 @@ export function Messenger({ userId }: { userId: number }) {
     [reading, setReading] = useState(false),
     [failure, setFailure] = useState<string | null>(null);
   const launcher = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search),
+      id = params.get("messageThread");
+    if (id && /^[a-f0-9-]{36}$/i.test(id)) {
+      setActive(id);
+      setTab(params.get("messageKind") === "support" ? "customers" : "team");
+      setOpen(true);
+    }
+  }, []);
+
   const profile = trpc.messaging.profile.useQuery(undefined, {
     retry: false,
     staleTime: 30000,
@@ -179,6 +190,7 @@ export function Messenger({ userId }: { userId: number }) {
             </button>
           </header>
           <MessageAlertControls alerts={alerts} />
+          <PushControls kind="staff" scope={`staff:${userId}`} />
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-b bg-muted px-4 py-3 text-xs sm:text-sm">
             <label className="flex items-center gap-2">
               {t.language}

@@ -1,3 +1,4 @@
+import { queueMessagePush, queuePushActors } from "./messagePush";
 import { randomUUID } from "node:crypto";
 import {
   and,
@@ -303,6 +304,7 @@ async function appendMessage(
     .set({ lastMessageId: id, updatedAt: new Date() })
     .where(eq(chats.id, chat.id));
   await queueForRecipients(tx, chat, row);
+  await queueMessagePush(tx, chat, row);
   return row;
 }
 
@@ -466,6 +468,7 @@ async function assign(
     .insert(members)
     .values({ conversationId: chat.id, userId })
     .onDuplicateKeyUpdate({ set: { userId } });
+  await queuePushActors(tx, [`s:${userId}`], chat.lastMessageId);
   await tx
     .update(prefs)
     .set({ lastAssignedAt: new Date() })

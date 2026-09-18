@@ -1,3 +1,4 @@
+import PushControls from "./PushControls";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
@@ -114,6 +115,14 @@ function AssistantChat({ path }: { path: string }) {
       setOpen(true);
     },
   });
+
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get("supportThread");
+    if (id && id === support.data?.id) {
+      setSupportId(id);
+      setOpen(true);
+    }
+  }, [support.data?.id]);
   const handoff = trpc.messaging.support.start.useMutation({ retry: false });
   const [draft, setDraft] = useState("");
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -335,7 +344,15 @@ function AssistantChat({ path }: { path: string }) {
               <X className="size-5" />
             </button>
           </header>
-          {support.data?.id && <MessageAlertControls alerts={alerts} />}
+          {support.data?.id && (
+            <>
+              <MessageAlertControls alerts={alerts} />
+              <PushControls
+                kind="visitor"
+                scope={`visitor:${support.data.id}`}
+              />
+            </>
+          )}
           {supportId ? (
             <MessageThread
               key={supportId}
