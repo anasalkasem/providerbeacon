@@ -1,0 +1,90 @@
+name: Vendor pinned Agent Skills (one-time branch import)
+
+on:
+  push:
+    branches: [chore/agent-skills-0-6-10]
+    paths: [.github/workflows/vendor-agent-skills-once.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    if: github.repository == 'anasalkasem/providerbeacon' && github.ref == 'refs/heads/chore/agent-skills-0-6-10'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: chore/agent-skills-0-6-10
+      - name: Import immutable upstream files without executing vendor code
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import subprocess
+          import tempfile
+          from pathlib import Path, PurePosixPath
+
+          commit = "c004a74784a08295d52749b04cda634125b9a581"
+          root = Path.cwd()
+          records = []
+          with tempfile.TemporaryDirectory() as temporary:
+              upstream = Path(temporary)
+              def git(*args):
+                  return subprocess.check_output(["git", "-C", str(upstream), *args])
+              git("init", "--quiet")
+              git("remote", "add", "origin", "https://github.com/addyosmani/agent-skills.git")
+              git("fetch", "--quiet", "--depth", "1", "origin", commit)
+              assert git("rev-parse", "FETCH_HEAD").decode().strip() == commit
+              assert git("rev-parse", f"{commit}:skills").decode().strip() == "5e9cc7920533bc45f2e502cc2ebaca5992593162"
+              assert git("rev-parse", f"{commit}:references").decode().strip() == "ed1e64abbb514017756a68491e3cbdf4fe98d90b"
+              entries = git("ls-tree", "-rz", "--full-tree", commit, "skills", "references", "LICENSE")
+              for entry in entries.split(b"\0"):
+                  if not entry:
+                      continue
+                  metadata, raw_path = entry.split(b"\t", 1)
+                  mode, kind, blob = metadata.decode().split()
+                  source = raw_path.decode("utf-8")
+                  relative = PurePosixPath(source)
+                  assert not relative.is_absolute() and ".." not in relative.parts, source
+                  assert kind == "blob" and mode in ("100644", "100755"), source
+                  assert source == "LICENSE" or source.startswith(("skills/", "references/")), source
+                  assert source == "LICENSE" or source.endswith(".md") or source == "skills/idea-refine/scripts/idea-refine.sh", source
+                  data = git("show", f"{commit}:{source}")
+                  assert len(data) < 2_000_000 and b"\0" not in data, source
+                  data.decode("utf-8")
+                  name = ".agents/LICENSE.addy-agent-skills" if source == "LICENSE" else f".agents/{source}"
+                  destination = root / name
+                  assert not destination.exists(), f"Refusing overwrite: {name}"
+                  destination.parent.mkdir(parents=True, exist_ok=True)
+                  destination.write_bytes(data)
+                  os.chmod(destination, int(mode[-3:], 8))
+                  records.append({"path": name, "source_path": source, "sha256": hashlib.sha256(data).hexdigest(), "git_blob_sha": blob, "mode": mode})
+          skills = sorted((root / ".agents/skills").glob("*/SKILL.md"))
+          assert len(skills) == 25, f"Expected 25 skills, got {len(skills)}"
+          manifest = {"schema_version": 1, "source": {"repository": "addyosmani/agent-skills", "version": "0.6.10", "commit": commit}, "skill_count": len(skills), "files": sorted(records, key=lambda record: record["path"])}
+          (root / ".agents/agent-skills.lock.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          print(f"Copied {len(records)} pinned upstream files containing {len(skills)} skills.")
+          PY
+          python3 .agents/verify-installation.py
+      - name: Commit only the vendored snapshot to the installation branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/chore/agent-skills-0-6-10
+          git add -- .agents
+          python3 - <<'PY'
+          import subprocess
+          paths = subprocess.check_output(["git", "diff", "--cached", "--name-only", "-z"]).decode().split("\0")
+          assert any(paths), "Nothing was imported"
+          assert all(not path or path.startswith(".agents/") for path in paths), paths
+          PY
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git commit -m "Vendor Agent Skills 0.6.10 with pinned hashes and shared references"
+          git push origin HEAD:refs/heads/chore/agent-skills-0-6-10
