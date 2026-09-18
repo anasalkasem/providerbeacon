@@ -2,11 +2,20 @@
   "name": "ProviderBeacon",
   "short_name": "ProviderBeacon",
   "description": "Compare providers with confidence.",
-  "start_url": "/",
+  "id": "/",
+  "scope": "/",
+  "start_url": "/find?source=pwa",
   "display": "standalone",
   "background_color": "#080b10",
   "theme_color": "#080b10",
   "lang": "en",
+  "categories": ["business", "utilities"],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    { "name": "Search providers", "url": "/find?source=pwa-shortcut" },
+    { "name": "Saved services", "url": "/account?source=pwa-shortcut" },
+    { "name": "Compare offers", "url": "/compare?source=pwa-shortcut" }
+  ],
   "icons": [
     {
       "src": "/icon-192.png?v=pb1",

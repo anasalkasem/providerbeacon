@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
+import { pwaPlugin } from "./scripts/pwaPlugin";
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
@@ -152,7 +153,7 @@ function vitePluginManusDebugCollector(): Plugin {
 
 export default defineConfig(({ command }) => ({
   plugins: [
-    react(), tailwindcss(),
+    react(), tailwindcss(), pwaPlugin(),
     ...(command === "serve" ? [jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()] : []),
   ],
   resolve: {
