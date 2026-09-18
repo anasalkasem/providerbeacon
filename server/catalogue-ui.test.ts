@@ -30,7 +30,7 @@ vi.mock("@/components/SiteChrome", () => ({ PublicLayout: ({ children }: any) =>
 vi.mock("wouter", () => ({
   Link: ({ href, children, ...props }: any) => React.createElement("a", { ...props, href }, children),
   useRoute: () => [true, { slug: state.slug }], useLocation: () => ["/", () => {}],
-  useSearch: () => "",
+  useSearch: () => window.location.search,
 }));
 import { ProviderCard, ScoreRing, ServiceRow } from "../client/src/components/Marketplace";
 import Home from "../client/src/pages/Home";
