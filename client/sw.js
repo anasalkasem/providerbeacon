@@ -2,7 +2,7 @@
    always go to the network, including authenticated GET requests. */
 const CACHE_NAME = "providerbeacon-offline-__BUILD_ID__";
 const OFFLINE_URL = "/offline.html";
-const OFFLINE_ASSETS = [OFFLINE_URL, "/offline.js", "/icon-192.png?v=pb1"];
+const OFFLINE_ASSETS = [OFFLINE_URL, "/offline.js", "/icon-192.png?v=lighthouse-1"];
 
 self.addEventListener("install", event => {
   event.waitUntil(

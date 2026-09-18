@@ -94,12 +94,9 @@
   .skip-link:focus { top: 1rem; }
   .touch-target { min-width: 44px; min-height: 44px; }
   .brand-link { gap: .35rem; display: inline-flex; flex-shrink: 0; align-items: center; overflow: visible; white-space: nowrap; }
-  .brand-link img { object-fit: contain; object-position: left center; max-width: 230px; }
-  [dir="rtl"] .brand-link img { object-position: right center; }
-  .brand-mark { color: var(--highlight); filter: drop-shadow(0 0 7px color-mix(in srgb, var(--highlight) 20%, transparent)); }
+  .brand-mark { display: block; flex-shrink: 0; object-fit: contain; border-radius: .6rem; }
   .brand-wordmark { color: var(--foreground); }
   .brand-wordmark-accent { color: var(--heading); }
-  .brand-inverse .brand-mark { color: var(--highlight); }
   .brand-inverse .brand-wordmark-accent { color: var(--heading); }
   .brand-inverse .brand-wordmark { color: var(--foreground); }
   .site-header { background: color-mix(in srgb, var(--card) 96%, transparent); border-color: var(--border); }
