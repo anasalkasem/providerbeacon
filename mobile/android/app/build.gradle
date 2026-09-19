@@ -1,0 +1,87 @@
+/*
+ * Copyright 2019 Google Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+plugins { id 'com.android.application' }
+
+def signingValues = ['PB_ANDROID_KEYSTORE', 'PB_ANDROID_STORE_PASSWORD', 'PB_ANDROID_KEY_ALIAS', 'PB_ANDROID_KEY_PASSWORD'].collect { System.getenv(it) }
+if (signingValues.any { it } && !signingValues.every { it }) {
+    throw new GradleException('Supply all four Android signing environment variables or none.')
+}
+
+android {
+    namespace 'com.providerbeacon.app'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'com.providerbeacon.app'
+        minSdk 23
+        targetSdk 36
+        versionCode 1
+        versionName '1.0.0'
+        resValue 'string', 'appName', 'ProviderBeacon'
+        resValue 'string', 'launcherName', 'ProviderBeacon'
+        resValue 'string', 'hostName', 'providerbeacon.com'
+        resValue 'string', 'launchUrl', 'https://providerbeacon.com/find?source=android'
+        resValue 'string', 'webManifestUrl', 'https://providerbeacon.com/manifest.json'
+        resValue 'string', 'generatorApp', 'bubblewrap-1.25.0'
+        resValue 'string', 'fallbackType', 'customtabs'
+        resValue 'string', 'orientation', 'any'
+        resValue 'bool', 'enableNotification', 'true'
+        resValue 'bool', 'enableSiteSettingsShortcut', 'true'
+        resValue 'integer', 'splashScreenFadeOutDuration', '150'
+        ['colorPrimary', 'colorPrimaryDark', 'navigationColor', 'navigationColorDark',
+         'navigationDividerColor', 'navigationDividerColorDark', 'backgroundColor'].each {
+            resValue 'color', it, '#080B10'
+        }
+    }
+    flavorDimensions += 'distribution'
+    productFlavors {
+        beta {
+            dimension 'distribution'
+            applicationIdSuffix '.beta'
+            versionNameSuffix '-beta'
+            resValue 'string', 'appName', 'ProviderBeacon Beta'
+            resValue 'string', 'launcherName', 'ProviderBeacon Beta'
+        }
+        production { dimension 'distribution' }
+    }
+    signingConfigs {
+        if (signingValues.every { it }) {
+            release {
+                storeFile file(signingValues[0])
+                storePassword signingValues[1]
+                keyAlias signingValues[2]
+                keyPassword signingValues[3]
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt')
+            if (signingValues.every { it }) signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    lint { abortOnError true }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.6.2'
+    testImplementation 'junit:junit:4.13.2'
+}

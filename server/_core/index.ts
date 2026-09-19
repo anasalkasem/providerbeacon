@@ -24,6 +24,7 @@ import { registerEmailRoutes } from "../emailRoutes";
 import { startEmailWorker } from "../emailDb";
 import { startPriceAlertWorker } from "../priceAlerts";
 import { registerPaymentRoutes } from "../paymentRoutes";
+import { registerMobileAssociationRoutes } from "../mobileAssociation";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -48,6 +49,7 @@ async function startServer() {
   if (process.env.NODE_ENV === "production") await runMigrations();
   const app = express();
   const server = createServer(app);
+  registerMobileAssociationRoutes(app);
   registerProviderAnalyticsRoutes(app);
   registerImportedMediaRoutes(app);
   registerEmailRoutes(app);

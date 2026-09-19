@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="search" android:enabled="true"
+        android:icon="@mipmap/ic_launcher" android:shortcutShortLabel="@string/shortcut_search">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.providerbeacon.app"
+            android:targetClass="com.providerbeacon.app.LauncherActivity"
+            android:data="https://providerbeacon.com/find?source=android-shortcut" />
+    </shortcut>
+    <shortcut android:shortcutId="compare" android:enabled="true"
+        android:icon="@mipmap/ic_launcher" android:shortcutShortLabel="@string/shortcut_compare">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.providerbeacon.app"
+            android:targetClass="com.providerbeacon.app.LauncherActivity"
+            android:data="https://providerbeacon.com/compare?source=android-shortcut" />
+    </shortcut>
+    <shortcut android:shortcutId="saved" android:enabled="true"
+        android:icon="@mipmap/ic_launcher" android:shortcutShortLabel="@string/shortcut_saved">
+        <intent android:action="android.intent.action.VIEW" android:targetPackage="com.providerbeacon.app"
+            android:targetClass="com.providerbeacon.app.LauncherActivity"
+            android:data="https://providerbeacon.com/account?source=android-shortcut" />
+    </shortcut>
+</shortcuts>
