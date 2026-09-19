@@ -197,6 +197,11 @@
   color: #fff;
   text-decoration: underline;
 }
+.studio-showcase,
+.theme-thumbnail--studio {
+  /* Decorative light only, echoing the existing lighthouse lantern. */
+  --studio-beacon-blue: 24 137 255;
+}
 .studio-showcase {
   position: relative;
   max-width: 1140px;
@@ -207,11 +212,11 @@
   position: absolute;
   z-index: -1;
   inset-inline: 3%;
-  top: -0.5rem;
+  top: -2rem;
   height: 350px;
   pointer-events: none;
   overflow: hidden;
-  mask-image: linear-gradient(transparent, #000 18%, #000 40%, transparent 90%);
+  mask-image: linear-gradient(transparent, #000 14%, #000 48%, transparent 90%);
 }
 .studio-horizon img {
   display: block;
@@ -220,22 +225,34 @@
   object-fit: cover;
   object-position: center;
   filter: grayscale(1);
-  opacity: 0.21;
+  opacity: 0.34;
+}
+.studio-horizon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 50% 24%,
+    rgb(var(--studio-beacon-blue) / 0.58),
+    rgb(var(--studio-beacon-blue) / 0.3) 38%,
+    transparent 75%
+  );
+  mix-blend-mode: screen;
 }
 .studio-showcase::before {
   content: "";
   position: absolute;
   pointer-events: none;
   z-index: -1;
-  inset-inline: 9%;
-  top: 0;
-  height: 220px;
+  inset-inline: -3%;
+  top: -2rem;
+  height: 250px;
   border-radius: 50%;
   background: radial-gradient(
-    ellipse,
-    #ffffff25,
-    #ffffff0d 35%,
-    transparent 70%
+    ellipse at 50% 35%,
+    rgb(var(--studio-beacon-blue) / 0.48),
+    rgb(var(--studio-beacon-blue) / 0.22) 36%,
+    transparent 72%
   );
 }
 .studio-product-frame {
@@ -246,7 +263,8 @@
   border-radius: 14px;
   background: #0d0d0f;
   box-shadow:
-    0 -1px 0 #ffffff80,
+    0 -1px 0 #9dd9ffb3,
+    0 -14px 58px -18px rgb(var(--studio-beacon-blue) / 0.42),
     0 0 0 6px #ffffff04,
     0 24px 64px #0009;
 }
@@ -462,7 +480,11 @@
   inset-inline: 10%;
   bottom: 3px;
   height: 70px;
-  background: radial-gradient(ellipse, #ffffff40, transparent 68%);
+  background: radial-gradient(
+    ellipse,
+    rgb(var(--studio-beacon-blue) / 0.65),
+    transparent 68%
+  );
 }
 .theme-thumbnail--studio .theme-thumbnail-offers {
   bottom: -18px;
