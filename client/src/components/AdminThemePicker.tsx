@@ -3,6 +3,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { siteThemeCopy } from "@/i18n/siteThemes";
 import { workspaceCopy } from "@/i18n/workspace";
 import { landingCopy } from "@/i18n/landing";
+import { studioCopy } from "@/i18n/studio";
 import { siteThemeIds, type SiteThemeId } from "../../../shared/siteThemes";
 
 export default function AdminThemePicker({
@@ -18,10 +19,16 @@ export default function AdminThemePicker({
   const t = siteThemeCopy[locale];
   const w = workspaceCopy[locale];
   const l = landingCopy[locale];
+  const s = studioCopy[locale];
+  const palettes: Record<SiteThemeId, string[]> = {
+    beacon: ["#080b10", "#fff", "#0285fe", "#1e2f48"],
+    orbit: ["#000", "#fff", "#8052ff", "#9adfff"],
+    studio: ["#000", "#fff", "#a3a3a3", "#343438"],
+  };
   return (
     <div className="border-b border-border p-5">
       <p className="mb-5 text-sm leading-7">{t.scope}</p>
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
         {siteThemeIds.map(theme => (
           <article
             key={theme}
@@ -47,13 +54,21 @@ export default function AdminThemePicker({
               </div>
               <div className="theme-thumbnail-copy">
                 <strong>
-                  {theme === "orbit" ? t.hero.title : w.title}
+                  {theme === "studio"
+                    ? s.title
+                    : theme === "orbit"
+                      ? t.hero.title
+                      : w.title}
                   <br />
-                  {theme === "orbit" ? t.hero.accent : w.accent}
+                  {theme === "studio"
+                    ? s.accent
+                    : theme === "orbit"
+                      ? t.hero.accent
+                      : w.accent}
                 </strong>
                 <div className="theme-thumbnail-search">
                   <span>{w.ask}</span>
-                  <b>{l.search}</b>
+                  <b>{theme === "studio" ? s.start : l.search}</b>
                 </div>
               </div>
               {theme === "orbit" && (
@@ -91,20 +106,9 @@ export default function AdminThemePicker({
                 {t.themes[theme].description}
               </p>
               <div className="theme-palette" aria-hidden="true">
-                <i
-                  style={{ background: theme === "orbit" ? "#000" : "#080b10" }}
-                />
-                <i style={{ background: "#fff" }} />
-                <i
-                  style={{
-                    background: theme === "orbit" ? "#8052ff" : "#0285fe",
-                  }}
-                />
-                <i
-                  style={{
-                    background: theme === "orbit" ? "#9adfff" : "#1e2f48",
-                  }}
-                />
+                {palettes[theme].map(color => (
+                  <i key={color} style={{ background: color }} />
+                ))}
               </div>
               <div className="theme-choice-actions mt-5 flex flex-wrap items-center gap-3">
                 <button

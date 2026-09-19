@@ -67,9 +67,11 @@ function setup(reduced = false) {
   };
 }
 describe("Orbit theme motion and preview boundaries", () => {
-  it("allows only the two supported local previews and leaves retired choices on Classic", () => {
+  it("allows only supported local previews and leaves retired choices on Classic", () => {
     expect(readThemePreview("orbit")).toBe("orbit");
     expect(readThemePreview("beacon")).toBe("beacon");
+    expect(readThemePreview("studio")).toBe("studio");
+    expect(resolveSiteTheme("studio")).toBe("studio");
     for (const value of [null, "fire", "navy", "unknown", {}]) {
       expect(readThemePreview(value)).toBeNull();
       expect(resolveSiteTheme(value)).toBe("beacon");

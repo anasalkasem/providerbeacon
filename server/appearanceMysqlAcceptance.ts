@@ -186,44 +186,50 @@ export function appearanceAcceptanceCases(
         )
       );
     });
-    it("persists Orbit for fresh visitors and can restore Classic without touching glow", async () => {
-      await role("owner");
-      const orbit = await caller().admin.appearance.update({
-        theme: "orbit",
-        revision: 1,
-      });
-      expect(orbit).toEqual({
-        theme: "orbit",
-        edgeGlowEnabled: true,
-        revision: 2,
-      });
-      expect(await caller(false).appearance.public()).toEqual({
-        theme: "orbit",
-        edgeGlowEnabled: true,
-      });
-      expect(
-        await caller().admin.appearance.update({ theme: "orbit", revision: 2 })
-      ).toEqual(orbit);
-      await expect(
-        caller(true, "https://other.example").admin.appearance.update({
+    it.each(["orbit", "studio"] as const)(
+      "persists %s for fresh visitors and restores Classic without touching glow",
+      async theme => {
+        await role("owner");
+        const saved = await caller().admin.appearance.update({
+          theme,
+          revision: 1,
+        });
+        expect(saved).toEqual({
+          theme,
+          edgeGlowEnabled: true,
+          revision: 2,
+        });
+        expect(await caller(false).appearance.public()).toEqual({
+          theme,
+          edgeGlowEnabled: true,
+        });
+        expect(
+          await caller().admin.appearance.update({ theme, revision: 2 })
+        ).toEqual(saved);
+        await expect(
+          caller(true, "https://other.example").admin.appearance.update({
+            theme: "beacon",
+            revision: 2,
+          })
+        ).rejects.toMatchObject({ code: "FORBIDDEN" });
+        await caller().admin.appearance.update({
           theme: "beacon",
           revision: 2,
-        })
-      ).rejects.toMatchObject({ code: "FORBIDDEN" });
-      await caller().admin.appearance.update({ theme: "beacon", revision: 2 });
-      expect(await caller(false).appearance.public()).toEqual({
-        theme: "beacon",
-        edgeGlowEnabled: true,
-      });
-      const entries = await database()
-        .select()
-        .from(auditEntries)
-        .where(eq(auditEntries.action, "appearance.theme_changed"));
-      expect(entries.map((entry: any) => entry.metadata)).toEqual([
-        { before: "beacon", after: "orbit" },
-        { before: "orbit", after: "beacon" },
-      ]);
-    });
+        });
+        expect(await caller(false).appearance.public()).toEqual({
+          theme: "beacon",
+          edgeGlowEnabled: true,
+        });
+        const entries = await database()
+          .select()
+          .from(auditEntries)
+          .where(eq(auditEntries.action, "appearance.theme_changed"));
+        expect(entries.map((entry: any) => entry.metadata)).toEqual([
+          { before: "beacon", after: theme },
+          { before: theme, after: "beacon" },
+        ]);
+      }
+    );
     it("rejects invalid themes, empty patches and concurrent stale appearance changes", async () => {
       await role("owner");
       for (const input of [

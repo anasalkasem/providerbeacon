@@ -108,7 +108,7 @@ describe("owner appearance panel", () => {
       Array.from(container.querySelectorAll("[data-theme-option]")).map(el =>
         el.getAttribute("data-theme-option")
       )
-    ).toEqual(["beacon", "orbit"]);
+    ).toEqual(["beacon", "orbit", "studio"]);
     expect(
       container.querySelector<HTMLButtonElement>('[data-apply-theme="beacon"]')
         ?.disabled
@@ -131,66 +131,74 @@ describe("owner appearance panel", () => {
     }
     expect(state.save).not.toHaveBeenCalled();
   });
-  it("only publishes Orbit after the owner saves successfully", async () => {
-    await render();
-    await act(() =>
-      container
-        .querySelector<HTMLButtonElement>('[data-apply-theme="orbit"]')!
-        .click()
-    );
-    expect(state.save).toHaveBeenCalledWith({ theme: "orbit", revision: 1 });
-    expect(document.documentElement.dataset.siteTheme).toBe("beacon");
-    state.pending = true;
-    await render();
-    expect(
-      container.querySelector<HTMLButtonElement>('[data-apply-theme="orbit"]')!
-        .disabled
-    ).toBe(true);
-    state.pending = false;
-    await act(() =>
-      state.options.onSuccess(
-        { edgeGlowEnabled: true, theme: "orbit", revision: 2 },
-        { theme: "orbit", revision: 1 }
-      )
-    );
-    await render();
-    expect(document.documentElement.dataset.siteTheme).toBe("orbit");
-    expect(state.publicCache).toHaveBeenCalledWith(undefined, {
-      edgeGlowEnabled: true,
-      theme: "orbit",
-    });
-    expect(
-      container.querySelector<HTMLButtonElement>('[data-apply-theme="orbit"]')!
-        .disabled
-    ).toBe(true);
-    await act(() =>
-      container
-        .querySelector<HTMLButtonElement>('[data-apply-theme="beacon"]')!
-        .click()
-    );
-    expect(state.save).toHaveBeenLastCalledWith({
-      theme: "beacon",
-      revision: 2,
-    });
-  });
-  it("keeps URL previews local and exits to the saved design without any write", async () => {
-    window.history.replaceState(null, "", "/?previewTheme=orbit");
-    await render();
-    expect(document.documentElement.dataset.siteTheme).toBe("orbit");
-    expect(container.textContent).toContain("في هذه النافذة فقط");
-    expect(
-      container.querySelector('a[href="/?previewTheme=orbit"]')
-    ).not.toBeNull();
-    expect(state.save).not.toHaveBeenCalled();
-    await act(() =>
-      container
-        .querySelector<HTMLButtonElement>(".theme-preview-banner button")!
-        .click()
-    );
-    expect(document.documentElement.dataset.siteTheme).toBe("beacon");
-    expect(window.location.search).toBe("");
-    expect(state.save).not.toHaveBeenCalled();
-  });
+  it.each(["orbit", "studio"] as const)(
+    "only publishes %s after the owner saves successfully",
+    async theme => {
+      await render();
+      await act(() =>
+        container
+          .querySelector<HTMLButtonElement>(`[data-apply-theme="${theme}"]`)!
+          .click()
+      );
+      expect(state.save).toHaveBeenCalledWith({ theme, revision: 1 });
+      expect(document.documentElement.dataset.siteTheme).toBe("beacon");
+      state.pending = true;
+      await render();
+      expect(
+        container.querySelector<HTMLButtonElement>(
+          `[data-apply-theme="${theme}"]`
+        )!.disabled
+      ).toBe(true);
+      state.pending = false;
+      await act(() =>
+        state.options.onSuccess(
+          { edgeGlowEnabled: true, theme, revision: 2 },
+          { theme, revision: 1 }
+        )
+      );
+      await render();
+      expect(document.documentElement.dataset.siteTheme).toBe(theme);
+      expect(state.publicCache).toHaveBeenCalledWith(undefined, {
+        edgeGlowEnabled: true,
+        theme,
+      });
+      expect(
+        container.querySelector<HTMLButtonElement>(
+          `[data-apply-theme="${theme}"]`
+        )!.disabled
+      ).toBe(true);
+      await act(() =>
+        container
+          .querySelector<HTMLButtonElement>('[data-apply-theme="beacon"]')!
+          .click()
+      );
+      expect(state.save).toHaveBeenLastCalledWith({
+        theme: "beacon",
+        revision: 2,
+      });
+    }
+  );
+  it.each(["orbit", "studio"] as const)(
+    "keeps %s previews local and exits without any write",
+    async theme => {
+      window.history.replaceState(null, "", `/?previewTheme=${theme}`);
+      await render();
+      expect(document.documentElement.dataset.siteTheme).toBe(theme);
+      expect(container.textContent).toContain("في هذه النافذة فقط");
+      expect(
+        container.querySelector(`a[href="/?previewTheme=${theme}"]`)
+      ).not.toBeNull();
+      expect(state.save).not.toHaveBeenCalled();
+      await act(() =>
+        container
+          .querySelector<HTMLButtonElement>(".theme-preview-banner button")!
+          .click()
+      );
+      expect(document.documentElement.dataset.siteTheme).toBe("beacon");
+      expect(window.location.search).toBe("");
+      expect(state.save).not.toHaveBeenCalled();
+    }
+  );
   it("keeps a failed theme change unpublished and retries using the refreshed revision", async () => {
     await render();
     await act(() =>
