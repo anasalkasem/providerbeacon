@@ -3,12 +3,17 @@ import type { Locale } from "@/contexts/LocaleContext";
 const en = {
   current: "Active theme",
   scope:
-    "Preview either design, then activate it for all visitors. Only the owner can change the published theme.",
+    "Preview a design, then activate it for all visitors. Only the owner can change the published theme.",
   apply: "Activate theme",
   preview: "Preview website",
   previewBanner: "Theme preview · only in this tab",
   leavePreview: "Exit preview",
   themes: {
+    studio: {
+      name: "Beacon Studio",
+      description:
+        "A centered black-and-white design with a silver glow, gradient buttons and a live comparison workspace.",
+    },
     beacon: {
       name: "Beacon Classic",
       description:
@@ -45,6 +50,11 @@ export const siteThemeCopy: Record<Locale, typeof en> = {
     previewBanner: "معاينة الثيم · في هذه النافذة فقط",
     leavePreview: "إنهاء المعاينة",
     themes: {
+      studio: {
+        name: "Beacon Studio · الأسود والفضي",
+        description:
+          "عنوان مركزي، أزرار بيضاء متدرّجة وتوهّج فضي حول لوحة مقارنة فعلية، على خلفية سوداء.",
+      },
       beacon: {
         name: "Beacon Classic · الأزرق",
         description:
@@ -78,6 +88,11 @@ export const siteThemeCopy: Record<Locale, typeof en> = {
     previewBanner: "Vista previa · solo en esta pestaña",
     leavePreview: "Salir de la vista previa",
     themes: {
+      studio: {
+        name: "Beacon Studio",
+        description:
+          "Diseño centrado en blanco y negro, brillo plateado, botones degradados y una comparación real de ofertas.",
+      },
       beacon: {
         name: "Beacon Classic",
         description:
@@ -111,6 +126,11 @@ export const siteThemeCopy: Record<Locale, typeof en> = {
     previewBanner: "थीम पूर्वावलोकन · केवल इस टैब में",
     leavePreview: "पूर्वावलोकन बंद करें",
     themes: {
+      studio: {
+        name: "Beacon Studio",
+        description:
+          "काले-सफ़ेद रंग, बीच में शीर्षक, चाँदी की चमक और वास्तविक ऑफ़र की तुलना वाला कार्यक्षेत्र।",
+      },
       beacon: {
         name: "Beacon Classic",
         description:
@@ -143,6 +163,10 @@ export const siteThemeCopy: Record<Locale, typeof en> = {
     previewBanner: "主题预览 · 仅限当前标签页",
     leavePreview: "退出预览",
     themes: {
+      studio: {
+        name: "Beacon Studio",
+        description: "黑白居中设计、银色光晕、渐变按钮与真实报价比较工作区。",
+      },
       beacon: {
         name: "Beacon Classic",
         description: "黑白蓝经典设计，清晰的边框和居中的搜索栏。",

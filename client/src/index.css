@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @import "./themes.css";
 @import "./orbit.css";
+@import "./studio.css";
 @custom-variant dark (&:is(.dark *));
 
 /* ProviderBeacon — white typography and vivid blue on black. */

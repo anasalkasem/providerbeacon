@@ -1,0 +1,25 @@
+# Beacon Studio — third site theme
+
+## Integration
+
+The existing project already uses React 19, TypeScript, Tailwind 4, shadcn's New York structure and lucide-react. No CLI initialization, additional packages or new providers are needed. `components.json` maps `@/components/ui` to `client/src/components/ui`; this is the project's correct components/ui folder. Creating another folder at the repository root would bypass the `@` alias and split the shared component system.
+
+The requested component is `client/src/components/ui/saa-s-template.tsx`, with `demo.tsx` beside it. Global styles enter through `client/src/index.css`; Studio's tokens and presentation live in `client/src/studio.css`. The component receives the existing locale and marketplace providers through the app and keeps only its search text in local state. The existing PublicLayout owns navigation, the mobile menu, sign-in, language controls and the single main landmark.
+
+The supplied template's centered hero, announcement pill, white gradient button and luminous product frame are retained. Copy and actions are adapted to ProviderBeacon. Its product preview is the live comparison component, including loading, empty and unavailable states, rather than invented analytics. Buttons lead to real routes. Lucide and the existing shadcn Button replace duplicated SVG/button implementations. Existing Inter and locale fonts replace the template's global Poppins override, which would otherwise affect Arabic and every other theme.
+
+## Reference lock
+
+Build target: the user-supplied SaaS React template. Preserve black canvas, two-line centered headline, muted gray supporting copy, white gradient CTA, fine borders and a broad illuminated product surface. Keep Classic and Orbit as separate owner choices; adding Studio does not change the saved selection.
+
+| Decision                                                         | Source                                                              | Role and reason                                                    |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Centered headline, pill, white gradient CTA, large product frame | User's SaaS template                                                | Preserve the supplied composition with real ProviderBeacon content |
+| Black #000, white #fff, gray #a3a3a3, 8px controls               | Krea, Refero style 3a63b3fa-dc79-4dc3-935e-3f8f4ab447a7             | Monochrome canvas and controls; no saturated decorative accents    |
+| Thin graphite dividers and medium-weight typography              | Linear Changelog, Refero style 11d3e58a-87d7-4a9a-bbf5-720f4fd3ffc6 | Secondary surface separation and readable compact UI               |
+| Atmospheric photograph beneath the functional product surface    | User's Unsplash requirement; Krea's media treatment                 | Decorative only, never evidence of prices or service quality       |
+| Arabic-aware typography, focus states, reduced motion            | Existing product and Refero craft                                   | Reuse locale fonts, semantic search and accessible controls        |
+
+Atmospheric image: https://images.unsplash.com/photo-1446776811953-b23d57bd21aa (Earth photographed from space). Served as a cropped WebP with responsive widths, a fixed aspect ratio and lazy loading. It is decorative; the comparison remains usable if the image fails. The new theme uses a short entrance transition and a static glow, with no animation loop, canvas or new motion dependency.
+
+Studio is available in the owner's Themes gallery and at `/?previewTheme=studio`. Preview is local to the tab. Activation uses the existing owner-only, revision-checked, audited setting. No database migration is needed.
