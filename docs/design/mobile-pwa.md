@@ -27,5 +27,6 @@ returned unrelated extension setups, so the platform sequence follows browser do
 Scope: installable web app, mobile navigation, same live AI/search/saved comparisons,
 existing price email alerts, offline recovery and update lifecycle. Opt-in push delivery
 after closing the app is implemented; see [Phone notifications](../phone-notifications.md)
-for delivery behavior and device verification. Native App Store/Google Play packages
-remain separate future work.
+for delivery behavior and device verification. An Android beta source project and
+build workflow now live in `mobile/android`; App Store/TestFlight implementation
+and signed store distribution remain tracked in [Mobile store release](../mobile-store-release.md).

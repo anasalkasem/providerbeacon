@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shortcut_search">Buscar</string>
+    <string name="shortcut_compare">Comparar</string>
+    <string name="shortcut_saved">Guardados</string>
+</resources>

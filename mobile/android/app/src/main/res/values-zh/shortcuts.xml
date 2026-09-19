@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="shortcut_search">搜索</string>
+    <string name="shortcut_compare">比较</string>
+    <string name="shortcut_saved">已保存</string>
+</resources>
