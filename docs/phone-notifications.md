@@ -23,4 +23,6 @@ The existing production migration runner applies the table before starting the p
 
 ## Verification
 
-Unit tests cover endpoint restrictions, curve-key validation, payload privacy, service-worker display/navigation, explicit permission, denial, failed registration and offline browser revocation. MySQL acceptance cases exercise atomic queuing, duplicate submissions, concurrent workers, read/logout/suspension suppression, retries/expired endpoints, identity changes, unsubscribe, and visitor expiry. Physical iPhone/Android receipt still requires a user-enabled device test.
+Unit tests cover endpoint restrictions, curve-key validation, payload privacy, service-worker display/navigation, explicit permission, denial, failed registration and offline browser revocation. MySQL acceptance cases exercise atomic queuing, duplicate submissions, concurrent workers, read/logout/suspension suppression, retries/expired endpoints, identity changes, unsubscribe, and visitor expiry.
+
+On 2026-09-19, the owner confirmed receipt of the test notification, the lighthouse icon and sound on a physical iPhone. The supplied screenshot shows the native notification banner while the app is open, with phone notifications enabled. This confirms the owner's device test, but does not separately establish locked-screen/background delivery or whether the reported sound was the in-site chime or the OS notification sound. Those cases and physical Android receipt remain unverified.

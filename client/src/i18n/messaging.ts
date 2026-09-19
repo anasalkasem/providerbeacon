@@ -1,6 +1,6 @@
 import type { Locale } from "@/contexts/LocaleContext";
 const en = {
-  messageAlerts: "Message notifications",
+  messageAlerts: "In-site message sound",
   unreadMessages: "Unread messages",
   multipleMessages: "New messages in several conversations.",
   enableSound: "Enable sound",
@@ -10,7 +10,7 @@ const en = {
     "Sound could not start. Try again after checking your device sound settings.",
   soundActivation: "Tap Enable sound to activate it in this browser session.",
   alertScope:
-    "Notifications work while the site is running. Sound preference is saved on this device; alerts are not delivered after the site is closed.",
+    "This sound plays while you use the site, and your preference is saved on this device. Enable phone notifications below to receive alerts after closing the app.",
   customerConversations: "Customer conversations",
   supervision:
     "Review all customer conversations and the employee handling each one.",
@@ -101,7 +101,7 @@ const en = {
 };
 type Copy = { [K in keyof typeof en]: string };
 const ar: Copy = {
-  messageAlerts: "إشعارات الرسائل",
+  messageAlerts: "صوت الرسائل داخل الموقع",
   unreadMessages: "رسائل غير مقروءة",
   multipleMessages: "وصلت رسائل جديدة في عدة محادثات.",
   enableSound: "تفعيل الصوت",
@@ -111,7 +111,7 @@ const ar: Copy = {
     "تعذر تشغيل الصوت. تحقق من إعدادات صوت جهازك ثم حاول مجددًا.",
   soundActivation: "اضغط تفعيل الصوت لتشغيله في جلسة المتصفح الحالية.",
   alertScope:
-    "تعمل التنبيهات أثناء تشغيل الموقع. يُحفظ اختيار الصوت على هذا الجهاز، ولا تصل التنبيهات بعد إغلاق الموقع.",
+    "هذا الصوت للرسائل أثناء استخدام الموقع، ويُحفظ اختيارك على هذا الجهاز. فعّل إشعارات الهاتف أدناه لاستقبال التنبيهات بعد إغلاق التطبيق.",
   customerConversations: "محادثات العملاء",
   supervision: "تابع جميع محادثات العملاء والموظف المسؤول عن كل محادثة.",
   conversationStatus: "الحالة",
@@ -198,7 +198,7 @@ const ar: Copy = {
   newConversation: "محادثة دعم جديدة",
 };
 const es: Copy = {
-  messageAlerts: "Notificaciones de mensajes",
+  messageAlerts: "Sonido de mensajes en el sitio",
   unreadMessages: "Mensajes sin leer",
   multipleMessages: "Hay mensajes nuevos en varias conversaciones.",
   enableSound: "Activar sonido",
@@ -209,7 +209,7 @@ const es: Copy = {
   soundActivation:
     "Pulsa Activar sonido para habilitarlo en esta sesión del navegador.",
   alertScope:
-    "Los avisos funcionan mientras el sitio está en ejecución. La preferencia de sonido se guarda en este dispositivo; no llegan avisos después de cerrar el sitio.",
+    "Este sonido se reproduce mientras usas el sitio y tu preferencia se guarda en este dispositivo. Activa las notificaciones del teléfono más abajo para recibir avisos después de cerrar la aplicación.",
   customerConversations: "Conversaciones con clientes",
   supervision:
     "Revisa todas las conversaciones con clientes y el empleado responsable.",
@@ -303,7 +303,7 @@ const es: Copy = {
 };
 const hi: Copy = {
   ...en,
-  messageAlerts: "संदेश सूचनाएँ",
+  messageAlerts: "साइट पर संदेश की ध्वनि",
   unreadMessages: "अपठित संदेश",
   multipleMessages: "कई बातचीत में नए संदेश आए हैं।",
   enableSound: "ध्वनि चालू करें",
@@ -314,7 +314,7 @@ const hi: Copy = {
   soundActivation:
     "इस ब्राउज़र सत्र में ध्वनि के लिए ध्वनि चालू करें पर टैप करें।",
   alertScope:
-    "साइट चलने के दौरान सूचनाएँ मिलती हैं। ध्वनि की पसंद इस डिवाइस पर सहेजी जाती है; साइट बंद करने के बाद सूचनाएँ नहीं मिलतीं।",
+    "यह ध्वनि साइट का उपयोग करते समय बजती है और आपकी पसंद इस डिवाइस पर सहेजी जाती है। ऐप बंद करने के बाद सूचनाएँ पाने के लिए नीचे फ़ोन सूचनाएँ चालू करें।",
   customerConversations: "ग्राहकों की बातचीत",
   supervision: "सभी ग्राहकों की बातचीत और उनके जिम्मेदार कर्मचारी देखें।",
   conversationStatus: "स्थिति",
@@ -402,7 +402,7 @@ const hi: Copy = {
 };
 const zh: Copy = {
   ...en,
-  messageAlerts: "消息通知",
+  messageAlerts: "站内消息提示音",
   unreadMessages: "未读消息",
   multipleMessages: "多个对话收到新消息。",
   enableSound: "开启声音",
@@ -411,7 +411,7 @@ const zh: Copy = {
   soundUnavailable: "无法播放声音。请检查设备声音设置后重试。",
   soundActivation: "点击开启声音，在本次浏览器会话中启用声音。",
   alertScope:
-    "通知仅在网站运行时生效。声音偏好保存在此设备上；关闭网站后不会收到通知。",
+    "此提示音在使用网站时播放，声音偏好保存在此设备上。请在下方开启手机通知，以便在关闭应用后接收提醒。",
   customerConversations: "客户对话",
   supervision: "查看所有客户对话及负责员工。",
   conversationStatus: "状态",

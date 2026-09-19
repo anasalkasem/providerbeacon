@@ -25,5 +25,7 @@ confirms installation → launch from home screen. Refero's installation-flow se
 returned unrelated extension setups, so the platform sequence follows browser docs.
 
 Scope: installable web app, mobile navigation, same live AI/search/saved comparisons,
-existing price email alerts, offline recovery and update lifecycle. Push delivery after
-closing the app and native App Store/Google Play packages are separate future work.
+existing price email alerts, offline recovery and update lifecycle. Opt-in push delivery
+after closing the app is implemented; see [Phone notifications](../phone-notifications.md)
+for delivery behavior and device verification. Native App Store/Google Play packages
+remain separate future work.
