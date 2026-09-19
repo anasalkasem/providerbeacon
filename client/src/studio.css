@@ -180,6 +180,10 @@
 .saa-s-template .studio-primary:active {
   transform: translateY(0);
 }
+.saa-s-template .studio-primary:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 4px;
+}
 .studio-secondary {
   display: inline-flex;
   align-items: center;
