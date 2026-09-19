@@ -200,9 +200,11 @@
 .studio-showcase,
 .theme-thumbnail--studio {
   /* Decorative light only, echoing the existing lighthouse lantern. */
-  --studio-beacon-blue: 24 137 255;
+  --studio-beacon-blue: 0 119 255;
+  --studio-beacon-cyan: 63 211 255;
 }
 .studio-showcase {
+  --studio-light-origin: 2.75rem;
   position: relative;
   max-width: 1140px;
   padding-top: 4rem;
@@ -211,12 +213,19 @@
 .studio-horizon {
   position: absolute;
   z-index: -1;
-  inset-inline: 3%;
-  top: -2rem;
+  inset-inline: 1%;
+  top: -3.5rem;
   height: 350px;
   pointer-events: none;
   overflow: hidden;
-  mask-image: linear-gradient(transparent, #000 14%, #000 48%, transparent 90%);
+  /* Feather every edge, including the photograph's rectangular sides. */
+  mask-image: radial-gradient(
+    ellipse 50% 46% at 50% 42%,
+    #000 10%,
+    #0009 35%,
+    #0003 58%,
+    transparent 82%
+  );
 }
 .studio-horizon img {
   display: block;
@@ -224,17 +233,17 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
-  filter: grayscale(1);
-  opacity: 0.34;
+  filter: grayscale(1) blur(4px);
+  opacity: 0.14;
 }
 .studio-horizon::after {
   content: "";
   position: absolute;
   inset: 0;
   background: radial-gradient(
-    ellipse at 50% 24%,
-    rgb(var(--studio-beacon-blue) / 0.58),
-    rgb(var(--studio-beacon-blue) / 0.3) 38%,
+    ellipse at 50% 32%,
+    rgb(var(--studio-beacon-cyan) / 0.26),
+    rgb(var(--studio-beacon-blue) / 0.18) 38%,
     transparent 75%
   );
   mix-blend-mode: screen;
@@ -244,27 +253,34 @@
   position: absolute;
   pointer-events: none;
   z-index: -1;
-  inset-inline: -3%;
-  top: -2rem;
-  height: 250px;
-  border-radius: 50%;
-  background: radial-gradient(
-    ellipse at 50% 35%,
-    rgb(var(--studio-beacon-blue) / 0.48),
-    rgb(var(--studio-beacon-blue) / 0.22) 36%,
-    transparent 72%
-  );
+  inset-inline: -5%;
+  top: calc(var(--studio-light-origin) - 190px);
+  height: 380px;
+  /* A diffused cyan source inside a wider blue bloom; no clipped light strip. */
+  background:
+    radial-gradient(
+      ellipse 28% 20% at 50% 50%,
+      #c6f7ffb3,
+      rgb(var(--studio-beacon-cyan) / 0.6) 20%,
+      rgb(0 157 255 / 0.3) 48%,
+      transparent 85%
+    ),
+    radial-gradient(
+      ellipse 48% 46% at 50% 50%,
+      rgb(var(--studio-beacon-blue) / 0.58),
+      rgb(var(--studio-beacon-blue) / 0.25) 34%,
+      rgb(0 76 214 / 0.09) 58%,
+      transparent 84%
+    );
 }
 .studio-product-frame {
   position: relative;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid #626269;
+  border: 1px solid #3a414d;
   border-radius: 14px;
   background: #0d0d0f;
   box-shadow:
-    0 -1px 0 #9dd9ffb3,
-    0 -14px 58px -18px rgb(var(--studio-beacon-blue) / 0.42),
     0 0 0 6px #ffffff04,
     0 24px 64px #0009;
 }
@@ -482,8 +498,9 @@
   height: 70px;
   background: radial-gradient(
     ellipse,
-    rgb(var(--studio-beacon-blue) / 0.65),
-    transparent 68%
+    rgb(var(--studio-beacon-cyan) / 0.65),
+    rgb(var(--studio-beacon-blue) / 0.3) 32%,
+    transparent 70%
   );
 }
 .theme-thumbnail--studio .theme-thumbnail-offers {
@@ -491,7 +508,7 @@
   padding: 12px;
   gap: 0;
   background: #101012;
-  border: 1px solid #626269;
+  border: 1px solid #3a414d;
   border-radius: 7px;
 }
 .theme-thumbnail--studio .theme-thumbnail-offers i {
@@ -531,6 +548,7 @@
     font-size: 1rem;
   }
   .studio-showcase {
+    --studio-light-origin: 1.25rem;
     padding-top: 2.5rem;
   }
   .studio-horizon {
