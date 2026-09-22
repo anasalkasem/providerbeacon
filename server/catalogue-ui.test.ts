@@ -200,16 +200,16 @@ describe("public catalogue rendering", () => {
     });
     expect(html).toContain("Independent provider"); expect(html).not.toContain("Northstar");
   });
-  it("makes home a real-provider directory with request-first comparison", () => {
+  it("makes home a real-provider directory with service comparison and detailed request search", () => {
     const html = render(Home);
     expect(html).toContain("Independent provider");
     expect(html).toContain('href="/providers/real-provider"');
-    expect(html).toContain("Find matching offers");
+    expect(html).toContain("Compare services");
     expect(html).not.toContain("Available real offer");
     expect(html).not.toContain("USD 1.00");
     expect(html).not.toContain(">Lowest price<");
     expect(html).not.toContain("Northstar");
-    expect(html).toContain('href="/services"');
+    expect(html).toContain('href="/find"');
     state.data.source = "unavailable";
     const unavailable = render(Home);
     expect(unavailable).not.toContain("Independent provider");
