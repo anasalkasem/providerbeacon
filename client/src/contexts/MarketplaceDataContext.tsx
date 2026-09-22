@@ -4,7 +4,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -105,6 +107,20 @@ export function MarketplaceDataProvider({ children }: { children: ReactNode }) {
       staleTime: 30_000,
       gcTime: 120_000,
       retry: 1,
+      // Preserve the provider and its current rows while another catalogue page
+      // loads. Never carry a previous route/provider into a different profile.
+      placeholderData: (previous, previousQuery) => {
+        const previousInput = (
+          previousQuery?.queryKey[1] as
+            | { input?: Partial<CatalogueInput> }
+            | undefined
+        )?.input;
+        return scope === "provider" &&
+          previousInput?.scope === "provider" &&
+          previousInput.slug === path.slice("/providers/".length)
+          ? previous
+          : undefined;
+      },
     }
   );
   const setFilters = useCallback(
@@ -118,12 +134,29 @@ export function MarketplaceDataProvider({ children }: { children: ReactNode }) {
     },
     [path]
   );
+  const lastProvider = useRef<{
+    path: string;
+    providers: NonNullable<typeof query.data>["providers"];
+  } | null>(null);
+  useEffect(() => {
+    if (
+      scope === "provider" &&
+      query.data?.source === "database" &&
+      !query.isPlaceholderData
+    )
+      lastProvider.current = { path, providers: query.data.providers };
+  }, [scope, path, query.data, query.isPlaceholderData]);
+  // A request error should leave the profile in place with an inline retry,
+  // not collapse the entire page. A successful missing-provider response wins.
+  const providerRows =
+    query.isError || query.data?.source === "unavailable"
+      ? scope === "provider" && lastProvider.current?.path === path
+        ? lastProvider.current.providers
+        : []
+      : (query.data?.providers ?? []);
   const value = useMemo<MarketplaceData>(
     () => ({
-      ...catalogueIndex(
-        query.data?.providers ?? [],
-        query.data?.services ?? []
-      ),
+      ...catalogueIndex(providerRows, query.data?.services ?? []),
       source: query.isError
         ? "unavailable"
         : (query.data?.source ?? "unavailable"),
@@ -154,6 +187,7 @@ export function MarketplaceDataProvider({ children }: { children: ReactNode }) {
       query.isLoading,
       query.isFetching,
       query.refetch,
+      providerRows,
       current,
       setFilters,
     ]

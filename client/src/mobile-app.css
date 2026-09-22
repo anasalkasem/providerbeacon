@@ -943,21 +943,6 @@
   .provider-profile-content h2 {
     font-size: 20px;
   }
-  .provider-service-offer {
-    padding: 14px;
-  }
-  .provider-service-offer > div > .flex.items-center {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-  .provider-service-offer .text-2xl {
-    font-size: 18px;
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-  .provider-service-offer .mobile-disclosure {
-    margin-top: 12px;
-  }
   .provider-price-summary {
     padding: 14px;
   }
