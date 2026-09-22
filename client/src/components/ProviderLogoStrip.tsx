@@ -15,9 +15,9 @@ export function ProviderLogoStrip({ providers }: { providers: Provider[] }) {
   const group = useRef<HTMLUListElement>(null);
   const [copies, setCopies] = useState(1);
   const [cycleWidth, setCycleWidth] = useState(0);
+  const [overflow, setOverflow] = useState(false);
   const [hovered, setHovered] = useState(false);
   const [focused, setFocused] = useState(false);
-  const [touching, setTouching] = useState(false);
   const [visible, setVisible] = useState(true);
   const key = providers.map(provider => provider.id).join(",");
   useEffect(() => {
@@ -37,6 +37,7 @@ export function ProviderLogoStrip({ providers }: { providers: Provider[] }) {
         Math.max(1, Math.ceil(node.clientWidth / (pitch * providers.length)))
       );
       setCycleWidth(list.getBoundingClientRect().width);
+      setOverflow(list.getBoundingClientRect().width > node.clientWidth + 2);
     };
     measure();
     const resize =
@@ -65,7 +66,6 @@ export function ProviderLogoStrip({ providers }: { providers: Provider[] }) {
       motion.stopped ||
       hovered ||
       focused ||
-      touching ||
       !visible ||
       !cycleWidth
     )
@@ -86,7 +86,7 @@ export function ProviderLogoStrip({ providers }: { providers: Provider[] }) {
     };
     frame = window.requestAnimationFrame(advance);
     return () => window.cancelAnimationFrame(frame);
-  }, [motion.stopped, hovered, focused, touching, visible, cycleWidth, key]);
+  }, [motion.stopped, hovered, focused, visible, cycleWidth, key]);
   const move = (direction: number) => {
     motion.setPaused(true);
     const node = viewport.current;
@@ -101,7 +101,7 @@ export function ProviderLogoStrip({ providers }: { providers: Provider[] }) {
     <section className="home-logo-section" aria-label={t.logos}>
       <div className="home-logo-toolbar">
         <p>{t.logos}</p>
-        {providers.length > 0 && (
+        {(!motion.reduced || overflow) && (
           <div className="home-logo-controls" dir="ltr">
             <button
               type="button"
@@ -136,18 +136,17 @@ export function ProviderLogoStrip({ providers }: { providers: Provider[] }) {
         onPointerEnter={event => {
           if (event.pointerType !== "touch") setHovered(true);
         }}
-        onPointerLeave={() => {
-          setHovered(false);
-          setTouching(false);
-        }}
+        onPointerLeave={() => setHovered(false)}
         onFocusCapture={() => setFocused(true)}
         onBlurCapture={event => {
           if (!event.currentTarget.contains(event.relatedTarget))
             setFocused(false);
         }}
-        onPointerDown={() => setTouching(true)}
-        onPointerUp={() => setTouching(false)}
-        onPointerCancel={() => setTouching(false)}
+        onPointerDown={event => {
+          // Keep native touch scrolling and momentum in control until the
+          // visitor explicitly resumes autoplay with the play button.
+          if (event.pointerType === "touch") motion.setPaused(true);
+        }}
         onWheelCapture={event => {
           if (event.deltaX) motion.setPaused(true);
         }}

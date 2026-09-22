@@ -132,8 +132,37 @@ it("respects reduced motion and shows each provider once for manual browsing", a
   reduced = true;
   await act(async () => root.render(<ProviderLogoStrip providers={cards} />));
   expect(strip().querySelectorAll("a")).toHaveLength(4);
+  expect(host.querySelectorAll("button")).toHaveLength(0);
   expect(frames.size).toBe(0);
   await frame(0);
   await frame(100);
   expect(strip().scrollLeft).toBe(0);
+  width = 360;
+  itemWidth = 120;
+  await act(async () => window.dispatchEvent(new Event("resize")));
+  expect(host.querySelectorAll("button")).toHaveLength(2);
+});
+
+it("keeps autoplay paused after a touch swipe so native momentum is not overwritten", async () => {
+  await act(async () => root.render(<ProviderLogoStrip providers={cards} />));
+  await frame(0);
+  await frame(100);
+  const touch = new Event("pointerdown", { bubbles: true });
+  Object.defineProperty(touch, "pointerType", { value: "touch" });
+  await act(async () => strip().dispatchEvent(touch));
+  await act(async () =>
+    strip().dispatchEvent(new Event("pointercancel", { bubbles: true }))
+  );
+  await act(async () =>
+    strip().dispatchEvent(new Event("pointerup", { bubbles: true }))
+  );
+  strip().scrollLeft = 160;
+  await frame(200);
+  await frame(300);
+  expect(frames.size).toBe(0);
+  expect(strip().scrollLeft).toBe(160);
+  await toggle();
+  await frame(400);
+  await frame(500);
+  expect(strip().scrollLeft).toBeGreaterThan(160);
 });
