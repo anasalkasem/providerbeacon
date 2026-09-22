@@ -24,11 +24,12 @@ export default function AdminThemePicker({
     beacon: ["#080b10", "#fff", "#0285fe", "#1e2f48"],
     orbit: ["#000", "#fff", "#8052ff", "#9adfff"],
     studio: ["#000", "#fff", "#a3a3a3", "#343438"],
+    daylight: ["#ffffff", "#0061fe", "#142238", "#eaf2ff"],
   };
   return (
     <div className="border-b border-border p-5">
       <p className="mb-5 text-sm leading-7">{t.scope}</p>
-      <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-5 lg:grid-cols-2">
         {siteThemeIds.map(theme => (
           <article
             key={theme}
