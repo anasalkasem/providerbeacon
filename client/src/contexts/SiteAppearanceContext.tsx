@@ -10,7 +10,7 @@ import {
 } from "react";
 import { EdgeGlow } from "@/components/EdgeGlow";
 import { trpc } from "@/lib/trpc";
-import { ThemeProvider } from "./ThemeContext";
+import { ThemeProvider, useTheme } from "./ThemeContext";
 import {
   readThemePreview,
   resolveSiteTheme,
@@ -47,27 +47,19 @@ export function SiteAppearanceProvider({ children }: { children: ReactNode }) {
     () => ({ preview, setPreview, theme }),
     [preview, theme]
   );
-  useLayoutEffect(() => {
-    const root = document.documentElement;
-    const previousTheme = root.getAttribute("data-site-theme");
-    const meta = document.querySelector<HTMLMetaElement>(
-      'meta[name="theme-color"]'
-    );
-    const previousColor = meta?.content;
-    root.setAttribute("data-site-theme", theme);
-    if (meta) meta.content = siteThemes[theme].background;
-    return () => {
-      if (previousTheme === null) root.removeAttribute("data-site-theme");
-      else root.setAttribute("data-site-theme", previousTheme);
-      if (meta && previousColor !== undefined) meta.content = previousColor;
-    };
-  }, [theme]);
   // Retain the last saved setting if a background refresh fails, so the light
   // doesn't blink with network activity. Initial loading/errors stay off.
   const enabled = appearance.data?.edgeGlowEnabled === true || preview;
   return (
     <SiteAppearanceContext.Provider value={value}>
-      <ThemeProvider forcedTheme={siteThemes[theme].mode}>
+      <ThemeProvider
+        defaultTheme="light"
+        switchable={theme === "daylight"}
+        forcedTheme={theme === "daylight" ? undefined : siteThemes[theme].mode}
+        storageKey="providerbeacon:daylight-mode"
+        rememberPreference={!themePreview}
+      >
+        <SiteThemeDocument theme={theme} />
         <div
           className="beacon-appearance"
           data-beacon-glow={enabled ? "on" : "off"}
@@ -89,6 +81,31 @@ export function SiteAppearanceProvider({ children }: { children: ReactNode }) {
       </ThemeProvider>
     </SiteAppearanceContext.Provider>
   );
+}
+
+function SiteThemeDocument({ theme }: { theme: SiteThemeId }) {
+  const { theme: mode } = useTheme();
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const previousTheme = root.getAttribute("data-site-theme");
+    const meta = document.querySelector<HTMLMetaElement>(
+      'meta[name="theme-color"]'
+    );
+    const previousColor = meta?.content;
+    root.setAttribute("data-site-theme", theme);
+    if (meta) {
+      meta.content =
+        theme === "daylight" && mode === "dark"
+          ? "#0b1220"
+          : siteThemes[theme].background;
+    }
+    return () => {
+      if (previousTheme === null) root.removeAttribute("data-site-theme");
+      else root.setAttribute("data-site-theme", previousTheme);
+      if (meta && previousColor !== undefined) meta.content = previousColor;
+    };
+  }, [theme, mode]);
+  return null;
 }
 
 // Locale is a dependency of the preview copy, not of appearance rendering.

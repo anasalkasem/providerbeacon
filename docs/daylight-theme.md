@@ -30,8 +30,9 @@ Two Refero style records were inspected in full:
 | Layout and type  | Existing responsive structure, fonts and touch targets          |
 | Artwork          | Preserve provider-supplied logos and album images unchanged     |
 
-The theme sets native browser controls to light mode, removes the dark class,
-and updates the browser theme color. Legacy text-on-dark utility combinations
+The day mode sets native browser controls to light mode, removes the dark class,
+and updates the browser theme color. [Night mode](daylight-night-mode.md) now
+provides a visitor-controlled dark variant of the same theme. Legacy text-on-dark utility combinations
 are adapted only on known themed surfaces; image overlays and provider brand
 colors are preserved.
 
