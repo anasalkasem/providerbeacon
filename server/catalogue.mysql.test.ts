@@ -378,7 +378,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect((await getMarketplaceSnapshot({ scope: "providers", providerIds: [providerId] })).providers.map(provider => provider.id)).toEqual([`provider-${providerId}`]);
     expect((await getMarketplaceSnapshot({ scope: "services", providerIds: [2147483647] })).services).toEqual([]);
     expect((await getMarketplaceSnapshot({ scope: "provider", slug: "scope-other", providerIds: [providerId] })).providers).toEqual([]);
-    await updateProviderStatus({ id: providerId, status: "suspended", actorUserId: actorId });
+    await ownerCaller().admin.providers.setStatus({ id: providerId, status: "suspended" });
     expect((await getCachedMarketplaceSnapshot({ scope: "services", providerIds: [providerId] })).services).toEqual([]);
   });
 

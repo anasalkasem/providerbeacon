@@ -285,7 +285,7 @@ export function trustAcceptanceCases(
     });
     it("hides held services from public catalogue, compare and assistant while retaining admin records and manual review state", async () => {
       const id = await service({ name: "Service stopped" });
-      await getCachedMarketplaceSnapshot({ scope: "home" });
+      await getCachedMarketplaceSnapshot({ scope: "services" });
       model("unavailable");
       expect(await runServiceScreeningStep()).toBe(true);
       expect(await row(id)).toMatchObject({
@@ -295,7 +295,7 @@ export function trustAcceptanceCases(
         available: true,
       });
       expect(
-        (await getCachedMarketplaceSnapshot({ scope: "home" })).services
+        (await getCachedMarketplaceSnapshot({ scope: "services" })).services
       ).toHaveLength(0);
       expect(
         (await getMarketplaceSnapshot({ scope: "compare", ids: [id] })).services
@@ -322,7 +322,7 @@ export function trustAcceptanceCases(
         actorId()
       );
       expect(
-        (await getMarketplaceSnapshot({ scope: "home" })).services
+        (await getMarketplaceSnapshot({ scope: "services" })).services
       ).toHaveLength(1);
       expect(await runServiceScreeningStep()).toBe(false);
     });
@@ -346,12 +346,12 @@ export function trustAcceptanceCases(
         normalizationVersion: 2,
       });
       expect(
-        (await getMarketplaceSnapshot({ scope: "home" })).services
+        (await getMarketplaceSnapshot({ scope: "services" })).services
       ).toHaveLength(1);
       model("unclear");
       await runServiceScreeningStep();
       expect(
-        (await getMarketplaceSnapshot({ scope: "home" })).services
+        (await getMarketplaceSnapshot({ scope: "services" })).services
       ).toHaveLength(0);
       expect((await row(id)).screeningStatus).toBe("held");
     });
@@ -392,7 +392,7 @@ export function trustAcceptanceCases(
         screeningError: "unavailable",
       });
       expect(
-        (await getMarketplaceSnapshot({ scope: "home" })).services
+        (await getMarketplaceSnapshot({ scope: "services" })).services
       ).toHaveLength(1);
       await decideServiceScreening(
         {
