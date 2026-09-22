@@ -13,6 +13,7 @@ import { Link, useLocation } from "wouter";
 import { useEffect } from "react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useMobileApp } from "@/contexts/MobileAppContext";
+import { handleHomeNavigation } from "@/lib/homeNavigation";
 import { mobileAppCopy } from "@/i18n/mobileApp";
 
 export function InstallAppLink({ compact = false }: { compact?: boolean }) {
@@ -75,7 +76,16 @@ export function MobileNavigation() {
   return (
     <nav className="mobile-app-nav" aria-label={t.navigation}>
       {items.map(({ href, title, icon: Icon, active }) => (
-        <Link key={href} href={href} aria-current={active ? "page" : undefined}>
+        <Link
+          key={href}
+          href={href}
+          aria-current={active ? "page" : undefined}
+          onClick={
+            href === "/"
+              ? event => handleHomeNavigation(event, path)
+              : undefined
+          }
+        >
           <Icon aria-hidden="true" />
           <span>{title}</span>
         </Link>

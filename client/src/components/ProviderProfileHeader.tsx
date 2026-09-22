@@ -39,7 +39,7 @@ export default function ProviderProfileHeader({
   const website = publicProfileUrl(provider.websiteUrl);
   const telegram = providerTelegramUrl(provider.telegramUrl);
   return (
-    <section className="border-b border-border bg-card">
+    <section className="provider-profile-hero border-b border-border bg-card">
       <div className="container py-8 sm:py-10">
         <Button variant="ghost" asChild className="mb-6 -ms-3 text-muted-foreground">
           <Link href="/providers">

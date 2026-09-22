@@ -1,3 +1,5 @@
+import { MobileDisclosure } from "./MobileDisclosure";
+import { mobileLayoutCopy } from "@/i18n/mobileLayout";
 import { hasPricingBasis, quantityQuoteExact } from "../../../shared/pricing";
 import { ArrowUpRight, CheckCircle2 } from "lucide-react";
 import { Link } from "wouter";
@@ -38,9 +40,9 @@ export function DecisionOffer({
   return (
     <article
       data-service-id={service.id}
-      className={`flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-none ${lowest ? "border-success-border ring-1 ring-success-border" : "border-border"}`}
+      className={`decision-offer flex min-w-0 flex-col overflow-hidden rounded-2xl border bg-card shadow-none ${lowest ? "border-success-border ring-1 ring-success-border" : "border-border"}`}
     >
-      <div className="flex items-center justify-between gap-2 border-b border-border px-5 py-4">
+      <div className="decision-offer-header flex items-center justify-between gap-2 border-b border-border px-5 py-4">
         <Link
           className="truncate font-extrabold text-foreground"
           href={`/providers/${provider.slug}`}
@@ -66,7 +68,7 @@ export function DecisionOffer({
           )}
         </div>
       </div>
-      <div className="flex flex-1 flex-col gap-4 p-5">
+      <div className="decision-offer-body flex flex-1 flex-col gap-4 p-5">
         <h3
           dir="auto"
           className="line-clamp-3 min-h-12 break-words text-sm font-bold leading-6"
@@ -74,7 +76,7 @@ export function DecisionOffer({
         >
           {serviceName(locale, service)}
         </h3>
-        <div className="rounded-xl bg-muted p-4">
+        <div className="decision-offer-price rounded-xl bg-muted p-4">
           <OfferPrice service={service} lowest={lowest} />
           {service.priceUnit === "package" ||
           !hasPricingBasis(service) ? null : quantity != null ? (
@@ -89,7 +91,9 @@ export function DecisionOffer({
               />
             </div>
           ) : (
-            <p className="mt-3 text-xs text-muted-foreground">{a.quantityNeeded}</p>
+            <p className="mt-3 text-xs text-muted-foreground">
+              {a.quantityNeeded}
+            </p>
           )}
           {convertedTotal && fxAsOf != null && currency && (
             <ConvertedQuote
@@ -119,55 +123,59 @@ export function DecisionOffer({
             </p>
           )}
         </div>
-        <dl className="grid grid-cols-2 gap-3 text-xs">
-          <div>
-            <dt className="text-muted-foreground">{t.fieldNames.refill}</dt>
-            <dd className="mt-1 font-semibold">
-              {localizeData(locale, service.refill)}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">{t.fieldNames.countryCode}</dt>
-            <dd className="mt-1 font-semibold">
-              {service.countryCode ?? t.unspecified}
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">{t.quantity}</dt>
-            <dd className="mt-1 font-semibold">
-              <bdi>
-                {service.min.toLocaleString(locale)}–
-                {service.max.toLocaleString(locale)}
-              </bdi>
-            </dd>
-          </div>
-          <div>
-            <dt className="text-muted-foreground">
-              {locale === "ar"
-                ? "البدء المعلن"
-                : locale === "es"
-                  ? "Inicio declarado"
-                  : locale === "zh"
-                    ? "声明开始时间"
-                    : locale === "hi"
-                      ? "बताया गया आरंभ"
-                      : "Stated start"}
-            </dt>
-            <dd className="mt-1 font-semibold">
-              {localizeDuration(locale, service.startTime)}
-            </dd>
-          </div>
-        </dl>
-        <details className="rounded-xl border border-border p-3 text-xs">
-          <summary className="cursor-pointer font-semibold text-secondary-foreground">
-            {t.allDetails}
-          </summary>
-          <p dir="auto" className="mt-3 break-words leading-6">
-            {serviceName(locale, service)}
-          </p>
-          <OfferEvidence service={service} showTerms />
-        </details>
-        <div className="mt-auto flex flex-wrap items-center justify-between gap-3 pt-1">
+        <MobileDisclosure label={mobileLayoutCopy[locale].details}>
+          <dl className="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <dt className="text-muted-foreground">{t.fieldNames.refill}</dt>
+              <dd className="mt-1 font-semibold">
+                {localizeData(locale, service.refill)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">
+                {t.fieldNames.countryCode}
+              </dt>
+              <dd className="mt-1 font-semibold">
+                {service.countryCode ?? t.unspecified}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">{t.quantity}</dt>
+              <dd className="mt-1 font-semibold">
+                <bdi>
+                  {service.min.toLocaleString(locale)}–
+                  {service.max.toLocaleString(locale)}
+                </bdi>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-muted-foreground">
+                {locale === "ar"
+                  ? "البدء المعلن"
+                  : locale === "es"
+                    ? "Inicio declarado"
+                    : locale === "zh"
+                      ? "声明开始时间"
+                      : locale === "hi"
+                        ? "बताया गया आरंभ"
+                        : "Stated start"}
+              </dt>
+              <dd className="mt-1 font-semibold">
+                {localizeDuration(locale, service.startTime)}
+              </dd>
+            </div>
+          </dl>
+          <details className="mt-3 rounded-xl border border-border p-3 text-xs">
+            <summary className="cursor-pointer font-semibold text-secondary-foreground">
+              {t.allDetails}
+            </summary>
+            <p dir="auto" className="mt-3 break-words leading-6">
+              {serviceName(locale, service)}
+            </p>
+            <OfferEvidence service={service} showTerms />
+          </details>
+        </MobileDisclosure>
+        <div className="decision-offer-actions mt-auto flex flex-wrap items-center justify-between gap-3 pt-1">
           {service.priceUnit !== "package" && (
             <FollowPrice serviceId={service.id} quantity={quantity ?? 0} />
           )}
@@ -197,7 +205,7 @@ export function ComparisonExplanation({
   const t = workspaceCopy[locale];
   const facts = comparisonFacts(services, quantity);
   return (
-    <section className="mb-6 rounded-2xl border border-input bg-secondary/60 p-5 sm:p-6">
+    <section className="comparison-explanation mb-6 rounded-2xl border border-input bg-secondary/60 p-5 sm:p-6">
       <h2 className="flex items-center gap-2 font-extrabold text-foreground">
         <CheckCircle2 className="size-5 shrink-0 text-foreground" />
         {t.explain}
@@ -227,7 +235,9 @@ export function ComparisonExplanation({
         <p className="mt-2 text-sm text-warning">{t.quantityInvalid}</p>
       )}
       {facts.termsMissing && (
-        <p className="mt-2 text-sm text-secondary-foreground">{t.termsMissing}</p>
+        <p className="mt-2 text-sm text-secondary-foreground">
+          {t.termsMissing}
+        </p>
       )}
       <p className="mt-3 text-xs leading-6 text-muted-foreground">{t.claims}</p>
     </section>

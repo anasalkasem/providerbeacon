@@ -1,3 +1,5 @@
+import { MobileDisclosure } from "@/components/MobileDisclosure";
+import { mobileLayoutCopy } from "@/i18n/mobileLayout";
 import { workspaceCopy } from "@/i18n/workspace";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
@@ -118,9 +120,20 @@ function ServicesPage() {
           ? [...current, service]
           : current
     );
+  const activeFilters = [
+    platform !== "all",
+    category !== "all",
+    !!currency,
+    !!unit,
+    onlyMatching,
+    refillOnly,
+    !!countryCode,
+    refillDays > 0,
+    sort !== "recommended",
+  ].filter(Boolean).length;
   return (
     <PublicLayout>
-      <section className="container py-8 sm:py-12">
+      <section className="catalogue-page container py-8 sm:py-12">
         <p className="section-kicker">PROVIDERBEACON MARKETPLACE</p>
         <h1 className="mt-3 text-3xl font-extrabold text-foreground sm:text-4xl">
           {ar
@@ -169,276 +182,297 @@ function ServicesPage() {
             </button>
           ))}
         </div>
-        {market === "smm" && (
-          <section
-            aria-label={ar ? "حاسبة تكلفة الخدمات" : "Service cost calculator"}
-            className="mb-6 rounded-2xl border border-input bg-secondary/50 p-5"
-          >
-            <h2 className="text-lg font-extrabold text-foreground">
-              {ar
-                ? "كم ستكلفك الكمية التي تحتاجها؟"
-                : "What will your quantity cost?"}
-            </h2>
-            <p className="mt-2 text-sm text-secondary-foreground">
-              {ar
-                ? "أدخل الكمية لتظهر تكلفة كل عرض مؤكد التسعير ضمن حدود الطلب."
-                : "Enter a quantity to calculate each offer with confirmed pricing and valid order limits."}
-            </p>
-            <div className="mt-4 flex flex-wrap items-end gap-4">
-              <label className="grid w-full gap-2 text-sm font-bold sm:w-56">
-                {ar ? "الكمية المطلوبة" : "Required quantity"}
-                <input
-                  type="number"
-                  min={1}
-                  max={2147483647}
-                  step={1}
-                  className={field}
-                  value={Number.isFinite(quantity) ? quantity : ""}
-                  onChange={e => setQuantity(e.target.valueAsNumber)}
-                  aria-invalid={!validQuantity}
-                />
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {[1000, 5000, 10000].map(q => (
-                  <button
-                    key={q}
-                    type="button"
-                    aria-pressed={quantity === q}
-                    onClick={() => setQuantity(q)}
-                    className={`rounded-lg border px-4 py-3 text-sm font-bold ${quantity === q ? "border-ring bg-graphite text-white" : "border-input bg-card text-foreground"}`}
-                  >
-                    {q.toLocaleString(locale)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            {!validQuantity && (
-              <p role="alert" className="mt-3 text-sm text-danger">
-                {ar
-                  ? "أدخل عددًا صحيحًا من 1 إلى 2,147,483,647."
-                  : "Enter a whole number from 1 to 2,147,483,647."}
-              </p>
-            )}
-            <label className="mt-4 flex items-center gap-2 text-sm font-semibold">
-              <input
-                type="checkbox"
-                checked={onlyMatching}
-                onChange={e => setOnlyMatching(e.target.checked)}
-                className="size-4 accent-ring"
-              />
-              {ar
-                ? "اعرض فقط العروض التي تقبل هذه الكمية"
-                : "Only show offers that accept this quantity"}
-            </label>
-          </section>
-        )}
-        <div className="mb-6 grid gap-3 rounded-2xl border border-border bg-muted p-4 sm:grid-cols-2 lg:grid-cols-4">
-          <label className="grid gap-2 text-sm font-bold sm:col-span-2">
-            {ar ? "ابحث عن خدمة أو مزود" : "Find a service or provider"}
-            <input
-              className={field}
-              value={query}
-              maxLength={100}
-              placeholder={
-                ar ? "مثال: متابعين إنستغرام" : "e.g. Instagram followers"
-              }
-              onChange={e => setQuery(e.target.value)}
-            />
-          </label>
-          <label className="grid gap-2 text-sm font-bold">
-            {ar ? "المنصة" : "Platform"}
-            <select
-              className={field}
-              value={platform}
-              onChange={e => setPlatform(e.target.value)}
-            >
-              <option value="all">
-                {ar ? "جميع المنصات" : "All platforms"}
-              </option>
-              {platforms
-                .filter(p => p !== "Unknown")
-                .map(p => (
-                  <option key={p}>{p}</option>
-                ))}
-            </select>
-          </label>
-          <label className="grid gap-2 text-sm font-bold">
-            {ar ? "نوع الخدمة" : "Service type"}
-            <select
-              className={field}
-              value={category}
-              onChange={e => setCategory(e.target.value)}
-            >
-              <option value="all">{ar ? "جميع الأنواع" : "All types"}</option>
-              {serviceTypes
-                .filter(
-                  c =>
-                    c !== "Other" &&
-                    (market === "packages" ||
-                      [
-                        "Followers",
-                        "Views",
-                        "Likes",
-                        "Comments",
-                        "Shares",
-                        "Subscribers",
-                      ].includes(c))
-                )
-                .map(c => (
-                  <option key={c} value={c}>
-                    {localizeData(locale, c)}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <label className="grid gap-2 text-sm font-bold">
-            {ar ? "العملة" : "Currency"}
-            <select
-              className={field}
-              value={currency}
-              onChange={e => {
-                setCurrency(e.target.value as PriceCurrency | "");
-                if (!e.target.value) setSort("recommended");
-              }}
-            >
-              <option value="">{ar ? "جميع العملات" : "All currencies"}</option>
-              {priceCurrencies.map(c => (
-                <option key={c}>{c}</option>
-              ))}
-            </select>
-          </label>
-          {market === "smm" && (
-            <label className="grid gap-2 text-sm font-bold">
-              {ar ? "وحدة السعر" : "Sale unit"}
-              <select
-                className={field}
-                value={unit}
-                onChange={e => {
-                  setUnit(e.target.value as PriceUnit | "");
-                  if (!e.target.value || e.target.value === "package")
-                    setSort("recommended");
-                }}
-              >
-                <option value="">{ar ? "جميع الوحدات" : "All units"}</option>
-                {priceUnits.map(u => (
-                  <option key={u} value={u}>
-                    {u === "per_1000"
-                      ? ar
-                        ? "لكل 1,000"
-                        : "Per 1,000"
-                      : u === "per_item"
-                        ? ar
-                          ? "للوحدة الواحدة"
-                          : "Per item"
-                        : ar
-                          ? "للباقة"
-                          : "Per package"}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <label className="grid gap-2 text-sm font-bold">
-            {ar ? "الترتيب" : "Sort"}
-            <select
-              className={field}
-              value={sort}
-              onChange={e => setSort(e.target.value as typeof sort)}
-            >
-              <option value="recommended">
-                {ar ? "ترتيب الدليل" : "Directory order"}
-              </option>
-              <option
-                value="price"
-                disabled={
-                  !currency ||
-                  !unit ||
-                  unit === "package" ||
-                  market === "packages"
-                }
-              >
-                {ar ? "السعر: من الأقل للأعلى" : "Price: low to high"}
-              </option>
-            </select>
-            {market === "smm" && (!currency || !unit) && (
-              <span className="text-xs font-normal text-muted-foreground">
-                {ar
-                  ? "اختر العملة ووحدة السعر لتفعيل الترتيب."
-                  : "Select a currency and sale unit to enable price sorting."}
-              </span>
-            )}
-          </label>
-          {market === "smm" && (
+        <label className="grid gap-2 text-sm font-bold catalogue-search">
+          {ar ? "ابحث عن خدمة أو مزود" : "Find a service or provider"}
+          <input
+            className={field}
+            value={query}
+            maxLength={100}
+            placeholder={
+              ar ? "مثال: متابعين إنستغرام" : "e.g. Instagram followers"
+            }
+            onChange={e => setQuery(e.target.value)}
+          />
+        </label>
+        <MobileDisclosure
+          className="catalogue-filters"
+          label={
             <>
-              <label className="flex items-center gap-3 text-sm font-bold">
+              {mobileLayoutCopy[locale].filters} · {wt.quantity}:{" "}
+              <bdi>
+                {Number.isFinite(quantity)
+                  ? quantity.toLocaleString(locale)
+                  : "—"}
+              </bdi>
+              {activeFilters > 0 && (
+                <span className="filter-count">{activeFilters}</span>
+              )}
+            </>
+          }
+        >
+          {market === "smm" && (
+            <section
+              aria-label={
+                ar ? "حاسبة تكلفة الخدمات" : "Service cost calculator"
+              }
+              className="mb-6 rounded-2xl border border-input bg-secondary/50 p-5"
+            >
+              <h2 className="text-lg font-extrabold text-foreground">
+                {ar
+                  ? "كم ستكلفك الكمية التي تحتاجها؟"
+                  : "What will your quantity cost?"}
+              </h2>
+              <p className="mt-2 text-sm text-secondary-foreground">
+                {ar
+                  ? "أدخل الكمية لتظهر تكلفة كل عرض مؤكد التسعير ضمن حدود الطلب."
+                  : "Enter a quantity to calculate each offer with confirmed pricing and valid order limits."}
+              </p>
+              <div className="mt-4 flex flex-wrap items-end gap-4">
+                <label className="grid w-full gap-2 text-sm font-bold sm:w-56">
+                  {ar ? "الكمية المطلوبة" : "Required quantity"}
+                  <input
+                    type="number"
+                    min={1}
+                    max={2147483647}
+                    step={1}
+                    className={field}
+                    value={Number.isFinite(quantity) ? quantity : ""}
+                    onChange={e => setQuantity(e.target.valueAsNumber)}
+                    aria-invalid={!validQuantity}
+                  />
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[1000, 5000, 10000].map(q => (
+                    <button
+                      key={q}
+                      type="button"
+                      aria-pressed={quantity === q}
+                      onClick={() => setQuantity(q)}
+                      className={`rounded-lg border px-4 py-3 text-sm font-bold ${quantity === q ? "border-ring bg-graphite text-white" : "border-input bg-card text-foreground"}`}
+                    >
+                      {q.toLocaleString(locale)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {!validQuantity && (
+                <p role="alert" className="mt-3 text-sm text-danger">
+                  {ar
+                    ? "أدخل عددًا صحيحًا من 1 إلى 2,147,483,647."
+                    : "Enter a whole number from 1 to 2,147,483,647."}
+                </p>
+              )}
+              <label className="mt-4 flex items-center gap-2 text-sm font-semibold">
                 <input
                   type="checkbox"
-                  checked={refillOnly}
-                  onChange={e => setRefillOnly(e.target.checked)}
-                  className="size-5 accent-ring"
+                  checked={onlyMatching}
+                  onChange={e => setOnlyMatching(e.target.checked)}
+                  className="size-4 accent-ring"
                 />
-                {ar ? "عروض مع تعويض فقط" : "Refill available only"}
+                {ar
+                  ? "اعرض فقط العروض التي تقبل هذه الكمية"
+                  : "Only show offers that accept this quantity"}
               </label>
-            </>
+            </section>
           )}
-        </div>
-        <div className="mb-5 flex flex-wrap items-end gap-3">
-          <label className="grid gap-2 text-xs font-bold">
-            {wt.country}
-            <input
-              dir="ltr"
-              maxLength={2}
-              placeholder="WW / PA"
-              className="h-11 w-36 rounded-xl border border-border bg-card px-3"
-              value={countryCode}
-              onChange={e =>
-                setCountryCode(
-                  e.target.value.toUpperCase().replace(/[^A-Z]/g, "")
-                )
-              }
-            />
-          </label>
-          {market === "smm" && (
-            <label className="grid gap-2 text-xs font-bold">
-              {wt.refillDays}
+          <div className="mb-6 grid gap-3 rounded-2xl border border-border bg-muted p-4 sm:grid-cols-2 lg:grid-cols-4">
+            <label className="grid gap-2 text-sm font-bold">
+              {ar ? "المنصة" : "Platform"}
               <select
-                className="h-11 rounded-xl border border-border bg-card px-3"
-                value={refillDays}
-                onChange={e => setRefillDays(Number(e.target.value))}
+                className={field}
+                value={platform}
+                onChange={e => setPlatform(e.target.value)}
               >
-                <option value={0}>{wt.any}</option>
-                {Array.from(
-                  new Set([
-                    7,
-                    30,
-                    60,
-                    90,
-                    365,
-                    ...(refillDays > 0 ? [refillDays] : []),
-                  ])
-                )
-                  .sort((a, b) => a - b)
-                  .map(n => (
-                    <option key={n} value={n}>
-                      {n}
+                <option value="all">
+                  {ar ? "جميع المنصات" : "All platforms"}
+                </option>
+                {platforms
+                  .filter(p => p !== "Unknown")
+                  .map(p => (
+                    <option key={p}>{p}</option>
+                  ))}
+              </select>
+            </label>
+            <label className="grid gap-2 text-sm font-bold">
+              {ar ? "نوع الخدمة" : "Service type"}
+              <select
+                className={field}
+                value={category}
+                onChange={e => setCategory(e.target.value)}
+              >
+                <option value="all">{ar ? "جميع الأنواع" : "All types"}</option>
+                {serviceTypes
+                  .filter(
+                    c =>
+                      c !== "Other" &&
+                      (market === "packages" ||
+                        [
+                          "Followers",
+                          "Views",
+                          "Likes",
+                          "Comments",
+                          "Shares",
+                          "Subscribers",
+                        ].includes(c))
+                  )
+                  .map(c => (
+                    <option key={c} value={c}>
+                      {localizeData(locale, c)}
                     </option>
                   ))}
               </select>
             </label>
-          )}
-          <label className="grid gap-2 text-xs font-bold">
-            {wt.rows}
-            <select
-              className="h-11 rounded-xl border border-border bg-card px-3"
-              value={limit}
-              onChange={e => setLimit(Number(e.target.value))}
-            >
-              {[25, 50, 100].map(n => (
-                <option key={n}>{n}</option>
-              ))}
-            </select>
-          </label>
-        </div>
+            <label className="grid gap-2 text-sm font-bold">
+              {ar ? "العملة" : "Currency"}
+              <select
+                className={field}
+                value={currency}
+                onChange={e => {
+                  setCurrency(e.target.value as PriceCurrency | "");
+                  if (!e.target.value) setSort("recommended");
+                }}
+              >
+                <option value="">
+                  {ar ? "جميع العملات" : "All currencies"}
+                </option>
+                {priceCurrencies.map(c => (
+                  <option key={c}>{c}</option>
+                ))}
+              </select>
+            </label>
+            {market === "smm" && (
+              <label className="grid gap-2 text-sm font-bold">
+                {ar ? "وحدة السعر" : "Sale unit"}
+                <select
+                  className={field}
+                  value={unit}
+                  onChange={e => {
+                    setUnit(e.target.value as PriceUnit | "");
+                    if (!e.target.value || e.target.value === "package")
+                      setSort("recommended");
+                  }}
+                >
+                  <option value="">{ar ? "جميع الوحدات" : "All units"}</option>
+                  {priceUnits.map(u => (
+                    <option key={u} value={u}>
+                      {u === "per_1000"
+                        ? ar
+                          ? "لكل 1,000"
+                          : "Per 1,000"
+                        : u === "per_item"
+                          ? ar
+                            ? "للوحدة الواحدة"
+                            : "Per item"
+                          : ar
+                            ? "للباقة"
+                            : "Per package"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            <label className="grid gap-2 text-sm font-bold">
+              {ar ? "الترتيب" : "Sort"}
+              <select
+                className={field}
+                value={sort}
+                onChange={e => setSort(e.target.value as typeof sort)}
+              >
+                <option value="recommended">
+                  {ar ? "ترتيب الدليل" : "Directory order"}
+                </option>
+                <option
+                  value="price"
+                  disabled={
+                    !currency ||
+                    !unit ||
+                    unit === "package" ||
+                    market === "packages"
+                  }
+                >
+                  {ar ? "السعر: من الأقل للأعلى" : "Price: low to high"}
+                </option>
+              </select>
+              {market === "smm" && (!currency || !unit) && (
+                <span className="text-xs font-normal text-muted-foreground">
+                  {ar
+                    ? "اختر العملة ووحدة السعر لتفعيل الترتيب."
+                    : "Select a currency and sale unit to enable price sorting."}
+                </span>
+              )}
+            </label>
+            {market === "smm" && (
+              <>
+                <label className="flex items-center gap-3 text-sm font-bold">
+                  <input
+                    type="checkbox"
+                    checked={refillOnly}
+                    onChange={e => setRefillOnly(e.target.checked)}
+                    className="size-5 accent-ring"
+                  />
+                  {ar ? "عروض مع تعويض فقط" : "Refill available only"}
+                </label>
+              </>
+            )}
+          </div>
+          <div className="mb-5 flex flex-wrap items-end gap-3">
+            <label className="grid gap-2 text-xs font-bold">
+              {wt.country}
+              <input
+                dir="ltr"
+                maxLength={2}
+                placeholder="WW / PA"
+                className="h-11 w-36 rounded-xl border border-border bg-card px-3"
+                value={countryCode}
+                onChange={e =>
+                  setCountryCode(
+                    e.target.value.toUpperCase().replace(/[^A-Z]/g, "")
+                  )
+                }
+              />
+            </label>
+            {market === "smm" && (
+              <label className="grid gap-2 text-xs font-bold">
+                {wt.refillDays}
+                <select
+                  className="h-11 rounded-xl border border-border bg-card px-3"
+                  value={refillDays}
+                  onChange={e => setRefillDays(Number(e.target.value))}
+                >
+                  <option value={0}>{wt.any}</option>
+                  {Array.from(
+                    new Set([
+                      7,
+                      30,
+                      60,
+                      90,
+                      365,
+                      ...(refillDays > 0 ? [refillDays] : []),
+                    ])
+                  )
+                    .sort((a, b) => a - b)
+                    .map(n => (
+                      <option key={n} value={n}>
+                        {n}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            )}
+            <label className="grid gap-2 text-xs font-bold">
+              {wt.rows}
+              <select
+                className="h-11 rounded-xl border border-border bg-card px-3"
+                value={limit}
+                onChange={e => setLimit(Number(e.target.value))}
+              >
+                {[25, 50, 100].map(n => (
+                  <option key={n}>{n}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+        </MobileDisclosure>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="font-bold text-secondary-foreground">
             {pagination.total.toLocaleString(locale)} {ar ? "عرض" : "offers"}

@@ -15,7 +15,7 @@ export default function ProviderPrices({ summary, slug, name }: { summary?: Prov
   const { locale } = useLocale();
   const t = translations[locale] ?? translations.en;
   const units = pricingCopy[locale] ?? pricingCopy.en;
-  return <section className="rounded-2xl border border-border bg-card p-5" aria-label={`${t.title}: ${name}`}>
+  return <section className="provider-price-summary rounded-2xl border border-border bg-card p-5" aria-label={`${t.title}: ${name}`}>
     <h3 className="text-sm font-bold text-foreground">{t.title}</h3>
     {summary == null ? <p className="mt-3 text-sm text-muted-foreground">{t.unavailable}</p>
       : <>

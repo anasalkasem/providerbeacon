@@ -1,3 +1,5 @@
+import { handleHomeNavigation } from "@/lib/homeNavigation";
+import { MobileBrowseLinks } from "./MobileBrowseLinks";
 import { workspaceCopy } from "@/i18n/workspace";
 import { businessText } from "@/i18n/providerBusiness";
 import { vipText } from "@/i18n/providerVip";
@@ -22,8 +24,9 @@ import { useDisplayedPagePath } from "./PageTransition";
 import { InstallAppLink, MobileAppStatus, MobileNavigation } from "./MobileApp";
 
 export function Brand({ compact = false, inverse = false }: { compact?: boolean; inverse?: boolean }) {
+  const [path] = useLocation();
   return (
-    <Link href="/" className={`brand-link ${inverse ? "brand-inverse" : ""}`} aria-label="ProviderBeacon">
+    <Link href="/" onClick={event => handleHomeNavigation(event, path)} className={`brand-link ${inverse ? "brand-inverse" : ""}`} aria-label="ProviderBeacon">
       <img
         src="/images/beacon-lighthouse-logo.webp"
         width={compact ? 40 : 44}
@@ -256,6 +259,7 @@ export function PublicLayout({
     <div className="public-layout min-h-screen bg-background text-foreground">
       <SiteHeader />
       <MobileAppStatus />
+      <MobileBrowseLinks />
       <main id="main-content" ref={main}>
         {showCatalogueNotice && <CatalogueNotice />}
         {children}

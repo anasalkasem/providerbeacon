@@ -23,7 +23,7 @@ export default function Providers() {
   }, [query, market, setFilters]);
   return (
     <PublicLayout>
-      <div className="container py-12" lang={locale === "ar" ? "ar" : "en"}>
+      <div className="providers-page container py-12" lang={locale === "ar" ? "ar" : "en"}>
         <p className="section-kicker">
           {ar ? "دليل مزودي الخدمات" : "Service provider directory"}
         </p>
