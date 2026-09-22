@@ -3,9 +3,10 @@
 @import "./themes.css";
 @import "./orbit.css";
 @import "./studio.css";
+@import "./daylight.css";
 @custom-variant dark (&:is(.dark *));
 
-/* ProviderBeacon — white typography and vivid blue on black. */
+/* ProviderBeacon — shared semantic tokens for dark and daylight themes. */
 @theme inline {
   --font-sans: var(--beacon-font-body);
   --font-display: var(--beacon-font-display);

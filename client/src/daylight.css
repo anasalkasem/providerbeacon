@@ -1,0 +1,223 @@
+/* A daytime version of the existing layout. Artwork keeps its original colors. */
+:root[data-site-theme="daylight"] {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #142238;
+  --heading: #142238;
+  --display-weight: 600;
+  --radius: 14px;
+  --control-radius: 8px;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --primary: #0061fe;
+  --primary-foreground: #ffffff;
+  --primary-hover: #004fd1;
+  --highlight: #0061fe;
+  --secondary: #eaf2ff;
+  --secondary-foreground: #233c62;
+  --muted: #f4f7fc;
+  --muted-foreground: #53627a;
+  --accent: #eaf2ff;
+  --accent-foreground: #004dbd;
+  --border: #d5dfec;
+  --input: #7c8ea5;
+  --ring: #0057d9;
+  --steel: #667891;
+  --fog: #53627a;
+  --success: #17643a;
+  --success-muted: #ecf8ef;
+  --success-border: #84b993;
+  --warning: #795100;
+  --warning-muted: #fff7e5;
+  --warning-border: #c6a45e;
+  --danger: #b5223c;
+  --danger-muted: #fff0f2;
+  --danger-border: #d4939e;
+  --destructive: #b5223c;
+  --destructive-foreground: #ffffff;
+  --chart-1: #0061fe;
+  --chart-2: #08758f;
+  --chart-3: #7045c1;
+  --chart-4: #986400;
+  --chart-5: #28754d;
+  --hero-wash: none;
+  --card-shadow: 0 6px 24px rgb(20 34 56 / 6%);
+  --gradient-gilded: linear-gradient(103deg, #0061fe, #80b4ff 70%, transparent);
+}
+
+[data-site-theme="daylight"] .site-header {
+  background: rgb(255 255 255 / 97%);
+  border-color: var(--border);
+}
+[data-site-theme="daylight"] .site-footer {
+  background: var(--muted);
+  border-color: var(--border);
+}
+[data-site-theme="daylight"] .nav-link:is(:hover, .active),
+[data-site-theme="daylight"]
+  :is(a.text-primary, [data-slot="button"].text-primary) {
+  color: var(--primary);
+}
+[data-site-theme="daylight"] .beacon-button {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+[data-site-theme="daylight"] .beacon-button:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+[data-site-theme="daylight"] .beacon-ghost {
+  background: var(--card);
+  color: var(--accent-foreground);
+  border-color: var(--input);
+}
+[data-site-theme="daylight"] .beacon-ghost:hover {
+  background: var(--accent);
+  border-color: var(--primary);
+}
+[data-site-theme="daylight"] :is(input, textarea, select) {
+  accent-color: var(--primary);
+}
+[data-site-theme="daylight"] .theme-preview-banner {
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  border-color: var(--border);
+}
+[data-site-theme="daylight"] .theme-preview-banner button {
+  background: var(--card);
+  color: var(--accent-foreground);
+  border-color: var(--input);
+}
+
+/* Keep search controls distinct from the white canvas at phone sizes too. */
+[data-site-theme="daylight"] .provider-home {
+  --home-line: var(--border);
+}
+[data-site-theme="daylight"] .home-request-panel {
+  background: var(--muted);
+  box-shadow: var(--card-shadow);
+}
+[data-site-theme="daylight"] .home-request-heading > svg,
+[data-site-theme="daylight"] .home-logo-controls button {
+  color: var(--primary);
+}
+[data-site-theme="daylight"] .home-request-input,
+[data-site-theme="daylight"] .home-service-field select {
+  border-color: var(--input);
+}
+[data-site-theme="daylight"] .home-request-input input::placeholder {
+  opacity: 1;
+}
+[data-site-theme="daylight"] .home-logo-strip a:hover {
+  border-color: var(--primary);
+  background: var(--accent);
+}
+[data-site-theme="daylight"] .home-album-action {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+[data-site-theme="daylight"] .home-album-link:hover .home-album-action {
+  background: var(--primary-hover);
+}
+[data-site-theme="daylight"] .landing-details details {
+  border-color: var(--border);
+}
+[data-site-theme="daylight"] .landing-search,
+[data-site-theme="daylight"] .landing-comparison {
+  background: var(--card);
+  box-shadow: var(--card-shadow);
+}
+[data-site-theme="daylight"] .landing-search input {
+  color: var(--foreground);
+}
+[data-site-theme="daylight"] .landing-search input::placeholder {
+  color: var(--muted-foreground);
+  opacity: 1;
+}
+[data-site-theme="daylight"] .landing-comparison-table thead {
+  background: var(--muted);
+}
+
+/* Legacy pages use white text on semantic dark surfaces. Preserve brand art
+   and overlays; adapt only these known, theme-controlled combinations. */
+[data-site-theme="daylight"]
+  .text-white:is(.bg-ink, .bg-graphite, .bg-secondary, .bg-carbon) {
+  color: var(--foreground);
+}
+[data-site-theme="daylight"]
+  :is(a, button).text-white:is(.bg-ink, .bg-graphite) {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+[data-site-theme="daylight"]
+  :is(a, button).text-white:is(.bg-ink, .bg-graphite):hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
+}
+[data-site-theme="daylight"] .bg-success-muted.text-white {
+  color: var(--success);
+}
+[data-site-theme="daylight"] .beacon-assistant-panel {
+  border-color: var(--input);
+  box-shadow: 0 18px 64px rgb(20 34 56 / 16%);
+}
+[data-site-theme="daylight"] .beacon-assistant-launcher {
+  border-color: var(--primary);
+  box-shadow: 0 4px 18px rgb(0 97 254 / 20%);
+}
+[data-site-theme="daylight"] .mobile-app-nav a[aria-current="page"] {
+  color: var(--accent-foreground);
+}
+
+/* The owner's optional edge light uses a quieter blue palette on white. */
+[data-site-theme="daylight"] .beacon-edge-glow > div,
+[data-site-theme="daylight"] [data-beacon-glow="on"] .vip-card::before,
+[data-site-theme="daylight"] [data-beacon-glow="on"] .vip-card::after {
+  background: conic-gradient(
+    from var(--beacon-gradient-angle, 0deg),
+    #8cc9ff,
+    #0061fe 35%,
+    #b9d9ff 65%,
+    #8cc9ff
+  );
+}
+[data-site-theme="daylight"] .beacon-edge-glow .beacon-edge-glow__halo {
+  opacity: 0.14;
+}
+
+/* Gallery preview is always light, including inside a dark owner workspace. */
+.theme-thumbnail--daylight {
+  background: #ffffff;
+  color: #142238;
+  border-color: #d5dfec;
+}
+.theme-thumbnail--daylight .theme-thumbnail-toolbar {
+  background: #f4f7fc;
+  border-color: #d5dfec;
+}
+.theme-thumbnail--daylight .theme-thumbnail-toolbar span {
+  color: #53627a;
+}
+.theme-thumbnail--daylight .theme-thumbnail-nav i {
+  background: #7c8ea5;
+}
+.theme-thumbnail--daylight .theme-thumbnail-search {
+  background: #f4f7fc;
+  border-color: #7c8ea5;
+}
+.theme-thumbnail--daylight .theme-thumbnail-search span {
+  color: #53627a;
+}
+.theme-thumbnail--daylight .theme-thumbnail-search b {
+  background: #0061fe;
+  color: #ffffff;
+}
+.theme-thumbnail--daylight .theme-thumbnail-offers i {
+  background: #eaf2ff;
+  border-color: #d5dfec;
+}

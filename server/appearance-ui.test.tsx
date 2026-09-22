@@ -108,7 +108,7 @@ describe("owner appearance panel", () => {
       Array.from(container.querySelectorAll("[data-theme-option]")).map(el =>
         el.getAttribute("data-theme-option")
       )
-    ).toEqual(["beacon", "orbit", "studio"]);
+    ).toEqual(["beacon", "orbit", "studio", "daylight"]);
     expect(
       container.querySelector<HTMLButtonElement>('[data-apply-theme="beacon"]')
         ?.disabled
@@ -131,7 +131,7 @@ describe("owner appearance panel", () => {
     }
     expect(state.save).not.toHaveBeenCalled();
   });
-  it.each(["orbit", "studio"] as const)(
+  it.each(["orbit", "studio", "daylight"] as const)(
     "only publishes %s after the owner saves successfully",
     async theme => {
       await render();
@@ -158,6 +158,9 @@ describe("owner appearance panel", () => {
       );
       await render();
       expect(document.documentElement.dataset.siteTheme).toBe(theme);
+      expect(document.documentElement.classList.contains("dark")).toBe(
+        theme !== "daylight"
+      );
       expect(state.publicCache).toHaveBeenCalledWith(undefined, {
         edgeGlowEnabled: true,
         theme,
@@ -178,12 +181,15 @@ describe("owner appearance panel", () => {
       });
     }
   );
-  it.each(["orbit", "studio"] as const)(
+  it.each(["orbit", "studio", "daylight"] as const)(
     "keeps %s previews local and exits without any write",
     async theme => {
       window.history.replaceState(null, "", `/?previewTheme=${theme}`);
       await render();
       expect(document.documentElement.dataset.siteTheme).toBe(theme);
+      expect(document.documentElement.classList.contains("dark")).toBe(
+        theme !== "daylight"
+      );
       expect(container.textContent).toContain("في هذه النافذة فقط");
       expect(
         container.querySelector(`a[href="/?previewTheme=${theme}"]`)
@@ -195,10 +201,37 @@ describe("owner appearance panel", () => {
           .click()
       );
       expect(document.documentElement.dataset.siteTheme).toBe("beacon");
+      expect(document.documentElement.classList.contains("dark")).toBe(true);
       expect(window.location.search).toBe("");
       expect(state.save).not.toHaveBeenCalled();
     }
   );
+  it("switches the browser chrome to daylight and restores the saved Studio theme on preview exit", async () => {
+    const meta = document.createElement("meta");
+    meta.name = "theme-color";
+    meta.content = "#000000";
+    document.head.appendChild(meta);
+    state.publicSettings = { theme: "studio", edgeGlowEnabled: true };
+    window.history.replaceState(null, "", "/?lang=ar&previewTheme=daylight");
+    try {
+      await render();
+      expect(meta.content).toBe("#ffffff");
+      expect(document.documentElement.classList.contains("dark")).toBe(false);
+      expect(container.textContent).toContain("Beacon Daylight");
+      await act(() =>
+        container
+          .querySelector<HTMLButtonElement>(".theme-preview-banner button")!
+          .click()
+      );
+      expect(document.documentElement.dataset.siteTheme).toBe("studio");
+      expect(meta.content).toBe("#000000");
+      expect(document.documentElement.classList.contains("dark")).toBe(true);
+      expect(window.location.search).toBe("?lang=ar");
+      expect(state.save).not.toHaveBeenCalled();
+    } finally {
+      meta.remove();
+    }
+  });
   it("keeps a failed theme change unpublished and retries using the refreshed revision", async () => {
     await render();
     await act(() =>

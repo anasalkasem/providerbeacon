@@ -9,6 +9,11 @@ const en = {
   previewBanner: "Theme preview · only in this tab",
   leavePreview: "Exit preview",
   themes: {
+    daylight: {
+      name: "Beacon Daylight",
+      description:
+        "A daytime version with white surfaces, blue action buttons and clear, dark text across search, provider albums and comparison tables.",
+    },
     studio: {
       name: "Beacon Studio",
       description:
@@ -50,6 +55,11 @@ export const siteThemeCopy: Record<Locale, typeof en> = {
     previewBanner: "معاينة الثيم · في هذه النافذة فقط",
     leavePreview: "إنهاء المعاينة",
     themes: {
+      daylight: {
+        name: "Beacon Daylight · النهاري",
+        description:
+          "نسخة نهارية بخلفيات بيضاء وأزرار زرقاء ونصوص داكنة واضحة، تشمل البحث وألبومات المزودين وجداول المقارنة.",
+      },
       studio: {
         name: "Beacon Studio · الأسود والفضي",
         description:
@@ -88,6 +98,11 @@ export const siteThemeCopy: Record<Locale, typeof en> = {
     previewBanner: "Vista previa · solo en esta pestaña",
     leavePreview: "Salir de la vista previa",
     themes: {
+      daylight: {
+        name: "Beacon Daylight",
+        description:
+          "Una versión clara con superficies blancas, botones azules y texto oscuro en búsquedas, álbumes de proveedores y tablas comparativas.",
+      },
       studio: {
         name: "Beacon Studio",
         description:
@@ -126,6 +141,11 @@ export const siteThemeCopy: Record<Locale, typeof en> = {
     previewBanner: "थीम पूर्वावलोकन · केवल इस टैब में",
     leavePreview: "पूर्वावलोकन बंद करें",
     themes: {
+      daylight: {
+        name: "Beacon Daylight",
+        description:
+          "सफ़ेद पृष्ठभूमि, नीले बटन और स्पष्ट गहरे पाठ वाली दिन की थीम — खोज, प्रदाता एल्बम और तुलना तालिकाओं के लिए।",
+      },
       studio: {
         name: "Beacon Studio",
         description:
@@ -163,6 +183,11 @@ export const siteThemeCopy: Record<Locale, typeof en> = {
     previewBanner: "主题预览 · 仅限当前标签页",
     leavePreview: "退出预览",
     themes: {
+      daylight: {
+        name: "Beacon Daylight · 日间",
+        description:
+          "日间版本采用白色背景、蓝色按钮和清晰的深色文字，覆盖搜索、服务商相册与比较表格。",
+      },
       studio: {
         name: "Beacon Studio",
         description: "黑白居中设计、银色光晕、渐变按钮与真实报价比较工作区。",

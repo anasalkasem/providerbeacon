@@ -72,6 +72,8 @@ describe("Orbit theme motion and preview boundaries", () => {
     expect(readThemePreview("beacon")).toBe("beacon");
     expect(readThemePreview("studio")).toBe("studio");
     expect(resolveSiteTheme("studio")).toBe("studio");
+    expect(readThemePreview("daylight")).toBe("daylight");
+    expect(resolveSiteTheme("daylight")).toBe("daylight");
     for (const value of [null, "fire", "navy", "unknown", {}]) {
       expect(readThemePreview(value)).toBeNull();
       expect(resolveSiteTheme(value)).toBe("beacon");

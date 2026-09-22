@@ -186,7 +186,7 @@ export function appearanceAcceptanceCases(
         )
       );
     });
-    it.each(["orbit", "studio"] as const)(
+    it.each(["orbit", "studio", "daylight"] as const)(
       "persists %s for fresh visitors and restores Classic without touching glow",
       async theme => {
         await role("owner");
