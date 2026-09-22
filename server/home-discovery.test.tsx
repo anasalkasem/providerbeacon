@@ -103,18 +103,16 @@ beforeEach(() => {
   state.ads = [];
   state.search = "";
   state.navigate.mockReset();
-  state.chat
-    .mockReset()
-    .mockResolvedValue({
-      answer: "What quantity?",
-      offers: [],
-      totalMatches: 0,
-      catalogueUrl: "/services?providers=2",
-      quantity: null,
-      displayCurrency: "USD",
-      request: {},
-      explanationAvailable: true,
-    });
+  state.chat.mockReset().mockResolvedValue({
+    answer: "What quantity?",
+    offers: [],
+    totalMatches: 0,
+    catalogueUrl: "/services?providers=2",
+    quantity: null,
+    displayCurrency: "USD",
+    request: {},
+    explanationAvailable: true,
+  });
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -138,6 +136,9 @@ it("shows at most 16 unique real albums and no initial services or prices", asyn
     "/providers/provider-1"
   );
   expect(albums[0].textContent).toContain("9,876 published services");
+  const requestPanel = host.querySelector(".home-request-panel")!;
+  expect(requestPanel.querySelector(".home-choice-logo, img")).toBeNull();
+  expect(requestPanel.nextElementSibling?.className).toBe("home-logo-section");
   expect(host.textContent).not.toContain(services[0].name);
   expect(host.textContent).not.toMatch(/Lowest price|Trusted|USD/);
   state.data = { ...state.data, providers: [card(1)] };

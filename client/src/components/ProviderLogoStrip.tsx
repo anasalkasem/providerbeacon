@@ -11,15 +11,34 @@ export function ProviderLogoStrip({ providers }: { providers: Provider[] }) {
   const { locale } = useLocale();
   const t = homeDiscoveryCopy[locale];
   const motion = useOrbitMotion();
-  const viewport = useRef<HTMLUListElement>(null);
+  const viewport = useRef<HTMLDivElement>(null);
+  const group = useRef<HTMLUListElement>(null);
+  const [copies, setCopies] = useState(1);
+  const [cycleWidth, setCycleWidth] = useState(0);
   const [overflow, setOverflow] = useState(false);
   const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
   const [visible, setVisible] = useState(true);
   const key = providers.map(provider => provider.id).join(",");
   useEffect(() => {
     const node = viewport.current;
     if (!node) return;
-    const measure = () => setOverflow(node.scrollWidth > node.clientWidth + 2);
+    const measure = () => {
+      const list = group.current;
+      const first = list?.firstElementChild;
+      if (!list || !first || !providers.length) return;
+      const pitch =
+        first.getBoundingClientRect().width +
+        (parseFloat(getComputedStyle(list).columnGap) || 0);
+      if (!pitch) return;
+      // Fill one whole viewport before repeating the same sequence. Four
+      // providers must still move on a wide desktop, without a blank interval.
+      setCopies(
+        Math.max(1, Math.ceil(node.clientWidth / (pitch * providers.length)))
+      );
+      setCycleWidth(list.getBoundingClientRect().width);
+      setOverflow(list.getBoundingClientRect().width > node.clientWidth + 2);
+    };
     measure();
     const resize =
       typeof ResizeObserver === "undefined"
@@ -39,24 +58,35 @@ export function ProviderLogoStrip({ providers }: { providers: Provider[] }) {
       observer?.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [key]);
+  }, [key, copies, motion.reduced]);
   useEffect(() => {
-    if (motion.stopped || hovered || !visible || !overflow) return;
-    const timer = window.setInterval(() => {
-      const node = viewport.current;
-      if (!node) return;
-      const step =
-        (node.firstElementChild?.getBoundingClientRect().width ?? 120) + 12;
-      node.scrollTo({
-        left:
-          node.scrollLeft >= node.scrollWidth - node.clientWidth - 2
-            ? 0
-            : node.scrollLeft + step,
-        behavior: "smooth",
-      });
-    }, 4500);
-    return () => window.clearInterval(timer);
-  }, [motion.stopped, hovered, visible, overflow, key]);
+    const node = viewport.current;
+    if (
+      !node ||
+      motion.stopped ||
+      hovered ||
+      focused ||
+      !visible ||
+      !cycleWidth
+    )
+      return;
+    let previous: number | undefined;
+    let position = node.scrollLeft % cycleWidth;
+    let frame: number;
+    const advance = (now: number) => {
+      if (previous !== undefined) {
+        // Fractional position avoids rounding away slow movement. Geometry is
+        // measured on resize only, never read in the animation loop.
+        position =
+          (position + Math.min(now - previous, 100) * 0.032) % cycleWidth;
+        node.scrollLeft = position;
+      }
+      previous = now;
+      frame = window.requestAnimationFrame(advance);
+    };
+    frame = window.requestAnimationFrame(advance);
+    return () => window.cancelAnimationFrame(frame);
+  }, [motion.stopped, hovered, focused, visible, cycleWidth, key]);
   const move = (direction: number) => {
     motion.setPaused(true);
     const node = viewport.current;
@@ -71,7 +101,7 @@ export function ProviderLogoStrip({ providers }: { providers: Provider[] }) {
     <section className="home-logo-section" aria-label={t.logos}>
       <div className="home-logo-toolbar">
         <p>{t.logos}</p>
-        {overflow && (
+        {(!motion.reduced || overflow) && (
           <div className="home-logo-controls" dir="ltr">
             <button
               type="button"
@@ -99,7 +129,7 @@ export function ProviderLogoStrip({ providers }: { providers: Provider[] }) {
           </div>
         )}
       </div>
-      <ul
+      <div
         ref={viewport}
         className="home-logo-strip"
         dir="ltr"
@@ -107,27 +137,52 @@ export function ProviderLogoStrip({ providers }: { providers: Provider[] }) {
           if (event.pointerType !== "touch") setHovered(true);
         }}
         onPointerLeave={() => setHovered(false)}
-        onFocusCapture={() => motion.setPaused(true)}
-        onPointerDown={() => motion.setPaused(true)}
-        onWheelCapture={() => motion.setPaused(true)}
+        onFocusCapture={() => setFocused(true)}
+        onBlurCapture={event => {
+          if (!event.currentTarget.contains(event.relatedTarget))
+            setFocused(false);
+        }}
+        onPointerDown={event => {
+          // Keep native touch scrolling and momentum in control until the
+          // visitor explicitly resumes autoplay with the play button.
+          if (event.pointerType === "touch") motion.setPaused(true);
+        }}
+        onWheelCapture={event => {
+          if (event.deltaX) motion.setPaused(true);
+        }}
       >
-        {providers.map(provider => (
-          <li key={provider.id}>
-            <Link
-              href={"/providers/" + provider.slug}
-              aria-label={provider.name}
-            >
-              <ProviderLogo
-                src={provider.logoUrl}
-                name={provider.name}
-                initials={provider.initials}
-                className="home-strip-logo"
-              />
-              <span dir="auto">{provider.name}</span>
-            </Link>
-          </li>
+        {Array.from({ length: motion.reduced ? 1 : 2 }, (_, sequence) => (
+          <ul
+            key={sequence}
+            ref={sequence === 0 ? group : undefined}
+            className="home-logo-group"
+            aria-hidden={sequence === 1 ? true : undefined}
+          >
+            {Array.from({ length: motion.reduced ? 1 : copies }, (_, copy) =>
+              providers.map(provider => (
+                <li
+                  key={`${copy}-${provider.id}`}
+                  aria-hidden={copy > 0 ? true : undefined}
+                >
+                  <Link
+                    href={"/providers/" + provider.slug}
+                    aria-label={provider.name}
+                    tabIndex={sequence > 0 || copy > 0 ? -1 : undefined}
+                  >
+                    <ProviderLogo
+                      src={provider.logoUrl}
+                      name={provider.name}
+                      initials={provider.initials}
+                      className="home-strip-logo"
+                    />
+                    <span dir="auto">{provider.name}</span>
+                  </Link>
+                </li>
+              ))
+            )}
+          </ul>
         ))}
-      </ul>
+      </div>
     </section>
   );
 }
