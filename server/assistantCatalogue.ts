@@ -1,6 +1,6 @@
 import { comparisonGroup } from "../shared/offerComparison";
 import type { Provider, Service } from "../client/src/data/marketplace";
-import type { AssistantPlan } from "../shared/assistant";
+import type { AssistantCataloguePlan } from "../shared/assistant";
 import {
   compareFractions,
   convertedAmount,
@@ -40,11 +40,12 @@ export async function assistantOffersByIds(
 }
 
 export async function assistantSearch(
-  plan: AssistantPlan,
+  plan: AssistantCataloguePlan,
   snapshot: Snapshot = getCachedMarketplaceSnapshot
 ) {
   const providerPage = await snapshot({
     scope: "providers",
+    providerIds: plan.providerIds,
     market: plan.market,
     q: plan.provider ?? "",
     platform: plan.platform ?? undefined,
@@ -66,6 +67,7 @@ export async function assistantSearch(
       providerPage.providers.slice(offset, offset + 2).map(provider =>
         snapshot({
           scope: "provider",
+          providerIds: plan.providerIds,
           slug: provider.slug,
           market: plan.market,
           platform: plan.platform ?? undefined,
@@ -157,8 +159,10 @@ export function quoteAssistantOffers(
   return quotes;
 }
 
-export function assistantCatalogueUrl(plan: AssistantPlan) {
+export function assistantCatalogueUrl(plan: AssistantCataloguePlan) {
   const params = new URLSearchParams();
+  if (plan.providerIds?.length)
+    params.set("providers", plan.providerIds.join(","));
   if (plan.market === "packages") params.set("market", "packages");
   if (plan.platform) params.set("platform", plan.platform);
   if (plan.category) params.set("category", plan.category);

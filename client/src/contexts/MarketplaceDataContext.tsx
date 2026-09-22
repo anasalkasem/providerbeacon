@@ -12,6 +12,7 @@ import {
 } from "react";
 import { useLocation, useSearch } from "wouter";
 import type { CatalogueInput } from "../../../shared/catalogueQuery";
+import { providerSelection } from "../../../shared/providerSelection";
 
 type Filters = Partial<
   Pick<
@@ -52,13 +53,17 @@ export function MarketplaceDataProvider({ children }: { children: ReactNode }) {
   const [path] = useLocation();
   const search = useSearch();
   const params = new URLSearchParams(search);
+  const catalogueKey =
+    path + "?providers=" + providerSelection(params.get("providers")).join(",");
   const [state, setState] = useState<{
     path: string;
     filters: Filters;
     cursors: Cursor[];
-  }>({ path, filters: {}, cursors: [undefined] });
+  }>({ path: catalogueKey, filters: {}, cursors: [undefined] });
   const current =
-    state.path === path ? state : { path, filters: {}, cursors: [undefined] };
+    state.path === catalogueKey
+      ? state
+      : { path: catalogueKey, filters: {}, cursors: [undefined] };
   const scope =
     path === "/services" ||
     (path === "/compare" &&
@@ -84,15 +89,16 @@ export function MarketplaceDataProvider({ children }: { children: ReactNode }) {
   const query = trpc.marketplace.snapshot.useQuery(
     {
       scope,
-      limit: 25,
-      market: ["home", "services", "providers"].includes(scope)
+      limit: scope === "home" ? 16 : 25,
+      market: ["services", "providers"].includes(scope)
         ? params.get("market") === "packages"
           ? "packages"
           : "smm"
         : undefined,
-      ...(scope === "home"
-        ? { platform: "Instagram", category: "Followers" as const }
-        : {}),
+      providerIds:
+        scope === "services"
+          ? providerSelection(params.get("providers"))
+          : undefined,
       q: params.get("q")?.slice(0, 100) ?? "",
       ...current.filters,
       slug: scope === "provider" ? path.slice("/providers/".length) : undefined,
@@ -126,13 +132,13 @@ export function MarketplaceDataProvider({ children }: { children: ReactNode }) {
   const setFilters = useCallback(
     (filters: Filters) => {
       setState(previous =>
-        previous.path === path &&
+        previous.path === catalogueKey &&
         JSON.stringify(previous.filters) === JSON.stringify(filters)
           ? previous
-          : { path, filters, cursors: [undefined] }
+          : { path: catalogueKey, filters, cursors: [undefined] }
       );
     },
-    [path]
+    [catalogueKey]
   );
   const lastProvider = useRef<{
     path: string;

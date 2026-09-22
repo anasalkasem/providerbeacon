@@ -17,13 +17,29 @@ import {
 import { SaveComparison } from "@/components/WorkspaceActions";
 import { comparisonGroup } from "../../../shared/offerComparison";
 import type { PriceCurrency } from "../../../shared/pricing";
+import {
+  providerSelection,
+  providerSearchUrl,
+} from "../../../shared/providerSelection";
+import { homeDiscoveryCopy } from "@/i18n/homeDiscovery";
 
 type Reply = inferRouterOutputs<AppRouter>["assistant"]["chat"];
 export default function Find() {
+  const search = useSearch();
+  return <FindPage key={search} />;
+}
+function FindPage() {
   const { locale } = useLocale();
   const t = workspaceCopy[locale];
   const a = assistantCopy[locale];
-  const query = new URLSearchParams(useSearch()).get("q")?.slice(0, 1200) ?? "";
+  const params = new URLSearchParams(useSearch());
+  const query = params.get("q")?.slice(0, 1200) ?? "";
+  const providerIds = providerSelection(params.get("providers"));
+  const scopeCopy = homeDiscoveryCopy[locale];
+  const selectedProviders = trpc.marketplace.snapshot.useQuery(
+    { scope: "providers", providerIds, limit: 4 },
+    { enabled: providerIds.length > 0, staleTime: 30_000, retry: 1 }
+  );
   const [draft, setDraft] = useState(query);
   const [result, setResult] = useState<Reply | null>(null);
   const [history, setHistory] = useState<AssistantTurnInput["history"]>([]);
@@ -84,6 +100,7 @@ export default function Find() {
       history,
       context: {
         path: "/find",
+        providerIds: providerIds.length ? providerIds : undefined,
         offerIds: result?.offers.map(o => o.service.id) ?? [],
       },
     });
@@ -120,6 +137,40 @@ export default function Find() {
           <p className="mt-3 max-w-2xl text-sm leading-7 text-silver">
             {t.intro}
           </p>
+          {providerIds.length > 0 && (
+            <div className="mt-4 rounded-xl border border-border bg-card p-4 text-foreground">
+              <p className="text-sm">{scopeCopy.scopeNotice}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+                {selectedProviders.data?.source === "database" &&
+                  selectedProviders.data.providers.map(provider => (
+                    <Link
+                      key={provider.id}
+                      href={"/providers/" + provider.slug}
+                      className="underline underline-offset-4"
+                    >
+                      <bdi>{provider.name}</bdi>
+                    </Link>
+                  ))}
+                <Link
+                  href={providerSearchUrl(query)}
+                  className="ms-auto inline-flex min-h-11 items-center underline underline-offset-4"
+                >
+                  {scopeCopy.clearScope}
+                </Link>
+              </div>
+              {selectedProviders.isError ||
+              selectedProviders.data?.source === "unavailable" ? (
+                <p role="status" className="mt-2 text-xs">
+                  {scopeCopy.scopeUnavailable}
+                </p>
+              ) : selectedProviders.data &&
+                selectedProviders.data.providers.length < providerIds.length ? (
+                <p role="status" className="mt-2 text-xs">
+                  {scopeCopy.scopeMissing}
+                </p>
+              ) : null}
+            </div>
+          )}
           <form
             className="mt-6 rounded-2xl border border-white/15 bg-card p-3 text-foreground shadow-none"
             onSubmit={e => {
@@ -186,7 +237,11 @@ export default function Find() {
             <p>{status.isError ? a.error : a.unavailable}</p>
             <Link
               className="mt-3 inline-flex font-bold text-foreground underline"
-              href="/services"
+              href={
+                providerIds.length
+                  ? "/services?providers=" + providerIds.join(",")
+                  : "/services"
+              }
             >
               {t.browse}
             </Link>

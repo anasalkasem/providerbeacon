@@ -353,6 +353,35 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   const publication = { enabled: true, reason: "Owner requested visibility of the connected provider" };
   const ownerCaller = () => appRouter.createCaller({ user: { id: actorId, openId: "catalogue-test-owner", role: "admin", email: null }, req: { headers: {}, ip: "127.0.0.1" }, res: {} } as any);
 
+  it("returns at most 16 public homepage profiles with service counts and no offers", async () => {
+    for (let index = 0; index < 18; index++) {
+      const [provider] = await state.db.insert(providerRecords).values({ slug: `home-provider-${index}`, name: `Home provider ${index}`, initials: "HP", status: "active" }).$returningId();
+      await addService("active", provider.id);
+    }
+    await state.db.insert(providerRecords).values({ slug: "hidden-home-provider", name: "Hidden home provider", initials: "HH", status: "suspended" });
+    const result = await getMarketplaceSnapshot({ scope: "home", limit: 100 });
+    expect(result.source).toBe("database");
+    expect(result.providers).toHaveLength(16);
+    expect(result.providers.every(provider => provider.activeServicesCount === 1)).toBe(true);
+    expect(result.providers.some(provider => provider.slug === "hidden-home-provider")).toBe(false);
+    expect(result.services).toEqual([]);
+    expect(result.pagination).toEqual({ total: 19, nextCursor: null });
+  });
+  it("enforces exact provider scope in directory, service pages and cache keys", async () => {
+    const [other] = await state.db.insert(providerRecords).values({ slug: "scope-other", name: "Scope other", initials: "SO", status: "active" }).$returningId();
+    const first = await addService(); const second = await addService("active", other.id);
+    const selected = await getCachedMarketplaceSnapshot({ scope: "services", providerIds: [providerId] });
+    expect(selected.services.map(service => service.id)).toEqual([`service-${first}`]);
+    expect(selected.pagination.total).toBe(1);
+    const changed = await getCachedMarketplaceSnapshot({ scope: "services", providerIds: [other.id] });
+    expect(changed.services.map(service => service.id)).toEqual([`service-${second}`]);
+    expect((await getMarketplaceSnapshot({ scope: "providers", providerIds: [providerId] })).providers.map(provider => provider.id)).toEqual([`provider-${providerId}`]);
+    expect((await getMarketplaceSnapshot({ scope: "services", providerIds: [2147483647] })).services).toEqual([]);
+    expect((await getMarketplaceSnapshot({ scope: "provider", slug: "scope-other", providerIds: [providerId] })).providers).toEqual([]);
+    await updateProviderStatus({ id: providerId, status: "suspended", actorUserId: actorId });
+    expect((await getCachedMarketplaceSnapshot({ scope: "services", providerIds: [providerId] })).services).toEqual([]);
+  });
+
   it("publishes a newly synced provider and refreshes the directory, profile and offers together", async () => {
     await state.db.update(providerRecords).set({ status: "draft" }).where(eq(providerRecords.id, providerId));
     await addIntegration("active");
@@ -615,10 +644,10 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   });
   it("invalidates a warm public catalogue after an authorized publication change", async () => {
     await addService();
-    expect((await getCachedMarketplaceSnapshot()).services).toHaveLength(1);
+    expect((await getCachedMarketplaceSnapshot({ scope: "services" })).services).toHaveLength(1);
     const caller = appRouter.createCaller({user: {id: actorId, openId: "catalogue-test-owner", role: "admin", email: null}, req: {headers: {}}, res: {}} as any);
     await caller.admin.providers.setStatus({id: providerId, status: "suspended"});
-    expect((await getCachedMarketplaceSnapshot()).services).toHaveLength(0);
+    expect((await getCachedMarketplaceSnapshot({ scope: "services" })).services).toHaveLength(0);
   });
   it("does not load retained API payloads or turn unknown metadata into strings", async () => {
     const id = await addService();
@@ -631,12 +660,12 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     const { created: [id] } = await createWebDraft();
     const detail = await getServiceReview(id!);
     expect(detail.service).toMatchObject({ sourceKind: "public_web", status: "draft", pricingConfirmed: false, policyReviewed: false });
-    expect((await getMarketplaceSnapshot()).services).toHaveLength(0);
+    expect((await getMarketplaceSnapshot({ scope: "services" })).services).toHaveLength(0);
     await expect(applyServiceReview({ items: [{ id: id!, revision: 1 }], action: "approve", reason: "Must still pass review", actorUserId: actorId })).rejects.toThrow("review_not_ready");
     const edited = await editServiceReview({ id: id!, revision: 1, platform: "Instagram", category: "Content creation", countryCode: null, price: 99, priceCurrency: "USD", priceUnit: "package", packageDescription: webOffer.scope, minOrder: 1, maxOrder: 1, refillMode: "unknown", refillDays: null, evidenceUrl: webOffer.sourceUrl, pricingConfirmed: true, policyReviewed: true, reason: "Fixture pricing and content scope reviewed", actorUserId: actorId });
     await applyServiceReview({ items: [{ id: id!, revision: edited.revision }], action: "approve", reason: "Fixture approval", actorUserId: actorId });
     await applyServiceReview({ items: [{ id: id!, revision: edited.revision + 1 }], action: "publish", reason: "Fixture publication", actorUserId: actorId });
-    const [offer] = (await getMarketplaceSnapshot()).services;
+    const [offer] = (await getMarketplaceSnapshot({ scope: "services" })).services;
     expect(offer).toMatchObject({ billingCycle: "monthly", priceAmount: 99, sourceUrl: webOffer.sourceUrl, nameAr: webOffer.nameAr, termsAr: webOffer.termsAr });
     expect(offer).not.toHaveProperty("sourceData");
     const again = await createWebDraft(); expect(again).toEqual({ created: [], skipped: [id] });
@@ -674,18 +703,18 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     const [other] = await state.db.insert(providerRecords).values({ slug: "other-provider", name: "Other provider", initials: "OP", status: "active" }).$returningId();
     await addService(); await addService("active", other.id);
     await updateProviderStatus({ id: providerId, status: "suspended", actorUserId: actorId });
-    const snapshot = await getMarketplaceSnapshot();
+    const snapshot = await getMarketplaceSnapshot({ scope: "services" });
     expect(snapshot.providers.map(p => p.id)).toEqual([`provider-${other.id}`]);
     expect(snapshot.services.map(s => s.providerId)).toEqual([`provider-${other.id}`]);
   });
   it("keeps an empty catalogue empty after all providers are suspended", async () => {
     await updateProviderStatus({ id: providerId, status: "suspended", actorUserId: actorId });
-    expect(await getMarketplaceSnapshot()).toEqual({ providers: [], services: [], source: "database", pagination: { total: 0, nextCursor: null } });
+    expect(await getMarketplaceSnapshot({ scope: "services" })).toEqual({ providers: [], services: [], source: "database", pagination: { total: 0, nextCursor: null } });
   });
   it("provides unique comparison IDs across identical provider-local IDs and no invented evidence", async () => {
     const [other] = await state.db.insert(providerRecords).values({ slug: "other-provider", name: "Other provider", initials: "OP", status: "active" }).$returningId();
     await addService(); await addService("active", other.id);
-    const snapshot = await getMarketplaceSnapshot();
+    const snapshot = await getMarketplaceSnapshot({ scope: "services" });
     expect(new Set(snapshot.services.map(service => service.id)).size).toBe(2);
     expect(snapshot.providers[0]).toMatchObject({ score: null, updatedMinutes: null, apiStatus: "unknown", rating: null });
   });
@@ -713,10 +742,10 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(integration.status).toBe("disabled"); expect(integration.nextSyncAt).toBeNull();
     const rows = await state.db.select().from(serviceRecords);
     expect(rows).toHaveLength(1); expect(rows[0].status).toBe("draft");
-    expect((await getMarketplaceSnapshot()).services).toEqual([]);
+    expect((await getMarketplaceSnapshot({ scope: "services" })).services).toEqual([]);
     await expect(updateServiceRecord({ id: rows[0].id, status: "active", actorUserId: actorId })).rejects.toThrow("review and publication");
     await prepareAndPublish(rows[0].id);
-    expect((await getMarketplaceSnapshot()).services).toHaveLength(1);
+    expect((await getMarketplaceSnapshot({ scope: "services" })).services).toHaveLength(1);
   });
   it("preserves reviewed per-item pricing on unchanged source and records a source change separately", async () => {
     await sync(); const [original] = await state.db.select().from(serviceRecords);
@@ -768,7 +797,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     await sync();
     [row] = await state.db.select().from(serviceRecords).where(eq(serviceRecords.id, id));
     expect(row.status).toBe("draft"); expect(row.priceAmount).toBe("2.0000");
-    expect((await getMarketplaceSnapshot()).services).toEqual([]);
+    expect((await getMarketplaceSnapshot({ scope: "services" })).services).toEqual([]);
   });
   it.each(["paused", "archived"] as const)("respects an existing %s status during imports", async status => {
     const id = await addService(status); await sync();
@@ -847,7 +876,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([{ ...payload[0], service: 200 }]))));
     const result = await sync(); expect(result.missingCount).toBe(1);
     expect((await getServiceReview(first.id)).service).toMatchObject({ available: false, reviewStatus: "pending", status: "draft" });
-    expect((await getMarketplaceSnapshot()).services).toHaveLength(0);
+    expect((await getMarketplaceSnapshot({ scope: "services" })).services).toHaveLength(0);
     vi.stubGlobal("fetch", vi.fn(async () => response())); await sync();
     expect((await getServiceReview(first.id)).service).toMatchObject({ available: true, reviewStatus: "pending", pricingConfirmed: false });
     expect(await state.db.select().from(priceSnapshots)).toHaveLength(3);
@@ -970,7 +999,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect((await listAdminServices()).total).toBe(5002);
     expect((await getServiceReview(old.id)).service).toMatchObject({ available: false, status: "draft" });
     const [snapshots] = await state.db.select({ n: sql<number>`count(*)` }).from(priceSnapshots); expect(Number(snapshots.n)).toBe(5003);
-    expect((await getMarketplaceSnapshot()).services).toHaveLength(0);
+    expect((await getMarketplaceSnapshot({ scope: "services" })).services).toHaveLength(0);
     for (let i = 0; i < 8; i++) await cleanupProviderSyncSnapshots();
     expect(await state.db.select().from(providerSyncRows)).toHaveLength(0);
   }, 120_000);
@@ -1023,7 +1052,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     const previous = (await getServiceReview(old.id)).service;
     expect(previous).toMatchObject({ minOrder: 100, priceAmount: "1.0000", status: "draft", reviewStatus: "changes_requested", pricingConfirmed: false, incomplete: true, available: true });
     expect((await listAdminServices()).total).toBe(2);
-    expect((await getMarketplaceSnapshot()).services).toHaveLength(0);
+    expect((await getMarketplaceSnapshot({ scope: "services" })).services).toHaveLength(0);
     await cleanupProviderSyncSnapshots(); await cleanupProviderSyncSnapshots();
     const issues = await listProviderSyncIssues({ jobId: result.id });
     expect(issues.items).toHaveLength(2);

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { priceCurrencies } from "./pricing";
 import { platforms, serviceTypes } from "./serviceReview";
+import { providerSelectionInput } from "./providerSelection";
 
 export const assistantLocales = ["ar", "en", "es", "hi", "zh"] as const;
 export const assistantMessage = z
@@ -23,6 +24,7 @@ export const assistantTurnInput = z
           .regex(/^\/(?:$|services(?:\/|$)|providers(?:\/|$)|compare$|find$)/)
           .default("/"),
         offerIds: z.array(serviceId).max(4).default([]),
+        providerIds: providerSelectionInput,
       })
       .strict()
       .default({ path: "/", offerIds: [] }),
@@ -64,6 +66,8 @@ export const assistantPlanSchema = z
   })
   .strict();
 export type AssistantPlan = z.infer<typeof assistantPlanSchema>;
+// The server attaches this scope after planning. The model cannot change it.
+export type AssistantCataloguePlan = AssistantPlan & { providerIds?: number[] };
 
 export const assistantAnswerSchema = z
   .object({

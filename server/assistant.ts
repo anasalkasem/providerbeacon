@@ -3,6 +3,7 @@ import {
   assistantAnswerSchema,
   assistantPlanSchema,
   type AssistantPlan,
+  type AssistantCataloguePlan,
   type AssistantTurnInput,
 } from "../shared/assistant";
 import { compareFractions } from "../shared/exchange";
@@ -105,7 +106,13 @@ export async function runAssistantTurn(
   deps: AssistantDependencies = assistantDependencies
 ) {
   const contextIds = Array.from(new Set(input.context.offerIds));
-  const contextOffers = contextIds.length ? await deps.byIds(contextIds) : [];
+  const providerIds = Array.from(new Set(input.context.providerIds ?? []));
+  const inSelection = (offer: { provider: { id: string } }) =>
+    !providerIds.length ||
+    providerIds.includes(Number(offer.provider.id.slice(9)));
+  const contextOffers = (
+    contextIds.length ? await deps.byIds(contextIds) : []
+  ).filter(inSelection);
   const conversation = {
     locale: input.locale,
     history: input.history,
@@ -119,7 +126,7 @@ export async function runAssistantTurn(
       category: service.category,
     })),
   };
-  const plan = withoutRepeatedQuantity(
+  const parsedPlan = withoutRepeatedQuantity(
     await deps.model(
       "beacon_search_plan",
       assistantPlanSchema,
@@ -127,6 +134,9 @@ export async function runAssistantTurn(
       JSON.stringify(conversation)
     )
   );
+  const plan: AssistantCataloguePlan = providerIds.length
+    ? { ...parsedPlan, providerIds }
+    : parsedPlan;
   const base = {
     handoff: plan.action === "handoff",
     request: {
@@ -142,10 +152,16 @@ export async function runAssistantTurn(
     catalogueUrl: assistantCatalogueUrl(plan),
     generatedAt: new Date().toISOString(),
   };
-  if (plan.action === "help" || plan.action === "clarify" || plan.action === "handoff")
+  if (
+    plan.action === "help" ||
+    plan.action === "clarify" ||
+    plan.action === "handoff"
+  )
     return {
       ...base,
-      catalogueUrl: "/services",
+      catalogueUrl: providerIds.length
+        ? "/services?providers=" + providerIds.join(",")
+        : "/services",
       answer: safeProse(plan.reply),
       offers: [],
       totalMatches: 0,
@@ -161,7 +177,7 @@ export async function runAssistantTurn(
   if (plan.action === "compare") {
     const ids = Array.from(new Set(plan.serviceIds));
     if (ids.length < 2) throw new AssistantModelError("invalid_response");
-    candidates = await deps.byIds(ids);
+    candidates = (await deps.byIds(ids)).filter(inSelection);
     comparisonMissing = candidates.length !== ids.length;
     totalMatches = candidates.length;
   } else {

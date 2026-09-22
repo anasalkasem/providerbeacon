@@ -18,6 +18,11 @@ import {
 import { localizeData } from "@/i18n/messages";
 import { GuideGrid } from "@/components/Discovery";
 import SmmOfferTable from "@/components/SmmOfferTable";
+import {
+  providerSelection,
+  providerSearchUrl,
+} from "../../../shared/providerSelection";
+import { homeDiscoveryCopy } from "@/i18n/homeDiscovery";
 
 export default function Services() {
   const search = useSearch();
@@ -29,6 +34,8 @@ function ServicesPage() {
   const ar = locale === "ar";
   const wt = workspaceCopy[locale];
   const params = new URLSearchParams(useSearch());
+  const providerIds = providerSelection(params.get("providers"));
+  const scopeCopy = homeDiscoveryCopy[locale];
   const { services, setFilters, pagination, isLoading, source } =
     useMarketplaceData();
   const [, navigate] = useLocation();
@@ -145,8 +152,23 @@ function ServicesPage() {
             ? "ابحث حسب المنصة ونوع الخدمة وحدود الطلب. استعرض أسعار المزوّدين بوحدات بيعها، واحسب تكلفة الكمية للعروض التي تتوفر بيانات تسعيرها."
             : "Search by platform, service type and order limits. Browse provider prices with their sale units and calculate quantity totals where pricing data is available."}
         </p>
+        {providerIds.length > 0 && (
+          <p className="mt-4 rounded-xl border border-border p-3 text-sm">
+            {scopeCopy.scopeNotice}{" "}
+            <Link
+              className="ms-3 inline-flex min-h-11 items-center underline underline-offset-4"
+              href={(() => {
+                const next = new URLSearchParams(params);
+                next.delete("providers");
+                return "/services" + (next.size ? "?" + next.toString() : "");
+              })()}
+            >
+              {scopeCopy.clearScope}
+            </Link>
+          </p>
+        )}
         <Link
-          href="/find"
+          href={providerSearchUrl("", providerIds)}
           className="mt-5 inline-flex rounded-xl bg-ink px-5 py-3 text-sm font-bold text-white"
         >
           {wt.search} ✦

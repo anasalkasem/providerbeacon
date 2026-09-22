@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { priceCurrencies, priceUnits } from "./pricing";
 import { catalogueViews, reviewNeeds, serviceTypes } from "./serviceReview";
+import { providerSelectionInput } from "./providerSelection";
 
 // Limits are enforced at the API boundary; the browser cannot request the full catalogue.
 export const adminServicesInput = z
@@ -55,6 +56,7 @@ export const catalogueInput = z
     minRefillDays: z.number().int().min(1).max(3650).optional(),
     sort: z.enum(["recommended", "price", "retention"]).default("recommended"),
     slug: z.string().max(190).optional(),
+    providerIds: providerSelectionInput,
     ids: z.array(z.number().int().positive()).max(4).default([]),
   })
   .refine(

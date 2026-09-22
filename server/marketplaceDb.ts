@@ -77,8 +77,10 @@ async function buildMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
   const db = await getDb();
   if (!db) return empty("unavailable");
   try {
-    const eligible = visibleCatalogueProvider();
-    const providerScope = input.scope === "providers" || input.scope === "provider";
+    const eligible = and(visibleCatalogueProvider(), input.providerIds?.length ? inArray(providerRecords.id, input.providerIds) : undefined);
+    const providerDirectory = input.scope === "providers" || input.scope === "home";
+    const providerScope = providerDirectory || input.scope === "provider";
+    const providerLimit = input.scope === "home" ? 16 : input.limit;
     const marketFilter = input.market === "smm" ? or(eq(serviceRecords.sourceKind, "provider_api"), and(inArray(serviceRecords.priceUnit, ["per_1000", "per_item"]),
       inArray(serviceRecords.category, ["Followers", "Views", "Likes", "Comments", "Shares", "Subscribers"])))
       : input.market === "packages" ? eq(serviceRecords.priceUnit, "package") : undefined;
@@ -98,7 +100,7 @@ async function buildMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       input.scope === "providers" && input.q ? or(like(providerRecords.name, searchPattern(input.q)), like(providerRecords.location, searchPattern(input.q))) : undefined);
     const providerPage = providerScope ? await db.select().from(providerRecords)
       .where(and(providerFilter, input.scope === "providers" && input.cursor ? lt(providerRecords.id, input.cursor.id) : undefined))
-      .orderBy(desc(providerRecords.id)).limit(input.scope === "provider" ? 1 : input.limit + 1) : [];
+      .orderBy(desc(providerRecords.id)).limit(input.scope === "provider" ? 1 : providerLimit + 1) : [];
     if (input.scope === "provider" && !providerPage.length) return empty("database");
     const serviceFilter = and(eligible, visibleCatalogueService(),
       input.priceUnit || input.sort === "price" ? or(approvedService(), confirmedSourcePricing()) : undefined,
@@ -126,19 +128,19 @@ async function buildMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       input.sort === "price" ? gt(rank, cursorRank) : lt(rank, cursorRank),
       and(eq(rank, cursorRank), lt(serviceRecords.id, input.cursor.id))) : undefined;
     const limit = input.scope === "home" ? 8 : input.scope === "compare" ? 4 : input.limit;
-    const servicePage = input.scope === "providers" ? [] : await db.select({ service: publicServiceColumns, rank }).from(serviceRecords)
+    const servicePage = providerDirectory ? [] : await db.select({ service: publicServiceColumns, rank }).from(serviceRecords)
       .innerJoin(providerRecords, eq(providerRecords.id, serviceRecords.providerId)).where(and(serviceFilter, after))
       .orderBy(input.sort === "price" ? asc(rank) : desc(rank), desc(serviceRecords.id)).limit(limit + 1);
     const serviceRows = servicePage.slice(0, limit).map(row => row.service);
     const serviceProviderIds = Array.from(new Set(serviceRows.map(row => row.providerId)));
-    const providerRows = providerScope ? providerPage.slice(0, input.limit) : serviceProviderIds.length ? await db.select().from(providerRecords)
+    const providerRows = providerScope ? providerPage.slice(0, providerLimit) : serviceProviderIds.length ? await db.select().from(providerRecords)
       .where(and(eligible, serviceProviderIds.length ? inArray(providerRecords.id, serviceProviderIds) : undefined))
       .orderBy(providerRecords.name).limit(serviceProviderIds.length) : [];
     const providerIds = providerRows.map(row => row.id);
     const counts = providerIds.length ? await db.select({ providerId: serviceRecords.providerId, total: count() }).from(serviceRecords)
       .innerJoin(providerRecords, eq(providerRecords.id, serviceRecords.providerId)).where(and(visibleCatalogueService(), inArray(serviceRecords.providerId, providerIds))).groupBy(serviceRecords.providerId) : [];
     const serviceCounts = new Map(counts.map(row => [row.providerId, row.total]));
-    const totals = input.scope === "providers" ? await db.select({ total: count() }).from(providerRecords).where(providerFilter)
+    const totals = providerDirectory ? await db.select({ total: count() }).from(providerRecords).where(providerFilter)
       : await db.select({ total: count() }).from(serviceRecords).innerJoin(providerRecords, eq(serviceRecords.providerId, providerRecords.id)).where(serviceFilter);
     const last = servicePage[Math.min(limit, servicePage.length) - 1];
     const nextCursor = input.scope === "providers" ? (providerPage.length > input.limit ? { id: providerRows.at(-1)!.id, rank: 0 } : null)
