@@ -278,6 +278,7 @@ function AssistantChat({ path }: { path: string }) {
         onClick={() => setOpen(true)}
         aria-expanded={open}
         aria-controls="beacon-assistant"
+        aria-label={t.launcher}
         className={`beacon-assistant-launcher fixed end-5 z-[60] items-center gap-2 rounded-full bg-primary px-5 py-3.5 text-sm font-bold text-primary-foreground shadow-lg ring-1 ring-copper hover:bg-primary/90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring ${open ? "hidden" : "inline-flex"}`}
       >
         {isOrbit ? (
@@ -285,7 +286,7 @@ function AssistantChat({ path }: { path: string }) {
         ) : (
           <Sparkles aria-hidden="true" className="size-5" />
         )}
-        {t.launcher}
+        <span className="beacon-assistant-label">{t.launcher}</span>
         <UnreadMessages count={notificationData?.unread ?? 0} />
       </button>
       {panelPresent && (
