@@ -1,0 +1,182 @@
+.offer-results-help {
+  margin-block: 8px 12px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.offer-results-ranking {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: var(--success);
+  font-weight: 600;
+  margin-block-end: 4px;
+}
+.offer-results-ranking svg {
+  flex: none;
+  margin-top: 3px;
+}
+.offer-results-help summary {
+  cursor: pointer;
+  width: fit-content;
+  min-height: 44px;
+  padding-block: 10px;
+  color: var(--secondary-foreground);
+}
+.offer-results-help details > p {
+  max-width: 75ch;
+  margin-block-end: 8px;
+}
+.offer-results-price-col {
+  width: 22%;
+}
+.offer-results-limits-col {
+  width: 15%;
+}
+.offer-results-terms-col {
+  width: 19%;
+}
+.offer-results-action-col {
+  width: 72px;
+}
+.offer-results-table td {
+  vertical-align: top;
+}
+.offer-results-provider {
+  display: inline-block;
+  max-width: 100%;
+  color: var(--secondary-foreground);
+  font-size: 12px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  padding-block: 4px;
+}
+.offer-results-provider:hover {
+  text-decoration: underline;
+}
+.offer-results-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.offer-results-name > span {
+  flex: 1;
+  min-width: 0;
+}
+.offer-results-name > svg {
+  flex: none;
+  color: var(--muted-foreground);
+}
+.offer-results-name[aria-expanded="true"] > svg {
+  transform: rotate(180deg);
+}
+.offer-results-terms {
+  font-size: 12px;
+}
+.offer-results-row > th {
+  border-inline-start: 3px solid transparent;
+}
+.offer-results-row[data-selected] {
+  background: var(--secondary);
+}
+.offer-results-row[data-lowest] {
+  background: var(--success-muted);
+}
+.offer-results-row[data-lowest] > th {
+  border-inline-start-color: var(--success-border);
+}
+.offer-results-row[data-lowest] .provider-catalogue-price {
+  color: var(--success);
+}
+.offer-results-lowest {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 6px;
+  padding: 3px 5px;
+  border: 1px solid var(--success-border);
+  border-radius: 5px;
+  color: var(--success);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.offer-results-lowest svg {
+  flex: none;
+}
+.offer-results-table .offer-results-action {
+  text-align: center;
+  padding-inline: 4px;
+}
+.offer-results-compare {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--input);
+  border-radius: 9px;
+  color: var(--primary);
+  background: var(--card);
+}
+.offer-results-compare:hover {
+  background: var(--secondary);
+}
+.offer-results-compare[aria-pressed="true"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+.offer-results-compare:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.offer-results-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  align-items: start;
+  gap: 20px;
+  margin-top: 12px;
+}
+.offer-results-detail-grid > dl {
+  margin-top: 0;
+}
+.offer-results-detail bdi {
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.offer-results a:focus-visible,
+.offer-results summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+@media (max-width: 767px) {
+  .offer-results-price-col {
+    width: 34%;
+  }
+  .offer-results-extra {
+    display: none;
+  }
+  .offer-results-action-col {
+    width: 52px;
+  }
+  .offer-results-table thead th {
+    font-size: 11px;
+  }
+  .offer-results-table .provider-catalogue-meta {
+    font-size: 10px;
+    gap: 2px 6px;
+  }
+  .offer-results-provider {
+    font-size: 11px;
+  }
+  .offer-results-lowest {
+    font-size: 10px;
+  }
+  .offer-results-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .offer-results-detail dl {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

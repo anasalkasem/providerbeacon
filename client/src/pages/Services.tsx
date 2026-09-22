@@ -4,7 +4,6 @@ import { workspaceCopy } from "@/i18n/workspace";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useSearch } from "wouter";
 import { PublicLayout } from "@/components/SiteChrome";
-import { CataloguePagination } from "@/components/CataloguePagination";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
 import { type Service } from "@/data/marketplace";
@@ -23,6 +22,7 @@ import {
   providerSearchUrl,
 } from "../../../shared/providerSelection";
 import { homeDiscoveryCopy } from "@/i18n/homeDiscovery";
+import { offerResultsCopy } from "@/i18n/offerResults";
 
 export default function Services() {
   const search = useSearch();
@@ -401,7 +401,7 @@ function ServicesPage() {
                 onChange={e => setSort(e.target.value as typeof sort)}
               >
                 <option value="recommended">
-                  {ar ? "ترتيب الدليل" : "Directory order"}
+                  {offerResultsCopy[locale].recommended}
                 </option>
                 <option
                   value="price"
@@ -523,6 +523,16 @@ function ServicesPage() {
           selected={selected}
           toggle={toggle}
           quantity={quantity}
+          pageSize={limit}
+          prioritizeLowest={
+            !(
+              market === "smm" &&
+              currency &&
+              unit &&
+              unit !== "package" &&
+              sort === "price"
+            )
+          }
         />
         {isLoading && (
           <p className="p-8 text-center" role="status">
@@ -536,7 +546,6 @@ function ServicesPage() {
               : "No published offers match these filters yet."}
           </p>
         )}
-        <CataloguePagination />
         <p className="mt-5 text-sm leading-7 text-muted-foreground">
           {ar
             ? "الأسعار وشروط التنفيذ معلنة من المزودين؛ فحص المصدر لا يعني اختبار جودة التنفيذ. ترتيب السعر لا يساوي ترتيب الجودة."
