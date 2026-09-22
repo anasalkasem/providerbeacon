@@ -280,12 +280,13 @@ export async function startProviderCheckout(
 ) {
   const db = await businessDatabase();
   const result = await db.transaction(async tx => {
-    const { account, member } = await lockedProviderOwner(
+    const { account, member, provider } = await lockedProviderOwner(
       tx,
       auth,
       providerId,
       false
     );
+    if (provider.isReviewWorkspace) paymentFail("review_workspace", "FORBIDDEN");
     if (account.status === "suspended") paymentFail("suspended", "FORBIDDEN");
     const [setting] = await tx
       .select({ setting: settings, environment: credentials.environment })

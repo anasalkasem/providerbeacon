@@ -45,6 +45,7 @@ export async function lockedBusinessProvider(
       slug: providerRecords.slug,
       websiteUrl: providerRecords.websiteUrl,
       status: providerRecords.status,
+      isReviewWorkspace: providerRecords.isReviewWorkspace,
     })
     .from(providerRecords)
     .where(eq(providerRecords.id, providerId))

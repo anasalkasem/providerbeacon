@@ -188,7 +188,7 @@ export async function ownGroups(auth: MemberAuth) {
       .limit(10);
   });
 }
-async function checkedValues(tx: Transaction, input: GroupInput, existing?: { url: string; linkMetadata: GroupLinkMetadata | null }) {
+async function checkedValues(tx: Transaction, input: GroupInput, existing?: { url: string; linkMetadata: GroupLinkMetadata | null }, authorizedProviderId?: number) {
   const link = groupLink(input.url);
   if (!link) fail("invalid_link");
   let evidenceUrl: string | null = null;
@@ -199,7 +199,12 @@ async function checkedValues(tx: Transaction, input: GroupInput, existing?: { ur
       .where(
         and(
           eq(providerRecords.id, input.providerId),
-          visibleCatalogueProvider()
+          or(
+            visibleCatalogueProvider(),
+            authorizedProviderId === input.providerId
+              ? and(eq(providerRecords.isReviewWorkspace, true), eq(providerRecords.status, "active"))
+              : undefined
+          )
         )
       )
       .limit(1);
@@ -265,7 +270,7 @@ export async function createGroup(author: Author, input: GroupInput) {
           .where(eq(groups.submittedBy, author.member.member.id));
         if (amount.total >= 10) fail("limit");
       }
-      const values = await checkedValues(tx, input);
+      const values = await checkedValues(tx, input, undefined, "member" in author ? author.providerId : undefined);
       const [row] = await tx
         .insert(groups)
         .values({
@@ -317,7 +322,7 @@ export async function editGroup(
       // association to turn an unpaid promotion into a free community entry.
       if ("member" in author && row.requiresSubscription && input.providerId !== row.providerId) fail("evidence_required");
       if ("member" in author && author.providerId && input.providerId !== author.providerId) fail("evidence_required");
-      const values = await checkedValues(tx, input, row);
+      const values = await checkedValues(tx, input, row, "member" in author ? author.providerId : undefined);
       await tx
         .update(groups)
         .set({

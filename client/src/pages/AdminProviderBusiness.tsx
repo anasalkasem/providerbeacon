@@ -3,6 +3,8 @@ import { toast } from "sonner";
 import { Building2, ExternalLink } from "lucide-react";
 import { BusinessPricing } from "@/components/BusinessPricing";
 import { AdminPayments } from "@/components/AdminPayments";
+import { AdminReviewWorkspace } from "@/components/AdminReviewWorkspace";
+import { reviewWorkspaceText } from "@/i18n/reviewWorkspace";
 import { AdminVip } from "@/components/AdminVip";
 import { AdminVipGrants } from "@/components/AdminVipGrants";
 import { vipGrantText } from "@/i18n/vipGrants";
@@ -52,7 +54,7 @@ export function AdminBusinessPanel() {
   const manage = access.data?.permissions.includes("business.manage") ?? false;
   const owner = access.data?.role === "owner";
   const [tab, setTab] = useState<
-    "subscription" | "claims" | "offers" | "payments" | "vip" | "complimentary"
+    "subscription" | "claims" | "offers" | "payments" | "vip" | "complimentary" | "review"
   >("subscription");
   if (access.isError || (access.data && !allowed)) return <BusinessError />;
   if (!allowed) return <p role="status">{t.loading}</p>;
@@ -72,6 +74,7 @@ export function AdminBusinessPanel() {
             ? [{ key: "complimentary", title: vipGrantText(locale).title }]
             : []),
           { key: "payments", title: paymentText(locale).gates },
+          ...(owner ? [{ key: "review", title: reviewWorkspaceText(locale).title }] : []),
         ].map(item => (
           <button
             key={item.key}
@@ -89,6 +92,7 @@ export function AdminBusinessPanel() {
       {tab === "vip" && <AdminVip manage={manage} />}
       {tab === "complimentary" && owner && <AdminVipGrants />}
       {tab === "payments" && <AdminPayments manage={manage} />}
+      {tab === "review" && owner && <AdminReviewWorkspace />}
     </div>
   );
 }
