@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { lowestVisiblePriceIds } from "../client/src/lib/priceHighlights";
+import {
+  lowestVisiblePriceIds,
+  orderVisibleOffers,
+} from "../client/src/lib/priceHighlights";
 import type { Service } from "../client/src/data/marketplace";
 import { services } from "./testFixtures";
 
@@ -14,6 +17,34 @@ const offer = (id: string, patch: Partial<Service> = {}): Service => ({
 });
 
 describe("price highlights in the visible catalogue", () => {
+  it("moves all exact minima first without mutating rows or comparing currencies", () => {
+    const rows = [
+      offer("featured", { priceAmount: 3, featured: true }),
+      offer("inr-high", { priceAmount: 200, priceCurrency: "INR" }),
+      offer("usd-low", { priceAmount: 2 }),
+      offer("unknown", { priceAmount: 0.1, priceUnit: null }),
+      offer("inr-low", { priceAmount: 100, priceCurrency: "INR" }),
+      offer("usd-tie", { priceAmount: 2 }),
+    ];
+    const original = [...rows];
+    const { rows: ordered, lowest } = orderVisibleOffers(rows, 1000);
+    expect(ordered.map(row => row.id)).toEqual([
+      "usd-low",
+      "inr-low",
+      "usd-tie",
+      "featured",
+      "inr-high",
+      "unknown",
+    ]);
+    expect(rows).toEqual(original);
+    expect(ordered[0]).toBe(rows[2]);
+    // Explicit server-side price order is respected; the evidence-based
+    // highlights remain available without moving those rows.
+    const explicit = orderVisibleOffers(rows, 1000, false);
+    expect(explicit.rows).toEqual(original);
+    expect(explicit.lowest).toEqual(lowest);
+    expect(orderVisibleOffers(rows, 10001).rows).toEqual(original);
+  });
   it("keeps currencies and service scopes in independent comparison groups", () => {
     const rows = [
       offer("usd-low", { priceAmount: 2 }),

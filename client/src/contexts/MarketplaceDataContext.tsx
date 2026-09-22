@@ -86,49 +86,54 @@ export function MarketplaceDataProvider({ children }: { children: ReactNode }) {
         .filter(Number.isSafeInteger)
     )
   ).slice(0, 4);
-  const query = trpc.marketplace.snapshot.useQuery(
-    {
-      scope,
-      limit: scope === "home" ? 16 : 25,
-      market: ["services", "providers"].includes(scope)
-        ? params.get("market") === "packages"
-          ? "packages"
-          : "smm"
+  const queryInput = {
+    scope,
+    limit: scope === "home" ? 16 : 25,
+    market: ["services", "providers"].includes(scope)
+      ? params.get("market") === "packages"
+        ? "packages"
+        : "smm"
+      : undefined,
+    providerIds:
+      scope === "services"
+        ? providerSelection(params.get("providers"))
         : undefined,
-      providerIds:
-        scope === "services"
-          ? providerSelection(params.get("providers"))
-          : undefined,
-      q: params.get("q")?.slice(0, 100) ?? "",
-      ...current.filters,
-      slug: scope === "provider" ? path.slice("/providers/".length) : undefined,
-      ids,
-      cursor: current.cursors.at(-1),
-    },
-    {
-      enabled:
-        !/^\/(admin|login|setup|team|sign-in|sign-up|account|recover-account|privacy|find)(\/|$)/.test(
-          path
-        ),
-      staleTime: 30_000,
-      gcTime: 120_000,
-      retry: 1,
-      // Preserve the provider and its current rows while another catalogue page
-      // loads. Never carry a previous route/provider into a different profile.
-      placeholderData: (previous, previousQuery) => {
-        const previousInput = (
-          previousQuery?.queryKey[1] as
-            | { input?: Partial<CatalogueInput> }
-            | undefined
-        )?.input;
-        return scope === "provider" &&
-          previousInput?.scope === "provider" &&
-          previousInput.slug === path.slice("/providers/".length)
+    q: params.get("q")?.slice(0, 100) ?? "",
+    ...current.filters,
+    slug: scope === "provider" ? path.slice("/providers/".length) : undefined,
+    ids,
+    cursor: current.cursors.at(-1),
+  } satisfies Partial<CatalogueInput>;
+  const query = trpc.marketplace.snapshot.useQuery(queryInput, {
+    enabled:
+      !/^\/(admin|login|setup|team|sign-in|sign-up|account|recover-account|privacy|find)(\/|$)/.test(
+        path
+      ),
+    staleTime: 30_000,
+    gcTime: 120_000,
+    retry: 1,
+    // Keep the current rows during pagination. Service filters must match so
+    // a new search never displays results from the previous request.
+    placeholderData: (previous, previousQuery) => {
+      const previousInput = (
+        previousQuery?.queryKey[1] as
+          | { input?: Partial<CatalogueInput> }
+          | undefined
+      )?.input;
+      if (scope === "services" && previousInput?.scope === "services") {
+        const { cursor: _previousCursor, ...previousFilters } = previousInput;
+        const { cursor: _currentCursor, ...nextFilters } = queryInput;
+        return JSON.stringify(previousFilters) === JSON.stringify(nextFilters)
           ? previous
           : undefined;
-      },
-    }
-  );
+      }
+      return scope === "provider" &&
+        previousInput?.scope === "provider" &&
+        previousInput.slug === path.slice("/providers/".length)
+        ? previous
+        : undefined;
+    },
+  });
   const setFilters = useCallback(
     (filters: Filters) => {
       setState(previous =>

@@ -1,207 +1,337 @@
-import { DecisionOffer } from "./DecisionOffer";
-import { FollowPrice } from "./WorkspaceActions";
-import { workspaceCopy } from "@/i18n/workspace";
+import { useLayoutEffect, useRef, useState } from "react";
+import { ArrowDown, Check, ChevronDown, Scale } from "lucide-react";
 import { Link } from "wouter";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
-import { type Service } from "@/data/marketplace";
-import { lowestVisiblePriceIds } from "@/lib/priceHighlights";
-import { localizeData, localizeDuration, formatNumber } from "@/i18n/messages";
+import type { Provider, Service } from "@/data/marketplace";
+import { orderVisibleOffers } from "@/lib/priceHighlights";
+import {
+  localizeData,
+  localizeDuration,
+  formatNumber,
+  pageCopy,
+} from "@/i18n/messages";
+import { formatPrice, unitLabel } from "@/i18n/pricing";
+import { priceHighlightCopy } from "@/i18n/priceHighlights";
+import { providerCatalogueCopy } from "@/i18n/providerCatalogue";
+import { offerResultsCopy } from "@/i18n/offerResults";
+import { CataloguePagination } from "./CataloguePagination";
+import { FollowPrice } from "./WorkspaceActions";
 import OfferEvidence, { serviceName, serviceScope } from "./OfferEvidence";
 import QuoteCost from "./QuoteCost";
-import OfferPrice, { PriceLegend } from "./OfferPrice";
-import { hasPricingBasis } from "../../../shared/pricing";
+import OfferPrice from "./OfferPrice";
+import "./provider-catalogue.css";
+import "./offer-results.css";
 
 export default function SmmOfferTable({
   services,
   selected,
   toggle,
   quantity = 1000,
+  pageSize = 25,
+  prioritizeLowest = true,
 }: {
   services: Service[];
   selected: Service[];
   toggle: (service: Service) => void;
   quantity?: number;
+  pageSize?: number;
+  prioritizeLowest?: boolean;
 }) {
   const { locale } = useLocale();
-  const ar = locale === "ar";
-  const wt = workspaceCopy[locale];
-  const { providerFor } = useMarketplaceData();
-  const lowest = lowestVisiblePriceIds(services, quantity);
+  const t = offerResultsCopy[locale];
+  const catalogue = providerCatalogueCopy[locale];
+  const { providerFor, pagination, isFetching } = useMarketplaceData();
+  const { rows, lowest } = orderVisibleOffers(
+    services,
+    quantity,
+    prioritizeLowest
+  );
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
+  const pendingNavigation = useRef(false);
+  const page = pagination?.page ?? 1;
+
+  function revealResults() {
+    heading.current?.focus({ preventScroll: true });
+    heading.current?.scrollIntoView({ block: "start", behavior: "instant" });
+  }
+  function navigate() {
+    pendingNavigation.current = true;
+    setExpanded(null);
+    revealResults();
+  }
+  useLayoutEffect(() => {
+    if (!pendingNavigation.current || isFetching) return;
+    pendingNavigation.current = false;
+    revealResults();
+  }, [page, services, isFetching]);
+
+  // Keep Previous available on an empty or failed later page.
+  if (!services.length && page === 1) return null;
   return (
-    <>
-      {services.length > 0 && (
-        <PriceLegend
-          hasUnconfirmed={services.some(service => !hasPricingBasis(service))}
-        />
-      )}
-      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:hidden">
-        {services.map(service => {
-          const chosen = selected.some(s => s.id === service.id);
-          return (
-            <div key={service.id}>
-              <DecisionOffer
+    <section
+      className="provider-catalogue offer-results"
+      aria-labelledby="offer-results-title"
+    >
+      <div className="provider-catalogue-heading">
+        <h2 id="offer-results-title" ref={heading} tabIndex={-1}>
+          {t.results}
+        </h2>
+      </div>
+      <div className="offer-results-help" id="offer-results-help">
+        {lowest.size > 0 && (
+          <p className="offer-results-ranking">
+            <ArrowDown size={15} aria-hidden="true" />
+            {prioritizeLowest ? t.lowestFirst : t.lowestMarked}
+          </p>
+        )}
+        <p>{catalogue.help}</p>
+        <details>
+          <summary>{t.method}</summary>
+          <p>{t.explanation}</p>
+        </details>
+      </div>
+      <CataloguePagination onNavigate={navigate} pageSize={pageSize} />
+      <div className="provider-catalogue-table-wrap" aria-busy={isFetching}>
+        <table
+          className="provider-catalogue-table offer-results-table"
+          aria-describedby="offer-results-help"
+        >
+          <caption className="sr-only">{t.results}</caption>
+          <colgroup>
+            <col />
+            <col className="offer-results-price-col" />
+            <col className="offer-results-limits-col offer-results-extra" />
+            <col className="offer-results-terms-col offer-results-extra" />
+            <col className="offer-results-action-col" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">{t.serviceProvider}</th>
+              <th
+                scope="col"
+                aria-sort={!prioritizeLowest ? "ascending" : undefined}
+              >
+                {catalogue.price}
+              </th>
+              <th scope="col" className="offer-results-extra">
+                {catalogue.limits}
+              </th>
+              <th scope="col" className="offer-results-extra">
+                {t.startRefill}
+              </th>
+              <th scope="col" className="offer-results-action">
+                {t.compare}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(service => (
+              <OfferRows
+                key={service.id}
                 service={service}
                 provider={providerFor(service)}
                 quantity={quantity}
                 lowest={lowest.has(service.id)}
+                chosen={selected.some(item => item.id === service.id)}
+                selectionFull={selected.length >= 4}
+                compare={() => toggle(service)}
+                open={expanded === service.id}
+                expand={() =>
+                  setExpanded(current =>
+                    current === service.id ? null : service.id
+                  )
+                }
               />
-              <button
-                type="button"
-                onClick={() => toggle(service)}
-                disabled={!chosen && selected.length >= 4}
-                aria-pressed={chosen}
-                className={`mt-2 w-full rounded-xl border px-4 py-3 text-sm font-bold ${chosen ? "border-ring bg-secondary text-foreground" : "border-border bg-card text-secondary-foreground"} disabled:opacity-40`}
-              >
-                {chosen ? "✓ " : "+ "}
-                {ar
-                  ? "قارن"
-                  : locale === "es"
-                    ? "Comparar"
-                    : locale === "zh"
-                      ? "比较"
-                      : locale === "hi"
-                        ? "तुलना"
-                        : "Compare"}
-              </button>
-            </div>
-          );
-        })}
-      </div>
-      <div className="hidden lg:block overflow-x-auto rounded-2xl border border-border bg-card">
-        <table className="w-full min-w-[900px] text-start text-sm">
-          <thead className="bg-muted text-secondary-foreground">
-            <tr>
-              {[
-                ar ? "الخدمة والمزود" : "Service and provider",
-                ar ? "السعر" : "Price",
-                ar ? "حدود الطلب" : "Order limits",
-                ar ? "البدء والتعويض" : "Start and refill",
-                ar ? "المقارنة" : "Compare",
-              ].map(label => (
-                <th className="p-4 text-start font-bold" key={label}>
-                  {label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {services.map(service => {
-              const provider = providerFor(service);
-              const chosen = selected.some(item => item.id === service.id);
-              return (
-                <tr
-                  key={service.id}
-                  className={
-                    chosen
-                      ? "border-t border-input bg-secondary/50"
-                      : "border-t border-border"
-                  }
-                >
-                  <td className="max-w-sm p-4 align-top">
-                    <Link
-                      href={`/providers/${provider.slug}`}
-                      className="font-bold text-foreground hover:underline"
-                    >
-                      {provider.name}
-                    </Link>
-                    <p
-                      className="mt-1 line-clamp-2 font-semibold text-foreground"
-                      title={serviceName(locale, service)}
-                    >
-                      {serviceName(locale, service)}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {service.platform} ·{" "}
-                      {localizeData(locale, service.category)}
-                      {service.sourceServiceId && (
-                        <>
-                          {" "}
-                          · ID <bdi>{service.sourceServiceId}</bdi>
-                        </>
-                      )}
-                    </p>
-                    <details className="mt-2 text-xs">
-                      <summary className="cursor-pointer text-muted-foreground">
-                        {wt.allDetails}
-                      </summary>
-                      <p dir="auto" className="mt-2 leading-6">
-                        {serviceName(locale, service)}
-                      </p>
-                      <OfferEvidence service={service} />
-                    </details>
-                  </td>
-                  <td className="p-4 align-top">
-                    <OfferPrice
-                      service={service}
-                      lowest={lowest.has(service.id)}
-                      scope="visible"
-                    />
-                    {service.priceUnit === "package" ? (
-                      <p className="mt-2 max-w-xs">
-                        {serviceScope(locale, service)}
-                      </p>
-                    ) : (
-                      <QuoteCost
-                        hideMissingBasis
-                        service={service}
-                        quantity={quantity}
-                        lowest={lowest.has(service.id)}
-                      />
-                    )}
-                  </td>
-                  <td className="p-4 align-top">
-                    <bdi className="whitespace-nowrap">
-                      {formatNumber(locale, service.min)} –{" "}
-                      {formatNumber(locale, service.max)}
-                    </bdi>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      {service.countryCode === "WW"
-                        ? ar
-                          ? "عالمي"
-                          : "Worldwide"
-                        : (service.countryCode ??
-                          (ar ? "السوق غير محدد" : "Market unspecified"))}
-                    </p>
-                  </td>
-                  <td className="p-4 align-top">
-                    <p>{localizeDuration(locale, service.startTime)}</p>
-                    <p className="mt-2 text-foreground">
-                      {localizeData(locale, service.refill)}
-                    </p>
-                  </td>
-                  <td className="p-4 align-top">
-                    <button
-                      type="button"
-                      aria-pressed={chosen}
-                      aria-label={`${ar ? "قارن" : "Compare"} ${provider.name}: ${serviceName(locale, service)}`}
-                      disabled={!chosen && selected.length >= 4}
-                      onClick={() => toggle(service)}
-                      className="rounded-xl border border-ink px-4 py-2 font-bold text-foreground hover:bg-secondary disabled:opacity-40"
-                    >
-                      {chosen
-                        ? ar
-                          ? "تم الاختيار ✓"
-                          : "Selected ✓"
-                        : ar
-                          ? "قارن +"
-                          : "Compare +"}
-                    </button>
-                    {service.priceUnit !== "package" && (
-                      <div className="mt-2">
-                        <FollowPrice
-                          serviceId={service.id}
-                          quantity={quantity}
-                        />
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+            ))}
           </tbody>
         </table>
       </div>
+      <CataloguePagination onNavigate={navigate} pageSize={pageSize} />
+    </section>
+  );
+}
+
+function OfferRows({
+  service,
+  provider,
+  quantity,
+  lowest,
+  chosen,
+  selectionFull,
+  compare,
+  open,
+  expand,
+}: {
+  service: Service;
+  provider: Provider;
+  quantity: number;
+  lowest: boolean;
+  chosen: boolean;
+  selectionFull: boolean;
+  compare: () => void;
+  open: boolean;
+  expand: () => void;
+}) {
+  const { locale } = useLocale();
+  const t = offerResultsCopy[locale];
+  const catalogue = providerCatalogueCopy[locale];
+  const pages = pageCopy[locale];
+  const name = serviceName(locale, service);
+  const detailsId = `offer-details-${service.id}`;
+  const market =
+    service.countryCode === "WW"
+      ? t.worldwide
+      : (service.countryCode ?? t.unspecified);
+  return (
+    <>
+      <tr
+        className="provider-catalogue-row offer-results-row"
+        data-offer-id={service.id}
+        data-lowest={lowest || undefined}
+        data-selected={chosen || undefined}
+        data-expanded={open || undefined}
+      >
+        <th scope="row">
+          <Link
+            href={`/providers/${provider.slug}`}
+            className="offer-results-provider"
+          >
+            <bdi>{provider.name}</bdi>
+          </Link>
+          <button
+            type="button"
+            className="provider-catalogue-name offer-results-name"
+            onClick={expand}
+            aria-expanded={open}
+            aria-controls={detailsId}
+            aria-label={`${open ? catalogue.close : catalogue.details}: ${name}`}
+          >
+            <span dir="auto">{name}</span>
+            <ChevronDown size={16} aria-hidden="true" />
+          </button>
+          <div className="provider-catalogue-meta">
+            {service.platform !== "Unknown" && <span>{service.platform}</span>}
+            {service.category !== "Other" && (
+              <span>{localizeData(locale, service.category)}</span>
+            )}
+            {service.sourceServiceId && (
+              <bdi title={catalogue.serviceId}>#{service.sourceServiceId}</bdi>
+            )}
+          </div>
+        </th>
+        <td>
+          <bdi dir="ltr" className="provider-catalogue-price">
+            {formatPrice(locale, service)}
+          </bdi>
+          <span className="provider-catalogue-unit">
+            {unitLabel(locale, service)}
+          </span>
+          {lowest && (
+            <span
+              className="offer-results-lowest"
+              title={priceHighlightCopy[locale].visibleScope}
+            >
+              <ArrowDown size={13} aria-hidden="true" />
+              {t.lowest}
+            </span>
+          )}
+        </td>
+        <td className="offer-results-extra provider-catalogue-limits">
+          <bdi>
+            {formatNumber(locale, service.min)}–
+            {formatNumber(locale, service.max)}
+          </bdi>
+          <p className="provider-catalogue-unit">{market}</p>
+        </td>
+        <td className="offer-results-extra offer-results-terms">
+          <p>{localizeDuration(locale, service.startTime)}</p>
+          <p className="provider-catalogue-unit">
+            {localizeData(locale, service.refill)}
+          </p>
+        </td>
+        <td className="offer-results-action">
+          <button
+            type="button"
+            aria-pressed={chosen}
+            disabled={!chosen && selectionFull}
+            onClick={compare}
+            className="offer-results-compare"
+            aria-label={`${t.compare} ${provider.name}: ${name}`}
+            title={chosen ? t.selected : t.compare}
+          >
+            {chosen ? (
+              <Check size={19} aria-hidden="true" />
+            ) : (
+              <Scale size={19} aria-hidden="true" />
+            )}
+          </button>
+        </td>
+      </tr>
+      <tr
+        id={detailsId}
+        className="provider-catalogue-detail-row"
+        hidden={!open}
+      >
+        <td colSpan={5}>
+          {open && (
+            <div className="provider-catalogue-detail offer-results-detail">
+              <h3 dir="auto">{name}</h3>
+              <div className="offer-results-detail-grid">
+                <div>
+                  <OfferPrice
+                    service={service}
+                    lowest={lowest}
+                    scope="visible"
+                  />
+                  {service.priceUnit === "package" ? (
+                    <p className="mt-3 text-sm" dir="auto">
+                      {serviceScope(locale, service)}
+                    </p>
+                  ) : (
+                    <QuoteCost
+                      hideMissingBasis
+                      service={service}
+                      quantity={quantity}
+                      lowest={lowest}
+                    />
+                  )}
+                </div>
+                <dl>
+                  <div>
+                    <dt>{catalogue.limits}</dt>
+                    <dd>
+                      <bdi>
+                        {formatNumber(locale, service.min)}–
+                        {formatNumber(locale, service.max)}
+                      </bdi>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>{t.market}</dt>
+                    <dd>{market}</dd>
+                  </div>
+                  <div>
+                    <dt>{pages.start}</dt>
+                    <dd>{localizeDuration(locale, service.startTime)}</dd>
+                  </div>
+                  <div>
+                    <dt>{pages.refill}</dt>
+                    <dd>{localizeData(locale, service.refill)}</dd>
+                  </div>
+                </dl>
+              </div>
+              <OfferEvidence service={service} showTerms />
+              {service.priceUnit !== "package" && (
+                <div className="mt-3">
+                  <FollowPrice serviceId={service.id} quantity={quantity} />
+                </div>
+              )}
+            </div>
+          )}
+        </td>
+      </tr>
     </>
   );
 }
