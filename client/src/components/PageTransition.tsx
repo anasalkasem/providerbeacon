@@ -95,7 +95,7 @@ function PageFrame({
   useLayoutEffect(() => {
     if (previous.current === path) return;
     previous.current = path;
-    if (enabled && !historyNavigation.current && !window.location.hash) {
+    if (!historyNavigation.current && !window.location.hash) {
       window.scrollTo({ top: 0, behavior: "instant" });
     }
     historyNavigation.current = false;

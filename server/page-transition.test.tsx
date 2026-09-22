@@ -175,6 +175,24 @@ describe("Orbit page continuity", () => {
       behavior: "instant",
     });
   });
+  it("resets route scrolling even when animated transitions are disabled", async () => {
+    const render = (path: string) => (
+      <PageTransition
+        path={path}
+        enabled={false}
+        label="Opening page"
+        fallback={null}
+      >
+        {() => <Current />}
+      </PageTransition>
+    );
+    await act(async () => root.render(render("/services")));
+    await act(async () => root.render(render("/")));
+    expect(window.scrollTo).toHaveBeenCalledWith({
+      top: 0,
+      behavior: "instant",
+    });
+  });
   it("does not reset browser history scrolling or hash destinations", async () => {
     const render = (path: string) => (
       <PageTransition path={path} enabled label="Opening page" fallback={null}>

@@ -1,3 +1,5 @@
+import { MobileDisclosure } from "./MobileDisclosure";
+import { mobileLayoutCopy } from "@/i18n/mobileLayout";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "wouter";
 import { ExternalLink, Tag } from "lucide-react";
@@ -103,7 +105,7 @@ export function PublicPromotionCard({ offer }: { offer: PublicPromotion }) {
   const { locale } = useLocale();
   const t = businessText(locale);
   return (
-    <article className="flex min-w-0 flex-col rounded-2xl border border-border bg-card p-5 shadow-none">
+    <article className="promotion-card flex min-w-0 flex-col rounded-2xl border border-border bg-card p-5 shadow-none">
       <div className="flex items-start justify-between gap-3">
         <Link
           href={`/providers/${offer.provider.slug}`}
@@ -119,12 +121,14 @@ export function PublicPromotionCard({ offer }: { offer: PublicPromotion }) {
       >
         {offer.title}
       </h3>
-      <p
-        dir="auto"
-        className="mt-3 whitespace-pre-line break-words text-sm leading-7 text-secondary-foreground"
-      >
-        {offer.description}
-      </p>
+      <MobileDisclosure label={mobileLayoutCopy[locale].details}>
+        <p
+          dir="auto"
+          className="mt-3 whitespace-pre-line break-words text-sm leading-7 text-secondary-foreground"
+        >
+          {offer.description}
+        </p>
+      </MobileDisclosure>
       {offer.couponCode && (
         <p
           className="mt-5 rounded-xl border border-dashed border-input bg-secondary p-3 text-center font-mono font-bold text-foreground"
@@ -180,7 +184,9 @@ export function PublicPromotions({ providerId }: { providerId?: number }) {
       ) : (
         <h1 className="text-3xl font-extrabold text-foreground">{t.offers}</h1>
       )}
-      <p className="mt-2 text-sm leading-7 text-muted-foreground">{t.offerIntro}</p>
+      <p className="mt-2 text-sm leading-7 text-muted-foreground">
+        {t.offerIntro}
+      </p>
       {!visible.length ? (
         <p className="mt-6 rounded-xl bg-muted p-6 text-muted-foreground">
           {t.noItems}

@@ -177,6 +177,12 @@ function MovingRibbon({ cards }: { cards: VipCardData[] }) {
 
   useEffect(() => {
     const preference = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const phone = window.matchMedia("(max-width: 767px)");
+    const pauseOnPhone = () => {
+      if (phone.matches) setPaused(true);
+    };
+    pauseOnPhone();
+    phone.addEventListener("change", pauseOnPhone);
     const updatePreference = () => setReducedMotion(preference.matches);
     const updateVisibility = () =>
       setPageHidden(document.visibilityState !== "visible");
@@ -201,6 +207,7 @@ function MovingRibbon({ cards }: { cards: VipCardData[] }) {
     else setOnScreen(true);
     return () => {
       preference.removeEventListener("change", updatePreference);
+      phone.removeEventListener("change", pauseOnPhone);
       document.removeEventListener("visibilitychange", updateVisibility);
       observer?.disconnect();
     };

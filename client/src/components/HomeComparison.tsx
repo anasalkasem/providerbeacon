@@ -1,3 +1,4 @@
+import { mobileLayoutCopy } from "@/i18n/mobileLayout";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { Link } from "wouter";
 import { useLocale } from "@/contexts/LocaleContext";
@@ -59,88 +60,138 @@ export default function HomeComparison() {
           {t.empty}
         </p>
       ) : (
-        <div
-          className="landing-comparison-scroll"
-          role="region"
-          aria-label={t.comparison}
-          tabIndex={0}
-        >
-          <table className="landing-comparison-table">
-            <thead>
-              <tr>
-                <th scope="col">
-                  <span className="sr-only">{t.service}</span>
-                </th>
-                {offers.map(service => {
-                  const provider = providerFor(service);
-                  return (
-                    <th scope="col" key={service.id}>
-                      <Link
-                        href={`/providers/${provider.slug}`}
-                        className="inline-flex items-center justify-center gap-3"
+        <>
+          <div className="home-offer-list">
+            {offers.map(service => {
+              const provider = providerFor(service);
+              return (
+                <article className="home-offer" key={service.id}>
+                  <Link
+                    href={`/providers/${provider.slug}`}
+                    className="home-offer-provider"
+                  >
+                    <ProviderLogo
+                      src={provider.logoUrl}
+                      name={provider.name}
+                      initials={provider.initials}
+                      className="size-8 text-xs"
+                    />
+                    <span dir="auto">{provider.name}</span>
+                    <ExternalLink
+                      aria-hidden="true"
+                      className="size-3.5 shrink-0"
+                    />
+                  </Link>
+                  <p dir="auto" className="home-offer-name">
+                    {serviceName(locale, service)}
+                  </p>
+                  <OfferPrice service={service} />
+                  <details className="home-offer-details">
+                    <summary>{mobileLayoutCopy[locale].details}</summary>
+                    <p dir="auto">{serviceName(locale, service)}</p>
+                    <dl>
+                      <div>
+                        <dt>{t.refill}</dt>
+                        <dd>{localizeData(locale, service.refill)}</dd>
+                      </div>
+                      <div>
+                        <dt>{t.quantity}</dt>
+                        <dd>
+                          <bdi>
+                            {formatNumber(locale, service.min)} –{" "}
+                            {formatNumber(locale, service.max)}
+                          </bdi>
+                        </dd>
+                      </div>
+                    </dl>
+                  </details>
+                </article>
+              );
+            })}
+          </div>
+          <div
+            className="landing-comparison-scroll"
+            role="region"
+            aria-label={t.comparison}
+            tabIndex={0}
+          >
+            <table className="landing-comparison-table">
+              <thead>
+                <tr>
+                  <th scope="col">
+                    <span className="sr-only">{t.service}</span>
+                  </th>
+                  {offers.map(service => {
+                    const provider = providerFor(service);
+                    return (
+                      <th scope="col" key={service.id}>
+                        <Link
+                          href={`/providers/${provider.slug}`}
+                          className="inline-flex items-center justify-center gap-3"
+                        >
+                          <ProviderLogo
+                            src={provider.logoUrl}
+                            name={provider.name}
+                            initials={provider.initials}
+                            className="size-9 text-xs"
+                          />
+                          <span dir="auto">{provider.name}</span>
+                          <ExternalLink
+                            className="size-3.5 shrink-0 text-primary"
+                            aria-hidden="true"
+                          />
+                        </Link>
+                      </th>
+                    );
+                  })}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">{t.service}</th>
+                  {offers.map(service => (
+                    <td key={service.id}>
+                      <p
+                        dir="auto"
+                        className="line-clamp-3 leading-6"
+                        title={serviceName(locale, service)}
                       >
-                        <ProviderLogo
-                          src={provider.logoUrl}
-                          name={provider.name}
-                          initials={provider.initials}
-                          className="size-9 text-xs"
-                        />
-                        <span dir="auto">{provider.name}</span>
-                        <ExternalLink
-                          className="size-3.5 shrink-0 text-primary"
-                          aria-hidden="true"
-                        />
-                      </Link>
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th scope="row">{t.service}</th>
-                {offers.map(service => (
-                  <td key={service.id}>
-                    <p
-                      dir="auto"
-                      className="line-clamp-3 leading-6"
-                      title={serviceName(locale, service)}
-                    >
-                      {serviceName(locale, service)}
-                    </p>
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <th scope="row">{t.refill}</th>
-                {offers.map(service => (
-                  <td key={service.id}>
-                    {localizeData(locale, service.refill)}
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <th scope="row">{t.quantity}</th>
-                {offers.map(service => (
-                  <td key={service.id}>
-                    <bdi>
-                      {formatNumber(locale, service.min)} –{" "}
-                      {formatNumber(locale, service.max)}
-                    </bdi>
-                  </td>
-                ))}
-              </tr>
-              <tr>
-                <th scope="row">{t.price}</th>
-                {offers.map(service => (
-                  <td key={service.id}>
-                    <OfferPrice service={service} />
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                        {serviceName(locale, service)}
+                      </p>
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <th scope="row">{t.refill}</th>
+                  {offers.map(service => (
+                    <td key={service.id}>
+                      {localizeData(locale, service.refill)}
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <th scope="row">{t.quantity}</th>
+                  {offers.map(service => (
+                    <td key={service.id}>
+                      <bdi>
+                        {formatNumber(locale, service.min)} –{" "}
+                        {formatNumber(locale, service.max)}
+                      </bdi>
+                    </td>
+                  ))}
+                </tr>
+                <tr>
+                  <th scope="row">{t.price}</th>
+                  {offers.map(service => (
+                    <td key={service.id}>
+                      <OfferPrice service={service} />
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
       <div className="landing-comparison-footer">
         {offers.length > 0 && source !== "unavailable" && (

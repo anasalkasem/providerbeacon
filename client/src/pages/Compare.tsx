@@ -326,7 +326,7 @@ export default function Compare() {
   }
   return (
     <PublicLayout>
-      <section className="border-b border-border bg-card">
+      <section className="comparison-hero border-b border-border bg-card">
         <div className="container py-10">
           <Button
             variant="ghost"
@@ -358,7 +358,7 @@ export default function Compare() {
           </div>
         </div>
       </section>
-      <section className="container py-10">
+      <section className="comparison-page container py-10">
         {compared.every(service => service.priceUnit !== "package") && (
           <div className="mb-5 flex flex-wrap items-end gap-4 rounded-xl border border-border bg-card p-4">
             <label className="grid gap-2 text-sm font-bold">
@@ -457,7 +457,30 @@ export default function Compare() {
           <PriceLegend
             hasUnconfirmed={compared.some(service => !hasPricingBasis(service))}
           />
-          <div className="overflow-x-auto rounded-3xl border border-border bg-card shadow-none">
+          <div className="comparison-fields-mobile">
+            {rows.map(([label, icon, render]) => (
+              <section key={label}>
+                <h3 className="flex items-center gap-2 font-bold [&_svg]:size-4">
+                  {icon}
+                  {label}
+                </h3>
+                <dl>
+                  {compared.map(service => (
+                    <div key={service.id}>
+                      <dt dir="auto">
+                        {providerFor(service).name}
+                        <span dir="auto" className="comparison-field-service">
+                          {serviceName(locale, service)}
+                        </span>
+                      </dt>
+                      <dd>{render(service)}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            ))}
+          </div>
+          <div className="comparison-table-desktop overflow-x-auto rounded-3xl border border-border bg-card shadow-none">
             <table className="w-full min-w-[960px]">
               <thead>
                 <tr>

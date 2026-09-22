@@ -48,7 +48,7 @@ export function VipCard({
       trackVipEvent(card.providerId, card.revision, "click");
   };
   const artwork = (
-    <div className="relative aspect-[16/10] overflow-hidden bg-ink">
+    <div className="vip-artwork relative aspect-[16/10] overflow-hidden bg-ink">
       {card.coverUrl && failed !== card.coverUrl ? (
         <img
           src={card.coverUrl}
@@ -95,7 +95,7 @@ export function VipCard({
           className="flex flex-1 flex-col rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
         >
           {artwork}
-          <div className="flex flex-1 flex-col p-5">
+          <div className="vip-card-body flex flex-1 flex-col p-5">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted-foreground">
               <span>{placementLabel}</span>
               {card.ownershipVerified && (
@@ -156,7 +156,7 @@ export function VipCard({
       aria-label={card.name}
     >
       {artwork}
-      <div className="flex flex-1 flex-col p-5">
+      <div className="vip-card-body flex flex-1 flex-col p-5">
         <p className="mb-3 text-[11px] font-semibold text-muted-foreground">
           {placementLabel}
         </p>

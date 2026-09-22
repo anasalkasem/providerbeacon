@@ -19,7 +19,17 @@ vi.mock("@/contexts/LocaleContext", () => ({
 }));
 vi.mock("wouter", () => ({
   useLocation: () => [route.path],
-  Link: ({ children, ...props }: any) => <a {...props}>{children}</a>,
+  Link: ({ children, onClick, ...props }: any) => (
+    <a
+      {...props}
+      onClick={event => {
+        onClick?.(event);
+        event.preventDefault();
+      }}
+    >
+      {children}
+    </a>
+  ),
 }));
 let host: HTMLDivElement, root: Root;
 let app: ReturnType<typeof useMobileApp>;
@@ -83,6 +93,45 @@ describe("mobile app controls", () => {
     expect(host.querySelector('[aria-current="page"]')?.textContent).toBe(
       "حسابي"
     );
+  });
+  it("scrolls to the top when Home is tapped again, including reduced motion", async () => {
+    route.path = "/";
+    const scroll = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    await mount();
+    const home = host.querySelector<HTMLAnchorElement>('a[href="/"]')!;
+    await act(async () => home.click());
+    expect(scroll).toHaveBeenLastCalledWith({
+      top: 0,
+      left: 0,
+      behavior: "smooth",
+    });
+    vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    await act(async () => home.click());
+    expect(scroll).toHaveBeenLastCalledWith({
+      top: 0,
+      left: 0,
+      behavior: "instant",
+    });
+  });
+  it("preserves modified Home links and lets another route navigate normally", async () => {
+    route.path = "/";
+    const scroll = vi.spyOn(window, "scrollTo").mockImplementation(() => {});
+    await mount();
+    let home = host.querySelector<HTMLAnchorElement>('a[href="/"]')!;
+    for (const modifier of ["ctrlKey", "metaKey", "shiftKey", "altKey"]) {
+      const event = new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        [modifier]: true,
+      });
+      await act(async () => home.dispatchEvent(event));
+    }
+    expect(scroll).not.toHaveBeenCalled();
+    route.path = "/services";
+    await mount();
+    home = host.querySelector<HTMLAnchorElement>('a[href="/"]')!;
+    await act(async () => home.click());
+    expect(scroll).not.toHaveBeenCalled();
   });
   it("prompts only on request, consumes the prompt once and does not mistake acceptance for installation", async () => {
     await mount();
@@ -159,7 +208,12 @@ describe("mobile app controls", () => {
       controller: {},
       register: vi.fn(async () => registration),
     });
-    vi.stubGlobal("navigator", { onLine: true, userAgent: "Mozilla", maxTouchPoints: 0, serviceWorker: workers });
+    vi.stubGlobal("navigator", {
+      onLine: true,
+      userAgent: "Mozilla",
+      maxTouchPoints: 0,
+      serviceWorker: workers,
+    });
     await mount();
     expect(workers.register).toHaveBeenCalledWith("/sw.js", {
       scope: "/",

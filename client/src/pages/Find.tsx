@@ -108,7 +108,7 @@ export default function Find() {
     : "/compare";
   return (
     <PublicLayout showCatalogueNotice={false}>
-      <section className="border-b border-border bg-ink text-white">
+      <section className="find-hero border-b border-border bg-ink text-white">
         <div className="container max-w-5xl py-10 sm:py-14">
           <p className="flex items-center gap-2 text-xs font-bold tracking-wide text-foreground">
             <Sparkles className="size-4" />

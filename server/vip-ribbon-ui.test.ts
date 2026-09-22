@@ -410,6 +410,29 @@ describe("continuous VIP ribbon", () => {
     expect(positions()[1]).toBeCloseTo(0);
     expect(animations.size).toBe(0);
   });
+  it("starts paused on phones and still permits explicit playback", async () => {
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn((query: string) =>
+        query.includes("max-width")
+          ? {
+              matches: true,
+              addEventListener: vi.fn(),
+              removeEventListener: vi.fn(),
+            }
+          : media
+      )
+    );
+    viewportWidth = 360;
+    await mount();
+    await visible();
+    const initial = positions();
+    await time();
+    expect(positions()).toEqual(initial);
+    await act(() => button("Resume movement").click());
+    await time(2);
+    expect(positions()[0]).toBeLessThan(initial[0]);
+  });
   it("allows touch dragging without opening the card and leaves autoplay paused", async () => {
     await mount();
     await visible();
