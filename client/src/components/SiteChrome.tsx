@@ -22,6 +22,7 @@ import { useSiteTheme } from "@/contexts/SiteAppearanceContext";
 import { usePageEntrance } from "@/hooks/usePageEntrance";
 import { useDisplayedPagePath } from "./PageTransition";
 import { InstallAppLink, MobileAppStatus, MobileNavigation } from "./MobileApp";
+import { ThemeModeToggle } from "./ThemeModeToggle";
 
 export function Brand({ compact = false, inverse = false }: { compact?: boolean; inverse?: boolean }) {
   const [path] = useLocation();
@@ -43,6 +44,7 @@ export function Brand({ compact = false, inverse = false }: { compact?: boolean;
 }
 
 export function SiteHeader() {
+  const siteTheme = useSiteTheme();
   const { locale, setLocale } = useLocale();
   const t = copy[locale];
   const p = pageCopy[locale];
@@ -113,15 +115,18 @@ export function SiteHeader() {
             </a>
           </Button>
         </div>
-        <button
-          className="touch-target rounded-lg p-2 text-secondary-foreground xl:hidden"
-          aria-label={open ? "×" : p.mobileNav}
-          aria-expanded={open}
-          aria-controls="site-mobile-menu"
-          onClick={() => setOpen(!open)}
-        >
-          {open ? <X /> : <Menu />}
-        </button>
+        <div className={`flex shrink-0 items-center gap-1 ${siteTheme === "daylight" ? "" : "xl:hidden"}`}>
+          {siteTheme === "daylight" && <ThemeModeToggle />}
+          <button
+            className="touch-target rounded-lg p-2 text-secondary-foreground xl:hidden"
+            aria-label={open ? "×" : p.mobileNav}
+            aria-expanded={open}
+            aria-controls="site-mobile-menu"
+            onClick={() => setOpen(!open)}
+          >
+            {open ? <X /> : <Menu />}
+          </button>
+        </div>
       </div>
       {open && (
         <div id="site-mobile-menu" className="site-mobile-menu border-t border-border bg-card p-4 xl:hidden">
@@ -146,6 +151,9 @@ export function SiteHeader() {
                 ? workspaceCopy[locale].workspace
                 : mt.signIn}
             </a>
+            <div className="sm:hidden">
+              <InstallAppLink />
+            </div>
             <div className="mt-2 grid grid-cols-2 gap-2">
               {(Object.keys(localeNames) as Locale[]).map(value => (
                 <button

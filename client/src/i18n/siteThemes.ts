@@ -12,7 +12,7 @@ const en = {
     daylight: {
       name: "Beacon Daylight",
       description:
-        "A daytime version with white surfaces, blue action buttons and clear, dark text across search, provider albums and comparison tables.",
+        "White surfaces and blue actions, with an optional navy night mode. Visitors can switch modes across search, provider albums and comparison tables.",
     },
     studio: {
       name: "Beacon Studio",
@@ -58,7 +58,7 @@ export const siteThemeCopy: Record<Locale, typeof en> = {
       daylight: {
         name: "Beacon Daylight · النهاري",
         description:
-          "نسخة نهارية بخلفيات بيضاء وأزرار زرقاء ونصوص داكنة واضحة، تشمل البحث وألبومات المزودين وجداول المقارنة.",
+          "خلفيات بيضاء وأزرار زرقاء، مع وضع ليلي كحلي اختياري. يستطيع الزائر التبديل في البحث وألبومات المزودين وجداول المقارنة.",
       },
       studio: {
         name: "Beacon Studio · الأسود والفضي",
@@ -101,7 +101,7 @@ export const siteThemeCopy: Record<Locale, typeof en> = {
       daylight: {
         name: "Beacon Daylight",
         description:
-          "Una versión clara con superficies blancas, botones azules y texto oscuro en búsquedas, álbumes de proveedores y tablas comparativas.",
+          "Superficies blancas y botones azules, con modo nocturno azul marino opcional. El visitante puede cambiar de modo en búsquedas, proveedores y tablas comparativas.",
       },
       studio: {
         name: "Beacon Studio",
@@ -144,7 +144,7 @@ export const siteThemeCopy: Record<Locale, typeof en> = {
       daylight: {
         name: "Beacon Daylight",
         description:
-          "सफ़ेद पृष्ठभूमि, नीले बटन और स्पष्ट गहरे पाठ वाली दिन की थीम — खोज, प्रदाता एल्बम और तुलना तालिकाओं के लिए।",
+          "सफ़ेद पृष्ठभूमि और नीले बटन, साथ में वैकल्पिक गहरा नीला नाइट मोड। खोज, प्रदाता एल्बम और तुलना तालिकाओं में मोड बदलें।",
       },
       studio: {
         name: "Beacon Studio",
@@ -186,7 +186,7 @@ export const siteThemeCopy: Record<Locale, typeof en> = {
       daylight: {
         name: "Beacon Daylight · 日间",
         description:
-          "日间版本采用白色背景、蓝色按钮和清晰的深色文字，覆盖搜索、服务商相册与比较表格。",
+          "白色背景与蓝色按钮，另有深蓝色夜间模式。访客可在搜索、服务商相册与比较表格中自由切换模式。",
       },
       studio: {
         name: "Beacon Studio",

@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from "react";
 
 type Theme = "light" | "dark";
 
@@ -15,6 +21,17 @@ interface ThemeProviderProps {
   defaultTheme?: Theme;
   switchable?: boolean;
   forcedTheme?: Theme;
+  storageKey?: string;
+  rememberPreference?: boolean;
+}
+
+function readPreference(key: string, fallback: Theme): Theme {
+  try {
+    const stored = window.localStorage.getItem(key);
+    return stored === "light" || stored === "dark" ? stored : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export function ThemeProvider({
@@ -22,37 +39,58 @@ export function ThemeProvider({
   defaultTheme = "dark",
   switchable = false,
   forcedTheme,
+  storageKey = "theme",
+  rememberPreference = true,
 }: ThemeProviderProps) {
-  const [selectedTheme, setTheme] = useState<Theme>(() => {
-    if (switchable) {
-      const stored = localStorage.getItem("theme");
-      return (stored as Theme) || defaultTheme;
-    }
-    return defaultTheme;
-  });
-  const theme = forcedTheme ?? selectedTheme;
+  // Read before the appearance query resolves. A forced owner theme must not
+  // replace the visitor's saved Daylight preference while that query loads.
+  const [selectedTheme, setTheme] = useState<Theme>(() =>
+    readPreference(storageKey, defaultTheme)
+  );
+  const [previewTheme, setPreviewTheme] = useState(selectedTheme);
+  const theme =
+    forcedTheme ?? (rememberPreference ? selectedTheme : previewTheme);
+  const canSwitch = switchable && forcedTheme === undefined;
+
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const wasDark = root.classList.contains("dark");
+    root.classList.toggle("dark", theme === "dark");
+    return () => {
+      root.classList.toggle("dark", wasDark);
+    };
+  }, [theme]);
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+    const syncPreference = (event: StorageEvent) => {
+      if (event.key !== storageKey && event.key !== null) return;
+      const value = event.key === null ? null : event.newValue;
+      setTheme(value === "light" || value === "dark" ? value : defaultTheme);
+    };
+    window.addEventListener("storage", syncPreference);
+    return () => window.removeEventListener("storage", syncPreference);
+  }, [storageKey, defaultTheme]);
 
-    if (switchable) {
-      localStorage.setItem("theme", theme);
-    }
-  }, [theme, switchable]);
-
-  const toggleTheme = switchable
+  const toggleTheme = canSwitch
     ? () => {
-        setTheme(prev => (prev === "light" ? "dark" : "light"));
+        const next = theme === "light" ? "dark" : "light";
+        if (!rememberPreference) {
+          setPreviewTheme(next);
+          return;
+        }
+        setTheme(next);
+        try {
+          window.localStorage.setItem(storageKey, next);
+        } catch {
+          // Still switch for this visit when browser storage is unavailable.
+        }
       }
     : undefined;
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, switchable }}>
+    <ThemeContext.Provider
+      value={{ theme, toggleTheme, switchable: canSwitch }}
+    >
       {children}
     </ThemeContext.Provider>
   );
