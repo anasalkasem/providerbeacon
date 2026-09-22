@@ -161,8 +161,6 @@ export default function HomeDiscovery() {
         <p>{t.intro}</p>
       </header>
 
-      <ProviderLogoStrip providers={cards} />
-
       <section
         className="home-request-panel"
         aria-labelledby="home-request-title"
@@ -203,12 +201,6 @@ export default function HomeDiscovery() {
                     disabled={!active && chosen.length >= 4}
                     onClick={() => toggle(id)}
                   >
-                    <ProviderLogo
-                      src={provider.logoUrl}
-                      name={provider.name}
-                      initials={provider.initials}
-                      className="home-choice-logo"
-                    />
                     <span dir="auto">{provider.name}</span>
                     {active && <Check aria-hidden="true" />}
                   </button>
@@ -272,6 +264,8 @@ export default function HomeDiscovery() {
           </Link>
         </div>
       </section>
+
+      <ProviderLogoStrip providers={cards} />
 
       <section
         className="home-albums"

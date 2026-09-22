@@ -27,7 +27,7 @@
   margin-top: 8px;
 }
 .home-logo-section {
-  margin-bottom: 24px;
+  margin-top: 24px;
 }
 .home-logo-toolbar {
   display: flex;
@@ -58,16 +58,26 @@
 }
 .home-logo-strip {
   display: flex;
-  gap: 12px;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
-  scrollbar-width: thin;
-  padding: 8px 2px;
+  scrollbar-width: none;
+  overflow-anchor: none;
+  padding-block: 8px;
+}
+.home-logo-strip::-webkit-scrollbar {
+  display: none;
+}
+.home-logo-group {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 12px;
+  padding: 0 12px 0 0;
   margin: 0;
   list-style: none;
 }
 .home-logo-strip li {
   flex: 0 0 144px;
+  width: 144px;
   min-width: 0;
 }
 .home-logo-strip a {
@@ -177,15 +187,6 @@
 .home-provider-choice:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-}
-.home-choice-logo {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  font-size: 10px;
-}
-.home-choice-logo img {
-  padding: 2px;
 }
 .home-provider-scope > p {
   margin-top: 4px;
@@ -488,7 +489,7 @@
     margin-top: 5px;
   }
   .home-logo-section {
-    margin-bottom: 16px;
+    margin-top: 16px;
   }
   .home-logo-toolbar {
     min-height: 40px;
@@ -498,6 +499,7 @@
   }
   .home-logo-strip li {
     flex-basis: 120px;
+    width: 120px;
   }
   .home-logo-strip a {
     height: 56px;

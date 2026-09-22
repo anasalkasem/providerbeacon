@@ -8,15 +8,16 @@ The user approved a compact homepage with a moving provider-logo strip, a reques
 
 Primary: existing ProviderBeacon Studio canvas, typography, lighthouse identity and theme tokens. The user references supply the gallery structure. Refero OpenSea style `2465f692-3a79-4576-970c-ee56c1e72375` supplies compact, contained imagery and narrow metadata rows; Perplexity style `5c7acdfb-996b-4c6f-b361-264a3f580f7d` supplies one prominent request field and secondary scope controls. Its palette and sidebar are not adopted.
 
-| Decision                                   | Evidence                                         | Role / reason                                                           |
-| ------------------------------------------ | ------------------------------------------------ | ----------------------------------------------------------------------- |
-| Four columns desktop, two on phones        | Approved user brief                              | Compact albums, readable metadata outside artwork                       |
-| Existing images, logos and honest fallback | Published provider records                       | No copied provider advertisements or invented branding                  |
-| One search field, no initial offer list    | Approved user brief, Perplexity search hierarchy | Results follow the visitor's request                                    |
-| Logos above the request panel              | User reference                                   | Internal provider links, touch scrolling, pause control                 |
-| Subtle dark card surfaces                  | Existing Studio, OpenSea contained cards         | Preserve identity without heavy promotional framing                     |
-| Optional exact provider scope              | Approved search interaction                      | Server-enforced selection survives follow-ups and catalogue browsing    |
-| Paid artwork remains labelled              | Existing VIP placement rules                     | Paid placement does not imply verified quality or change search ranking |
+| Decision                                          | Evidence                                         | Role / reason                                                                            |
+| ------------------------------------------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| Four columns desktop, two on phones               | Approved user brief                              | Compact albums, readable metadata outside artwork                                        |
+| Existing images, logos and honest fallback        | Published provider records                       | No copied provider advertisements or invented branding                                   |
+| One search field, no initial offer list           | Approved user brief, Perplexity search hierarchy | Results follow the visitor's request                                                     |
+| Continuously moving logos below the request panel | User correction, September 22                    | Repeat the logo sequence to cover wide screens; internal profile links and pause control |
+| Text-only provider search choices                 | User correction, September 22                    | Avoid showing the same logos twice around the request field                              |
+| Subtle dark card surfaces                         | Existing Studio, OpenSea contained cards         | Preserve identity without heavy promotional framing                                      |
+| Optional exact provider scope                     | Approved search interaction                      | Server-enforced selection survives follow-ups and catalogue browsing                     |
+| Paid artwork remains labelled                     | Existing VIP placement rules                     | Paid placement does not imply verified quality or change search ranking                  |
 
 The home snapshot reads at most 16 public profiles and no service rows. Service counts are aggregate values. Catalogue eligibility rules remain in force. Existing paid artwork is used only while its placement is active, with the existing impression/click analytics. Missing artwork falls back to the provider's saved website preview or logo.
 
