@@ -90,6 +90,7 @@ export function visibleCatalogueService() {
 
 export function visibleCatalogueProvider() {
   return and(
+    eq(providerRecords.isReviewWorkspace, false),
     eq(providerRecords.status, "active"),
     or(
       eq(providerRecords.apiCataloguePublished, false),

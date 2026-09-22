@@ -104,6 +104,7 @@ export async function businessWorkspace(auth: MemberAuth) {
           logoUrl: providerRecords.logoUrl,
           websiteUrl: providerRecords.websiteUrl,
           status: providerRecords.status,
+          isReviewWorkspace: providerRecords.isReviewWorkspace,
         },
       })
       .from(accounts)
@@ -156,7 +157,7 @@ export async function prepareOwnershipClaim(
     const member = await verifiedMember(tx, auth);
     const provider = await lockedBusinessProvider(tx, providerId);
     const host = providerHost(provider.websiteUrl);
-    if (provider.status !== "active" || !host)
+    if (provider.isReviewWorkspace || provider.status !== "active" || !host)
       businessFail("provider_unavailable");
     const account = await lockedBusinessAccount(tx, providerId);
     if (account.ownerMemberId && account.ownerMemberId !== member.id)

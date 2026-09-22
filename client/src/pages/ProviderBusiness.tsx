@@ -20,6 +20,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useMember } from "@/hooks/useMember";
 import { trpc } from "@/lib/trpc";
 import { businessError, businessText } from "@/i18n/providerBusiness";
+import { reviewWorkspaceText } from "@/i18n/reviewWorkspace";
 import { dashboardText } from "@/i18n/providerDashboard";
 import {
   ProviderDashboardShell,
@@ -199,6 +200,9 @@ function ProviderWorkspace({
       onNavigate={go}
       onSelect={id => go(section, false, id)}
     >
+      {owned?.provider.isReviewWorkspace && <p role="note" className="mb-6 rounded-xl border border-input bg-secondary p-4 text-sm leading-7">
+        {reviewWorkspaceText(locale).privateNotice}
+      </p>}
       <PaymentReturn accountId={accountId} />
       {!verified && (
         <p className="mb-6 rounded-xl bg-warning-muted p-4 text-sm leading-7 text-warning">
@@ -504,7 +508,7 @@ function ProviderBilling({
         <BusinessPricing
           firstActivatedAt={owned.subscription.firstActivatedAt}
         />
-        <p className="mt-4 text-sm leading-7 text-secondary-foreground">{t.planHelp}</p>
+        <p className="mt-4 text-sm leading-7 text-secondary-foreground">{owned.provider.isReviewWorkspace ? reviewWorkspaceText(locale).billing : t.planHelp}</p>
         {owned.subscription.endsAt && (
           <p className="mt-3 text-sm text-secondary-foreground">
             {t.endsAt}:{" "}
@@ -529,7 +533,9 @@ function ProviderBilling({
         <h2 className="text-xl font-bold text-foreground">
           {dashboardText(locale).billing}
         </h2>
-        {owned.ownershipValid ? (
+        {owned.provider.isReviewWorkspace ? (
+          <p className="mt-4 text-sm leading-7 text-secondary-foreground">{reviewWorkspaceText(locale).billing}</p>
+        ) : owned.ownershipValid ? (
           <ProviderCheckout
             accountId={accountId}
             providerId={owned.provider.id}

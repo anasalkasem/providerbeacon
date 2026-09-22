@@ -76,6 +76,7 @@ export const providerRecords = mysqlTable("provider_records", {
   telegramUrl: varchar("telegramUrl", { length: 500 }),
   profileRevision: int("profileRevision").default(1).notNull(),
   apiCataloguePublished: boolean("apiCataloguePublished").default(false).notNull(),
+  isReviewWorkspace: boolean("isReviewWorkspace").default(false).notNull(),
   verified: boolean("verified").default(false).notNull(),
   score: int("score").default(0).notNull(),
   ratingBasisPoints: int("ratingBasisPoints").default(0).notNull(),

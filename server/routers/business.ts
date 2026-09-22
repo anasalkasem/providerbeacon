@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { reviewWorkspaceInput } from "../../shared/reviewWorkspace";
+import { provisionReviewWorkspace, reviewWorkspaceState } from "../reviewWorkspaceDb";
 import { router, publicProcedure, permissionProcedure } from "../_core/trpc";
 import { signedIn, safely } from "../memberProcedures";
 import { reserveMemberRequests } from "../memberDb";
@@ -275,6 +277,18 @@ const staff = (permission: "business.read" | "business.manage") =>
     return next();
   });
 export const businessAdminRouter = router({
+  reviewWorkspace: router({
+    state: staff("business.read").use(({ ctx, next }) => {
+      if (ctx.teamRole !== "owner") businessFail("review_owner_only", "FORBIDDEN");
+      return next();
+    }).query(() => safely(reviewWorkspaceState)),
+    provision: staff("business.manage").use(({ ctx, next }) => {
+      if (ctx.teamRole !== "owner") businessFail("review_owner_only", "FORBIDDEN");
+      return next();
+    }).input(reviewWorkspaceInput).mutation(({ ctx, input }) =>
+      safely(() => provisionReviewWorkspace(ctx.user!.id, input))
+    ),
+  }),
   vip: router({
     grantState: staff("business.read")
       .use(({ ctx, next }) => {

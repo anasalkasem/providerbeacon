@@ -64,8 +64,9 @@ export async function saveProviderIntegration(input: {
   const [before] = input.id ? await db.select().from(providerIntegrations).where(eq(providerIntegrations.id, input.id)).limit(1) : [];
   return db.transaction(async tx => {
     const providerIds = Array.from(new Set([input.providerId, ...(before ? [before.providerId] : [])])).sort((a, b) => a - b);
-    const providers = await tx.select({ id: providerRecords.id }).from(providerRecords).where(inArray(providerRecords.id, providerIds)).orderBy(asc(providerRecords.id)).for("update");
+    const providers = await tx.select({ id: providerRecords.id, isReviewWorkspace: providerRecords.isReviewWorkspace }).from(providerRecords).where(inArray(providerRecords.id, providerIds)).orderBy(asc(providerRecords.id)).for("update");
     if (!providers.some(row => row.id === input.providerId)) throw new Error("Provider not found");
+    if (providers.some(row => row.isReviewWorkspace)) throw new Error("Review workspaces cannot connect live provider APIs");
     let integrationId = input.id;
     if (integrationId) {
       const [existing] = await tx.select().from(providerIntegrations).where(eq(providerIntegrations.id, integrationId)).for("update");
