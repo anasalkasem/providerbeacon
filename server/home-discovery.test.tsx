@@ -166,6 +166,13 @@ it("compares a service across all providers without listing the 50 provider name
   const panel = host.querySelector(".home-request-panel")!;
   expect(panel.textContent).not.toMatch(/Provider \d|select up to 4/);
   expect(panel.querySelectorAll("select")).toHaveLength(2);
+  // This form opens the SMM catalogue, whose type selector does not include
+  // agency-package categories. Keep every choice visible on the destination.
+  expect(
+    Array.from(panel.querySelectorAll("select")[1].options).map(
+      option => option.value
+    )
+  ).not.toContain("Ad management");
   expect(panel.querySelectorAll("button")).toHaveLength(1);
   expect(panel.querySelector("img")).toBeNull();
   await select(0, "Instagram");

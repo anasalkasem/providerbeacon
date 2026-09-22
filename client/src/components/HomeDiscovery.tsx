@@ -214,11 +214,22 @@ export default function HomeDiscovery() {
               onChange={event => setCategory(event.target.value)}
             >
               <option value="">{t.allServiceTypes}</option>
-              {serviceTypes.map(value => (
-                <option key={value} value={value}>
-                  {localizeData(locale, value)}
-                </option>
-              ))}
+              {serviceTypes
+                .filter(value =>
+                  [
+                    "Followers",
+                    "Views",
+                    "Likes",
+                    "Comments",
+                    "Shares",
+                    "Subscribers",
+                  ].includes(value)
+                )
+                .map(value => (
+                  <option key={value} value={value}>
+                    {localizeData(locale, value)}
+                  </option>
+                ))}
             </select>
           </label>
           <button type="submit" className="beacon-button">
