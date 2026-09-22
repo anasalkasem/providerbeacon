@@ -1,15 +1,15 @@
 import { useState, type MouseEvent } from "react";
-import { ArrowRight, Check, Search, Scale } from "lucide-react";
+import { ArrowRight, Search, Scale } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import type { Provider } from "@/data/marketplace";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
 import { useLocale } from "@/contexts/LocaleContext";
 import { homeDiscoveryCopy } from "@/i18n/homeDiscovery";
-import { workspaceCopy } from "@/i18n/workspace";
+import { localizeData } from "@/i18n/messages";
 import { vipText } from "@/i18n/providerVip";
 import { trpc } from "@/lib/trpc";
 import { trackVipEvent, useVipImpression } from "@/lib/vipAnalytics";
-import { providerSearchUrl } from "../../../shared/providerSelection";
+import { platforms, serviceTypes } from "../../../shared/serviceReview";
 import { publicProfileUrl } from "../../../shared/providerProfile";
 import { ProviderLogo } from "./ProviderMedia";
 import { ProviderLogoStrip } from "./ProviderLogoStrip";
@@ -117,12 +117,12 @@ function ProviderAlbum({
 export default function HomeDiscovery() {
   const { locale } = useLocale();
   const t = homeDiscoveryCopy[locale];
-  const w = workspaceCopy[locale];
   const { providers, source, isLoading, retry, pagination } =
     useMarketplaceData();
   const [, navigate] = useLocation();
   const [query, setQuery] = useState("");
-  const [selected, setSelected] = useState<number[]>([]);
+  const [platform, setPlatform] = useState("");
+  const [category, setCategory] = useState("");
   const now = useBusinessClock();
   const promotions = trpc.business.vip.list.useQuery(
     { page: 1 },
@@ -139,17 +139,12 @@ export default function HomeDiscovery() {
       .filter(card => new Date(card.endsAt).getTime() > now)
       .map(card => ["provider-" + card.providerId, card])
   );
-  const chosen = selected;
-  const toggle = (id: number) =>
-    setSelected(current =>
-      current.includes(id)
-        ? current.filter(value => value !== id)
-        : current.length < 4
-          ? [...current, id]
-          : current
-    );
-  const submit = (value: string) => {
-    if (value.trim()) navigate(providerSearchUrl(value, chosen));
+  const submit = () => {
+    const params = new URLSearchParams();
+    if (query.trim()) params.set("q", query.trim());
+    if (platform) params.set("platform", platform);
+    if (category) params.set("category", category);
+    navigate("/services" + (params.size ? "?" + params.toString() : ""));
   };
   return (
     <div className="provider-home container">
@@ -172,96 +167,68 @@ export default function HomeDiscovery() {
             <p>{t.searchHint}</p>
           </div>
         </div>
-        {(cards.length > 0 || chosen.length > 0) && (
-          <fieldset
-            className="home-provider-scope"
-            aria-describedby="home-scope-hint"
-          >
-            <legend>{t.scope}</legend>
-            <div className="home-provider-choices">
-              <button
-                type="button"
-                aria-pressed={!chosen.length}
-                className="home-provider-choice"
-                onClick={() => setSelected([])}
-              >
-                {!chosen.length && <Check aria-hidden="true" />}
-                {t.all}
-              </button>
-              {cards.map(provider => {
-                const id = Number(provider.id.slice(9));
-                const active = chosen.includes(id);
-                return (
-                  <button
-                    type="button"
-                    key={provider.id}
-                    className="home-provider-choice"
-                    aria-label={provider.name}
-                    aria-pressed={active}
-                    disabled={!active && chosen.length >= 4}
-                    onClick={() => toggle(id)}
-                  >
-                    <span dir="auto">{provider.name}</span>
-                    {active && <Check aria-hidden="true" />}
-                  </button>
-                );
-              })}
-            </div>
-            <p id="home-scope-hint">
-              {t.scopeHint}
-              {chosen.length > 0 && <span> · {chosen.length}/4</span>}
-            </p>
-          </fieldset>
-        )}
         <form
           className="home-request-form"
           role="search"
           onSubmit={event => {
             event.preventDefault();
-            submit(query);
+            submit();
           }}
         >
-          <label htmlFor="home-provider-request" className="sr-only">
-            {t.request}
+          <label className="home-service-field home-service-query">
+            <span>{t.request}</span>
+            <span className="home-request-input">
+              <Search aria-hidden="true" />
+              <input
+                type="search"
+                maxLength={100}
+                value={query}
+                onChange={event => setQuery(event.target.value)}
+                dir={query ? "auto" : locale === "ar" ? "rtl" : "ltr"}
+                placeholder={t.placeholder}
+              />
+            </span>
           </label>
-          <div className="home-request-input">
-            <Search aria-hidden="true" />
-            <input
-              id="home-provider-request"
-              type="search"
-              maxLength={1200}
-              required
-              value={query}
-              onChange={event => setQuery(event.target.value)}
-              dir={query ? "auto" : locale === "ar" ? "rtl" : "ltr"}
-              placeholder={t.placeholder}
-            />
-          </div>
-          <button
-            type="submit"
-            className="beacon-button"
-            disabled={!query.trim()}
-          >
+          <label className="home-service-field">
+            <span>{t.platform}</span>
+            <select
+              value={platform}
+              onChange={event => setPlatform(event.target.value)}
+            >
+              <option value="">{t.allPlatforms}</option>
+              {platforms
+                .filter(value => value !== "Unknown")
+                .map(value => (
+                  <option key={value} value={value}>
+                    {value === "Twitter"
+                      ? "X (Twitter)"
+                      : localizeData(locale, value)}
+                  </option>
+                ))}
+            </select>
+          </label>
+          <label className="home-service-field">
+            <span>{t.serviceType}</span>
+            <select
+              value={category}
+              onChange={event => setCategory(event.target.value)}
+            >
+              <option value="">{t.allServiceTypes}</option>
+              {serviceTypes.map(value => (
+                <option key={value} value={value}>
+                  {localizeData(locale, value)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="submit" className="beacon-button">
             {t.submit}
             <ArrowRight aria-hidden="true" className="rtl:rotate-180" />
           </button>
         </form>
         <div className="home-request-examples">
-          {w.examples.slice(0, 2).map(example => (
-            <button key={example} type="button" onClick={() => submit(example)}>
-              {example}
-              <ArrowRight aria-hidden="true" className="rtl:rotate-180" />
-            </button>
-          ))}
-          <Link
-            href={
-              chosen.length
-                ? "/services?providers=" + chosen.join(",")
-                : "/services"
-            }
-          >
-            {t.browse}
-          </Link>
+          <p>{t.comparisonHint}</p>
+          <Link href="/find">{t.describeRequest}</Link>
         </div>
       </section>
 

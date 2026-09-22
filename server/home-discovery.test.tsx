@@ -90,15 +90,31 @@ async function input(
     node.dispatchEvent(new Event("input", { bubbles: true }));
   });
 }
+async function select(index: number, value: string) {
+  await act(async () => {
+    const field = host.querySelectorAll<HTMLSelectElement>(
+      ".home-request-form select"
+    )[index];
+    field.value = value;
+    field.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+}
+async function submit() {
+  await act(async () =>
+    host
+      .querySelector(".home-request-form")!
+      .dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }))
+  );
+}
 beforeEach(() => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   state.data = {
     source: "database",
     isLoading: false,
-    providers: Array.from({ length: 20 }, (_, i) => card(i + 1)),
+    providers: Array.from({ length: 50 }, (_, i) => card(i + 1)),
     services,
     retry: vi.fn(),
-    pagination: { total: 20 },
+    pagination: { total: 50 },
   };
   state.ads = [];
   state.search = "";
@@ -145,48 +161,66 @@ it("shows at most 16 unique real albums and no initial services or prices", asyn
   await render();
   expect(host.querySelectorAll("article")).toHaveLength(1);
 });
-it("bounds provider selection and preserves the exact request and selection in search and browse", async () => {
+it("compares a service across all providers without listing the 50 provider names in search", async () => {
   await render();
-  for (const id of [1, 2, 3, 4]) await click(button(`Provider ${id}`));
-  expect(button("Provider 5").disabled).toBe(true);
-  const request = "1000 متابع + تعويض 30 يوم & شرط خاص";
-  await input(host.querySelector("input")!, request);
-  await click(button("Find matching offers"));
+  const panel = host.querySelector(".home-request-panel")!;
+  expect(panel.textContent).not.toMatch(/Provider \d|select up to 4/);
+  expect(panel.querySelectorAll("select")).toHaveLength(2);
+  expect(panel.querySelectorAll("button")).toHaveLength(1);
+  expect(panel.querySelector("img")).toBeNull();
+  await select(0, "Instagram");
+  await select(1, "Followers");
+  const request = "عرب + تعويض & جودة";
+  await input(host.querySelector("input")!, "  " + request + "  ");
+  await click(button("Compare services"));
   const url = new URL(
     state.navigate.mock.calls.at(-1)![0],
     "https://providerbeacon.com"
   );
-  expect(url.pathname).toBe("/find");
-  expect(url.searchParams.get("q")).toBe(request);
-  expect(url.searchParams.get("providers")).toBe("1,2,3,4");
-  expect(
-    host.querySelector('a[href="/services?providers=1,2,3,4"]')
-  ).not.toBeNull();
-  await click(button("All providers"));
-  expect(button("Provider 5").disabled).toBe(false);
-  await click(button("Find matching offers"));
-  expect(
-    new URL(state.navigate.mock.calls.at(-1)![0], url).searchParams.has(
-      "providers"
-    )
-  ).toBe(false);
+  expect(url.pathname).toBe("/services");
+  expect(Object.fromEntries(url.searchParams)).toEqual({
+    q: request,
+    platform: "Instagram",
+    category: "Followers",
+  });
+  expect(panel.querySelector('a[href="/find"]')).not.toBeNull();
 });
-it("retains a visitor's selection across catalogue failure and retry without stale albums", async () => {
+it("allows filters without a keyword and clears both filters back to the full catalogue", async () => {
   await render();
-  await click(button("Provider 2"));
+  expect(host.querySelector("input")!.required).toBe(false);
+  await select(0, "TikTok");
+  await select(1, "Views");
+  await submit();
+  expect(state.navigate).toHaveBeenLastCalledWith(
+    "/services?platform=TikTok&category=Views"
+  );
+  await select(0, "");
+  await submit();
+  expect(state.navigate).toHaveBeenLastCalledWith("/services?category=Views");
+  await select(1, "");
+  await input(host.querySelector("input")!, "   ");
+  await submit();
+  expect(state.navigate).toHaveBeenLastCalledWith("/services");
+});
+it("keeps service filters usable across provider catalogue failure and retry", async () => {
+  await render();
+  await select(0, "Telegram");
+  await select(1, "Subscribers");
   state.data = { ...state.data, source: "unavailable" };
   await render();
   expect(host.querySelectorAll("article")).toHaveLength(0);
   await click(button("Try again"));
   expect(state.data.retry).toHaveBeenCalledOnce();
-  await input(host.querySelector("input")!, "1000 followers");
-  await click(button("Find matching offers"));
-  expect(
-    new URL(
-      state.navigate.mock.calls.at(-1)![0],
-      "https://providerbeacon.com"
-    ).searchParams.get("providers")
-  ).toBe("2");
+  await submit();
+  expect(state.navigate).toHaveBeenLastCalledWith(
+    "/services?platform=Telegram&category=Subscribers"
+  );
+  state.data = { ...state.data, source: "database", isLoading: true };
+  await render();
+  await submit();
+  expect(state.navigate).toHaveBeenLastCalledWith(
+    "/services?platform=Telegram&category=Subscribers"
+  );
 });
 it("uses active paid artwork, labels it, and falls back when its image fails", async () => {
   state.data.providers = [card(1), card(2)];
