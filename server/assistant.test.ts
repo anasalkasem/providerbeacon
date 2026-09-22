@@ -76,6 +76,8 @@ describe("assistant input and model boundaries", () => {
       },
       { context: { path: "/admin", offerIds: [] } },
       { context: { path: "/", offerIds: ["service-0"] } },
+      { context: { path: "/find", providerIds: [0] } },
+      { context: { path: "/find", providerIds: [1, 2, 3, 4, 5] } },
       { priceCurrency: "USD" },
     ])
       expect(
@@ -150,6 +152,28 @@ describe("assistant input and model boundaries", () => {
     expect(assistantBuckets("test", now + 86400000)[0]!.key).not.toBe(
       assistantBuckets("test", now)[0]!.key
     );
+  });
+});
+
+describe("explicit provider selection", () => {
+  it("passes the chosen IDs to search and keeps them on clarification and catalogue links", async () => {
+    const search = vi.fn(async () => ({ candidates: [], total: 0, providerLimitReached: false }));
+    const input = assistantTurnInput.parse({ message: "1000 followers", context: { path: "/find", providerIds: [2, 3] } });
+    const deps = { model: vi.fn().mockResolvedValueOnce(plan).mockResolvedValue({ answer: "No matching offers." }), byIds: vi.fn(), search, exchange: vi.fn() } as any;
+    const result = await runAssistantTurn(input, deps);
+    expect(search).toHaveBeenCalledWith(expect.objectContaining({ providerIds: [2, 3] }));
+    expect(new URL(result.catalogueUrl, "https://providerbeacon.com").searchParams.get("providers")).toBe("2,3");
+    deps.model.mockResolvedValueOnce({ ...plan, action: "clarify" });
+    const clarification = await runAssistantTurn(input, deps);
+    expect(clarification.catalogueUrl).toBe("/services?providers=2,3");
+  });
+  it("excludes unselected providers from comparison and model context", async () => {
+    const rows = [2, 3].map(id => ({ ...candidate(`service-${id}`), provider: { ...providers[0], id: `provider-${id}`, name: `Provider ${id}` } }));
+    const model = vi.fn().mockResolvedValueOnce({ ...plan, action: "compare", serviceIds: ["service-2", "service-3"] }).mockResolvedValue({ answer: "Only one selected offer remains." });
+    const result = await runAssistantTurn(assistantTurnInput.parse({ message: "compare", context: { path: "/find", offerIds: ["service-2", "service-3"], providerIds: [2] } }), { model, byIds: vi.fn(async () => rows), search: vi.fn(), exchange: vi.fn() } as any);
+    expect(result.offers.map(offer => offer.provider.id)).toEqual(["provider-2"]);
+    expect(result.comparisonMissing).toBe(true);
+    expect(JSON.parse(model.mock.calls[0][3]).contextOffers.map((offer: any) => offer.provider)).toEqual(["Provider 2"]);
   });
 });
 
@@ -337,11 +361,12 @@ describe("grounded catalogue orchestration", () => {
           }
     );
     await assistantSearch(
-      { ...plan, query: "arab", countryCode: "PA", refillOnly: true },
+      { ...plan, query: "arab", countryCode: "PA", refillOnly: true, providerIds: [2, 3] },
       snapshot as any
     );
     expect(snapshot.mock.calls[1]![0]).toMatchObject({
       scope: "provider",
+      providerIds: [2, 3],
       platform: "Instagram",
       category: "Followers",
       countryCode: "PA",

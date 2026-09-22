@@ -87,13 +87,11 @@ function Catalogue() {
     <p>Provider loading or missing</p>
   );
 }
-async function render() {
+async function render(content = <Catalogue />) {
   await act(async () =>
     root.render(
       <QueryClientProvider client={client}>
-        <MarketplaceDataProvider>
-          <Catalogue />
-        </MarketplaceDataProvider>
+        <MarketplaceDataProvider>{content}</MarketplaceDataProvider>
       </QueryClientProvider>
     )
   );
@@ -268,4 +266,29 @@ it("never displays the previous provider when navigating to a different profile"
   expect(host.textContent).toBe("Provider loading or missing");
   expect(host.querySelector("table")).toBeNull();
   expect(state.requests.at(-1)!.input.slug).toBe("another-provider");
+});
+
+it("resets service pagination when the visitor changes or clears provider scope", async () => {
+  function ScopeProbe() {
+    const [, navigate] = useLocation();
+    move = navigate;
+    const data = useMarketplaceData();
+    return (
+      <button onClick={data.pagination.next}>
+        Page {data.pagination.page}
+      </button>
+    );
+  }
+  window.history.replaceState({}, "", "/services?providers=20");
+  await render(<ScopeProbe />);
+  expect(state.requests.at(-1)!.input.providerIds).toEqual([20]);
+  await settle();
+  await act(async () => button("Page 1").click());
+  expect(state.requests.at(-1)!.input.cursor).toEqual({ id: 76, rank: 0 });
+  await act(async () => move("/services?providers=21"));
+  expect(state.requests.at(-1)!.input).toMatchObject({ providerIds: [21] });
+  expect(state.requests.at(-1)!.input.cursor).toBeUndefined();
+  await act(async () => move("/services"));
+  expect(state.requests.at(-1)!.input.providerIds).toEqual([]);
+  expect(state.requests.at(-1)!.input.cursor).toBeUndefined();
 });

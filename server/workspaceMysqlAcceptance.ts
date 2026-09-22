@@ -244,6 +244,7 @@ export function workspaceAcceptanceCases(
     });
     it("finds cheaper offers beyond the first provider and service pages, with currency and unit conversion", async () => {
       const low = await service({ priceAmount: "0.3000" });
+      let selectedProvider = 0;
       for (let index = 0; index < 10; index++) {
         const [provider] = await database()
           .insert(providerRecords)
@@ -254,6 +255,7 @@ export function workspaceAcceptanceCases(
             status: "active",
           })
           .$returningId();
+        selectedProvider = provider.id;
         for (let serviceIndex = 0; serviceIndex < 8; serviceIndex++)
           await service({ providerId: provider.id, priceAmount: "9.0000" });
       }
@@ -294,6 +296,11 @@ export function workspaceAcceptanceCases(
         `service-${low}`,
       ]);
       expect(result.total).toBe(83);
+      const scoped = await assistantRankedSearch({ ...plan, providerIds: [selectedProvider] });
+      expect(scoped.total).toBe(8);
+      expect(scoped.candidates.length).toBeGreaterThan(0);
+      expect(scoped.candidates.every(candidate => candidate.provider.id === `provider-${selectedProvider}`)).toBe(true);
+      expect((await assistantRankedSearch({ ...plan, providerIds: [2147483647] })).total).toBe(0);
       expect(
         (
           await assistantRankedSearch({ ...plan, budget: "0.15" })

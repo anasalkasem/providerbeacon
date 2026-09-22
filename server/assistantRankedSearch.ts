@@ -1,5 +1,5 @@
 import { and, eq, inArray, like, or, sql } from "drizzle-orm";
-import type { AssistantPlan } from "../shared/assistant";
+import type { AssistantCataloguePlan } from "../shared/assistant";
 import { searchPattern } from "../shared/catalogueQuery";
 import { compareFractions, convertedAmount } from "../shared/exchange";
 import { priceCurrencies, quantityQuoteExact } from "../shared/pricing";
@@ -18,7 +18,7 @@ import { assistantOffersByIds, assistantSearch } from "./assistantCatalogue";
 // Search the entire eligible catalogue, keeping four cheapest rows per currency/unit.
 // More expensive rows in the same bucket cannot enter a four-result cost shortlist.
 // Numeric ranking is not a quality/equivalence claim; that check runs separately.
-export async function assistantRankedSearch(plan: AssistantPlan) {
+export async function assistantRankedSearch(plan: AssistantCataloguePlan) {
   if (
     plan.quantity == null ||
     plan.market !== "smm" ||
@@ -56,6 +56,9 @@ export async function assistantRankedSearch(plan: AssistantPlan) {
     .where(
       and(
         visibleCatalogueProvider(),
+        plan.providerIds?.length
+          ? inArray(providerRecords.id, plan.providerIds)
+          : undefined,
         visibleCatalogueService(),
         or(approvedService(), confirmedSourcePricing()),
         inArray(currency, priceCurrencies),
