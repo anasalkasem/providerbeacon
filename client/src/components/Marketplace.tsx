@@ -1,5 +1,5 @@
 import OfferEvidence, { serviceName, serviceScope, serviceTerms } from "./OfferEvidence";
-import { ProviderLogo, ProviderImage } from "./ProviderMedia";
+import { ProviderLogo } from "./ProviderMedia";
 import { ProviderRatingLink } from "./ProviderRatingLink";
 import { formatPrice, unitLabel, pricingCopy } from "@/i18n/pricing";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
@@ -52,12 +52,11 @@ export function ProviderCard({ provider, selectedForCompare = false, onToggleCom
   const { locale } = useLocale(); const t = copy[locale]; const p = pageCopy[locale];
   const href = `/providers/${provider.slug}`;
   return <article className="provider-summary provider-poster group overflow-hidden rounded-2xl border border-border bg-card">
-    <Link href={href} className="provider-poster-art relative flex aspect-[4/3] flex-col items-center justify-center overflow-hidden bg-ink p-6 text-white">
-      <ProviderImage src={provider.websitePreviewUrl} alt="" className="absolute inset-0 size-full object-cover object-top opacity-20"/>
+    <Link href={href} className="provider-poster-art relative flex aspect-[4/3] flex-col items-center justify-center overflow-hidden bg-muted p-6 text-foreground">
       <div className="relative z-10 flex w-full flex-col items-center text-center">
         <div className="provider-poster-logo"><ProviderLogo src={provider.logoUrl} name={provider.name} initials={provider.initials} className="size-24 rounded-2xl text-3xl sm:size-28"/></div>
         <h2 className="mt-4 max-w-full break-words text-xl font-extrabold" dir="auto">{provider.name}</h2>
-        {provider.websiteUrl && <bdi dir="ltr" className="mt-2 max-w-full truncate text-xs text-white/80">{provider.websiteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}</bdi>}
+        {provider.websiteUrl && <bdi dir="ltr" className="mt-2 max-w-full truncate text-xs text-muted-foreground">{provider.websiteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}</bdi>}
       </div>
     </Link>
     <div className="border-b border-border px-4 py-4 text-center"><p className="text-2xl font-extrabold text-foreground"><bdi>{formatNumber(locale, provider.activeServicesCount)}</bdi></p><p className="mt-1 text-xs text-muted-foreground">{locale === "ar" ? "خدمة متاحة للعرض" : "listed services"}</p></div>

@@ -7,11 +7,13 @@ export default function ProviderPicker({
   onChange,
   emptyLabel,
   disabled = false,
+  showImportNotice = true,
 }: {
   value: string;
   onChange: (value: string) => void;
   emptyLabel?: string;
   disabled?: boolean;
+  showImportNotice?: boolean;
 }) {
   const { locale } = useLocale();
   const ar = locale === "ar";
@@ -74,11 +76,11 @@ export default function ProviderPicker({
           >
             {selected.websiteUrl ?? (ar ? "الموقع غير محدد" : "No website")}
           </bdi>
-          <p className="mt-2 text-xs">
+          {showImportNotice && <p className="mt-2 text-xs">
             {ar
               ? "ستُنسب الخدمات المستوردة إلى هذا المزود. تحقق من أن رابط API والمفتاح يخصّانه."
               : "Imported services will belong to this provider. Check that the API URL and key belong to it."}
-          </p>
+          </p>}
         </div>
       )}
       {query.isError && (
