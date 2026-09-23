@@ -582,11 +582,23 @@ export function providerBusinessAcceptanceCases(
             requiresSubscription: true,
           }))
         );
+      // Platform ads are managed by the owner and must not inflate member tools.
+      await database().insert(promotions).values(
+        ["pending", "rejected", "approved"].map(status => ({
+          ...offerInput(),
+          title: "Platform advertisement",
+          placement: "platform",
+          status,
+          reviewedAt: status === "approved" ? new Date() : null,
+          endsAt: new Date(now + 60_000),
+        }))
+      );
       const report = await businessOverview(owner.auth, providerId());
       expect(report.groups).toMatchObject({ total: 3, live: 1, pending: 1 });
       expect(report.offers).toMatchObject({
         total: 34,
         pending: 30,
+        rejected: 0,
         live: 1,
         expiring: 1,
         nextExpiry: { title: "Visible offer" },

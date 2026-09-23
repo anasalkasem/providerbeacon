@@ -634,7 +634,7 @@ export async function businessOverview(auth: MemberAuth, providerId: number) {
           ),
       })
       .from(promotions)
-      .where(eq(promotions.providerId, providerId));
+      .where(and(eq(promotions.providerId, providerId), eq(promotions.placement, "subscription")));
     const currentOffers = visibility
       ? await tx
           .select({
@@ -648,6 +648,7 @@ export async function businessOverview(auth: MemberAuth, providerId: number) {
             and(
               eq(promotions.providerId, providerId),
               eq(promotions.status, "approved"),
+              eq(promotions.placement, "subscription"),
               isNotNull(promotions.reviewedAt),
               lte(promotions.startsAt, now),
               gte(promotions.endsAt, now)
