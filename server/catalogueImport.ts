@@ -1,4 +1,5 @@
 import { priceHistoryKey } from "./priceHistory";
+import { assertSameCatalogueSource } from "../shared/providerSourceIdentity";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { createHash } from "node:crypto";
 import {
@@ -126,6 +127,7 @@ export async function applyCatalogueBatch(
   const changeAudits: (typeof auditEntries.$inferInsert)[] = [];
   for (const item of normalized) {
     const existing = existingById.get(item.externalId.toLowerCase());
+    if (existing?.sourceKind === "provider_api") assertSameCatalogueSource(existing.sourceUrl, sourceUrl);
     const automatic = automaticSourcePricing(item.sourceData, sourceUrl, pricingSnapshot);
     const sourceCurrency = automatic.currency;
     const manual = existing?.sourcePricingMode === "manual";

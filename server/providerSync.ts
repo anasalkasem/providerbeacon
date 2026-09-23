@@ -1,4 +1,6 @@
 import { invalidateCatalogueCaches } from "./catalogueCache";
+import { assertSameCatalogueSource, CatalogueSourceConflict } from "../shared/providerSourceIdentity";
+import { assertCatalogueSource } from "./providerSourceIdentity";
 import {
   and,
   asc,
@@ -258,6 +260,7 @@ async function prepareSnapshot(claim: Job) {
   const integration = await withJob(
     claim,
     async (tx, job, _provider, current) => {
+      await assertCatalogueSource(tx, current.providerId, current.baseUrl);
       await tx
         .update(providerSyncJobs)
         .set({
@@ -367,6 +370,8 @@ async function importSnapshotBatch(claim: Job) {
         .select({
           id: serviceRecords.id,
           externalId: serviceRecords.externalId,
+          sourceKind: serviceRecords.sourceKind,
+          sourceUrl: serviceRecords.sourceUrl,
           revision: serviceRecords.revision,
           status: serviceRecords.status,
           reviewStatus: serviceRecords.reviewStatus,
@@ -390,6 +395,7 @@ async function importSnapshotBatch(claim: Job) {
         .limit(201)
         .for("update");
       for (const row of existing) {
+        if (row.sourceKind === "provider_api") assertSameCatalogueSource(row.sourceUrl, job.sourceUrl);
         await tx
           .update(serviceRecords)
           .set({
@@ -600,7 +606,7 @@ async function failJob(claim: Job, error: unknown) {
   if (error instanceof LostLease) return;
   // Never store SQL error parameters, upstream bodies or credential exceptions in the UI/audit log.
   const message =
-    error instanceof SyncError
+    error instanceof SyncError || error instanceof CatalogueSourceConflict
       ? error.message
       : "Synchronization stopped because of a storage error; completed draft batches were preserved. Retry synchronization.";
   const db = await database();

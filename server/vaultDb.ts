@@ -3,6 +3,8 @@ import { providerIntegrations, providerRecords, providerSyncJobs } from "../driz
 import { getDb } from "./db";
 import { assertPublicHttpsUrl, writeAudit } from "./marketplaceDb";
 import { encryptValue } from "./security";
+import { assertCatalogueSource } from "./providerSourceIdentity";
+import { sourceHost, sourceMatchesWebsite } from "../shared/providerSourceIdentity";
 
 const MIN_INTERVAL_MINUTES = 60;
 const MAX_INTERVAL_MINUTES = 7 * 24 * 60;
@@ -55,6 +57,7 @@ export async function saveProviderIntegration(input: {
   apiKey?: string;
   syncIntervalMinutes: number;
   enabled: boolean;
+  sourceIdentityConfirmed?: boolean;
   actorUserId: number;
 }) {
   const db = await getDb();
@@ -64,7 +67,7 @@ export async function saveProviderIntegration(input: {
   const [before] = input.id ? await db.select().from(providerIntegrations).where(eq(providerIntegrations.id, input.id)).limit(1) : [];
   return db.transaction(async tx => {
     const providerIds = Array.from(new Set([input.providerId, ...(before ? [before.providerId] : [])])).sort((a, b) => a - b);
-    const providers = await tx.select({ id: providerRecords.id, isReviewWorkspace: providerRecords.isReviewWorkspace }).from(providerRecords).where(inArray(providerRecords.id, providerIds)).orderBy(asc(providerRecords.id)).for("update");
+    const providers = await tx.select({ id: providerRecords.id, isReviewWorkspace: providerRecords.isReviewWorkspace, websiteUrl: providerRecords.websiteUrl }).from(providerRecords).where(inArray(providerRecords.id, providerIds)).orderBy(asc(providerRecords.id)).for("update");
     if (!providers.some(row => row.id === input.providerId)) throw new Error("Provider not found");
     if (providers.some(row => row.isReviewWorkspace)) throw new Error("Review workspaces cannot connect live provider APIs");
     let integrationId = input.id;
@@ -76,6 +79,10 @@ export async function saveProviderIntegration(input: {
       if (new URL(existing.baseUrl).hostname !== endpoint.hostname && !input.apiKey) throw new Error("Enter the API key for the new API host. Stored credentials cannot be transferred to another host.");
       const [running] = await tx.select({ id: providerSyncJobs.id }).from(providerSyncJobs).where(eq(providerSyncJobs.activeProviderId, existing.providerId)).limit(1);
       if (running) throw new Error("Wait for the current synchronization to finish before changing the connection");
+      if (sourceHost(existing.baseUrl) !== sourceHost(endpoint.toString())) {
+        await assertCatalogueSource(tx, input.providerId, endpoint.toString());
+        if (!input.sourceIdentityConfirmed && sourceMatchesWebsite(providers.find(row => row.id === input.providerId)?.websiteUrl, endpoint.toString()) === false) throw new Error("source_identity_confirmation_required");
+      }
       await tx.update(providerIntegrations).set({
         name: input.name.trim().slice(0, 160), baseUrl: endpoint.toString(),
         ...(input.apiKey || existing.baseUrl !== endpoint.toString()
@@ -85,6 +92,8 @@ export async function saveProviderIntegration(input: {
       }).where(eq(providerIntegrations.id, integrationId));
     } else {
       if (!input.apiKey) throw new Error("API key is required for a new integration");
+      await assertCatalogueSource(tx, input.providerId, endpoint.toString());
+      if (!input.sourceIdentityConfirmed && sourceMatchesWebsite(providers.find(row => row.id === input.providerId)?.websiteUrl, endpoint.toString()) === false) throw new Error("source_identity_confirmation_required");
       const [inserted] = await tx.insert(providerIntegrations).values({
         providerId: input.providerId, name: input.name.trim().slice(0, 160), baseUrl: endpoint.toString(),
         status: input.enabled ? "active" : "disabled", syncIntervalMinutes: interval,
@@ -99,7 +108,7 @@ export async function saveProviderIntegration(input: {
       }).where(eq(providerIntegrations.id, integrationId));
     }
     await writeAudit({ actorUserId: input.actorUserId, action: input.id ? "integration.vault.update" : "integration.vault.create", entityType: "provider_integration", entityId: String(integrationId),
-      summary: `${input.id ? "Updated" : "Created"} encrypted provider integration`, metadata: { providerId: input.providerId, host: endpoint.host, enabled: input.enabled, intervalMinutes: interval, credentialRotated: Boolean(input.apiKey) },
+      summary: `${input.id ? "Updated" : "Created"} encrypted provider integration`, metadata: { providerId: input.providerId, host: endpoint.host, enabled: input.enabled, intervalMinutes: interval, credentialRotated: Boolean(input.apiKey), sourceIdentityConfirmed: Boolean(input.sourceIdentityConfirmed) },
     }, tx);
     return { success: true, id: integrationId };
   });
@@ -152,6 +161,9 @@ export async function syncStoredIntegration(input: { id: number; actorUserId?: n
       if (running.integrationId !== integration.id) throw new Error("This provider is already synchronizing through another connection");
       return { queued: true as const, jobId: running.id, alreadyQueued: true };
     }
+    // Scheduled conflicts reach the worker so its normal failure reporting and
+    // retry backoff remain visible. Manual requests fail before enqueueing.
+    if (!input.scheduled) await assertCatalogueSource(tx, provider.id, integration.baseUrl);
     const endpoint = new URL(integration.baseUrl);
     const [job] = await tx.insert(providerSyncJobs).values({ integrationId: integration.id, providerId: provider.id, activeProviderId: provider.id, actorUserId: input.actorUserId,
       scheduled: Boolean(input.scheduled), configFingerprint: integrationFingerprint(integration), sourceUrl: `${endpoint.origin}${endpoint.pathname}`,

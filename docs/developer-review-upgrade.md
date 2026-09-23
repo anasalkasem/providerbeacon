@@ -23,6 +23,12 @@ Secondary references researched in Refero:
 
 The audio alone does not establish which historical production rows have incorrect ownership. Do not relabel or migrate service data based on ambiguous spoken provider names.
 
+## Source attribution follow-up
+
+Before implementing the audit interface, retain the existing palette, typography and status tokens. Additional Refero references: Sana integration management (`20c9ef56-f757-4c49-ac77-c08bfad61de6`) keeps connection identity beside its state; Make incomplete executions (`54f3e9d6-cf38-482b-89b2-45520f8432d6`) places a persistent warning above supporting records. Borrow those relationships, with stacked rows on phones, wrapping host names, and isolated left-to-right domain text in Arabic.
+
+Show the provider website, configured API hosts, retained service-source hosts and sample internal service IDs in a staff-only report. A domain match is an attribution clue, never proof of ownership. Unknown or different domains require review; no historical service is reassigned automatically. Require explicit acknowledgement for a new API host outside the provider website, and block a different API host from overwriting a retained catalogue even when external service IDs overlap. Apply this check at connection save, enqueue, worker preparation and both valid and quarantined batch updates.
+
 ## Additional live finding
 
 Live Instagram/follower results included services explicitly titled "Instagram Random Comments" because their descriptions mentioned the follower counts of the accounts supplying those comments (provider source IDs 2090 and 2091). The normalizer previously chose service types in a fixed priority order, letting a later "followers" term override "comments" in the title.
