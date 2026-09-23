@@ -35,6 +35,7 @@ import {
   writeAudit,
 } from "../marketplaceDb";
 import { deleteProviderIntegration, listProviderIntegrations, saveProviderIntegration, setProviderIntegrationEnabled, syncStoredIntegration } from "../vaultDb";
+import { getProviderSourceIdentity } from "../providerSourceIdentity";
 
 import { getCachedAdminOverview, getProviderForAnalysis, getCachedServiceReviewSummary, listAdminServices, listSyncAlerts } from "../adminCatalogueDb";
 import { adminServicesInput } from "../../shared/catalogueQuery";
@@ -116,6 +117,7 @@ export const adminRouter = router({
     update: permissionProcedure("services.write").input(z.object({ id: z.number().int().positive(), status: z.enum(["draft", "active", "paused", "archived"]).optional(), priceAmount: z.number().positive().max(100000).optional() }).refine(value => value.status != null || value.priceAmount != null)).mutation(({ ctx, input }) => updateServiceRecord({ ...input, actorUserId: ctx.user!.id })),
   }),
   integrations: router({
+    sourceIdentity: permissionProcedure("integrations.read").input(z.object({ providerId: z.number().int().positive() })).query(({ input }) => getProviderSourceIdentity(input.providerId)),
     issues: permissionProcedure("integrations.read").input(z.object({ jobId: z.number().int().positive(), cursor: z.number().int().nonnegative().optional() })).query(({ input }) => listProviderSyncIssues(input)),
     alerts: permissionProcedure("integrations.read").query(() => listSyncAlerts()),
     list: permissionProcedure("integrations.read").query(() => listProviderIntegrations()),
@@ -123,6 +125,7 @@ export const adminRouter = router({
       id: z.number().int().positive().optional(), providerId: z.number().int().positive(), name: z.string().trim().min(2).max(160),
       baseUrl: z.string().url().max(500), apiKey: z.string().min(8).max(500).optional(),
       syncIntervalMinutes: z.number().int().min(60).max(10080), enabled: z.boolean(),
+      sourceIdentityConfirmed: z.boolean().optional(),
     })).mutation(({ ctx, input }) => saveProviderIntegration({ ...input, actorUserId: ctx.user!.id })),
     setEnabled: permissionProcedure("integrations.write").input(z.object({ id: z.number().int().positive(), enabled: z.boolean() })).mutation(({ ctx, input }) => setProviderIntegrationEnabled({ ...input, actorUserId: ctx.user!.id })),
     syncNow: permissionProcedure("integrations.write").input(z.object({ id: z.number().int().positive() })).mutation(({ ctx, input }) => syncStoredIntegration({ id: input.id, actorUserId: ctx.user!.id })),

@@ -9,6 +9,9 @@ const state = vi.hoisted(() => ({
   permissions: ["providers.write", "integrations.read"],
   options: {} as any,
   mutate: vi.fn(),
+  sourceSave: vi.fn(),
+  sourceRows: [] as any[],
+  sourceError: false,
   invalidate: vi.fn(async () => {}),
   setData: vi.fn(),
 }));
@@ -51,7 +54,7 @@ vi.mock("@/lib/trpc", () => {
             page: invalidation,
             list: invalidation,
           },
-          integrations: { list: invalidation, alerts: invalidation },
+          integrations: { list: invalidation, alerts: invalidation, sourceIdentity: invalidation },
           audit: { list: invalidation },
         },
         marketplace: { snapshot: invalidation },
@@ -77,8 +80,12 @@ vi.mock("@/lib/trpc", () => {
           createDraft: mutation,
         },
         integrations: {
+          sourceIdentity: { useQuery: ({ providerId }: any) => ({
+            isLoading: false, refetch: vi.fn(), error: state.sourceError ? new Error("offline") : null,
+            data: state.sourceError ? undefined : { provider: { id: providerId, name: `Provider ${providerId}`, websiteHost: "provider.example" }, sources: state.sourceRows, connections: [], truncated: false },
+          }) },
           list: { useQuery: () => ({ data: [], isLoading: false }) },
-          save: mutation,
+          save: { useMutation: () => ({ mutate: state.sourceSave, isPending: false }) },
           syncNow: mutation,
           setEnabled: mutation,
           remove: mutation,
@@ -88,6 +95,8 @@ vi.mock("@/lib/trpc", () => {
   };
 });
 import ProviderProfileEditor from "../client/src/components/ProviderProfileEditor";
+import ProviderSourceAudit from "../client/src/components/ProviderSourceAudit";
+import { providerSourceCopy } from "../client/src/i18n/providerSourceIdentity";
 import ProviderIntegrationVault from "../client/src/components/ProviderIntegrationVault";
 import {
   ProviderLogo,
@@ -97,8 +106,11 @@ import {
 let container: HTMLDivElement, root: Root;
 beforeEach(() => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
+  vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} });
   vi.clearAllMocks();
   state.locale = "en";
+  state.sourceRows = [];
+  state.sourceError = false;
   state.permissions = ["providers.write", "integrations.read"];
   state.profiles = Object.fromEntries(
     [1, 2].map(id => [
@@ -161,6 +173,49 @@ async function submit() {
 }
 
 describe("provider profile controls", () => {
+  it("requires the source acknowledgement again after editing the API or selected provider", async () => {
+    state.permissions = ["integrations.read", "integrations.write"];
+    await render(React.createElement(ProviderIntegrationVault));
+    const choose = async (value: string) => act(() => {
+      const picker = container.querySelector('select[aria-label="Provider picker"]') as HTMLSelectElement;
+      picker.value = value;
+      picker.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+    await choose("1");
+    await enter("Integration name", "Connection");
+    await enter("Provider SMM API URL", "https://external.example/api");
+    await enter("API key", "test-key-no-network");
+    const checkbox = () => container.querySelector('input[type="checkbox"]') as HTMLInputElement;
+    expect(checkbox().checked).toBe(false);
+    await act(() => checkbox().click());
+    await submit();
+    expect(state.sourceSave).toHaveBeenLastCalledWith(expect.objectContaining({ providerId: 1, sourceIdentityConfirmed: true }));
+    await enter("Provider SMM API URL", "https://another.example/api");
+    expect(checkbox().checked).toBe(false);
+    await act(() => checkbox().click());
+    await choose("2");
+    expect(checkbox().checked).toBe(false);
+    expect(field("API key").value).toBe("");
+    await submit();
+    expect(state.sourceSave).toHaveBeenLastCalledWith(expect.objectContaining({ providerId: 2, sourceIdentityConfirmed: false }));
+  });
+  it("shows Arabic attribution evidence, unknown sources and failures without implying ownership verification", async () => {
+    state.locale = "ar";
+    state.sourceRows = [
+      { host: "other.example", count: 24, sampleServiceId: 51, matchesWebsite: false },
+      { host: null, count: 2, sampleServiceId: 60, matchesWebsite: null },
+    ];
+    await render(React.createElement(ProviderSourceAudit, { providerId: 1 }));
+    expect(container.textContent).toContain(providerSourceCopy.ar.warning);
+    expect(container.textContent).toContain(providerSourceCopy.ar.unknown);
+    expect(container.textContent).toContain(providerSourceCopy.ar.sample);
+    expect(container.querySelector('bdi[dir="ltr"]')?.textContent).toBe("provider.example");
+    expect(container.querySelector('input[type="checkbox"]')).toBeNull();
+    state.sourceError = true;
+    await render(React.createElement(ProviderSourceAudit, { providerId: 1 }));
+    expect(container.querySelector('[role="alert"]')?.textContent).toBe(providerSourceCopy.ar.failed);
+    expect(container.textContent).not.toContain(providerSourceCopy.ar.empty);
+  });
   it("saves canonical public fields, keeps dirty edits on refetch and refreshes public data", async () => {
     await render();
     await enter("Provider name", "Edited provider");
