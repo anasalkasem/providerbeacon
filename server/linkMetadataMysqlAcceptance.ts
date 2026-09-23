@@ -181,6 +181,13 @@ export function linkMetadataAcceptanceCases(
       });
       expect(again.logoUrl).toBe("https://provider.com/manual.png");
       expect(again.description).toBe("Manually updated description");
+      await expect(createProviderDraft({
+        name: "Imported Provider", websiteUrl: "https://other-provider.com/", actorUserId: actorId(),
+      })).rejects.toThrow("already used by another website");
+      const [unchanged] = await database().select().from(providerRecords).where(eq(providerRecords.id, provider.id));
+      expect(unchanged.websiteUrl).toBe(provider.websiteUrl);
+      expect(unchanged.profileRevision).toBe(provider.profileRevision);
+      expect(unchanged.logoUrl).toBe("https://provider.com/manual.png");
     });
     it("uses a hostname slug when an automatically retrieved provider name is Arabic", async () => {
       const data = await seed();

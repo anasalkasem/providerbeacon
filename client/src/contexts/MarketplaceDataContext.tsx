@@ -99,6 +99,8 @@ export function MarketplaceDataProvider({ children }: { children: ReactNode }) {
         ? providerSelection(params.get("providers"))
         : undefined,
     q: params.get("q")?.slice(0, 100) ?? "",
+    ...(scope === "services" && params.get("market") !== "packages"
+      ? { priceCurrency: "USD" as const, priceUnit: "per_1000" as const, sort: "price" as const } : {}),
     ...current.filters,
     slug: scope === "provider" ? path.slice("/providers/".length) : undefined,
     ids,

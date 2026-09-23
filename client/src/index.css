@@ -287,3 +287,14 @@ input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="r
   .landing-step { padding: 1.2rem; border-bottom: 1px solid #0285fe33; }
   .landing-step:last-child { border-bottom: 0; }
 }
+
+/* Actual provider artwork, with a restrained dimensional treatment. */
+.provider-poster-art { isolation: isolate; }
+.provider-poster-logo {
+  border-radius: 1rem;
+  box-shadow: 0 12px 24px rgb(0 0 0 / 22%), 0 2px 0 rgb(255 255 255 / 20%);
+}
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .provider-poster-logo { transition: transform 180ms ease; }
+  .provider-poster:hover .provider-poster-logo { transform: perspective(600px) rotateY(-7deg) translateY(-3px); }
+}

@@ -48,15 +48,15 @@ export function MobileNavigation() {
       href: "/find",
       title: t.search,
       icon: Search,
-      active: /^\/(find|services|providers|directory|offers|vip)(\/|$)/.test(
+      active: /^\/(find|providers|directory|offers|vip)(\/|$)/.test(
         path
       ),
     },
     {
-      href: "/compare",
+      href: "/services#service-comparison",
       title: t.compare,
       icon: Scale,
-      active: path === "/compare",
+      active: path === "/compare" || path === "/services",
     },
     {
       href: "/account",

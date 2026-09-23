@@ -12,10 +12,10 @@ const en = {
   lowest: "Lowest price",
   lowestFirst: "Lowest comparable prices on this page appear first.",
   lowestMarked: "Lowest comparable prices on this page are highlighted.",
-  recommended: "Comparable lows first (this page)",
-  method: "How highlights work",
+  recommended: "Default order",
+  method: "How prices are ordered",
   explanation:
-    "Green marks the lowest price within each group of equivalent offers on this page, for your selected quantity. Currency, sale unit, service, market, refill and quality must match. Missing terms and starting prices are excluded. This is a price comparison, not a quality rating.",
+    "Price sorting orders all matching results, across pages, in one currency and sale unit. Advertising does not change this order. Select offers to compare their terms. A lower price is not a quality rating.",
 };
 
 export const offerResultsCopy: Record<Locale, typeof en> = {
@@ -33,10 +33,10 @@ export const offerResultsCopy: Record<Locale, typeof en> = {
     lowestFirst: "أقل الأسعار بين العروض المتكافئة في هذه الصفحة تظهر أولًا.",
     lowestMarked:
       "أقل الأسعار بين العروض المتكافئة في هذه الصفحة مميزة بالأخضر.",
-    recommended: "الأقل بين العروض المتكافئة أولًا (بالصفحة)",
-    method: "كيف نميّز الأسعار؟",
+    recommended: "الترتيب الافتراضي",
+    method: "كيف نرتّب الأسعار؟",
     explanation:
-      "الأخضر يميّز أقل سعر ضمن كل مجموعة عروض متكافئة في هذه الصفحة، للكمية التي حددتها. يجب تطابق العملة ووحدة البيع والخدمة والسوق والتعويض والجودة. نستثني الشروط غير المحددة والأسعار الابتدائية. هذه مقارنة سعرية وليست تقييمًا للجودة.",
+      "ترتيب السعر يشمل كل النتائج المطابقة عبر الصفحات ضمن عملة ووحدة بيع واحدة. الإعلان لا يغيّر هذا الترتيب. اختر العروض لمقارنة شروطها؛ السعر الأقل ليس تقييمًا للجودة.",
   },
   es: {
     results: "Resultados de ofertas",
@@ -52,10 +52,10 @@ export const offerResultsCopy: Record<Locale, typeof en> = {
       "Los menores precios comparables de esta página aparecen primero.",
     lowestMarked:
       "Los menores precios comparables de esta página están destacados.",
-    recommended: "Menores precios comparables primero (esta página)",
-    method: "Cómo se destacan los precios",
+    recommended: "Orden predeterminado",
+    method: "Cómo se ordenan los precios",
     explanation:
-      "El verde indica el menor precio de cada grupo de ofertas equivalentes de esta página para la cantidad elegida. Deben coincidir moneda, unidad, servicio, mercado, reposición y calidad. Se excluyen condiciones desconocidas y precios iniciales. Se compara el precio, no la calidad.",
+      "El orden por precio abarca todas las páginas, con una misma moneda y unidad. Los anuncios no cambian este orden. Selecciona ofertas para comparar sus condiciones. Un menor precio no indica mayor calidad.",
   },
   hi: {
     results: "ऑफ़र के परिणाम",
@@ -69,10 +69,10 @@ export const offerResultsCopy: Record<Locale, typeof en> = {
     lowest: "सबसे कम कीमत",
     lowestFirst: "इस पृष्ठ की सबसे कम तुलनीय कीमतें पहले दिखाई जाती हैं।",
     lowestMarked: "इस पृष्ठ की सबसे कम तुलनीय कीमतें हाइलाइट की गई हैं।",
-    recommended: "तुलनीय न्यूनतम कीमतें पहले (यह पृष्ठ)",
-    method: "कीमतें कैसे हाइलाइट होती हैं",
+    recommended: "डिफ़ॉल्ट क्रम",
+    method: "कीमतें कैसे क्रमबद्ध होती हैं",
     explanation:
-      "हरा रंग चुनी गई मात्रा के लिए इस पृष्ठ के हर समान ऑफ़र समूह की सबसे कम कीमत दिखाता है। मुद्रा, इकाई, सेवा, बाज़ार, रीफ़िल और गुणवत्ता समान होनी चाहिए। अज्ञात शर्तें और शुरुआती कीमतें शामिल नहीं हैं। यह कीमत की तुलना है, गुणवत्ता की रेटिंग नहीं।",
+      "कीमत का क्रम सभी पृष्ठों पर एक ही मुद्रा और इकाई वाले परिणामों पर लागू होता है। विज्ञापन क्रम नहीं बदलते। शर्तों की तुलना के लिए ऑफ़र चुनें। कम कीमत गुणवत्ता की रेटिंग नहीं है।",
   },
   zh: {
     results: "优惠结果",
@@ -86,9 +86,9 @@ export const offerResultsCopy: Record<Locale, typeof en> = {
     lowest: "最低价格",
     lowestFirst: "本页各组可比优惠中的最低价格优先显示。",
     lowestMarked: "本页各组可比优惠中的最低价格已突出显示。",
-    recommended: "本页可比最低价优先",
-    method: "价格标记说明",
+    recommended: "默认排序",
+    method: "价格排序说明",
     explanation:
-      "绿色标记本页每组同等优惠中适用于所选数量的最低价格。货币、计价单位、服务、市场、补量和质量必须一致。未知条款及起步价不参与比较。这是价格比较，不是质量评级。",
+      "价格排序涵盖所有页面中使用同一货币和计价单位的匹配结果。广告不会改变排序。选择优惠以比较条款；价格更低不代表质量更好。",
   },
 };

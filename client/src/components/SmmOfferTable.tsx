@@ -4,7 +4,6 @@ import { Link } from "wouter";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
 import type { Provider, Service } from "@/data/marketplace";
-import { orderVisibleOffers } from "@/lib/priceHighlights";
 import {
   localizeData,
   localizeDuration,
@@ -29,24 +28,20 @@ export default function SmmOfferTable({
   toggle,
   quantity = 1000,
   pageSize = 25,
-  prioritizeLowest = true,
+  priceSorted = false,
 }: {
   services: Service[];
-  selected: Service[];
+  selected: Pick<Service, "id">[];
   toggle: (service: Service) => void;
   quantity?: number;
   pageSize?: number;
-  prioritizeLowest?: boolean;
+  priceSorted?: boolean;
 }) {
   const { locale } = useLocale();
   const t = offerResultsCopy[locale];
   const catalogue = providerCatalogueCopy[locale];
   const { providerFor, pagination, isFetching } = useMarketplaceData();
-  const { rows, lowest } = orderVisibleOffers(
-    services,
-    quantity,
-    prioritizeLowest
-  );
+  const rows = services;
   const [expanded, setExpanded] = useState<string | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const pendingNavigation = useRef(false);
@@ -80,12 +75,6 @@ export default function SmmOfferTable({
         </h2>
       </div>
       <div className="offer-results-help" id="offer-results-help">
-        {lowest.size > 0 && (
-          <p className="offer-results-ranking">
-            <ArrowDown size={15} aria-hidden="true" />
-            {prioritizeLowest ? t.lowestFirst : t.lowestMarked}
-          </p>
-        )}
         <p>{catalogue.help}</p>
         <details>
           <summary>{t.method}</summary>
@@ -111,7 +100,7 @@ export default function SmmOfferTable({
               <th scope="col">{t.serviceProvider}</th>
               <th
                 scope="col"
-                aria-sort={!prioritizeLowest ? "ascending" : undefined}
+                aria-sort={priceSorted ? "ascending" : undefined}
               >
                 {catalogue.price}
               </th>
@@ -133,7 +122,7 @@ export default function SmmOfferTable({
                 service={service}
                 provider={providerFor(service)}
                 quantity={quantity}
-                lowest={lowest.has(service.id)}
+                lowest={false}
                 chosen={selected.some(item => item.id === service.id)}
                 selectionFull={selected.length >= 4}
                 compare={() => toggle(service)}

@@ -942,14 +942,19 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(alerts.items[0]).toMatchObject({ hasFailure: true, failures: 1, isOverdue: false, sourceIssues: { jobId: original.id, count: 1 } });
     expect(JSON.stringify(alerts)).not.toContain("upstream-private-details");
   });
-  it("does not attach an old provider or endpoint's source issues to an edited connection", async () => {
+  it("rejects provider reassignment and keeps endpoint issue history scoped to its source", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([payload[0], { ...payload[0], service: 200, rate: "0" }]))));
     await sync();
     const [connection] = await state.db.select().from(providerIntegrations);
     const [other] = await state.db.insert(providerRecords).values({ slug: "new-source-owner", name: "New source owner", initials: "NS", status: "draft" }).$returningId();
     const edit = { id: connection.id, name: "Edited connection", apiKey: "another-test-key", syncIntervalMinutes: 360, enabled: false, actorUserId: actorId };
-    await saveProviderIntegration({ ...edit, providerId: other.id, baseUrl: connection.baseUrl });
-    expect((await listSyncAlerts()).total).toBe(0);
+    await expect(saveProviderIntegration({ ...edit, providerId: other.id, baseUrl: connection.baseUrl })).rejects.toThrow("cannot be moved");
+    const [unchanged] = await state.db.select().from(providerIntegrations).where(eq(providerIntegrations.id, connection.id));
+    expect(unchanged.providerId).toBe(providerId);
+    expect(unchanged.credentialCiphertext).toBe(connection.credentialCiphertext);
+    expect((await listSyncAlerts()).items[0].sourceIssues?.count).toBe(1);
+    await expect(saveProviderIntegration({ ...edit, apiKey: undefined, providerId, baseUrl: "https://other-provider.example/api/v2" })).rejects.toThrow("Stored credentials cannot be transferred");
+    expect((await state.db.select().from(providerIntegrations).where(eq(providerIntegrations.id, connection.id)))[0].baseUrl).toBe(connection.baseUrl);
     await saveProviderIntegration({ ...edit, providerId, baseUrl: "https://provider.example/another-api" });
     expect((await listSyncAlerts()).total).toBe(0);
     await saveProviderIntegration({ ...edit, providerId, baseUrl: connection.baseUrl });

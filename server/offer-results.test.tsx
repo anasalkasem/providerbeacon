@@ -93,7 +93,7 @@ function pageData(last = false) {
     pagination: { total: 6, nextCursor: last ? null : { id: 96, rank: 0 } },
   };
 }
-function Results({ prioritizeLowest = true }: { prioritizeLowest?: boolean }) {
+function Results({ priceSorted = false }: { priceSorted?: boolean }) {
   const data = useMarketplaceData();
   const [selected, setSelected] = useState<Service[]>([]);
   return (
@@ -106,7 +106,7 @@ function Results({ prioritizeLowest = true }: { prioritizeLowest?: boolean }) {
         selected={selected}
         pageSize={5}
         quantity={1000}
-        prioritizeLowest={prioritizeLowest}
+        priceSorted={priceSorted}
         toggle={service =>
           setSelected(current =>
             current.some(row => row.id === service.id)
@@ -120,12 +120,12 @@ function Results({ prioritizeLowest = true }: { prioritizeLowest?: boolean }) {
 }
 let host: HTMLDivElement, root: Root, client: QueryClient;
 let scroll: ReturnType<typeof vi.fn>;
-async function render(prioritizeLowest = true) {
+async function render(priceSorted = false) {
   await act(async () =>
     root.render(
       <QueryClientProvider client={client}>
         <MarketplaceDataProvider>
-          <Results prioritizeLowest={prioritizeLowest} />
+          <Results priceSorted={priceSorted} />
         </MarketplaceDataProvider>
       </QueryClientProvider>
     )
@@ -168,32 +168,29 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-it("renders one compact table with comparable lows first and preserves explicit price order", async () => {
+it("preserves server order without page-local lowest claims or promoting sponsored offers", async () => {
   await render();
   await settle();
   expect(host.querySelectorAll("table")).toHaveLength(1);
-  expect(host.querySelectorAll(".offer-results-row")).toHaveLength(5);
   expect(
-    host.querySelector(".offer-results-row")!.getAttribute("data-offer-id")
-  ).toBe("service-99");
-  expect(row("service-99").textContent).toContain("Lowest price");
-  expect(row("service-100").hasAttribute("data-lowest")).toBe(false);
-  expect(row("service-98").hasAttribute("data-lowest")).toBe(false);
-  expect(host.textContent).toContain(
-    "Lowest comparable prices on this page appear first."
-  );
+    Array.from(host.querySelectorAll(".offer-results-row")).map(row =>
+      row.getAttribute("data-offer-id")
+    )
+  ).toEqual(firstRows.map(row => row.id));
+  expect(host.querySelector("[data-lowest]")).toBeNull();
+  expect(host.querySelector('[aria-sort="ascending"]')).toBeNull();
   expect(row("service-98").textContent).toContain("USD 0.100000000000000001");
   expect(
     host.querySelectorAll('a[href="/providers/real-provider"]')
   ).toHaveLength(5);
-  await render(false);
-  expect(
-    host.querySelector(".offer-results-row")!.getAttribute("data-offer-id")
-  ).toBe("service-100");
-  expect(host.textContent).toContain(
-    "Lowest comparable prices on this page are highlighted."
-  );
+  await render(true);
   expect(host.querySelector('[aria-sort="ascending"]')).not.toBeNull();
+  expect(
+    Array.from(host.querySelectorAll(".offer-results-row")).map(row =>
+      row.getAttribute("data-offer-id")
+    )
+  ).toEqual(firstRows.map(row => row.id));
+  expect(host.textContent).toContain("Advertising does not change this order.");
 });
 
 it("opens one full detail row in Arabic, with source terms, quantity cost and the sign-in return path", async () => {

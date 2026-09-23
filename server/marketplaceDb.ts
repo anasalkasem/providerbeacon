@@ -268,23 +268,30 @@ export async function createProviderDraft(input: { name: string; websiteUrl: str
   const endpoint = await assertPublicHttpsUrl(input.websiteUrl);
   const metadata = input.metadataKey ? await savedLinkMetadata(input.metadataKey, "website", input.websiteUrl) : null;
   const initials = name.split(/\s+/).map(part => part[0]).join("").slice(0, 4).toUpperCase();
-  await db.insert(providerRecords).values({
-    slug,
-    name,
-    initials,
-    status: "draft",
-    tier: "specialized_partner",
-    websiteUrl: endpoint.origin,
-    logoUrl: metadata?.logoUrl ?? null,
-    websitePreviewUrl: metadata?.websitePreviewUrl ?? null,
-    telegramUrl: metadata?.telegramUrl ?? null,
-    description: metadata?.description || "Provider details are listed from public sources. Service delivery and quality have not been independently verified.",
-    verified: false,
-  }).onDuplicateKeyUpdate({ set: { name, websiteUrl: endpoint.origin, profileRevision: sql`${providerRecords.profileRevision} + 1` } });
-  const [provider] = await db.select().from(providerRecords).where(eq(providerRecords.slug, slug)).limit(1);
-  if (!provider) throw new Error("Provider draft could not be created");
-  await writeAudit({ actorUserId: input.actorUserId, action: "provider.draft.create", entityType: "provider", entityId: String(provider.id), summary: `Created or refreshed provider draft ${name}`, metadata: { websiteHost: endpoint.host } });
-  return provider;
+  return db.transaction(async tx => {
+    await tx.insert(providerRecords).values({
+      slug,
+      name,
+      initials,
+      status: "draft",
+      tier: "specialized_partner",
+      websiteUrl: endpoint.origin,
+      logoUrl: metadata?.logoUrl ?? null,
+      websitePreviewUrl: metadata?.websitePreviewUrl ?? null,
+      telegramUrl: metadata?.telegramUrl ?? null,
+      description: metadata?.description || "Provider details are listed from public sources. Service delivery and quality have not been independently verified.",
+      verified: false,
+    // A colliding slug is an identity lookup, never permission to rename an
+    // existing provider or move its catalogue to a different website.
+    }).onDuplicateKeyUpdate({ set: { slug: sql`${providerRecords.slug}` } });
+    const [provider] = await tx.select().from(providerRecords).where(eq(providerRecords.slug, slug)).limit(1).for("update");
+    if (!provider) throw new Error("Provider draft could not be created");
+    if (!provider.websiteUrl || new URL(provider.websiteUrl).hostname.replace(/^www\./, "") !== endpoint.hostname.replace(/^www\./, "")) {
+      throw new Error("This provider name is already used by another website. Choose a distinct name or select the existing provider.");
+    }
+    await writeAudit({ actorUserId: input.actorUserId, action: "provider.draft.create", entityType: "provider", entityId: String(provider.id), summary: `Selected or created provider draft ${provider.name}`, metadata: { websiteHost: endpoint.host } }, tx);
+    return provider;
+  });
 }
 export async function ensureCanonicalProviderDrafts() {
   const db = await getDb(); if (!db) return { created: 0 };

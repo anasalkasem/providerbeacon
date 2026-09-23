@@ -2,7 +2,7 @@ import { MobileDisclosure } from "@/components/MobileDisclosure";
 import { mobileLayoutCopy } from "@/i18n/mobileLayout";
 import { workspaceCopy } from "@/i18n/workspace";
 import { useEffect, useState } from "react";
-import { Link, useLocation, useSearch } from "wouter";
+import { Link, useSearch } from "wouter";
 import { PublicLayout } from "@/components/SiteChrome";
 import { useLocale } from "@/contexts/LocaleContext";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
@@ -15,7 +15,9 @@ import {
   type PriceUnit,
 } from "../../../shared/pricing";
 import { localizeData } from "@/i18n/messages";
-import { GuideGrid } from "@/components/Discovery";
+import InlineServiceComparison from "@/components/InlineServiceComparison";
+import { useServiceSelection } from "@/hooks/useServiceSelection";
+import CataloguePromotions from "@/components/CataloguePromotions";
 import SmmOfferTable from "@/components/SmmOfferTable";
 import {
   providerSelection,
@@ -38,7 +40,6 @@ function ServicesPage() {
   const scopeCopy = homeDiscoveryCopy[locale];
   const { services, setFilters, pagination, isLoading, source } =
     useMarketplaceData();
-  const [, navigate] = useLocation();
   const [market, setMarket] = useState<"smm" | "packages">(
     params.get("market") === "packages" ? "packages" : "smm"
   );
@@ -53,10 +54,16 @@ function ServicesPage() {
       ? params.get("category")!
       : "all"
   );
-  const [currency, setCurrency] = useState<PriceCurrency | "">("");
-  const [unit, setUnit] = useState<PriceUnit | "">("");
+  const [currency, setCurrency] = useState<PriceCurrency | "">(
+    params.get("market") === "packages" ? "" : "USD"
+  );
+  const [unit, setUnit] = useState<PriceUnit | "">(
+    params.get("market") === "packages" ? "" : "per_1000"
+  );
   const [onlyMatching, setOnlyMatching] = useState(params.has("quantity"));
-  const [sort, setSort] = useState<"recommended" | "price">("recommended");
+  const [sort, setSort] = useState<"recommended" | "price">(
+    params.get("market") === "packages" ? "recommended" : "price"
+  );
   const [refillOnly, setRefillOnly] = useState(params.get("refill") === "1");
   const [quantity, setQuantity] = useState(
     Number(params.get("quantity") || 1000)
@@ -74,7 +81,8 @@ function ServicesPage() {
     Number.isSafeInteger(quantity) && quantity > 0 && quantity <= 2147483647;
   const filterQuantity =
     market === "smm" && onlyMatching && validQuantity ? quantity : undefined;
-  const [selected, setSelected] = useState<Service[]>([]);
+  const selection = useServiceSelection();
+  const selected = selection.ids.map(id => ({ id }));
   const field =
     "h-12 w-full rounded-xl border border-border bg-card px-3 text-sm";
   useEffect(() => {
@@ -119,14 +127,7 @@ function ServicesPage() {
     limit,
     setFilters,
   ]);
-  const toggle = (service: Service) =>
-    setSelected(current =>
-      current.some(item => item.id === service.id)
-        ? current.filter(item => item.id !== service.id)
-        : current.length < 4
-          ? [...current, service]
-          : current
-    );
+  const toggle = (service: Service) => selection.toggle(service.id);
   const activeFilters = [
     platform !== "all",
     category !== "all",
@@ -186,11 +187,11 @@ function ServicesPage() {
               onClick={() => {
                 setMarket(value);
                 setCategory("all");
-                setUnit("");
+                setUnit(value === "smm" ? "per_1000" : "");
+                setCurrency(value === "smm" ? "USD" : "");
                 setOnlyMatching(false);
                 setRefillOnly(false);
-                setSelected([]);
-                setSort("recommended");
+                setSort(value === "smm" ? "price" : "recommended");
               }}
               className={`rounded-xl border px-5 py-3 text-sm font-bold ${market === value ? "border-ink bg-ink text-white" : "border-border bg-card text-secondary-foreground"}`}
             >
@@ -216,6 +217,7 @@ function ServicesPage() {
             onChange={e => setQuery(e.target.value)}
           />
         </label>
+        <CataloguePromotions />
         <MobileDisclosure
           className="catalogue-filters"
           label={
@@ -232,71 +234,6 @@ function ServicesPage() {
             </>
           }
         >
-          {market === "smm" && (
-            <section
-              aria-label={
-                ar ? "حاسبة تكلفة الخدمات" : "Service cost calculator"
-              }
-              className="mb-6 rounded-2xl border border-input bg-secondary/50 p-5"
-            >
-              <h2 className="text-lg font-extrabold text-foreground">
-                {ar
-                  ? "كم ستكلفك الكمية التي تحتاجها؟"
-                  : "What will your quantity cost?"}
-              </h2>
-              <p className="mt-2 text-sm text-secondary-foreground">
-                {ar
-                  ? "أدخل الكمية لتظهر تكلفة كل عرض مؤكد التسعير ضمن حدود الطلب."
-                  : "Enter a quantity to calculate each offer with confirmed pricing and valid order limits."}
-              </p>
-              <div className="mt-4 flex flex-wrap items-end gap-4">
-                <label className="grid w-full gap-2 text-sm font-bold sm:w-56">
-                  {ar ? "الكمية المطلوبة" : "Required quantity"}
-                  <input
-                    type="number"
-                    min={1}
-                    max={2147483647}
-                    step={1}
-                    className={field}
-                    value={Number.isFinite(quantity) ? quantity : ""}
-                    onChange={e => setQuantity(e.target.valueAsNumber)}
-                    aria-invalid={!validQuantity}
-                  />
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {[1000, 5000, 10000].map(q => (
-                    <button
-                      key={q}
-                      type="button"
-                      aria-pressed={quantity === q}
-                      onClick={() => setQuantity(q)}
-                      className={`rounded-lg border px-4 py-3 text-sm font-bold ${quantity === q ? "border-ring bg-graphite text-white" : "border-input bg-card text-foreground"}`}
-                    >
-                      {q.toLocaleString(locale)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {!validQuantity && (
-                <p role="alert" className="mt-3 text-sm text-danger">
-                  {ar
-                    ? "أدخل عددًا صحيحًا من 1 إلى 2,147,483,647."
-                    : "Enter a whole number from 1 to 2,147,483,647."}
-                </p>
-              )}
-              <label className="mt-4 flex items-center gap-2 text-sm font-semibold">
-                <input
-                  type="checkbox"
-                  checked={onlyMatching}
-                  onChange={e => setOnlyMatching(e.target.checked)}
-                  className="size-4 accent-ring"
-                />
-                {ar
-                  ? "اعرض فقط العروض التي تقبل هذه الكمية"
-                  : "Only show offers that accept this quantity"}
-              </label>
-            </section>
-          )}
           <div className="mb-6 grid gap-3 rounded-2xl border border-border bg-muted p-4 sm:grid-cols-2 lg:grid-cols-4">
             <label className="grid gap-2 text-sm font-bold">
               {ar ? "المنصة" : "Platform"}
@@ -481,6 +418,41 @@ function ServicesPage() {
                 </select>
               </label>
             )}
+            {market === "smm" && (
+              <>
+                <label className="grid gap-2 text-xs font-bold">
+                  {ar ? "كمية المقارنة" : "Comparison quantity"}
+                  <input
+                    type="number"
+                    min={1}
+                    max={2147483647}
+                    step={1}
+                    className="h-11 w-36 rounded-xl border border-border bg-card px-3"
+                    value={Number.isFinite(quantity) ? quantity : ""}
+                    onChange={e => setQuantity(e.target.valueAsNumber)}
+                    aria-invalid={!validQuantity}
+                  />
+                </label>
+                <label className="flex min-h-11 items-center gap-2 text-xs font-semibold">
+                  <input
+                    type="checkbox"
+                    checked={onlyMatching}
+                    onChange={e => setOnlyMatching(e.target.checked)}
+                    className="size-4 accent-ring"
+                  />
+                  {ar
+                    ? "تقبل كمية المقارنة فقط"
+                    : "Accepts comparison quantity only"}
+                </label>
+                {!validQuantity && (
+                  <p role="alert" className="text-xs text-danger">
+                    {ar
+                      ? "أدخل عددًا صحيحًا من 1 إلى 2,147,483,647."
+                      : "Enter a whole number from 1 to 2,147,483,647."}
+                  </p>
+                )}
+              </>
+            )}
             <label className="grid gap-2 text-xs font-bold">
               {wt.rows}
               <select
@@ -495,9 +467,20 @@ function ServicesPage() {
             </label>
           </div>
         </MobileDisclosure>
+        <InlineServiceComparison
+          ids={selection.ids}
+          quantity={quantity}
+          remove={selection.toggle}
+          clear={selection.clear}
+        />
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="font-bold text-secondary-foreground">
             {pagination.total.toLocaleString(locale)} {ar ? "عرض" : "offers"}
+            <span className="ms-3 text-xs font-normal text-muted-foreground">
+              {sort === "price" && currency && unit && unit !== "package"
+                ? `${currency} · ${unit === "per_1000" ? (ar ? "لكل 1,000" : "per 1,000") : ar ? "للوحدة" : "per item"} · ${ar ? "من الأقل إلى الأعلى" : "low to high"}`
+                : offerResultsCopy[locale].recommended}
+            </span>
           </p>
           <button
             type="button"
@@ -524,14 +507,10 @@ function ServicesPage() {
           toggle={toggle}
           quantity={quantity}
           pageSize={limit}
-          prioritizeLowest={
-            !(
-              market === "smm" &&
-              currency &&
-              unit &&
-              unit !== "package" &&
-              sort === "price"
-            )
+          priceSorted={
+            market === "smm" &&
+            Boolean(currency && unit && unit !== "package") &&
+            sort === "price"
           }
         />
         {isLoading && (
@@ -551,22 +530,14 @@ function ServicesPage() {
             ? "الأسعار وشروط التنفيذ معلنة من المزودين؛ فحص المصدر لا يعني اختبار جودة التنفيذ. ترتيب السعر لا يساوي ترتيب الجودة."
             : "Prices and delivery terms are provider claims. Checking a source does not test delivery quality. Price order is not a quality ranking."}
         </p>
-        <details className="mt-8 rounded-xl border border-border p-4">
-          <summary className="cursor-pointer font-bold">
-            {ar ? "أدلة اختيار الخدمات" : "Service buying guides"}
-          </summary>
-          <div className="mt-4">
-            <GuideGrid query={query} />
-            <Link
-              href="/compare?manual=1"
-              className="mt-5 inline-block font-bold text-foreground"
-            >
-              {ar
-                ? "مقارنة عروض أسعار مخصصة يدويًا"
-                : "Compare custom quotes manually"}
-            </Link>
-          </div>
-        </details>
+        <Link
+          href="/compare?manual=1"
+          className="mt-5 inline-flex min-h-11 items-center text-sm font-semibold text-primary underline"
+        >
+          {ar
+            ? "مقارنة عروض أسعار مخصصة يدويًا"
+            : "Compare custom quotes manually"}
+        </Link>
         {selected.length > 0 && (
           <div
             data-compare-tray
@@ -578,19 +549,22 @@ function ServicesPage() {
                 : `${selected.length} of 4 offers selected`}
             </p>
             <div className="flex gap-3">
-              <button onClick={() => setSelected([])} className="px-3 text-sm">
+              <button onClick={selection.clear} className="px-3 text-sm">
                 {ar ? "إلغاء الاختيار" : "Clear selection"}
               </button>
               <button
-                disabled={selected.length < 2}
-                onClick={() =>
-                  navigate(
-                    `/compare?services=${selected.map(s => s.id).join(",")}&quantity=${Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1000}`
-                  )
-                }
+                onClick={() => {
+                  const heading = document.getElementById(
+                    "inline-comparison-title"
+                  );
+                  heading?.focus({ preventScroll: true });
+                  document
+                    .getElementById("service-comparison")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
                 className="rounded-xl bg-secondary px-5 py-3 font-bold text-foreground disabled:opacity-40"
               >
-                {ar ? "افتح المقارنة" : "Open comparison"}
+                {ar ? "اعرض المقارنة أعلاه" : "View comparison above"}
               </button>
             </div>
           </div>

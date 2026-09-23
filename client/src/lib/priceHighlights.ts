@@ -48,21 +48,3 @@ export function lowestVisiblePriceIds(services: Service[], quantity: number) {
   }
   return lowest;
 }
-
-// Keep each group independent: a lower number in another currency or market
-// is not a better offer. Stable partitioning also preserves server cursor order
-// among the remaining rows and never mutates the shared catalogue or selection.
-export function orderVisibleOffers(
-  services: Service[],
-  quantity: number,
-  prioritizeLowest = true
-) {
-  const lowest = lowestVisiblePriceIds(services, quantity);
-  const rows = prioritizeLowest
-    ? [
-        ...services.filter(service => lowest.has(service.id)),
-        ...services.filter(service => !lowest.has(service.id)),
-      ]
-    : [...services];
-  return { rows, lowest };
-}
