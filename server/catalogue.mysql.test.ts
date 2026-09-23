@@ -11,6 +11,7 @@ import { providerAnalyticsAcceptanceCases } from "./providerAnalyticsMysqlAccept
 import { teamAcceptanceCases } from "./teamMysqlAcceptance";
 import { providerProfileAcceptanceCases } from "./providerProfileMysqlAcceptance";
 import { providerSourceIdentityAcceptanceCases } from "./providerSourceIdentityMysqlAcceptance";
+import { oldSmmAttributionAcceptanceCases } from "./oldSmmAttributionMysqlAcceptance";
 import { workspaceAcceptanceCases } from "./workspaceMysqlAcceptance";
 import { priceAlertAcceptanceCases } from "./priceAlertsMysqlAcceptance";
 import { communityAcceptanceCases } from "./communityMysqlAcceptance";
@@ -97,6 +98,7 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
   teamAcceptanceCases(() => state.db, () => actorId);
   providerProfileAcceptanceCases(() => state.db, () => actorId, () => providerId, addIntegration);
   providerSourceIdentityAcceptanceCases(() => state.db, () => actorId, () => providerId, addIntegration, finishJob);
+  oldSmmAttributionAcceptanceCases(() => state.db, () => providerId, () => actorId, addIntegration);
   providerAnalyticsAcceptanceCases(() => state.db, () => actorId, () => providerId);
   linkMetadataAcceptanceCases(() => state.db, () => actorId, () => providerId);
   providerBusinessAcceptanceCases(() => state.db, () => actorId, () => providerId);

@@ -4,6 +4,7 @@ import { startMessagingWorker } from "../messageTranslation";
 import { registerImportedMediaRoutes, startImportedMediaCleanup } from "../importedMediaRoutes";
 import { repairImportedProviderLogos } from "../providerLogoRepair";
 import { runCommentCategoryRepair } from "../serviceCategoryRepair";
+import { repairOldSmmAttribution } from "../oldSmmAttributionRepair";
 import "dotenv/config";
 import { registerProviderAnalyticsRoutes } from "../providerAnalyticsRoutes";
 import { startProviderAnalyticsCleanup } from "../providerAnalyticsDb";
@@ -48,6 +49,10 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
 
 async function startServer() {
   if (process.env.NODE_ENV === "production") await runMigrations();
+  if (process.env.NODE_ENV === "production") {
+    const repair = await repairOldSmmAttribution();
+    console.log("[Catalogue] OldSMM attribution repair", repair);
+  }
   const app = express();
   const server = createServer(app);
   registerMobileAssociationRoutes(app);
