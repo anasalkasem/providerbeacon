@@ -784,6 +784,7 @@ export function providerBusinessAcceptanceCases(
         .insert(providerRecords)
         .values({
           name: "Other advertiser",
+          initials: "OA",
           slug: "other-advertiser",
           status: "active",
           websiteUrl: "https://provider.example/",
