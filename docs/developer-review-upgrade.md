@@ -22,3 +22,9 @@ Secondary references researched in Refero:
 7. Put methodology near search, replace the duplicate navigation entry with featured advertising, and explain provider offers as announcements/coupons rather than the price comparison catalogue.
 
 The audio alone does not establish which historical production rows have incorrect ownership. Do not relabel or migrate service data based on ambiguous spoken provider names.
+
+## Additional live finding
+
+Live Instagram/follower results included services explicitly titled "Instagram Random Comments" because their descriptions mentioned the follower counts of the accounts supplying those comments (provider source IDs 2090 and 2091). The normalizer previously chose service types in a fixed priority order, letting a later "followers" term override "comments" in the title.
+
+Classification now chooses the first service type in the title and uses the provider category as a fallback. A bounded, audited startup repair corrects only this demonstrated comment/follower collision in unreviewed API records with a matching retained source title. It skips human review/edit markers and changes only category and revision, preserving provider ownership, source rates, units, timestamps, and publication state. No schema migration is needed.
