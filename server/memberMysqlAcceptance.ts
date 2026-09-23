@@ -6,7 +6,14 @@ import {
   memberOAuthFlows,
   memberSessions,
 } from "../drizzle/memberSchema";
-import { users } from "../drizzle/schema";
+import { users, providerRecords } from "../drizzle/schema";
+import {
+  providerBusinessAccounts,
+  providerPromotions,
+} from "../drizzle/businessSchema";
+import { providerVipCards } from "../drizzle/vipSchema";
+import { paymentCredentials, providerPayments } from "../drizzle/paymentSchema";
+import { randomUUID } from "node:crypto";
 import {
   authenticateMemberSession,
   changeMemberPassword,
@@ -312,6 +319,135 @@ export function memberAcceptanceCases(
       await expect(
         reserveMemberRequests(buckets, now + 60000)
       ).resolves.toBeUndefined();
+    });
+    it("deletes only the member's provider content, releases ownership and retains unlinked payment records", async () => {
+      const db = database();
+      const removed = await registerMember(input);
+      const other = await registerMember({
+        ...input,
+        email: "other@example.com",
+      });
+      const providers = await db
+        .insert(providerRecords)
+        .values([
+          {
+            slug: "deletion-owned",
+            name: "Deletion owned",
+            initials: "DO",
+            status: "active",
+          },
+          {
+            slug: "deletion-other",
+            name: "Deletion other",
+            initials: "DT",
+            status: "active",
+          },
+        ])
+        .$returningId();
+      const ownerIds = [removed.member.id, other.member.id];
+      for (let index = 0; index < 2; index++) {
+        await db.insert(providerBusinessAccounts).values({
+          providerId: providers[index].id,
+          ownerMemberId: ownerIds[index],
+          ownerHost: "provider.example",
+          ownershipVerifiedAt: new Date(),
+          status: "active",
+          revision: 4,
+        });
+        await db.insert(providerPromotions).values({
+          // Authorship controls deletion, even when the provider later changes owner.
+          providerId: providers[1 - index].id,
+          createdByMemberId: ownerIds[index],
+          title: "A member's offer",
+          description: "Content authored by this member",
+          destinationUrl: "https://provider.example/offer",
+          startsAt: new Date(),
+          endsAt: new Date(Date.now() + 86400000),
+        });
+        await db.insert(providerVipCards).values({
+          providerId: providers[index].id,
+          ownerMemberId: ownerIds[index],
+          websiteHost: "provider.example",
+          tagline: "A member's card",
+          specialties: ["Support"],
+          coverId: "test-cover",
+          offer: "",
+        });
+      }
+      const credentialId = randomUUID(),
+        paymentId = randomUUID();
+      await db.insert(paymentCredentials).values({
+        id: credentialId,
+        gateway: "paypal",
+        environment: "sandbox",
+        ciphertext: "test-only",
+        iv: "test-only",
+        tag: "test-only",
+        version: 1,
+      });
+      await db.insert(providerPayments).values({
+        id: paymentId,
+        providerId: providers[0].id,
+        memberId: removed.member.id,
+        credentialId,
+        gateway: "paypal",
+        environment: "sandbox",
+        amountCents: 100,
+        accountRevision: 4,
+        transactionId: randomUUID(),
+        expiresAt: new Date(),
+      });
+      const [paymentBefore] = await db
+        .select()
+        .from(providerPayments)
+        .where(eq(providerPayments.id, paymentId));
+      const [otherAccountBefore] = await db
+        .select()
+        .from(providerBusinessAccounts)
+        .where(eq(providerBusinessAccounts.providerId, providers[1].id));
+      const auth = (await authenticateMemberSession(removed.token))!;
+      await expect(deleteMember(auth, "wrong")).rejects.toMatchObject({
+        code: "reauthenticate",
+      });
+      expect(await db.select().from(providerVipCards)).toHaveLength(2);
+      expect(await db.select().from(providerPromotions)).toHaveLength(2);
+
+      await deleteMember(auth, input.password);
+      expect(await authenticateMemberSession(removed.token)).toBeNull();
+      expect(await authenticateMemberSession(other.token)).not.toBeNull();
+      expect(await db.select().from(providerPromotions)).toMatchObject([
+        { createdByMemberId: other.member.id },
+      ]);
+      expect(await db.select().from(providerVipCards)).toMatchObject([
+        { ownerMemberId: other.member.id },
+      ]);
+      const [released] = await db
+        .select()
+        .from(providerBusinessAccounts)
+        .where(eq(providerBusinessAccounts.providerId, providers[0].id));
+      expect(released).toMatchObject({
+        ownerMemberId: null,
+        ownerHost: null,
+        ownershipVerifiedAt: null,
+        status: "active",
+        revision: 5,
+      });
+      const [otherAccountAfter] = await db
+        .select()
+        .from(providerBusinessAccounts)
+        .where(eq(providerBusinessAccounts.providerId, providers[1].id));
+      expect(otherAccountAfter).toEqual(otherAccountBefore);
+      const [paymentAfter] = await db
+        .select()
+        .from(providerPayments)
+        .where(eq(providerPayments.id, paymentId));
+      expect(paymentAfter).toEqual({ ...paymentBefore, memberId: null });
+      expect(
+        await db
+          .select()
+          .from(providerRecords)
+          .where(eq(providerRecords.id, providers[0].id))
+      ).toHaveLength(1);
     });
     it("rejects suspended accounts and deletes only the visitor identity and its sessions", async () => {
       const result = await registerMember(input),

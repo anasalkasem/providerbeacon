@@ -216,6 +216,7 @@ export function SiteFooter() {
             [p.editorialPolicy, "/#methodology"],
             [discoveryText(locale).contactLabel, "/providers#join"],
             [mt.privacy, "/privacy"],
+            [mt.deleteAccount, "/delete-account"],
             [t.admin, "/login"],
           ]}
         />

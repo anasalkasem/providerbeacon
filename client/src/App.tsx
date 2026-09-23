@@ -73,6 +73,9 @@ const MemberRecovery = lazy(() =>
 const MemberPrivacy = lazy(() =>
   import("@/pages/MemberAuth").then(m => ({ default: m.MemberPrivacy }))
 );
+const MemberDeletion = lazy(() =>
+  import("@/pages/MemberAuth").then(m => ({ default: m.MemberDeletion }))
+);
 const MemberEmailPage = lazy(() => import("@/pages/MemberEmail"));
 
 function Router() {
@@ -123,6 +126,7 @@ function Router() {
             <Route path="/account/settings" component={MemberAccount} />
             <Route path="/recover-account" component={MemberRecovery} />
             <Route path="/privacy" component={MemberPrivacy} />
+            <Route path="/delete-account" component={MemberDeletion} />
             <Route path="/verify-email" component={MemberEmailPage} />
             <Route path="/forgot-password" component={MemberEmailPage} />
             <Route path="/reset-password" component={MemberEmailPage} />
