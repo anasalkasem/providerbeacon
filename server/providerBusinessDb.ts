@@ -8,6 +8,7 @@ import {
   isNotNull,
   lt,
   lte,
+  or,
   sql,
 } from "drizzle-orm";
 import type { z } from "zod";
@@ -19,6 +20,9 @@ import {
 import { communityGroups } from "../drizzle/communitySchema";
 import { memberAccounts } from "../drizzle/memberSchema";
 import { providerRecords } from "../drizzle/schema";
+import { importedMedia } from "../drizzle/linkMetadataSchema";
+import { decodeVipCover } from "./providerVipDb";
+import { memberAuthOrigin } from "./memberSecurity";
 import {
   BUSINESS_DAY_MS,
   PROMOTIONS_PER_MONTH,
@@ -27,6 +31,9 @@ import {
   providerOwnedUrl,
   providerOwnershipProofUrl,
   validPromotionDates,
+  promotionCategories,
+  type ownerPromotionInput,
+  type publicPromotionsInput,
   type subscriptionInput,
   type claimProofInput,
   type claimReviewInput,
@@ -627,7 +634,7 @@ export async function businessOverview(auth: MemberAuth, providerId: number) {
           ),
       })
       .from(promotions)
-      .where(eq(promotions.providerId, providerId));
+      .where(and(eq(promotions.providerId, providerId), eq(promotions.placement, "subscription")));
     const currentOffers = visibility
       ? await tx
           .select({
@@ -641,6 +648,7 @@ export async function businessOverview(auth: MemberAuth, providerId: number) {
             and(
               eq(promotions.providerId, providerId),
               eq(promotions.status, "approved"),
+              eq(promotions.placement, "subscription"),
               isNotNull(promotions.reviewedAt),
               lte(promotions.startsAt, now),
               gte(promotions.endsAt, now)
@@ -692,6 +700,7 @@ async function promotionUsage(tx: BusinessTransaction, providerId: number) {
     .where(
       and(
         eq(promotions.providerId, providerId),
+        eq(promotions.placement, "subscription"),
         gte(promotions.createdAt, month),
         lt(promotions.createdAt, nextMonth)
       )
@@ -716,31 +725,63 @@ export async function ownPromotions(
       .where(
         and(
           eq(promotions.providerId, providerId),
+          eq(promotions.placement, "subscription"),
           cursor ? lt(promotions.id, cursor) : undefined
         )
       )
       .orderBy(desc(promotions.id))
       .limit(26);
     return {
-      items: rows.slice(0, 25),
+      items: rows.slice(0, 25).map(withPromotionCover),
       nextCursor: rows.length > 25 ? rows[24].id : undefined,
       usage: await promotionUsage(tx, providerId),
     };
   });
 }
+const withPromotionCover = <T extends { coverId: string | null }>(row: T) => ({
+  ...row,
+  coverUrl: row.coverId
+    ? `${memberAuthOrigin()}/api/imported-media/${row.coverId}`
+    : "",
+});
+async function savePromotionCover(
+  tx: BusinessTransaction,
+  input: { cover?: string; removeCover?: boolean },
+  previous: string | null = null
+) {
+  if (input.cover && input.removeCover) businessFail("vip_cover");
+  if (input.removeCover) return null;
+  if (!input.cover) return previous;
+  const image = decodeVipCover(input.cover);
+  await tx
+    .insert(importedMedia)
+    .values(image)
+    .onDuplicateKeyUpdate({ set: { id: image.id } });
+  return image.id;
+}
 function checkedPromotion(
-  input: z.infer<typeof promotionInput>,
+  input: Omit<z.infer<typeof promotionInput>, "category"> & {
+    category?: string;
+  },
   websiteUrl: string | null
 ) {
   const destinationUrl = providerOwnedUrl(input.destinationUrl, websiteUrl);
   if (!destinationUrl) businessFail("destination_domain");
   if (!validPromotionDates(input.startsAt, input.endsAt))
     businessFail("invalid_dates");
+  if (
+    input.category &&
+    !promotionCategories.includes(
+      input.category as (typeof promotionCategories)[number]
+    )
+  )
+    businessFail("invalid");
   return {
     title: input.title,
     description: input.description,
     couponCode: input.couponCode || null,
     destinationUrl,
+    category: input.category ?? "all",
     startsAt: input.startsAt,
     endsAt: input.endsAt,
   };
@@ -765,11 +806,15 @@ export async function savePromotion(
         )
         .for("update");
       if (!row) businessFail("missing", "NOT_FOUND");
+      if (row.placement !== "subscription")
+        businessFail("owner_required", "FORBIDDEN");
       if (row.revision !== input.revision) businessFail("changed", "CONFLICT");
+      const coverId = await savePromotionCover(tx, input, row.coverId);
       await tx
         .update(promotions)
         .set({
           ...values,
+          coverId,
           status: "pending",
           reviewedAt: null,
           reviewNote: null,
@@ -788,10 +833,12 @@ export async function savePromotion(
     }
     const usage = await promotionUsage(tx, provider.id);
     if (usage.used >= usage.limit) businessFail("promotion_limit");
+    const coverId = await savePromotionCover(tx, input);
     const [row] = await tx
       .insert(promotions)
       .values({
         ...values,
+        coverId,
         providerId: provider.id,
         createdByMemberId: auth.member.id,
       })
@@ -825,6 +872,8 @@ export async function withdrawPromotion(
       )
       .for("update");
     if (!row) businessFail("missing", "NOT_FOUND");
+    if (row.placement !== "subscription")
+      businessFail("owner_required", "FORBIDDEN");
     if (row.revision !== input.revision) businessFail("changed", "CONFLICT");
     await tx
       .update(promotions)
@@ -863,7 +912,9 @@ export async function promotionQueue(input: {
     .orderBy(desc(promotions.id))
     .limit(26);
   return {
-    items: rows.slice(0, 25),
+    items: rows
+      .slice(0, 25)
+      .map(row => ({ ...row, promotion: withPromotionCover(row.promotion) })),
     nextCursor: rows.length > 25 ? rows[24].promotion.id : undefined,
   };
 }
@@ -914,10 +965,9 @@ export async function reviewPromotion(
     return { id: row.id };
   });
 }
-export async function publicPromotions(input: {
-  providerId?: number;
-  cursor?: number;
-}) {
+export async function publicPromotions(
+  input: z.infer<typeof publicPromotionsInput>
+) {
   const db = await businessDatabase();
   const rows = await db
     .select({
@@ -926,6 +976,9 @@ export async function publicPromotions(input: {
       description: promotions.description,
       couponCode: promotions.couponCode,
       destinationUrl: promotions.destinationUrl,
+      coverId: promotions.coverId,
+      category: promotions.category,
+      placement: promotions.placement,
       startsAt: promotions.startsAt,
       endsAt: promotions.endsAt,
       provider: {
@@ -943,8 +996,18 @@ export async function publicPromotions(input: {
         isNotNull(promotions.reviewedAt),
         lte(promotions.startsAt, sql`current_timestamp(3)`),
         sql`${promotions.endsAt} > current_timestamp(3)`,
-        activeProviderPlan(providerRecords.id),
+        or(
+          eq(promotions.placement, "platform"),
+          activeProviderPlan(providerRecords.id)
+        ),
         visibleCatalogueProvider(),
+        input.explorer ? eq(promotions.showInExplorer, true) : undefined,
+        input.category && input.category !== "all"
+          ? eq(promotions.category, input.category)
+          : undefined,
+        input.q
+          ? sql`locate(lower(${input.q}), lower(concat(${promotions.title}, ' ', ${promotions.description}, ' ', ${providerRecords.name}))) > 0`
+          : undefined,
         input.providerId
           ? eq(promotions.providerId, input.providerId)
           : undefined,
@@ -957,8 +1020,61 @@ export async function publicPromotions(input: {
     items: rows
       .slice(0, 24)
       .filter(row => providerOwnedUrl(row.destinationUrl, row.website))
-      .map(({ website, ...row }) => row),
+      .map(({ website, ...row }) => withPromotionCover(row)),
     nextCursor: rows.length > 24 ? rows[23].id : undefined,
     now: new Date(),
   };
+}
+
+export async function saveOwnerPromotion(
+  actorId: number,
+  input: z.infer<typeof ownerPromotionInput>
+) {
+  const db = await businessDatabase();
+  return db.transaction(async tx => {
+    const provider = await lockedBusinessProvider(tx, input.providerId);
+    if (provider.status !== "active" || provider.isReviewWorkspace)
+      businessFail("provider_unavailable");
+    const values = checkedPromotion(input, provider.websiteUrl);
+    const [previous] = input.id
+      ? await tx
+          .select()
+          .from(promotions)
+          .where(eq(promotions.id, input.id))
+          .for("update")
+      : [];
+    if (input.id && (!previous || previous.providerId !== input.providerId))
+      businessFail("missing", "NOT_FOUND");
+    if ((previous?.revision ?? 0) !== input.revision)
+      businessFail("changed", "CONFLICT");
+    const coverId = await savePromotionCover(tx, input, previous?.coverId);
+    const value = {
+      ...values,
+      coverId,
+      showInExplorer: input.showInExplorer,
+      status: "pending" as const,
+      reviewedAt: null,
+      reviewNote: null,
+      revision: input.revision + 1,
+    };
+    let id: number;
+    if (previous) {
+      await tx
+        .update(promotions)
+        .set(value)
+        .where(eq(promotions.id, previous.id));
+      id = previous.id;
+    } else {
+      const [created] = await tx
+        .insert(promotions)
+        .values({ ...value, providerId: provider.id, placement: "platform" })
+        .$returningId();
+      id = created.id;
+    }
+    await audit(tx, actorId, "promotion.owner_saved", provider.id, input.note, {
+      promotionId: id,
+      revision: value.revision,
+    });
+    return { id, revision: value.revision };
+  });
 }

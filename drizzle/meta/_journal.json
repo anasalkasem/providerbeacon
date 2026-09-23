@@ -281,6 +281,13 @@
       "when": 1790112479977,
       "tag": "0039_private_review_workspace",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "5",
+      "when": 1790200800000,
+      "tag": "0040_advertising_content",
+      "breakpoints": true
     }
   ]
 }

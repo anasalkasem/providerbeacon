@@ -47,7 +47,7 @@ type Turn = {
 export default function BeaconAssistant() {
   const [path] = useLocation();
   if (
-    !/^\/(?:$|services(?:\/|$)|providers(?:\/|$)|compare$|find$|groups$|offers$|vip$|account(?:\/|$)|directory(?:\/|$))/.test(
+    !/^\/(?:$|services(?:\/|$)|providers(?:\/|$)|compare$|find$|groups$|ads$|offers$|vip$|account(?:\/|$)|directory(?:\/|$))/.test(
       path
     )
   )

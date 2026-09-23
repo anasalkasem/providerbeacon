@@ -1,3 +1,4 @@
+import { Redirect } from "wouter";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { lazy, Suspense } from "react";
@@ -40,8 +41,8 @@ const ProviderBusiness = lazy(() => import("@/pages/ProviderBusiness"));
 const AdminProviderBusiness = lazy(
   () => import("@/pages/AdminProviderBusiness")
 );
-const ProviderOffers = lazy(() => import("@/pages/ProviderOffers"));
-const VipProviders = lazy(() => import("@/pages/VipProviders"));
+const Ads = lazy(() => import("@/pages/Ads"));
+const AdminAds = lazy(() => import("@/pages/AdminAds"));
 const AdminModule = lazy(() => import("@/pages/AdminModule"));
 const AcceptInvite = lazy(() => import("@/pages/AcceptInvite"));
 const Login = lazy(() => import("@/pages/Login"));
@@ -109,8 +110,13 @@ function Router() {
             <Route path="/find" component={Find} />
             <Route path="/install" component={InstallApp} />
             <Route path="/groups" component={Groups} />
-            <Route path="/offers" component={ProviderOffers} />
-            <Route path="/vip" component={VipProviders} />
+            <Route path="/ads" component={Ads} />
+            <Route path="/offers">
+              <Redirect to="/ads" />
+            </Route>
+            <Route path="/vip">
+              <Redirect to="/ads" />
+            </Route>
             <Route path="/services" component={Services} />
             <Route path="/services/:slug" component={ServiceGuide} />
             <Route path="/directory/:slug" component={DirectoryProfile} />
@@ -142,6 +148,7 @@ function Router() {
               path="/admin/subscriptions"
               component={AdminProviderBusiness}
             />
+            <Route path="/admin/ads" component={AdminAds} />
             <Route path="/admin/:module" component={AdminModule} />
             <Route path="/team/accept" component={AcceptInvite} />
             <Route path="/404" component={NotFound} />

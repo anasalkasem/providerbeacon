@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   int,
   mysqlEnum,
@@ -83,6 +84,12 @@ export const providerPromotions = mysqlTable(
     description: varchar("description", { length: 1200 }).notNull(),
     couponCode: varchar("coupon_code", { length: 64 }),
     destinationUrl: varchar("destination_url", { length: 500 }).notNull(),
+    coverId: varchar("cover_id", { length: 64 }),
+    category: varchar("category", { length: 32 }).default("all").notNull(),
+    placement: mysqlEnum("placement", ["subscription", "platform"])
+      .default("subscription")
+      .notNull(),
+    showInExplorer: boolean("show_in_explorer").default(false).notNull(),
     startsAt: timestamp("starts_at", { fsp: 3 }).notNull(),
     endsAt: timestamp("ends_at", { fsp: 3 }).notNull(),
     status: mysqlEnum("status", promotionStatuses).default("pending").notNull(),
