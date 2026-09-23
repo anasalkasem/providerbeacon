@@ -129,7 +129,7 @@ describe("public catalogue rendering", () => {
     expect(next.searchParams.get("currency")).toBe("EUR");
     expect(next.searchParams.get("services")).toBe("service-40,service-41");
   });
-  it("shows compact quantity controls, integrated comparison and default price filters", () => {
+  it("shows integrated comparison and default price filters without a quantity calculator", () => {
     state.data = {...state.data, setFilters:()=>{}, pagination:{total:1,page:1,hasNext:false,next:()=>{},previous:()=>{},
       },
     };
@@ -137,8 +137,9 @@ describe("public catalogue rendering", () => {
     expect(html).not.toContain("Service cost calculator");
     expect(html).toContain('id="service-comparison"');
     expect(html).toContain("USD · per 1,000 · low to high");
-    expect(html).toContain("Comparison quantity");
-    expect(html).toContain("Accepts comparison quantity only");
+    expect(html).not.toContain("Comparison quantity");
+    expect(html).not.toContain("Accepts comparison quantity only");
+    expect(html).not.toContain('type="number"');
     expect(html).toContain("Sale unit");
   });
   it("uses exact totals and only marks the truly cheapest comparable source rate", () => {

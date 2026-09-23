@@ -55,6 +55,7 @@ describe("price highlights in the visible catalogue", () => {
       expect(
         lowestVisiblePriceIds([offer("a", patch), offer("b", patch)], 1000).size
       ).toBe(0);
+      expect(lowestVisiblePriceIds([offer("a", patch), offer("b", patch)]).size).toBe(0);
     }
   });
 
@@ -79,6 +80,7 @@ describe("price highlights in the visible catalogue", () => {
       offer("invalid", { ...api, sourceRate: "invalid" }),
     ];
     expect([...lowestVisiblePriceIds(rows, 5000)]).toEqual(["low", "tie"]);
+    expect([...lowestVisiblePriceIds(rows)]).toEqual(["low", "tie"]);
     expect(lowestVisiblePriceIds([rows[0]!], 5000).size).toBe(0);
   });
 });

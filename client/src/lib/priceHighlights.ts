@@ -6,8 +6,8 @@ import {
 } from "../../../shared/pricing";
 
 // A page can contain different markets and currencies. Rank only within a
-// matching group on this page, using the exact cost of an accepted quantity.
-export function lowestVisiblePriceIds(services: Service[], quantity: number) {
+// matching group, using published rates unless a quantity is explicitly supplied.
+export function lowestVisiblePriceIds(services: Service[], quantity?: number) {
   const groups = new Map<string, { service: Service; amount: string }[]>();
   for (const service of services) {
     if (
@@ -19,8 +19,13 @@ export function lowestVisiblePriceIds(services: Service[], quantity: number) {
       service.priceType === "from"
     )
       continue;
-    const amount = quantityQuoteExact(service, quantity);
-    if (amount == null) continue;
+    const amount =
+      quantity === undefined
+        ? service.catalogueListing === "api_source"
+          ? service.sourceRate
+          : String(service.priceAmount)
+        : quantityQuoteExact(service, quantity);
+    if (amount == null || !/^\d+(\.\d+)?$/.test(amount)) continue;
     const key = JSON.stringify([
       service.platform,
       service.category,

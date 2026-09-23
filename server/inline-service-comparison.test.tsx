@@ -67,7 +67,7 @@ const second = {
   name: "Second service",
   priceAmount: 3,
 };
-function Harness({ quantity = 1000 }: { quantity?: number }) {
+function Harness({ quantity }: { quantity?: number }) {
   const selection = useServiceSelection();
   return (
     <>
@@ -87,7 +87,7 @@ function Harness({ quantity = 1000 }: { quantity?: number }) {
   );
 }
 let root: Root, host: HTMLDivElement;
-async function render(quantity = 1000) {
+async function render(quantity?: number) {
   await act(async () => root.render(<Harness quantity={quantity} />));
 }
 async function click(text: string) {
@@ -179,4 +179,34 @@ it("remains usable with blocked browser storage", async () => {
   await click("Choose first");
   expect(state.requests.at(-1).ids).toEqual([1]);
   expect(host.textContent).toContain("First owner");
+});
+
+it("compares exact published rates without applying an unselected order quantity", async () => {
+  state.data.services = [
+    {
+      ...first,
+      min: 5000,
+      catalogueListing: "api_source",
+      sourceRate: "1.000000000000000001",
+    },
+    {
+      ...second,
+      min: 5000,
+      catalogueListing: "api_source",
+      sourceRate: "1.000000000000000002",
+    },
+  ];
+  await render();
+  await click("Choose first");
+  await click("Choose second");
+  const lowest = host.querySelectorAll('[data-price-status="lowest"]');
+  expect(lowest).toHaveLength(1);
+  expect(lowest[0].textContent).toContain("1.000000000000000001");
+  expect(host.textContent).not.toContain("Quantity total");
+  expect(host.textContent).not.toContain("Cost for selected quantity");
+  expect(host.textContent).not.toContain("Below minimum");
+  expect(host.textContent).toContain("5,000");
+  expect(
+    host.querySelector('a[href="/compare?services=service-1,service-2"]')
+  ).not.toBeNull();
 });

@@ -60,14 +60,10 @@ function ServicesPage() {
   const [unit, setUnit] = useState<PriceUnit | "">(
     params.get("market") === "packages" ? "" : "per_1000"
   );
-  const [onlyMatching, setOnlyMatching] = useState(params.has("quantity"));
   const [sort, setSort] = useState<"recommended" | "price">(
     params.get("market") === "packages" ? "recommended" : "price"
   );
   const [refillOnly, setRefillOnly] = useState(params.get("refill") === "1");
-  const [quantity, setQuantity] = useState(
-    Number(params.get("quantity") || 1000)
-  );
   const [countryCode, setCountryCode] = useState(
     /^[A-Z]{2}$/.test(params.get("countryCode") ?? "")
       ? params.get("countryCode")!
@@ -77,10 +73,6 @@ function ServicesPage() {
     Math.min(3650, Math.max(0, Number(params.get("refillDays") || 0))) || 0
   );
   const [limit, setLimit] = useState(25);
-  const validQuantity =
-    Number.isSafeInteger(quantity) && quantity > 0 && quantity <= 2147483647;
-  const filterQuantity =
-    market === "smm" && onlyMatching && validQuantity ? quantity : undefined;
   const selection = useServiceSelection();
   const selected = selection.ids.map(id => ({ id }));
   const field =
@@ -102,7 +94,6 @@ function ServicesPage() {
               : (category as (typeof serviceTypes)[number]),
           priceCurrency: currency || undefined,
           priceUnit: market === "packages" ? "package" : unit || undefined,
-          quantity: filterQuantity,
           refillOnly: market === "smm" && refillOnly,
           sort:
             market === "smm" && currency && unit && unit !== "package"
@@ -119,7 +110,6 @@ function ServicesPage() {
     category,
     currency,
     unit,
-    filterQuantity,
     refillOnly,
     sort,
     countryCode,
@@ -133,7 +123,6 @@ function ServicesPage() {
     category !== "all",
     !!currency,
     !!unit,
-    onlyMatching,
     refillOnly,
     !!countryCode,
     refillDays > 0,
@@ -150,8 +139,8 @@ function ServicesPage() {
         </h1>
         <p className="mt-3 max-w-3xl leading-7 text-secondary-foreground">
           {ar
-            ? "ابحث حسب المنصة ونوع الخدمة وحدود الطلب. استعرض أسعار المزوّدين بوحدات بيعها، واحسب تكلفة الكمية للعروض التي تتوفر بيانات تسعيرها."
-            : "Search by platform, service type and order limits. Browse provider prices with their sale units and calculate quantity totals where pricing data is available."}
+            ? "ابحث حسب المنصة ونوع الخدمة. قارن أسعار المزوّدين بوحدات بيعها، وراجع حدود الطلب وشروط التنفيذ."
+            : "Search by platform and service type. Compare provider prices with their sale units, order limits and delivery terms."}
         </p>
         {providerIds.length > 0 && (
           <p className="mt-4 rounded-xl border border-border p-3 text-sm">
@@ -189,7 +178,6 @@ function ServicesPage() {
                 setCategory("all");
                 setUnit(value === "smm" ? "per_1000" : "");
                 setCurrency(value === "smm" ? "USD" : "");
-                setOnlyMatching(false);
                 setRefillOnly(false);
                 setSort(value === "smm" ? "price" : "recommended");
               }}
@@ -222,12 +210,7 @@ function ServicesPage() {
           className="catalogue-filters"
           label={
             <>
-              {mobileLayoutCopy[locale].filters} · {wt.quantity}:{" "}
-              <bdi>
-                {Number.isFinite(quantity)
-                  ? quantity.toLocaleString(locale)
-                  : "—"}
-              </bdi>
+              {mobileLayoutCopy[locale].filters}
               {activeFilters > 0 && (
                 <span className="filter-count">{activeFilters}</span>
               )}
@@ -418,41 +401,6 @@ function ServicesPage() {
                 </select>
               </label>
             )}
-            {market === "smm" && (
-              <>
-                <label className="grid gap-2 text-xs font-bold">
-                  {ar ? "كمية المقارنة" : "Comparison quantity"}
-                  <input
-                    type="number"
-                    min={1}
-                    max={2147483647}
-                    step={1}
-                    className="h-11 w-36 rounded-xl border border-border bg-card px-3"
-                    value={Number.isFinite(quantity) ? quantity : ""}
-                    onChange={e => setQuantity(e.target.valueAsNumber)}
-                    aria-invalid={!validQuantity}
-                  />
-                </label>
-                <label className="flex min-h-11 items-center gap-2 text-xs font-semibold">
-                  <input
-                    type="checkbox"
-                    checked={onlyMatching}
-                    onChange={e => setOnlyMatching(e.target.checked)}
-                    className="size-4 accent-ring"
-                  />
-                  {ar
-                    ? "تقبل كمية المقارنة فقط"
-                    : "Accepts comparison quantity only"}
-                </label>
-                {!validQuantity && (
-                  <p role="alert" className="text-xs text-danger">
-                    {ar
-                      ? "أدخل عددًا صحيحًا من 1 إلى 2,147,483,647."
-                      : "Enter a whole number from 1 to 2,147,483,647."}
-                  </p>
-                )}
-              </>
-            )}
             <label className="grid gap-2 text-xs font-bold">
               {wt.rows}
               <select
@@ -469,7 +417,6 @@ function ServicesPage() {
         </MobileDisclosure>
         <InlineServiceComparison
           ids={selection.ids}
-          quantity={quantity}
           remove={selection.toggle}
           clear={selection.clear}
         />
@@ -493,7 +440,6 @@ function ServicesPage() {
               setCategory("all");
               setCurrency("");
               setUnit("");
-              setOnlyMatching(false);
               setRefillOnly(false);
               setSort("recommended");
             }}
@@ -505,7 +451,6 @@ function ServicesPage() {
           services={services}
           selected={selected}
           toggle={toggle}
-          quantity={quantity}
           pageSize={limit}
           priceSorted={
             market === "smm" &&

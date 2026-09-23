@@ -18,7 +18,7 @@ export default function InlineServiceComparison({
   clear,
 }: {
   ids: string[];
-  quantity: number;
+  quantity?: number;
   remove: (id: string) => void;
   clear: () => void;
 }) {
@@ -45,7 +45,10 @@ export default function InlineServiceComparison({
     Boolean(group) &&
     selected.every(service => comparisonGroup(service) === group) &&
     comparablePrices(selected) &&
-    selected.every(service => quantityQuoteExact(service, quantity) !== null);
+    (quantity === undefined ||
+      selected.every(
+        service => quantityQuoteExact(service, quantity) !== null
+      ));
   const lowest = equivalent
     ? lowestVisiblePriceIds(selected, quantity)
     : new Set<string>();
@@ -208,67 +211,69 @@ export default function InlineServiceComparison({
                 </tr>
               </thead>
               <tbody>
-                {labels.map((label, row) => (
-                  <tr
-                    key={label}
-                    className="border-b border-border last:border-0"
-                  >
-                    <th
-                      scope="row"
-                      className="p-4 text-start align-top font-semibold text-secondary-foreground"
+                {labels.map((label, row) =>
+                  row === 1 && quantity === undefined ? null : (
+                    <tr
+                      key={label}
+                      className="border-b border-border last:border-0"
                     >
-                      {label}
-                    </th>
-                    {ids.map(id => {
-                      const service = index.serviceFor(id);
-                      return (
-                        <td key={id} className="p-4 align-top">
-                          {!service ? (
-                            "—"
-                          ) : row === 0 ? (
-                            <OfferPrice
-                              service={service}
-                              lowest={lowest.has(id)}
-                            />
-                          ) : row === 1 ? (
-                            <QuoteCost
-                              service={service}
-                              quantity={quantity}
-                              lowest={lowest.has(id)}
-                            />
-                          ) : row === 2 ? (
-                            `${service.platform} · ${localizeData(locale, service.category)}`
-                          ) : row === 3 ? (
-                            (service.countryCode ??
-                            (ar ? "غير محدد" : "Unspecified"))
-                          ) : row === 4 ? (
-                            localizeData(locale, service.refill)
-                          ) : row === 5 ? (
-                            <bdi>
-                              {service.min.toLocaleString(locale)} –{" "}
-                              {service.max.toLocaleString(locale)}
-                            </bdi>
-                          ) : row === 6 ? (
-                            localizeDuration(locale, service.startTime)
-                          ) : service.sourceUrl ? (
-                            <a
-                              href={service.sourceUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex min-h-11 items-center font-semibold text-primary underline"
-                            >
-                              {ar ? "راجع شروط المصدر" : "Check source terms"}
-                            </a>
-                          ) : ar ? (
-                            "غير متاح"
-                          ) : (
-                            "Unavailable"
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
+                      <th
+                        scope="row"
+                        className="p-4 text-start align-top font-semibold text-secondary-foreground"
+                      >
+                        {label}
+                      </th>
+                      {ids.map(id => {
+                        const service = index.serviceFor(id);
+                        return (
+                          <td key={id} className="p-4 align-top">
+                            {!service ? (
+                              "—"
+                            ) : row === 0 ? (
+                              <OfferPrice
+                                service={service}
+                                lowest={lowest.has(id)}
+                              />
+                            ) : row === 1 && quantity !== undefined ? (
+                              <QuoteCost
+                                service={service}
+                                quantity={quantity}
+                                lowest={lowest.has(id)}
+                              />
+                            ) : row === 2 ? (
+                              `${service.platform} · ${localizeData(locale, service.category)}`
+                            ) : row === 3 ? (
+                              (service.countryCode ??
+                              (ar ? "غير محدد" : "Unspecified"))
+                            ) : row === 4 ? (
+                              localizeData(locale, service.refill)
+                            ) : row === 5 ? (
+                              <bdi>
+                                {service.min.toLocaleString(locale)} –{" "}
+                                {service.max.toLocaleString(locale)}
+                              </bdi>
+                            ) : row === 6 ? (
+                              localizeDuration(locale, service.startTime)
+                            ) : service.sourceUrl ? (
+                              <a
+                                href={service.sourceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex min-h-11 items-center font-semibold text-primary underline"
+                              >
+                                {ar ? "راجع شروط المصدر" : "Check source terms"}
+                              </a>
+                            ) : ar ? (
+                              "غير متاح"
+                            ) : (
+                              "Unavailable"
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  )
+                )}
               </tbody>
             </table>
           </div>
@@ -279,12 +284,12 @@ export default function InlineServiceComparison({
                   ? "أضف عرضًا آخر للمقارنة."
                   : "Add another offer to compare."
                 : ar
-                  ? "الأخضر يظهر فقط عندما تتطابق العملة ووحدة السعر والخدمة والسوق والتعويض والجودة المعلنة، وتقبل العروض الكمية. السعر الأقل ليس تقييمًا للجودة."
-                  : "Green appears only when currency, unit, service, market, refill and stated quality match and offers accept the quantity. Lowest price is not a quality rating."}
+                  ? `الأخضر يظهر فقط عندما تتطابق العملة ووحدة السعر والخدمة والسوق والتعويض والجودة المعلنة${quantity === undefined ? ". راجع حدود الطلب لكل عرض" : "، وتقبل العروض الكمية"}. السعر الأقل ليس تقييمًا للجودة.`
+                  : `Green appears only when currency, unit, service, market, refill and stated quality match${quantity === undefined ? ". Check each offer's order limits" : " and offers accept the quantity"}. Lowest price is not a quality rating.`}
             </p>
             {selected.length === ids.length && selected.length >= 2 && (
               <Link
-                href={`/compare?services=${ids.join(",")}&quantity=${Number.isSafeInteger(quantity) && quantity > 0 ? quantity : 1000}`}
+                href={`/compare?services=${ids.join(",")}${quantity !== undefined && Number.isSafeInteger(quantity) && quantity > 0 ? `&quantity=${quantity}` : ""}`}
                 className="inline-flex min-h-11 items-center font-bold text-primary underline"
               >
                 {ar ? "حفظ ومشاركة المقارنة" : "Save and share comparison"}

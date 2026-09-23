@@ -93,7 +93,13 @@ function pageData(last = false) {
     pagination: { total: 6, nextCursor: last ? null : { id: 96, rank: 0 } },
   };
 }
-function Results({ priceSorted = false }: { priceSorted?: boolean }) {
+function Results({
+  priceSorted = false,
+  quantity,
+}: {
+  priceSorted?: boolean;
+  quantity?: number;
+}) {
   const data = useMarketplaceData();
   const [selected, setSelected] = useState<Service[]>([]);
   return (
@@ -105,7 +111,7 @@ function Results({ priceSorted = false }: { priceSorted?: boolean }) {
         services={data.services}
         selected={selected}
         pageSize={5}
-        quantity={1000}
+        quantity={quantity}
         priceSorted={priceSorted}
         toggle={service =>
           setSelected(current =>
@@ -120,12 +126,12 @@ function Results({ priceSorted = false }: { priceSorted?: boolean }) {
 }
 let host: HTMLDivElement, root: Root, client: QueryClient;
 let scroll: ReturnType<typeof vi.fn>;
-async function render(priceSorted = false) {
+async function render(priceSorted = false, quantity?: number) {
   await act(async () =>
     root.render(
       <QueryClientProvider client={client}>
         <MarketplaceDataProvider>
-          <Results priceSorted={priceSorted} />
+          <Results priceSorted={priceSorted} quantity={quantity} />
         </MarketplaceDataProvider>
       </QueryClientProvider>
     )
@@ -193,44 +199,51 @@ it("preserves server order without page-local lowest claims or promoting sponsor
   expect(host.textContent).toContain("Advertising does not change this order.");
 });
 
-it("opens one full detail row in Arabic, with source terms, quantity cost and the sign-in return path", async () => {
-  state.locale = "ar";
-  await render();
-  await settle();
-  const control = row("service-99").querySelector<HTMLButtonElement>(
-    ".offer-results-name"
-  )!;
-  expect(control.getAttribute("aria-expanded")).toBe("false");
-  expect(host.querySelector(".offer-results-detail")).toBeNull();
-  await act(async () => control.click());
-  const detail = document.getElementById(
-    control.getAttribute("aria-controls")!
-  )!;
-  expect(detail.hidden).toBe(false);
-  expect(detail.querySelector("h3")!.textContent).toBe(firstRows[1].name);
-  expect(detail.textContent).toContain("Full provider terms");
-  expect(detail.textContent).toContain("تكلفة الكمية المحددة");
-  expect(
-    detail.querySelector('a[href="https://provider.example/services"]')
-  ).not.toBeNull();
-  expect(
-    detail.querySelector(
-      'a[href="/sign-in?next=%2Fservices%3Fquantity%3D1000"]'
-    )
-  ).not.toBeNull();
-  await act(async () =>
-    row("service-98")
-      .querySelector<HTMLButtonElement>(".offer-results-name")!
-      .click()
-  );
-  expect(detail.hidden).toBe(true);
-  expect(
-    host.querySelectorAll(".provider-catalogue-detail-row:not([hidden])")
-  ).toHaveLength(1);
-  expect(
-    host.querySelector(".offer-results-detail")!.textContent
-  ).not.toContain("تكلفة الكمية المحددة");
-});
+it.each([false, true])(
+  "opens Arabic details and only quotes an explicitly supplied quantity (%s)",
+  async withQuantity => {
+    state.locale = "ar";
+    await render(false, withQuantity ? 1000 : undefined);
+    await settle();
+    const control = row("service-99").querySelector<HTMLButtonElement>(
+      ".offer-results-name"
+    )!;
+    expect(control.getAttribute("aria-expanded")).toBe("false");
+    expect(host.querySelector(".offer-results-detail")).toBeNull();
+    await act(async () => control.click());
+    const detail = document.getElementById(
+      control.getAttribute("aria-controls")!
+    )!;
+    expect(detail.hidden).toBe(false);
+    expect(detail.querySelector("h3")!.textContent).toBe(firstRows[1].name);
+    expect(detail.textContent).toContain("Full provider terms");
+    expect(detail.textContent!.includes("تكلفة الكمية المحددة")).toBe(
+      withQuantity
+    );
+    expect(
+      detail.querySelector('a[href="https://provider.example/services"]')
+    ).not.toBeNull();
+    expect(
+      detail.querySelector(
+        withQuantity
+          ? 'a[href="/sign-in?next=%2Fservices%3Fquantity%3D1000"]'
+          : 'a[href="/compare?services=service-99"]'
+      )
+    ).not.toBeNull();
+    await act(async () =>
+      row("service-98")
+        .querySelector<HTMLButtonElement>(".offer-results-name")!
+        .click()
+    );
+    expect(detail.hidden).toBe(true);
+    expect(
+      host.querySelectorAll(".provider-catalogue-detail-row:not([hidden])")
+    ).toHaveLength(1);
+    expect(
+      host.querySelector(".offer-results-detail")!.textContent
+    ).not.toContain("تكلفة الكمية المحددة");
+  }
+);
 
 it("caps selection at four without preventing deselection, and retains selected offers across pages", async () => {
   await render();
