@@ -3,7 +3,10 @@ import { Scale, X } from "lucide-react";
 import { useLocale } from "@/contexts/LocaleContext";
 import { trpc } from "@/lib/trpc";
 import { catalogueIndex } from "@/lib/catalogue";
-import { lowestVisiblePriceIds } from "@/lib/priceHighlights";
+import {
+  lowestVisiblePriceIds,
+  publishedRateExact,
+} from "@/lib/priceHighlights";
 import { comparablePrices, quantityQuoteExact } from "@shared/pricing";
 import { comparisonGroup } from "@shared/offerComparison";
 import { localizeData, localizeDuration } from "@/i18n/messages";
@@ -45,10 +48,11 @@ export default function InlineServiceComparison({
     Boolean(group) &&
     selected.every(service => comparisonGroup(service) === group) &&
     comparablePrices(selected) &&
-    (quantity === undefined ||
-      selected.every(
-        service => quantityQuoteExact(service, quantity) !== null
-      ));
+    selected.every(service =>
+      quantity === undefined
+        ? publishedRateExact(service) !== null
+        : quantityQuoteExact(service, quantity) !== null
+    );
   const lowest = equivalent
     ? lowestVisiblePriceIds(selected, quantity)
     : new Set<string>();

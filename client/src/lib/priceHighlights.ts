@@ -5,6 +5,14 @@ import {
   quantityQuoteExact,
 } from "../../../shared/pricing";
 
+export function publishedRateExact(service: Service) {
+  const rate =
+    service.catalogueListing === "api_source"
+      ? service.sourceRate
+      : String(service.priceAmount);
+  return rate != null && /^\d+(\.\d+)?$/.test(rate) ? rate : null;
+}
+
 // A page can contain different markets and currencies. Rank only within a
 // matching group, using published rates unless a quantity is explicitly supplied.
 export function lowestVisiblePriceIds(services: Service[], quantity?: number) {
@@ -21,11 +29,9 @@ export function lowestVisiblePriceIds(services: Service[], quantity?: number) {
       continue;
     const amount =
       quantity === undefined
-        ? service.catalogueListing === "api_source"
-          ? service.sourceRate
-          : String(service.priceAmount)
+        ? publishedRateExact(service)
         : quantityQuoteExact(service, quantity);
-    if (amount == null || !/^\d+(\.\d+)?$/.test(amount)) continue;
+    if (amount == null) continue;
     const key = JSON.stringify([
       service.platform,
       service.category,

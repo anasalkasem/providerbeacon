@@ -209,4 +209,7 @@ it("compares exact published rates without applying an unselected order quantity
   expect(
     host.querySelector('a[href="/compare?services=service-1,service-2"]')
   ).not.toBeNull();
+  state.data.services[1].sourceRate = null;
+  await render();
+  expect(host.querySelector('[data-price-status="lowest"]')).toBeNull();
 });
