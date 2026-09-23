@@ -1,3 +1,4 @@
+import { adText } from "@/i18n/advertising";
 import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { ArrowUpRight, Diamond, ImagePlus } from "lucide-react";
@@ -70,10 +71,10 @@ export function VipAlbum({
         </div>
         {!full && Boolean(items.length) && (
           <Link
-            href="/vip"
+            href="/ads"
             className="flex min-h-11 items-center gap-2 text-sm text-heading"
           >
-            {t.all}
+            {adText(locale).viewAll}
             <ArrowUpRight className="size-4 rtl:-scale-x-100" />
           </Link>
         )}

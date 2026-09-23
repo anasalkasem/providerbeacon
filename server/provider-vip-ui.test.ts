@@ -137,7 +137,7 @@ describe("VIP visitor album and provider preview", () => {
     expect(
       container.querySelector('a[href="/providers/actual"]')
     ).not.toBeNull();
-    expect(container.querySelector('a[href="/vip"]')).not.toBeNull();
+    expect(container.querySelector('a[href="/ads"]')).not.toBeNull();
     expect(container.querySelectorAll("article")).toHaveLength(1);
   });
   it("does not expose expired cards, expired offers or cached cards after a failed refresh", async () => {

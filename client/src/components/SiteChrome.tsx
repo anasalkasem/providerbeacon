@@ -1,9 +1,8 @@
-import { catalogueExperience } from "@/i18n/catalogueExperience";
 import { handleHomeNavigation } from "@/lib/homeNavigation";
 import { MobileBrowseLinks } from "./MobileBrowseLinks";
 import { workspaceCopy } from "@/i18n/workspace";
 import { businessText } from "@/i18n/providerBusiness";
-import { vipText } from "@/i18n/providerVip";
+import { adText } from "@/i18n/advertising";
 import { communityCopy } from "@/i18n/community";
 import { discoveryText } from "@/i18n/discovery";
 import { CatalogueNotice } from "@/components/CatalogueState";
@@ -60,9 +59,8 @@ export function SiteHeader() {
     ["/#methodology", t.navInsights],
     ["/services", t.navServices],
     ["/providers", t.navProviders],
-    ["/vip", catalogueExperience[locale].ads],
+    ["/ads", adText(locale).title],
     ["/groups", communityCopy[locale].nav],
-    ["/offers", businessText(locale).offers],
   ];
 
   return (
@@ -194,9 +192,8 @@ export function SiteFooter() {
             [t.navServices, "/services"],
             [t.navCompare, "/services#service-comparison"],
             [t.navProviders, "/providers"],
-            [vipText(locale).title, "/vip"],
+            [adText(locale).title, "/ads"],
             [communityCopy[locale].nav, "/groups"],
-            [businessText(locale).offers, "/offers"],
             [p.trustScores, "/#methodology"],
           ]}
         />

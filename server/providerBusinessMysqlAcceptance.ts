@@ -11,7 +11,14 @@ import {
   providerAnalyticsDaily,
   providerAnalyticsState,
 } from "../drizzle/analyticsSchema";
-import { auditEntries, providerRecords, users } from "../drizzle/schema";
+import {
+  auditEntries,
+  providerRecords,
+  users,
+  teamMembers,
+} from "../drizzle/schema";
+import { importedMedia } from "../drizzle/linkMetadataSchema";
+import { cleanupImportedMedia } from "./linkMetadata";
 import { groupInput, groupListInput } from "../shared/community";
 import {
   BUSINESS_DAY_MS,
@@ -39,6 +46,7 @@ import {
   reviewPromotion,
   revokeBusinessOwner,
   savePromotion,
+  saveOwnerPromotion,
   setBusinessSubscription,
   submitOwnershipProof,
   withdrawPromotion,
@@ -680,6 +688,163 @@ export function providerBusinessAcceptanceCases(
         revision: 4,
       });
       expect((await currentPromotion(id)).status).toBe("hidden");
+    });
+
+    it("keeps owner ads pending, retains artwork, searches content and obeys placement, revision and expiry", async () => {
+      const input = {
+        ...offerInput(),
+        category: "Instagram" as const,
+        title: "Independent ad headline",
+        revision: 0,
+        showInExplorer: true,
+        note: "Owner advertisement acceptance",
+        cover:
+          "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aK2sAAAAASUVORK5CYII=",
+      };
+      const { id } = await saveOwnerPromotion(actorId(), input);
+      expect((await publicPromotions({})).items).toEqual([]);
+      await approveOffer(id);
+      const published = (
+        await publicPromotions({
+          q: "Independent",
+          category: "Instagram",
+          explorer: true,
+        })
+      ).items;
+      expect(published).toHaveLength(1);
+      expect(published[0]).toMatchObject({
+        id,
+        title: input.title,
+        placement: "platform",
+      });
+      expect(published[0].coverUrl).toMatch(
+        /\/api\/imported-media\/[a-f0-9]{64}$/
+      );
+      expect((await publicPromotions({ q: "%" })).items).toEqual([]);
+      expect((await publicPromotions({ category: "TikTok" })).items).toEqual(
+        []
+      );
+      const row = await currentPromotion(id);
+      await database()
+        .update(importedMedia)
+        .set({ createdAt: new Date(Date.now() - 40 * BUSINESS_DAY_MS) })
+        .where(eq(importedMedia.id, row.coverId));
+      await cleanupImportedMedia();
+      expect(
+        await database()
+          .select()
+          .from(importedMedia)
+          .where(eq(importedMedia.id, row.coverId))
+      ).toHaveLength(1);
+      await saveOwnerPromotion(actorId(), {
+        ...input,
+        cover: undefined,
+        id,
+        revision: row.revision,
+        showInExplorer: false,
+      });
+      expect((await publicPromotions({})).items).toEqual([]);
+      await expect(
+        saveOwnerPromotion(actorId(), { ...input, id, revision: row.revision })
+      ).rejects.toThrow("business_changed");
+      await approveOffer(id);
+      expect((await publicPromotions({})).items[0].coverUrl).toBe(
+        published[0].coverUrl
+      );
+      expect((await publicPromotions({ explorer: true })).items).toEqual([]);
+      await database()
+        .update(promotions)
+        .set({ endsAt: new Date(Date.now() - 1000) })
+        .where(eq(promotions.id, id));
+      expect((await publicPromotions({})).items).toEqual([]);
+    });
+
+    it("does not let a provider edit a platform ad or move an existing ad to another provider", async () => {
+      const owner = await approvedOwner();
+      await activate();
+      const input = {
+        ...offerInput(),
+        revision: 0,
+        showInExplorer: false,
+        note: "Owner advertisement acceptance",
+      };
+      const { id } = await saveOwnerPromotion(actorId(), input);
+      expect((await ownPromotions(owner.auth, providerId())).items).toEqual([]);
+      await expect(
+        savePromotion(owner.auth, { ...offerInput(), id, revision: 1 })
+      ).rejects.toThrow("business_owner_required");
+      await expect(
+        withdrawPromotion(owner.auth, {
+          providerId: providerId(),
+          id,
+          revision: 1,
+        })
+      ).rejects.toThrow("business_owner_required");
+      const [other] = await database()
+        .insert(providerRecords)
+        .values({
+          name: "Other advertiser",
+          slug: "other-advertiser",
+          status: "active",
+          websiteUrl: "https://provider.example/",
+        })
+        .$returningId();
+      await expect(
+        saveOwnerPromotion(actorId(), {
+          ...input,
+          providerId: other.id,
+          id,
+          revision: 1,
+        })
+      ).rejects.toThrow("business_missing");
+      await expect(
+        saveOwnerPromotion(actorId(), {
+          ...input,
+          destinationUrl: "https://other.example/ad",
+        })
+      ).rejects.toThrow("business_destination_domain");
+      await expect(
+        saveOwnerPromotion(actorId(), {
+          ...input,
+          cover: "data:image/svg+xml;base64,PHN2Zy8+",
+        })
+      ).rejects.toThrow("business_vip_cover");
+      expect((await currentPromotion(id)).revision).toBe(1);
+    });
+
+    it("restricts owner ad creation to the platform owner and rejects cross-origin publication", async () => {
+      const [staff] = await database()
+        .select()
+        .from(users)
+        .where(eq(users.id, actorId()));
+      const input = {
+        ...offerInput(),
+        revision: 0,
+        showInExplorer: false,
+        note: "Owner advertisement acceptance",
+      };
+      const { api } = await caller(
+        undefined,
+        "https://providerbeacon.com",
+        staff
+      );
+      await expect(api.admin.business.savePromotion(input)).rejects.toThrow(
+        "business_vip_owner_only"
+      );
+      await database()
+        .update(teamMembers)
+        .set({ role: "owner" })
+        .where(eq(teamMembers.userId, actorId()));
+      await expect(
+        (
+          await caller(undefined, "https://evil.example", staff)
+        ).api.admin.business.savePromotion(input)
+      ).rejects.toMatchObject({ code: "FORBIDDEN" });
+      await expect(
+        (
+          await caller(undefined, "https://providerbeacon.com", staff)
+        ).api.admin.business.savePromotion(input)
+      ).resolves.toMatchObject({ revision: 1 });
     });
 
     it("enforces the monthly creation limit under concurrent submissions and never trusts supplied publication status", async () => {

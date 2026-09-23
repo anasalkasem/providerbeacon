@@ -1,3 +1,4 @@
+import { PromotionForm } from "@/components/PromotionForm";
 import { BusinessAnalytics } from "@/components/BusinessAnalytics";
 import { BusinessPricing } from "@/components/BusinessPricing";
 import { CommunityKindBadge } from "@/components/CommunityKindBadge";
@@ -81,7 +82,9 @@ export default function ProviderBusiness() {
             <Building2 className="size-8" />
           </span>
           <div>
-            <h1 className="text-3xl font-extrabold text-foreground">{t.title}</h1>
+            <h1 className="text-3xl font-extrabold text-foreground">
+              {t.title}
+            </h1>
             <p className="mt-2 max-w-2xl text-sm leading-7 text-secondary-foreground">
               {t.intro}
             </p>
@@ -96,7 +99,9 @@ export default function ProviderBusiness() {
             <BusinessCard>
               <h2 className="text-2xl font-bold text-foreground">{t.plan}</h2>
               <BusinessPricing />
-              <p className="mt-4 leading-8 text-secondary-foreground">{t.planHelp}</p>
+              <p className="mt-4 leading-8 text-secondary-foreground">
+                {t.planHelp}
+              </p>
               <PaymentMethods />
               <div className="mt-6 flex flex-wrap gap-3">
                 <Link
@@ -200,9 +205,14 @@ function ProviderWorkspace({
       onNavigate={go}
       onSelect={id => go(section, false, id)}
     >
-      {owned?.provider.isReviewWorkspace && <p role="note" className="mb-6 rounded-xl border border-input bg-secondary p-4 text-sm leading-7">
-        {reviewWorkspaceText(locale).privateNotice}
-      </p>}
+      {owned?.provider.isReviewWorkspace && (
+        <p
+          role="note"
+          className="mb-6 rounded-xl border border-input bg-secondary p-4 text-sm leading-7"
+        >
+          {reviewWorkspaceText(locale).privateNotice}
+        </p>
+      )}
       <PaymentReturn accountId={accountId} />
       {!verified && (
         <p className="mb-6 rounded-xl bg-warning-muted p-4 text-sm leading-7 text-warning">
@@ -236,7 +246,9 @@ function ProviderWorkspace({
           <div className="grid items-start gap-6 xl:grid-cols-2">
             <ClaimPicker verified={verified} />
             <BusinessCard>
-              <h2 className="text-lg font-bold text-foreground">{t.requests}</h2>
+              <h2 className="text-lg font-bold text-foreground">
+                {t.requests}
+              </h2>
               <div className="mt-5 space-y-5">
                 {workspace.claims.length ? (
                   workspace.claims.map(claim => (
@@ -435,7 +447,9 @@ function ClaimItem({ claim }: { claim: Claim }) {
       )}
       {pending && (
         <>
-          <p className="mt-4 text-sm leading-7 text-secondary-foreground">{t.claimHelp}</p>
+          <p className="mt-4 text-sm leading-7 text-secondary-foreground">
+            {t.claimHelp}
+          </p>
           <p className="mt-2 break-all text-xs text-muted-foreground" dir="ltr">
             {claim.websiteHost}
           </p>
@@ -508,7 +522,11 @@ function ProviderBilling({
         <BusinessPricing
           firstActivatedAt={owned.subscription.firstActivatedAt}
         />
-        <p className="mt-4 text-sm leading-7 text-secondary-foreground">{owned.provider.isReviewWorkspace ? reviewWorkspaceText(locale).billing : t.planHelp}</p>
+        <p className="mt-4 text-sm leading-7 text-secondary-foreground">
+          {owned.provider.isReviewWorkspace
+            ? reviewWorkspaceText(locale).billing
+            : t.planHelp}
+        </p>
         {owned.subscription.endsAt && (
           <p className="mt-3 text-sm text-secondary-foreground">
             {t.endsAt}:{" "}
@@ -534,7 +552,9 @@ function ProviderBilling({
           {dashboardText(locale).billing}
         </h2>
         {owned.provider.isReviewWorkspace ? (
-          <p className="mt-4 text-sm leading-7 text-secondary-foreground">{reviewWorkspaceText(locale).billing}</p>
+          <p className="mt-4 text-sm leading-7 text-secondary-foreground">
+            {reviewWorkspaceText(locale).billing}
+          </p>
         ) : owned.ownershipValid ? (
           <ProviderCheckout
             accountId={accountId}
@@ -628,7 +648,9 @@ function ProviderGroups({
           {t.addGroup}
         </button>
       </div>
-      <p className="mt-3 text-sm leading-7 text-muted-foreground">{t.groupHelp}</p>
+      <p className="mt-3 text-sm leading-7 text-muted-foreground">
+        {t.groupHelp}
+      </p>
       {active &&
         !query.isError &&
         editing &&
@@ -669,7 +691,9 @@ function ProviderGroups({
         </p>
       ) : (
         <div className="mt-5 space-y-3">
-          {!query.data.length && <p className="text-muted-foreground">{t.noItems}</p>}
+          {!query.data.length && (
+            <p className="text-muted-foreground">{t.noItems}</p>
+          )}
           {query.data.map(group => (
             <article
               key={group.id}
@@ -809,7 +833,9 @@ function ProviderPromotions({
           {t.newOffer}
         </button>
       </div>
-      <p className="mt-3 text-sm leading-7 text-muted-foreground">{t.offerHelp}</p>
+      <p className="mt-3 text-sm leading-7 text-muted-foreground">
+        {t.offerHelp}
+      </p>
       {query.data && (
         <p className="mt-3 text-xs font-semibold text-foreground">
           {t.usage}:{" "}
@@ -924,149 +950,5 @@ function ProviderPromotions({
         </>
       )}
     </BusinessCard>
-  );
-}
-function PromotionForm({
-  providerId,
-  initial,
-  pending,
-  error,
-  onCancel,
-  onSave,
-}: {
-  providerId: number;
-  initial?: Promotion;
-  pending: boolean;
-  error?: string;
-  onCancel: () => void;
-  onSave: (input: typeof promotionInput._output) => void;
-}) {
-  const { locale } = useLocale();
-  const t = businessText(locale);
-  const [title, setTitle] = useState(initial?.title ?? "");
-  const [description, setDescription] = useState(initial?.description ?? "");
-  const [couponCode, setCoupon] = useState(initial?.couponCode ?? "");
-  const [destinationUrl, setDestination] = useState(
-    initial?.destinationUrl ?? ""
-  );
-  const [startsAt, setStart] = useState(
-    businessDateInput(initial?.startsAt ?? new Date())
-  );
-  const [endsAt, setEnd] = useState(
-    businessDateInput(initial?.endsAt ?? new Date(Date.now() + 7 * 86_400_000))
-  );
-  const [invalid, setInvalid] = useState(false);
-  return (
-    <form
-      className="mt-6 space-y-4 rounded-xl bg-muted p-5"
-      onSubmit={e => {
-        e.preventDefault();
-        if (pending) return;
-        const value = promotionInput.safeParse({
-          providerId,
-          title,
-          description,
-          couponCode,
-          destinationUrl,
-          startsAt: businessParseDate(startsAt),
-          endsAt: businessParseDate(endsAt),
-        });
-        if (!value.success) {
-          setInvalid(true);
-          return;
-        }
-        setInvalid(false);
-        onSave(value.data);
-      }}
-    >
-      <fieldset disabled={pending} className="space-y-4">
-        <label className="block text-sm font-semibold">
-          {t.titleLabel}
-          <input
-            required
-            minLength={4}
-            maxLength={120}
-            className={businessField}
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-          />
-        </label>
-        <label className="block text-sm font-semibold">
-          {t.description}
-          <textarea
-            required
-            minLength={20}
-            maxLength={1200}
-            rows={4}
-            className={businessField}
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-          />
-        </label>
-        <label className="block text-sm font-semibold">
-          {t.coupon}
-          <input
-            dir="ltr"
-            maxLength={64}
-            pattern="[A-Za-z0-9_-]*"
-            className={businessField}
-            value={couponCode}
-            onChange={e => setCoupon(e.target.value)}
-          />
-        </label>
-        <label className="block text-sm font-semibold">
-          {t.destination}
-          <input
-            type="url"
-            dir="ltr"
-            required
-            maxLength={500}
-            className={businessField}
-            value={destinationUrl}
-            onChange={e => setDestination(e.target.value)}
-          />
-        </label>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm font-semibold">
-            {t.startsAt}
-            <input
-              type="datetime-local"
-              dir="ltr"
-              required
-              className={businessField}
-              value={startsAt}
-              onChange={e => setStart(e.target.value)}
-            />
-          </label>
-          <label className="block text-sm font-semibold">
-            {t.endsAt}
-            <input
-              type="datetime-local"
-              dir="ltr"
-              required
-              className={businessField}
-              value={endsAt}
-              onChange={e => setEnd(e.target.value)}
-            />
-          </label>
-        </div>
-        <p className="text-xs text-muted-foreground">{t.utc}</p>
-      </fieldset>
-      {error && <BusinessError message={error} />}{" "}
-      {invalid && <BusinessError />}
-      <div className="flex gap-3">
-        <button className={businessPrimary} disabled={pending}>
-          {t.submit}
-        </button>
-        <button
-          type="button"
-          className={businessSecondary}
-          onClick={onCancel}
-          disabled={pending}
-        >
-          {t.cancel}
-        </button>
-      </div>
-    </form>
   );
 }

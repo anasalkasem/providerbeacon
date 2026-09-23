@@ -780,6 +780,26 @@ describe("provider package interfaces", () => {
         ?.getAttribute("rel")
     ).toContain("sponsored");
   });
+  it("shows independent ad artwork and headline with the provider as secondary identity", async () => {
+    state.offers = [{
+      id: 1,
+      title: "Summer announcement",
+      description: "Specific advertiser terms and conditions",
+      category: "Instagram",
+      coverUrl: "https://providerbeacon.com/api/imported-media/cover",
+      provider: { id: 4, name: "Real provider", slug: "real" },
+      destinationUrl: "https://provider.example/offers",
+      startsAt: new Date(Date.now() - 10000),
+      endsAt: new Date(Date.now() + 100000),
+      couponCode: null,
+    }];
+    await render(React.createElement(PublicPromotions, { directory: true }));
+    expect(container.querySelector("article h3")?.textContent).toBe("Summer announcement");
+    expect(container.querySelector("article img")?.getAttribute("src")).toBe(state.offers[0].coverUrl);
+    expect(container.querySelector('a[href="/providers/real"]')?.textContent).toContain("Real provider");
+    expect(container.querySelector('input[type="search"]')).not.toBeNull();
+    expect(container.querySelector("select")?.textContent).toContain("Instagram");
+  });
   it("does not load subscription records for staff without business access", async () => {
     await render(React.createElement(AdminBusinessPanel));
     expect(container.querySelector('[role="alert"]')).not.toBeNull();

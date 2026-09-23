@@ -38,6 +38,7 @@ vi.mock("@/lib/trpc", () => ({
       },
       business: {
         account: { useQuery: () => ({}) },
+        promotions: { useQuery: () => ({data: {items: [], nextCursor: null}}) },
         vip: {
           grant: {
             useMutation: () => ({
@@ -56,7 +57,7 @@ vi.mock("@/lib/trpc", () => ({
   },
 }));
 import { VipGrantForm } from "../client/src/components/AdminVipGrants";
-import { AdminBusinessPanel } from "../client/src/pages/AdminProviderBusiness";
+import { AdvertisingPanel } from "../client/src/pages/AdminAds";
 import { VipCard } from "../client/src/components/VipCard";
 let container: HTMLDivElement, root: Root;
 const data = () =>
@@ -91,11 +92,11 @@ afterEach(async () => {
 
 describe("complimentary VIP owner controls", () => {
   it("shows the free VIP entry only for the platform owner", async () => {
-    await act(() => root.render(<AdminBusinessPanel />));
-    expect(buttons().some(b => b.textContent === "VIP مجاني")).toBe(true);
+    await act(() => root.render(<AdvertisingPanel />));
+    expect(buttons().some(b => b.textContent === "ترويج برعاية المنصة")).toBe(true);
     state.role = "administrator";
-    await act(() => root.render(<AdminBusinessPanel />));
-    expect(buttons().some(b => b.textContent === "VIP مجاني")).toBe(false);
+    await act(() => root.render(<AdvertisingPanel />));
+    expect(buttons().some(b => b.textContent === "ترويج برعاية المنصة")).toBe(false);
   });
   it("requires review, shows the real logo and submits a bounded free grant with no payment fields", async () => {
     await act(() => root.render(<VipGrantForm data={data()} />));

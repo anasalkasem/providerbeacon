@@ -48,7 +48,7 @@ export function MobileNavigation() {
       href: "/find",
       title: t.search,
       icon: Search,
-      active: /^\/(find|providers|directory|offers|vip)(\/|$)/.test(
+      active: /^\/(find|providers|directory|ads|offers|vip)(\/|$)/.test(
         path
       ),
     },

@@ -123,6 +123,16 @@ export const revokeOwnerInput = businessProviderInput
     note: z.string().trim().min(8).max(600),
   })
   .strict();
+export const promotionCategories = [
+  "all",
+  "Instagram",
+  "TikTok",
+  "YouTube",
+  "Facebook",
+  "Telegram",
+  "X",
+  "Other",
+] as const;
 export const promotionInput = businessProviderInput
   .extend({
     title: z.string().trim().min(4).max(120),
@@ -133,6 +143,12 @@ export const promotionInput = businessProviderInput
       .max(64)
       .regex(/^[A-Za-z0-9_-]*$/),
     destinationUrl: z.string().trim().min(1).max(500),
+    category: z.enum(promotionCategories).optional(),
+    cover: z
+      .string()
+      .max(Math.ceil((512 * 1024) / 3) * 4 + 40)
+      .optional(),
+    removeCover: z.boolean().optional(),
     startsAt: z.date(),
     endsAt: z.date(),
   })
@@ -149,6 +165,15 @@ export const promotionWithdrawInput = businessProviderInput
     revision: z.number().int().positive(),
   })
   .strict();
+export const ownerPromotionInput = promotionInput
+  .extend({
+    id: z.number().int().positive().optional(),
+    revision: z.number().int().nonnegative(),
+    showInExplorer: z.boolean(),
+    note: z.string().trim().min(8).max(600),
+  })
+  .strict()
+  .refine(value => (value.id ? value.revision > 0 : value.revision === 0));
 export const promotionReviewInput = z
   .object({
     id: z.number().int().positive(),
@@ -162,6 +187,9 @@ export const publicPromotionsInput = z
   .object({
     providerId: z.number().int().positive().optional(),
     cursor: z.number().int().positive().optional(),
+    q: z.string().trim().max(100).optional(),
+    category: z.enum(promotionCategories).optional(),
+    explorer: z.boolean().optional(),
   })
   .strict();
 export const businessQueueInput = z

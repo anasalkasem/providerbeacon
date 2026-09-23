@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { reviewWorkspaceInput } from "../../shared/reviewWorkspace";
-import { provisionReviewWorkspace, reviewWorkspaceState } from "../reviewWorkspaceDb";
+import {
+  provisionReviewWorkspace,
+  reviewWorkspaceState,
+} from "../reviewWorkspaceDb";
 import { router, publicProcedure, permissionProcedure } from "../_core/trpc";
 import { signedIn, safely } from "../memberProcedures";
 import { reserveMemberRequests } from "../memberDb";
@@ -35,6 +38,7 @@ import {
   claimReviewInput,
   promotionEditInput,
   promotionInput,
+  ownerPromotionInput,
   promotionReviewInput,
   promotionWithdrawInput,
   publicPromotionsInput,
@@ -57,6 +61,7 @@ import {
   reviewPromotion,
   revokeBusinessOwner,
   savePromotion,
+  saveOwnerPromotion,
   setBusinessSubscription,
   submitOwnershipProof,
   withdrawPromotion,
@@ -278,16 +283,23 @@ const staff = (permission: "business.read" | "business.manage") =>
   });
 export const businessAdminRouter = router({
   reviewWorkspace: router({
-    state: staff("business.read").use(({ ctx, next }) => {
-      if (ctx.teamRole !== "owner") businessFail("review_owner_only", "FORBIDDEN");
-      return next();
-    }).query(() => safely(reviewWorkspaceState)),
-    provision: staff("business.manage").use(({ ctx, next }) => {
-      if (ctx.teamRole !== "owner") businessFail("review_owner_only", "FORBIDDEN");
-      return next();
-    }).input(reviewWorkspaceInput).mutation(({ ctx, input }) =>
-      safely(() => provisionReviewWorkspace(ctx.user!.id, input))
-    ),
+    state: staff("business.read")
+      .use(({ ctx, next }) => {
+        if (ctx.teamRole !== "owner")
+          businessFail("review_owner_only", "FORBIDDEN");
+        return next();
+      })
+      .query(() => safely(reviewWorkspaceState)),
+    provision: staff("business.manage")
+      .use(({ ctx, next }) => {
+        if (ctx.teamRole !== "owner")
+          businessFail("review_owner_only", "FORBIDDEN");
+        return next();
+      })
+      .input(reviewWorkspaceInput)
+      .mutation(({ ctx, input }) =>
+        safely(() => provisionReviewWorkspace(ctx.user!.id, input))
+      ),
   }),
   vip: router({
     grantState: staff("business.read")
@@ -384,6 +396,15 @@ export const businessAdminRouter = router({
   promotions: staff("business.read")
     .input(businessQueueInput)
     .query(({ input }) => safely(() => promotionQueue(input))),
+  savePromotion: staff("business.manage")
+    .use(({ ctx, next }) => {
+      if (ctx.teamRole !== "owner") businessFail("vip_owner_only", "FORBIDDEN");
+      return next();
+    })
+    .input(ownerPromotionInput)
+    .mutation(({ ctx, input }) =>
+      safely(() => saveOwnerPromotion(ctx.user!.id, input))
+    ),
   reviewPromotion: staff("business.manage")
     .input(promotionReviewInput)
     .mutation(({ ctx, input }) =>

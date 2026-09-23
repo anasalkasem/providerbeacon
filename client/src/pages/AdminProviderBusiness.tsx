@@ -1,14 +1,12 @@
 import { useState } from "react";
+import { Link } from "wouter";
+import { adText } from "@/i18n/advertising";
 import { toast } from "sonner";
 import { Building2, ExternalLink } from "lucide-react";
 import { BusinessPricing } from "@/components/BusinessPricing";
 import { AdminPayments } from "@/components/AdminPayments";
 import { AdminReviewWorkspace } from "@/components/AdminReviewWorkspace";
 import { reviewWorkspaceText } from "@/i18n/reviewWorkspace";
-import { AdminVip } from "@/components/AdminVip";
-import { AdminVipGrants } from "@/components/AdminVipGrants";
-import { vipGrantText } from "@/i18n/vipGrants";
-import { vipText } from "@/i18n/providerVip";
 import { paymentText } from "@/i18n/providerPayments";
 import { providerPricingText } from "@/i18n/providerPricing";
 import { providerMonthAnniversary } from "../../../shared/providerBusinessPricing";
@@ -37,7 +35,7 @@ import {
 
 type Output = inferRouterOutputs<AppRouter>["admin"]["business"];
 type Claim = Output["claims"]["items"][number];
-type Offer = Output["promotions"]["items"][number];
+export type Offer = Output["promotions"]["items"][number];
 
 export default function AdminProviderBusiness() {
   return (
@@ -54,7 +52,7 @@ export function AdminBusinessPanel() {
   const manage = access.data?.permissions.includes("business.manage") ?? false;
   const owner = access.data?.role === "owner";
   const [tab, setTab] = useState<
-    "subscription" | "claims" | "offers" | "payments" | "vip" | "complimentary" | "review"
+    "subscription" | "claims" | "payments" | "review"
   >("subscription");
   if (access.isError || (access.data && !allowed)) return <BusinessError />;
   if (!allowed) return <p role="status">{t.loading}</p>;
@@ -62,19 +60,21 @@ export function AdminBusinessPanel() {
     <div className="space-y-6">
       <header className="flex items-center gap-3">
         <Building2 className="size-7 text-foreground" />
-        <h1 className="text-2xl font-extrabold text-foreground">{t.adminTitle}</h1>
+        <h1 className="text-2xl font-extrabold text-foreground">
+          {t.adminTitle}
+        </h1>
       </header>
+      <Link href="/admin/ads" className={businessSecondary}>
+        {adText(locale).admin}
+      </Link>
       <nav className="flex flex-wrap gap-2" aria-label={t.adminTitle}>
         {[
           { key: "subscription", title: t.plan },
           { key: "claims", title: t.requests },
-          { key: "offers", title: t.reviewOffers },
-          { key: "vip", title: vipText(locale).reviewTitle },
-          ...(owner
-            ? [{ key: "complimentary", title: vipGrantText(locale).title }]
-            : []),
           { key: "payments", title: paymentText(locale).gates },
-          ...(owner ? [{ key: "review", title: reviewWorkspaceText(locale).title }] : []),
+          ...(owner
+            ? [{ key: "review", title: reviewWorkspaceText(locale).title }]
+            : []),
         ].map(item => (
           <button
             key={item.key}
@@ -88,9 +88,6 @@ export function AdminBusinessPanel() {
       </nav>
       {tab === "subscription" && <SubscriptionPicker manage={manage} />}{" "}
       {tab === "claims" && <ClaimsQueue manage={manage} />}{" "}
-      {tab === "offers" && <OffersQueue manage={manage} />}
-      {tab === "vip" && <AdminVip manage={manage} />}
-      {tab === "complimentary" && owner && <AdminVipGrants />}
       {tab === "payments" && <AdminPayments manage={manage} />}
       {tab === "review" && owner && <AdminReviewWorkspace />}
     </div>
@@ -176,7 +173,9 @@ export function SubscriptionForm({
         </h2>
         <BusinessStatus value={data.subscription.state} />
       </div>
-      <p className="mt-4 text-sm leading-7 text-secondary-foreground">{t.manualHelp}</p>
+      <p className="mt-4 text-sm leading-7 text-secondary-foreground">
+        {t.manualHelp}
+      </p>
       <div className="mt-5 rounded-xl bg-muted p-4">
         <p className="text-xs font-semibold text-muted-foreground">{t.owner}</p>
         <p className="mt-2 font-semibold" dir="auto">
@@ -485,10 +484,18 @@ function ClaimReview({ claim, manage }: { claim: Claim; manage: boolean }) {
     </BusinessCard>
   );
 }
-function OffersQueue({ manage }: { manage: boolean }) {
+export function OffersQueue({
+  manage,
+  onEdit,
+  pendingDefault = true,
+}: {
+  manage: boolean;
+  onEdit?: (offer: Offer) => void;
+  pendingDefault?: boolean;
+}) {
   const { locale } = useLocale();
   const t = businessText(locale);
-  const [pendingOnly, setPending] = useState(true);
+  const [pendingOnly, setPending] = useState(pendingDefault);
   const [cursor, setCursor] = useState<number>();
   const query = trpc.admin.business.promotions.useQuery(
     { pendingOnly, cursor },
@@ -523,6 +530,7 @@ function OffersQueue({ manage }: { manage: boolean }) {
               key={`${offer.promotion.id}:${offer.promotion.revision}`}
               offer={offer}
               manage={manage}
+              onEdit={onEdit}
             />
           ))}
           <BusinessPager
@@ -535,7 +543,15 @@ function OffersQueue({ manage }: { manage: boolean }) {
     </div>
   );
 }
-function OfferReview({ offer, manage }: { offer: Offer; manage: boolean }) {
+function OfferReview({
+  offer,
+  manage,
+  onEdit,
+}: {
+  offer: Offer;
+  manage: boolean;
+  onEdit?: (offer: Offer) => void;
+}) {
   const { locale } = useLocale();
   const t = businessText(locale);
   const utils = trpc.useUtils();
@@ -560,6 +576,22 @@ function OfferReview({ offer, manage }: { offer: Offer; manage: boolean }) {
         </h2>
         <BusinessStatus value={row.status} />
       </div>
+      {row.coverUrl && (
+        <img
+          src={row.coverUrl}
+          alt={row.title}
+          className="mt-4 max-h-64 w-full rounded-xl border bg-secondary/20 object-contain"
+        />
+      )}
+      {onEdit && (
+        <button
+          type="button"
+          className={`${businessSecondary} mt-4`}
+          onClick={() => onEdit(offer)}
+        >
+          {adText(locale).edit}
+        </button>
+      )}
       <p
         className="mt-4 whitespace-pre-line break-words text-sm leading-7 text-secondary-foreground"
         dir="auto"
