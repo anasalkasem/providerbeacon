@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import { auditEntries, providerIntegrations, providerRecords, providerSyncJobs, serviceRecords, teamMembers, users } from "../drizzle/schema";
 import { createProviderDraft, getMarketplaceSnapshot, setProviderCataloguePublication, updateProviderStatus } from "./marketplaceDb";
-import { saveProviderIntegration, syncStoredIntegration } from "./vaultDb";
+import { saveProviderIntegration, setProviderIntegrationEnabled, syncStoredIntegration } from "./vaultDb";
 import { runProviderSyncStep } from "./providerSync";
 import { getProviderSourceIdentity } from "./providerSourceIdentity";
 import { appRouter } from "./routers";
@@ -35,6 +35,7 @@ export function providerSourceIdentityAcceptanceCases(
       expect((await services())[0]).toEqual(original);
       expect((await services())[1]).toMatchObject({ providerId: draft.id, externalId: "100", name: "Instagram Likes", sourceRate: "2.50", sourceUrl: "https://api.second.example/v2" });
       await updateProviderStatus({ id: draft.id, status: "active", actorUserId: actorId() });
+      for (const id of [first.id!, second.id!]) await setProviderIntegrationEnabled({ id, enabled: true, actorUserId: actorId() });
       for (const id of [providerId(), draft.id]) await setProviderCataloguePublication({ id, enabled: true, reason: "Local source attribution acceptance", actorUserId: actorId() });
       const firstPublic = await getMarketplaceSnapshot({ scope: "provider", slug: "test-provider" });
       const secondPublic = await getMarketplaceSnapshot({ scope: "provider", slug: draft.slug });
@@ -76,7 +77,7 @@ export function providerSourceIdentityAcceptanceCases(
     it("records scheduled source conflicts through worker failure reporting instead of silently retrying enqueue", async () => {
       const id = await addIntegration();
       await sync(id);
-      await database().update(providerIntegrations).set({ baseUrl: "https://different.example/api", status: "active", nextSyncAt: new Date(0) }).where(eq(providerIntegrations.id, id));
+      await database().update(providerIntegrations).set({ baseUrl: "https://different.example/api", status: "active", nextSyncAt: new Date(Date.now() - 60_000) }).where(eq(providerIntegrations.id, id));
       const queued = await syncStoredIntegration({ id, scheduled: true });
       const before = await services();
       await runProviderSyncStep();
