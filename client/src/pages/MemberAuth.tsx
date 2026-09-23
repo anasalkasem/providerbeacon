@@ -1,4 +1,5 @@
 import { metadataPrivacy } from "@/i18n/linkMetadata";
+import { privacyCopy } from "@/i18n/privacy";
 import { analyticsPrivacy } from "@/i18n/providerAnalytics";
 import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation } from "wouter";
@@ -798,6 +799,9 @@ function AccountDetails({
             </Button>
           </div>
           <div className="border-t border-border pt-6">
+            <Link href="/delete-account" className="mb-4 block text-sm underline">
+              {privacyCopy[locale].deleteTitle}
+            </Link>
             <Button
               variant="ghost"
               className="text-danger hover:bg-danger-muted hover:text-danger"
@@ -820,31 +824,87 @@ export function MemberPrivacy() {
   const { locale } = useLocale();
   const emailText = useEmailText();
   const t = useMemberText();
+  const policy = privacyCopy[locale];
   return (
     <PublicLayout showCatalogueNotice={false}>
       <article className="container py-12">
         <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-7 sm:p-10">
           <h1 className="text-3xl font-extrabold">{t.privacyTitle}</h1>
-          <p className="mt-3 text-xs text-muted-foreground">{t.privacyUpdated}</p>
+          <p className="mt-3 text-xs text-muted-foreground">{policy.updated}</p>
           <div className="mt-8 space-y-6 leading-8 text-secondary-foreground">
             {[
+              policy.scope,
               t.privacyData,
               t.privacyGoogle,
               t.privacyCookies,
               analyticsPrivacy[locale],
               t.privacyAI,
               metadataPrivacy[locale],
-              t.privacyDelete,
+              policy.activity,
+              policy.messaging,
+              policy.notifications,
+              policy.payments,
+              policy.deletedBody,
+              policy.retainedBody,
               emailText.privacy,
             ].map(p => (
               <p key={p}>{p}</p>
             ))}
           </div>
           <Link
-            href="/account"
+            href="/delete-account"
             className="mt-8 inline-block font-semibold text-foreground underline"
           >
-            {t.account}
+            {policy.deleteTitle}
+          </Link>
+        </div>
+      </article>
+    </PublicLayout>
+  );
+}
+
+export function MemberDeletion() {
+  const { locale } = useLocale();
+  const policy = privacyCopy[locale];
+  return (
+    <PublicLayout showCatalogueNotice={false}>
+      <article className="container py-12">
+        <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-7 sm:p-10">
+          <h1 className="text-3xl font-extrabold">{policy.deleteTitle}</h1>
+          <p className="mt-3 text-xs text-muted-foreground">{policy.updated}</p>
+          <p className="mt-6 leading-8">{policy.deleteIntro}</p>
+          <ol className="mt-6 list-decimal space-y-3 ps-6 leading-8">
+            {policy.steps.map(step => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+          <Button asChild className="mt-6">
+            <Link href="/account/settings">{policy.openSettings}</Link>
+          </Button>
+          <div className="mt-10 space-y-8 leading-8 text-secondary-foreground">
+            {[
+              [policy.emailTitle, policy.emailBody],
+              [policy.deletedTitle, policy.deletedBody],
+              [policy.retainedTitle, policy.retainedBody],
+              [policy.supportTitle, policy.supportBody],
+            ].map(([title, body]) => (
+              <section key={title}>
+                <h2 className="mb-2 text-xl font-bold text-foreground">
+                  {title}
+                </h2>
+                <p>{body}</p>
+              </section>
+            ))}
+          </div>
+          <a
+            href="mailto:soporte@providerbeacon.com?subject=ProviderBeacon%20account%20deletion"
+            dir="ltr"
+            className="mt-6 inline-block break-all font-semibold underline"
+          >
+            soporte@providerbeacon.com
+          </a>
+          <Link href="/privacy" className="mt-6 block font-semibold underline">
+            {policy.privacyLink}
           </Link>
         </div>
       </article>

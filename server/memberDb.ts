@@ -5,6 +5,8 @@ import {
   memberOAuthFlows,
   memberSessions,
 } from "../drizzle/memberSchema";
+import { providerBusinessAccounts, providerPromotions } from "../drizzle/businessSchema";
+import { providerVipCards } from "../drizzle/vipSchema";
 import type { MemberProfile } from "../shared/memberAuth";
 import { getDb } from "./db";
 import { queueNewMemberEmail, queueSecurityEmail } from "./emailDb";
@@ -327,6 +329,23 @@ export async function deleteMember(auth: MemberAuth, currentPassword?: string) {
   const db = await database();
   await db.transaction(async tx => {
     await lockedAuth(tx, auth);
+    // These tables intentionally retain business records when ownership changes.
+    // Account deletion must also remove the member's authored content and proof.
+    await tx
+      .delete(providerPromotions)
+      .where(eq(providerPromotions.createdByMemberId, auth.member.id));
+    await tx
+      .delete(providerVipCards)
+      .where(eq(providerVipCards.ownerMemberId, auth.member.id));
+    await tx
+      .update(providerBusinessAccounts)
+      .set({
+        ownerMemberId: null,
+        ownerHost: null,
+        ownershipVerifiedAt: null,
+        revision: sql`${providerBusinessAccounts.revision} + 1`,
+      })
+      .where(eq(providerBusinessAccounts.ownerMemberId, auth.member.id));
     await tx
       .delete(memberAccounts)
       .where(eq(memberAccounts.id, auth.member.id));
