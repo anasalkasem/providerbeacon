@@ -116,6 +116,22 @@ export function providerSourceIdentityAcceptanceCases(
       expect(JSON.stringify(audits)).not.toContain(mismatched.apiKey);
     });
 
+    it("requires confirmation for a query-bearing endpoint and keeps repeated syncs working without exposing its query", async () => {
+      await database().update(providerRecords).set({ websiteUrl: "https://provider.example" }).where(eq(providerRecords.id, providerId()));
+      const endpoint = input({ baseUrl: "https://external.example/api?mode=services" });
+      await expect(saveProviderIntegration(endpoint)).rejects.toThrow("source_identity_confirmation_required");
+      const saved = await saveProviderIntegration({ ...endpoint, sourceIdentityConfirmed: true });
+      await sync(saved.id!);
+      const originalId = (await services())[0].id;
+      await sync(saved.id!);
+      expect(await services()).toHaveLength(1);
+      expect((await services())[0]).toMatchObject({ id: originalId, sourceUrl: "https://external.example/api" });
+      const report = await getProviderSourceIdentity(providerId());
+      expect(report.connections[0]).toMatchObject({ host: "external.example", matchesWebsite: false });
+      expect(report.sources[0]).toMatchObject({ host: "external.example", matchesWebsite: false });
+      expect(JSON.stringify(report)).not.toContain("mode=services");
+    });
+
     it("reports retained, mismatched and unknown hosts without leaking payloads or allowing non-staff access", async () => {
       await database().update(providerRecords).set({ websiteUrl: "https://provider.example" }).where(eq(providerRecords.id, providerId()));
       const id = await addIntegration();
@@ -127,9 +143,9 @@ export function providerSourceIdentityAcceptanceCases(
       const report = await getProviderSourceIdentity(providerId());
       expect(report.provider.websiteHost).toBe("provider.example");
       expect(report.sources).toHaveLength(4);
-      expect(report.sources.find(row => row.host === "provider.example")).toMatchObject({ count: 1, sampleServiceId: original.id, matchesWebsite: true });
+      expect(report.sources.find(row => row.sampleServiceId === original.id)).toMatchObject({ host: "provider.example", count: 1, matchesWebsite: true });
       expect(report.sources.find(row => row.host === "other.example")?.matchesWebsite).toBe(false);
-      expect(report.sources.filter(row => row.host === null)).toHaveLength(2);
+      expect(report.sources.filter(row => row.host === null)).toHaveLength(1);
       expect(JSON.stringify(report)).not.toMatch(/private-token|raw-source-secret|credential|local-test-key/);
       const [user] = await database().select().from(users).where(eq(users.id, actorId()));
       const caller = (staff: boolean) => appRouter.createCaller({ user: staff ? user : null, authMode: staff ? "staff" : "member", req: { headers: {} }, res: { setHeader: vi.fn() } } as any);

@@ -9,14 +9,17 @@ describe("provider source identity signals", () => {
     expect(sourceMatchesWebsite(null, "https://provider.example/v2")).toBeNull();
   });
   it("withholds unsafe or missing source URLs from reports", () => {
-    for (const url of [null, "broken", "http://provider.example", "https://user:secret@provider.example/api", "https://provider.example/api?key=private", "https://provider.example/api#private"]) {
+    for (const url of [null, "broken", "http://provider.example", "https://user:secret@provider.example/api"]) {
       expect(sourceHost(url)).toBeNull();
     }
     expect(sourceHost("https://WWW.Provider.Example/api/v2")).toBe("provider.example");
+    expect(sourceHost("https://provider.example/api?key=private#fragment")).toBe("provider.example");
+    expect(sourceMatchesWebsite("https://provider.example", "https://other.example/api?mode=services")).toBe(false);
   });
   it("allows path updates and legacy unknown sources, but rejects source substitution", () => {
     expect(() => assertSameCatalogueSource("https://provider.example/v1", "https://provider.example/v2")).not.toThrow();
     expect(() => assertSameCatalogueSource(null, "https://provider.example/v2")).not.toThrow();
+    expect(() => assertSameCatalogueSource("https://provider.example/api", "https://provider.example/api?mode=services")).not.toThrow();
     for (const previous of ["https://other.example/api", "https://provider.example:8443/api", "malformed"]) {
       expect(() => assertSameCatalogueSource(previous, "https://provider.example/api")).toThrow("catalogue_source_conflict");
     }
