@@ -154,6 +154,7 @@ function OwnerAdEditor({
           value={providerId}
           onChange={setProvider}
           emptyLabel={b.select}
+          showImportNotice={false}
         />
       )}
       <label className="mt-5 block text-sm font-semibold">
