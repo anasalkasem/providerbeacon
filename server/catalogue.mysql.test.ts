@@ -18,6 +18,7 @@ import { performance } from "node:perf_hooks";
 import { invalidateCatalogueCaches } from "./catalogueCache";
 import { appRouter } from "./routers";
 import { confirmSourcePricing } from "./sourcePricing";
+import { repairCommentCategories } from "./serviceCategoryRepair";
 import { quantityQuoteExact } from "../shared/pricing";
 import { serviceNameFingerprint } from "./publicRateTable";
 import { createSourcedDrafts } from "./sourcedOffersDb";
@@ -128,6 +129,29 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     if (!("jobId" in queued)) throw new Error("Expected a queued job");
     return finishJob(queued.jobId);
   }
+
+  it("repairs the demonstrated comment category collision once while preserving ownership, pricing and human edits", async () => {
+    const name = "Instagram Random Comments - [5 Comments From 10k Followers Accounts]";
+    const sourceUpdatedAt = new Date("2026-01-01T00:00:00Z");
+    const base = { providerId, name, platform: "Instagram", category: "Followers", priceAmount: "0.1950", sourceRate: "0.195", sourceCurrency: "USD", sourcePriceUnit: "per_1000" as const, sourceKind: "provider_api" as const, sourceData: { name, category: "Instagram Comments" }, sourceUpdatedAt, minOrder: 1000, maxOrder: 1000, normalizationVersion: 1, reviewStatus: "pending" as const };
+    const inserted = await state.db.insert(serviceRecords).values([
+      { ...base, slug: "comment-collision" },
+      { ...base, slug: "human-edit", reviewReason: "Operator classification" },
+      { ...base, slug: "human-approved", reviewStatus: "approved" },
+      { ...base, slug: "different-title", sourceData: { name: "Different source title" } },
+      { ...base, slug: "actual-followers", name: "Instagram Followers [Accounts with Comments]", sourceData: { name: "Instagram Followers [Accounts with Comments]" } },
+    ]).$returningId();
+    const results = await Promise.all([repairCommentCategories(), repairCommentCategories()]);
+    expect(results.reduce((sum, result) => sum + result.changed, 0)).toBe(1);
+    const rows = await state.db.select().from(serviceRecords).orderBy(serviceRecords.id);
+    expect(rows[0]).toMatchObject({ category: "Comments", providerId, sourceRate: "0.195", sourceCurrency: "USD", sourcePriceUnit: "per_1000", sourceUpdatedAt, reviewStatus: "pending", minOrder: 1000, maxOrder: 1000, sourceData: base.sourceData });
+    expect(rows.slice(1).map((row: any) => row.category)).toEqual(["Followers", "Followers", "Followers", "Followers"]);
+    expect((await repairCommentCategories()).changed).toBe(0);
+    const audits = await state.db.select().from(auditEntries).where(eq(auditEntries.action, "service.category.repair"));
+    expect(audits).toHaveLength(1);
+    expect(audits[0].metadata).toMatchObject({ ids: [inserted[0].id], before: "Followers", after: "Comments" });
+    expect(await state.db.select().from(priceSnapshots)).toHaveLength(0);
+  });
 
   it("records comparable source price changes through the real sync worker for a saved watch", async () => {
     vi.stubEnv("AUTH_PEPPER", "watch-sync-test-pepper");
@@ -942,14 +966,19 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(alerts.items[0]).toMatchObject({ hasFailure: true, failures: 1, isOverdue: false, sourceIssues: { jobId: original.id, count: 1 } });
     expect(JSON.stringify(alerts)).not.toContain("upstream-private-details");
   });
-  it("does not attach an old provider or endpoint's source issues to an edited connection", async () => {
+  it("rejects provider reassignment and keeps endpoint issue history scoped to its source", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([payload[0], { ...payload[0], service: 200, rate: "0" }]))));
     await sync();
     const [connection] = await state.db.select().from(providerIntegrations);
     const [other] = await state.db.insert(providerRecords).values({ slug: "new-source-owner", name: "New source owner", initials: "NS", status: "draft" }).$returningId();
     const edit = { id: connection.id, name: "Edited connection", apiKey: "another-test-key", syncIntervalMinutes: 360, enabled: false, actorUserId: actorId };
-    await saveProviderIntegration({ ...edit, providerId: other.id, baseUrl: connection.baseUrl });
-    expect((await listSyncAlerts()).total).toBe(0);
+    await expect(saveProviderIntegration({ ...edit, providerId: other.id, baseUrl: connection.baseUrl })).rejects.toThrow("cannot be moved");
+    const [unchanged] = await state.db.select().from(providerIntegrations).where(eq(providerIntegrations.id, connection.id));
+    expect(unchanged.providerId).toBe(providerId);
+    expect(unchanged.credentialCiphertext).toBe(connection.credentialCiphertext);
+    expect((await listSyncAlerts()).items[0].sourceIssues?.count).toBe(1);
+    await expect(saveProviderIntegration({ ...edit, apiKey: undefined, providerId, baseUrl: "https://other-provider.example/api/v2" })).rejects.toThrow("Stored credentials cannot be transferred");
+    expect((await state.db.select().from(providerIntegrations).where(eq(providerIntegrations.id, connection.id)))[0].baseUrl).toBe(connection.baseUrl);
     await saveProviderIntegration({ ...edit, providerId, baseUrl: "https://provider.example/another-api" });
     expect((await listSyncAlerts()).total).toBe(0);
     await saveProviderIntegration({ ...edit, providerId, baseUrl: connection.baseUrl });

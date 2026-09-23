@@ -72,11 +72,13 @@ export async function saveProviderIntegration(input: {
       const [existing] = await tx.select().from(providerIntegrations).where(eq(providerIntegrations.id, integrationId)).for("update");
       if (!existing) throw new Error("Integration not found");
       if (existing.providerId !== before?.providerId) throw new Error("Connection changed; reload before editing");
+      if (existing.providerId !== input.providerId) throw new Error("An existing connection cannot be moved to another provider. Create a new connection with that provider's API key.");
+      if (new URL(existing.baseUrl).hostname !== endpoint.hostname && !input.apiKey) throw new Error("Enter the API key for the new API host. Stored credentials cannot be transferred to another host.");
       const [running] = await tx.select({ id: providerSyncJobs.id }).from(providerSyncJobs).where(eq(providerSyncJobs.activeProviderId, existing.providerId)).limit(1);
       if (running) throw new Error("Wait for the current synchronization to finish before changing the connection");
       await tx.update(providerIntegrations).set({
-        providerId: input.providerId, name: input.name.trim().slice(0, 160), baseUrl: endpoint.toString(),
-        ...(input.apiKey || existing.baseUrl !== endpoint.toString() || existing.providerId !== input.providerId
+        name: input.name.trim().slice(0, 160), baseUrl: endpoint.toString(),
+        ...(input.apiKey || existing.baseUrl !== endpoint.toString()
           ? { sourceCurrency: null } : {}),
         status: input.enabled ? "active" : "disabled", syncIntervalMinutes: interval,
         nextSyncAt: input.enabled ? existing.nextSyncAt ?? new Date() : null, lastError: null,

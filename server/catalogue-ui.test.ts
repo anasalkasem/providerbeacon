@@ -6,7 +6,7 @@ import { providers, services } from "./testFixtures";
 
 const state = vi.hoisted(() => ({ data: null as any, slug: "real-provider", search: "", quotes: undefined as any,
 }));
-vi.mock("@/lib/trpc", () => ({trpc:{assistant:{quotes:{useQuery:()=>({data:state.quotes})}},
+vi.mock("@/lib/trpc", () => ({trpc:{marketplace:{snapshot:{useQuery:()=>({data:state.data})}},assistant:{quotes:{useQuery:()=>({data:state.quotes})}},
     ratings: { summary: { useQuery: () => ({ data: { rating: null, reviews: 0 } }) } },
     member: { me: { useQuery: () => ({ data: { member: null } }) } },
     business: {
@@ -129,14 +129,16 @@ describe("public catalogue rendering", () => {
     expect(next.searchParams.get("currency")).toBe("EUR");
     expect(next.searchParams.get("services")).toBe("service-40,service-41");
   });
-  it("shows a visible quantity calculator and sale-unit filter in the explorer", () => {
+  it("shows compact quantity controls, integrated comparison and default price filters", () => {
     state.data = {...state.data, setFilters:()=>{}, pagination:{total:1,page:1,hasNext:false,next:()=>{},previous:()=>{},
       },
     };
     const html=render(Services);
-    expect(html).toContain("Service cost calculator");
-    expect(html).toContain("Required quantity");
-    expect(html).toContain("Only show offers that accept this quantity");
+    expect(html).not.toContain("Service cost calculator");
+    expect(html).toContain('id="service-comparison"');
+    expect(html).toContain("USD · per 1,000 · low to high");
+    expect(html).toContain("Comparison quantity");
+    expect(html).toContain("Accepts comparison quantity only");
     expect(html).toContain("Sale unit");
   });
   it("uses exact totals and only marks the truly cheapest comparable source rate", () => {

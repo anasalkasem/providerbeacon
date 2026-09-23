@@ -1,3 +1,4 @@
+import { catalogueExperience } from "@/i18n/catalogueExperience";
 import { ListFilter, Store, Tags, Diamond } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useLocale } from "@/contexts/LocaleContext";
@@ -19,7 +20,7 @@ export function MobileBrowseLinks() {
         { href: "/services", title: t.services, icon: ListFilter },
         { href: "/providers", title: t.providers, icon: Store },
         { href: "/offers", title: t.offers, icon: Tags },
-        { href: "/vip", title: t.vip, icon: Diamond },
+        { href: "/vip", title: catalogueExperience[locale].ads, icon: Diamond },
       ].map(({ href, title, icon: Icon }) => (
         <Link
           key={href}

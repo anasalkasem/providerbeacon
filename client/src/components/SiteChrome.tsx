@@ -1,3 +1,4 @@
+import { catalogueExperience } from "@/i18n/catalogueExperience";
 import { handleHomeNavigation } from "@/lib/homeNavigation";
 import { MobileBrowseLinks } from "./MobileBrowseLinks";
 import { workspaceCopy } from "@/i18n/workspace";
@@ -56,12 +57,12 @@ export function SiteHeader() {
   const [location] = useLocation();
   const links = [
     ["/find", workspaceCopy[locale].search],
+    ["/#methodology", t.navInsights],
     ["/services", t.navServices],
     ["/providers", t.navProviders],
-    ["/compare", t.navCompare],
+    ["/vip", catalogueExperience[locale].ads],
     ["/groups", communityCopy[locale].nav],
     ["/offers", businessText(locale).offers],
-    ["/#methodology", t.navInsights],
   ];
 
   return (
@@ -191,7 +192,7 @@ export function SiteFooter() {
           title={p.footerPlatform}
           links={[
             [t.navServices, "/services"],
-            [t.navCompare, "/compare"],
+            [t.navCompare, "/services#service-comparison"],
             [t.navProviders, "/providers"],
             [vipText(locale).title, "/vip"],
             [communityCopy[locale].nav, "/groups"],

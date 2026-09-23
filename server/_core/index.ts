@@ -3,6 +3,7 @@ import { startServiceScreeningWorker } from "../serviceScreening";
 import { startMessagingWorker } from "../messageTranslation";
 import { registerImportedMediaRoutes, startImportedMediaCleanup } from "../importedMediaRoutes";
 import { repairImportedProviderLogos } from "../providerLogoRepair";
+import { runCommentCategoryRepair } from "../serviceCategoryRepair";
 import "dotenv/config";
 import { registerProviderAnalyticsRoutes } from "../providerAnalyticsRoutes";
 import { startProviderAnalyticsCleanup } from "../providerAnalyticsDb";
@@ -132,6 +133,7 @@ async function startServer() {
     if (process.env.NODE_ENV === "production") {
       const repair = setTimeout(() => {
         void repairImportedProviderLogos().catch(() => console.warn("[metadata] Logo recovery deferred"));
+        void runCommentCategoryRepair().catch(() => console.warn("[Catalogue] Comment category repair deferred"));
       }, 5000);
       repair.unref();
       server.on("close", () => clearTimeout(repair));

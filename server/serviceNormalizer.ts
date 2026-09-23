@@ -97,8 +97,15 @@ export function classifyService(source: Record<string, unknown>) {
     ["Comments", /\bcomments?\b/i],
     ["Shares", /\bshares?\b/i],
   ];
-  const serviceType =
-    types.find(([, pattern]) => pattern.test(text))?.[0] ?? "Other";
+  // The service named first is the item being sold. Later terms may describe
+  // the supplying accounts (e.g. comments from accounts with 10k followers).
+  // Category metadata is a fallback, not a reason to override the title.
+  const titleTypes = types.flatMap(([type, pattern]) => {
+    const match = pattern.exec(name);
+    return match ? [{ type, index: match.index }] : [];
+  }).sort((a, b) => a.index - b.index);
+  const serviceType = titleTypes[0]?.type ??
+    types.find(([, pattern]) => pattern.test(category))?.[0] ?? "Other";
   const explicitCountry = String(source.countryCode ?? source.country ?? "")
     .toUpperCase()
     .trim();

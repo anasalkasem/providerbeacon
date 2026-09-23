@@ -50,7 +50,7 @@ export default function OfferPrice({
       {(showLowest || service.featured) && (
         <div className="mt-2 flex flex-wrap gap-1.5 text-xs font-bold">
           {showLowest && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-success-muted px-2 py-1 text-white">
+            <span className="inline-flex items-center gap-1 rounded-md bg-success-muted px-2 py-1 text-success">
               <ArrowDown aria-hidden="true" className="size-3.5 shrink-0" />
               <span>{pageCopy[locale].lowestPrice}</span>
             </span>
@@ -58,7 +58,7 @@ export default function OfferPrice({
           {service.featured && (
             <span
               title={t.featuredHint}
-              className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-white"
+              className="inline-flex items-center gap-1 rounded-md bg-secondary px-2 py-1 text-foreground"
             >
               <Sparkles aria-hidden="true" className="size-3.5 shrink-0" />
               <span>{t.featured}</span>

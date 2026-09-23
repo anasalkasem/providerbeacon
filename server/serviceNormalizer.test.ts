@@ -17,6 +17,12 @@ const row = {
   max: "1000",
 };
 describe("conservative catalogue normalization", () => {
+  it("classifies the sold service before account attributes or category keywords", () => {
+    expect(classifyService({ name: "Instagram Random Comments - [5 Comments From 10k-50k+ Followers Accounts]", category: "Instagram Followers Accounts" }).category).toBe("Comments");
+    expect(classifyService({ name: "Instagram Likes from accounts with followers", category: "Followers" }).category).toBe("Likes");
+    expect(classifyService({ name: "Instagram Followers [Accounts with comments and likes]" }).category).toBe("Followers");
+    expect(classifyService({ name: "Premium Instagram engagement", category: "Comments" }).category).toBe("Comments");
+  });
   it("separates target countries from platforms and ignores website referrer lists", () => {
     expect(
       classifyService({
