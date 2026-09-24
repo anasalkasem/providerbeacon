@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { catalogueInput } from "../shared/catalogueQuery";
-import { comparablePrices, compareQuoteAmounts, quantityQuote, quantityQuoteExact } from "../shared/pricing";
+import { comparablePrices, compareQuoteAmounts, quantityQuote, quantityQuoteExact, standardRate, hasPricingBasis } from "../shared/pricing";
 import { reviewEditInput } from "../shared/serviceReview";
-import { formatPrice, formatQuotePrice, unitLabel } from "../client/src/i18n/pricing";
+import { formatPrice, formatQuotePrice } from "../client/src/i18n/pricing";
 import { classifyService, normalizeApiService } from "./serviceNormalizer";
 
 const pricing = {
@@ -33,36 +33,33 @@ describe("explicit pricing", () => {
     expect(formatQuotePrice("ar", row, 5000)).toBe("USD 0.06172835");
     expect(quantityQuoteExact({...row, sourceRate: "0.0000001"}, 1)).toBe("0.0000000001");
     expect(quantityQuoteExact({...row, sourceRate: "99999.99999999999999", priceUnit: "per_item"}, 2147483647)).toBe("214748364699999.99997852516353");
-    expect(unitLabel("ar", row)).toBe("لكل ١٬٠٠٠ وحدة");
     expect(compareQuoteAmounts("1.000000000000000001", "1.000000000000000002")).toBe(-1);
     expect(compareQuoteAmounts("10.00", "2.9")).toBe(1);
     expect(compareQuoteAmounts("1.000", "1.00")).toBe(0);
   });
-  it("does not calculate unknown units, packages or invalid order quantities", () => {
+  it("applies the default to legacy rows but rejects packages and invalid order quantities", () => {
     const row = { ...pricing, catalogueListing: "api_source", sourceRate: "1.23", priceAmount: 1.23, min: 100, max: 1000 };
     for (const quantity of [0, -1, 1.5, NaN, Infinity, 99, 1001]) expect(quantityQuoteExact(row, quantity)).toBeNull();
     expect(quantityQuoteExact(row, 100)).toBe("0.123");
-    expect(quantityQuoteExact({...row, priceUnit: null}, 100)).toBeNull();
+    expect(quantityQuoteExact({...row, priceUnit: null}, 100)).toBe("0.123");
     expect(quantityQuoteExact({...row, priceCurrency: null}, 100)).toBeNull();
     expect(quantityQuoteExact({...row, priceUnit: "package", packageDescription: "One fixed package"}, 100)).toBeNull();
     expect(quantityQuoteExact({...row, sourceRate: "invalid"}, 100)).toBeNull();
     for (const quantity of [0, -1, 0.5, 2147483648]) expect(catalogueInput.safeParse({quantity}).success).toBe(false);
     expect(catalogueInput.safeParse({quantity: 1000}).success).toBe(true);
   });
-  it("shows confirmed API dollars at original precision without implying a sale unit or quote", () => {
+  it("shows API prices at original precision and applies the standard SMM basis", () => {
     const row = { catalogueListing: "api_source", sourceRate: "0.01234567", priceAmount: 0.01234567, priceCurrency: "USD", priceUnit: null, min: 10, max: 10000 };
     expect(formatPrice("ar", row)).toBe("USD 0.01234567");
     expect(formatPrice("en", row)).toBe("USD 0.01234567");
-    expect(unitLabel("ar", row)).toBe("سعر المزوّد · وحدة البيع غير محددة");
-    expect(quantityQuote(row, 1000)).toBeNull();
-    expect(comparablePrices([{ ...row, platform: "TikTok", category: "Views", countryCode: "US" }, { ...row, platform: "TikTok", category: "Views", countryCode: "US" }])).toBe(false);
+    expect(quantityQuote(row, 1000)).toBe(0.01234567);
+    expect(comparablePrices([{ ...row, platform: "TikTok", category: "Views", countryCode: "US" }, { ...row, platform: "TikTok", category: "Views", countryCode: "US" }])).toBe(true);
   });
-  it("requires a supported currency and unit before confirmation", () => {
+  it("requires a supported currency and uses the fixed SMM basis before confirmation", () => {
     expect(reviewEditInput.safeParse(edit).success).toBe(true);
     for (const patch of [
       { priceCurrency: null },
       { priceCurrency: "ZZZ" },
-      { priceUnit: null },
     ])
       expect(reviewEditInput.safeParse({ ...edit, ...patch }).success).toBe(
         false
@@ -98,7 +95,6 @@ describe("explicit pricing", () => {
   it("rejects mixed-basis price sorting at the API boundary", () => {
     for (const fields of [
       {},
-      { priceCurrency: "USD" },
       { priceCurrency: "USD", priceUnit: "package" },
     ])
       expect(
@@ -121,7 +117,6 @@ describe("explicit pricing", () => {
     expect(comparablePrices([pricing, pricing])).toBe(true);
     for (const patch of [
       { priceCurrency: "EUR" },
-      { priceUnit: "per_item" },
       { priceUnit: "package", packageDescription: "SEO campaign" },
       { category: "Views" },
       { platform: "TikTok" },
@@ -158,7 +153,7 @@ describe("explicit pricing", () => {
     expect(row).not.toHaveProperty("priceCurrency");
     expect(row).not.toHaveProperty("priceUnit");
   });
-  it("retains four-decimal prices and labels Arabic units without a dollar assumption", () => {
+  it("retains four-decimal prices without unit captions or a dollar assumption", () => {
     expect(
       formatPrice("en", {
         ...pricing,
@@ -166,7 +161,6 @@ describe("explicit pricing", () => {
         priceCurrency: "INR",
       })
     ).toBe("INR 0.0001");
-    expect(unitLabel("ar", { priceUnit: "per_item" })).toBe("للوحدة الواحدة");
     expect(
       formatPrice("ar", { priceAmount: 1, priceCurrency: null })
     ).not.toContain("$");

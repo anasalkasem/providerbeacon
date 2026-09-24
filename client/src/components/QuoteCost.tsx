@@ -33,8 +33,8 @@ export default function QuoteCost({
         : !hasPricingBasis(service)
           ? service.priceCurrency
             ? ar
-              ? "الإجمالي غير متاح: وحدة البيع غير محددة"
-              : "Total unavailable: sale unit unspecified"
+              ? "تعذر حساب المبلغ من السعر المتاح"
+              : "Unable to calculate this rate"
             : ar
               ? "الإجمالي غير متاح: عملة السعر غير محددة"
               : "Total unavailable: currency unspecified"

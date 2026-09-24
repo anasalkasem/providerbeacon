@@ -1,8 +1,9 @@
 import { ServiceScreeningDetail } from "./ServiceScreening";
-import { pricingCopy, formatPrice, unitLabel } from "@/i18n/pricing";
+import { pricingCopy, formatPrice } from "@/i18n/pricing";
 import {
   priceCurrencies,
-  priceUnits,
+  sourceRateBasis,
+  standardRate,
   type PriceCurrency,
   type PriceUnit,
 } from "../../../shared/pricing";
@@ -23,7 +24,6 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Badge } from "./ui/badge";
-import SourcePricingEditor from "./SourcePricingEditor";
 
 const selectClass =
   "h-10 min-w-0 rounded-lg border border-border bg-card px-3 text-sm";
@@ -78,14 +78,25 @@ export default function ServiceReviewDetail({
         ? (row.category as Form["category"])
         : "Other",
       countryCode: row.countryCode ?? "",
-      price: row.priceAmount,
+      price: standardRate(
+        row.priceAmount,
+        row.priceUnit ??
+          row.sourcePriceUnit ??
+          sourceRateBasis(row.sourceData ?? {})
+      ),
       priceCurrency: priceCurrencies.includes(
         row.priceCurrency as PriceCurrency
       )
         ? (row.priceCurrency as PriceCurrency)
         : "",
-      priceUnit: row.priceUnit ?? "",
-      packageDescription: row.packageDescription ?? "",
+      priceUnit:
+        (row.priceUnit ??
+          row.sourcePriceUnit ??
+          sourceRateBasis(row.sourceData ?? {})) === "package"
+          ? "package"
+          : "per_1000",
+      packageDescription:
+        row.packageDescription ?? row.sourcePackageDescription ?? "",
       minOrder: String(row.minOrder),
       maxOrder: String(row.maxOrder),
       refillMode: row.refillMode,
@@ -153,7 +164,14 @@ export default function ServiceReviewDetail({
           <p>{text("loading")}</p>
         ) : (
           <>
-            <ServiceScreeningDetail key={`${row.id}:${row.revision}`} row={row} onSaved={() => { void query.refetch(); onSaved(); }}/>
+            <ServiceScreeningDetail
+              key={`${row.id}:${row.revision}`}
+              row={row}
+              onSaved={() => {
+                void query.refetch();
+                onSaved();
+              }}
+            />
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline">
                 <bdi>{query.data?.providerName}</bdi>
@@ -188,41 +206,6 @@ export default function ServiceReviewDetail({
                 </p>
               )}
             </section>
-            {row.sourceKind === "provider_api" && (
-              <div className="space-y-2 rounded-xl border border-input bg-secondary/50 p-4">
-                <p className="text-sm font-semibold">
-                  {locale === "ar" ? "وحدة سعر المصدر: " : "Source rate unit: "}
-                  {unitLabel(locale, {
-                    priceCurrency: row.sourceCurrency,
-                    priceUnit: row.sourcePriceUnit,
-                    packageDescription: row.sourcePackageDescription,
-                    catalogueListing: "api_source",
-                  })}
-                </p>
-                {row.sourcePricingEvidenceUrl && (
-                  <a
-                    href={row.sourcePricingEvidenceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-foreground underline"
-                  >
-                    {locale === "ar"
-                      ? "دليل وحدة التسعير"
-                      : "Pricing-unit evidence"}
-                  </a>
-                )}
-                {access.data?.permissions.includes("services.review") && (
-                  <SourcePricingEditor
-                    items={[{ id: row.id, revision: row.revision }]}
-                    disabled={busy}
-                    onSaved={async () => {
-                      await onSaved();
-                      await query.refetch();
-                    }}
-                  />
-                )}
-              </div>
-            )}
             <form
               className="space-y-4"
               onSubmit={event => {
@@ -234,7 +217,7 @@ export default function ServiceReviewDetail({
                   evidenceUrl: form.evidenceUrl.trim() || null,
                   price: Number(form.price),
                   priceCurrency: form.priceCurrency || null,
-                  priceUnit: form.priceUnit || null,
+                  priceUnit: form.priceUnit || "per_1000",
                   packageDescription:
                     form.priceUnit === "package"
                       ? form.packageDescription.trim() || null
@@ -308,7 +291,9 @@ export default function ServiceReviewDetail({
                     {pricing.sourceRate}:{" "}
                     <bdi dir="ltr">
                       {row.sourceCurrency ? `${row.sourceCurrency} ` : ""}
-                      {row.sourceRate ?? "—"}
+                      {row.sourceRate
+                        ? standardRate(row.sourceRate, row.sourcePriceUnit)
+                        : "—"}
                     </bdi>
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
@@ -333,27 +318,6 @@ export default function ServiceReviewDetail({
                     {priceCurrencies.map(value => (
                       <option key={value} value={value}>
                         {value}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className="grid gap-2 text-sm">
-                  {pricing.unit}
-                  <select
-                    className={selectClass}
-                    value={form.priceUnit}
-                    required={form.pricingConfirmed}
-                    onChange={event =>
-                      update({
-                        priceUnit: event.target.value as Form["priceUnit"],
-                        pricingConfirmed: false,
-                      })
-                    }
-                  >
-                    <option value="">{pricing.unknown}</option>
-                    {priceUnits.map(value => (
-                      <option key={value} value={value}>
-                        {pricing[value]}
                       </option>
                     ))}
                   </select>
@@ -567,7 +531,9 @@ export default function ServiceReviewDetail({
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-muted-foreground">{text("lastReview")}</dt>
+                  <dt className="text-muted-foreground">
+                    {text("lastReview")}
+                  </dt>
                   <dd>
                     {row.reviewedAt
                       ? new Date(row.reviewedAt).toLocaleString(locale)
@@ -576,10 +542,7 @@ export default function ServiceReviewDetail({
                 </div>
               </dl>
               {row.reviewReason && (
-                <p
-                  dir="auto"
-                  className="mt-3 rounded-lg bg-muted p-3 text-sm"
-                >
+                <p dir="auto" className="mt-3 rounded-lg bg-muted p-3 text-sm">
                   {row.reviewReason}
                 </p>
               )}
@@ -610,7 +573,14 @@ export default function ServiceReviewDetail({
                       dir="ltr"
                       className="mt-2 max-h-60 overflow-auto rounded-lg bg-onyx p-3 text-start text-xs text-foreground"
                     >
-                      {JSON.stringify(data, null, 2)}
+                      {JSON.stringify(
+                        data,
+                        (key, value) =>
+                          /^(unit|priceUnit|sourcePriceUnit)$/.test(key)
+                            ? undefined
+                            : value,
+                        2
+                      )}
                     </pre>
                   ) : (
                     <p className="text-sm">{text("noSource")}</p>
@@ -648,15 +618,7 @@ export default function ServiceReviewDetail({
                               : formatPrice(locale, price)}
                           </bdi>
                           <p className="mt-1 text-xs text-muted-foreground">
-                            {price.kind === "source"
-                              ? unitLabel(locale, {
-                                  ...price,
-                                  catalogueListing: "api_source",
-                                })
-                              : pricing[`history_${price.kind}`]}
-                            {price.kind === "review"
-                              ? ` · ${unitLabel(locale, price)}`
-                              : ""}
+                            {pricing[`history_${price.kind}`]}
                           </p>
                           {price.packageDescription && (
                             <p className="text-xs" dir="auto">

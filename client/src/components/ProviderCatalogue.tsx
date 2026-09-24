@@ -11,7 +11,7 @@ import {
   localizeDuration,
   pageCopy,
 } from "@/i18n/messages";
-import { formatPrice, pricingCopy, unitLabel } from "@/i18n/pricing";
+import { formatPrice, pricingCopy } from "@/i18n/pricing";
 import { providerCatalogueCopy } from "@/i18n/providerCatalogue";
 import { CataloguePagination } from "./CataloguePagination";
 import OfferEvidence, { serviceName, serviceScope } from "./OfferEvidence";
@@ -260,9 +260,7 @@ function ServiceRows({
           <bdi dir="ltr" className="provider-catalogue-price">
             {formatPrice(locale, service)}
           </bdi>
-          <span className="provider-catalogue-unit">
-            {unitLabel(locale, service)}
-          </span>
+          
         </td>
         <td className="provider-catalogue-limits">
           <bdi>
@@ -295,8 +293,7 @@ function ServiceRows({
                 <div>
                   <dt>{t.price}</dt>
                   <dd>
-                    <bdi dir="ltr">{formatPrice(locale, service)}</bdi> ·{" "}
-                    {unitLabel(locale, service)}
+                    <bdi dir="ltr">{formatPrice(locale, service)}</bdi>
                   </dd>
                 </div>
                 <div>

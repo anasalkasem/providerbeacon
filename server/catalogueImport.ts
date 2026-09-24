@@ -9,7 +9,10 @@ import {
   serviceRecords,
 } from "../drizzle/schema";
 import { getDb } from "./db";
-import { compareQuoteAmounts, priceCurrencies, type PriceCurrency,
+import {
+  compareQuoteAmounts,
+  priceCurrencies,
+  type PriceCurrency,
 } from "../shared/pricing";
 import { writeAudit } from "./marketplaceDb";
 import { sourcePricingIdentity } from "./sourcePricing";
@@ -41,7 +44,9 @@ export async function applyCatalogueBatch(
 ) {
   const { provider, sourceUrl, now, actorUserId } = input;
   const pricingSnapshot = input.pricingSnapshot ?? {
-    currency: priceCurrencies.includes(input.sourceCurrency as PriceCurrency) ? input.sourceCurrency! : null,
+    currency: priceCurrencies.includes(input.sourceCurrency as PriceCurrency)
+      ? input.sourceCurrency!
+      : null,
     perThousandEvidenceUrl: null,
   };
   // Rebuild from retained source so pre-deployment staged payloads remain resumable.
@@ -127,20 +132,39 @@ export async function applyCatalogueBatch(
   const changeAudits: (typeof auditEntries.$inferInsert)[] = [];
   for (const item of normalized) {
     const existing = existingById.get(item.externalId.toLowerCase());
-    if (existing?.sourceKind === "provider_api") assertSameCatalogueSource(existing.sourceUrl, sourceUrl);
-    const automatic = automaticSourcePricing(item.sourceData, sourceUrl, pricingSnapshot);
+    if (existing?.sourceKind === "provider_api")
+      assertSameCatalogueSource(existing.sourceUrl, sourceUrl);
+    const automatic = automaticSourcePricing(
+      item.sourceData,
+      sourceUrl,
+      pricingSnapshot
+    );
     const sourceCurrency = automatic.currency;
     const manual = existing?.sourcePricingMode === "manual";
-    const keepSourcePricing = manual && existing.sourcePricingIdentity === sourcePricingIdentity(item.sourceData, sourceCurrency, sourceUrl, existing.sourcePriceUnit);
-    const canDetect = !existing || existing.sourcePricingMode === "auto";
-    const unit = keepSourcePricing ? existing.sourcePriceUnit : canDetect ? automatic.unit : null;
-    const evidenceUrl = keepSourcePricing ? existing.sourcePricingEvidenceUrl : unit ? automatic.evidenceUrl : null;
-    const changed =
+    const keepSourcePricing =
+      manual &&
+      existing.sourcePricingIdentity ===
+        sourcePricingIdentity(
+          item.sourceData,
+          sourceCurrency,
+          sourceUrl,
+          existing.sourcePriceUnit
+        );
+    const canDetect = !keepSourcePricing;
+    const unit = keepSourcePricing
+      ? existing.sourcePriceUnit
+      : canDetect
+        ? automatic.unit
+        : null;
+    const evidenceUrl = keepSourcePricing
+      ? existing.sourcePricingEvidenceUrl
+      : unit
+        ? automatic.evidenceUrl
+        : null;
+    const sourceChanged =
       !existing ||
       existing.sourceHash !== item.sourceHash ||
       existing.sourceCurrency !== sourceCurrency ||
-      existing.sourcePriceUnit !== unit ||
-      existing.sourcePricingEvidenceUrl !== evidenceUrl ||
       (existing.platform === "Unknown" &&
         existing.category === "Website traffic" &&
         existing.reviewStatus === "pending" &&
@@ -148,18 +172,83 @@ export async function applyCatalogueBatch(
       !existing.available ||
       existing.normalizationVersion < NORMALIZATION_VERSION ||
       existing.sourceUrl !== sourceUrl;
-    if (!changed) {
+    const pricingChanged =
+      existing?.sourcePriceUnit !== unit ||
+      existing?.sourcePricingEvidenceUrl !== evidenceUrl;
+    if (!sourceChanged && !pricingChanged) {
       unchanged.push(existing!.id);
       continue;
     }
+    // Adopting the standard or refreshing its source link is metadata maintenance.
+    // Preserve reviewed prices, publication and withdrawals when the source itself
+    // has not changed. A real change from a different native rate still needs review.
+    if (
+      existing &&
+      !sourceChanged &&
+      (existing.sourcePriceUnit === unit ||
+        (existing.sourcePriceUnit == null && unit === "per_1000"))
+    ) {
+      const metadata = {
+        sourcePriceUnit: unit,
+        sourcePricingMode: keepSourcePricing
+          ? ("manual" as const)
+          : ("auto" as const),
+        sourcePackageDescription: keepSourcePricing
+          ? existing.sourcePackageDescription
+          : unit === "package"
+            ? item.name
+            : null,
+        sourcePricingEvidenceUrl: evidenceUrl,
+        sourcePricingConfirmedAt: keepSourcePricing
+          ? existing.sourcePricingConfirmedAt
+          : now,
+        sourcePricingIdentity: sourcePricingIdentity(
+          item.sourceData,
+          sourceCurrency,
+          sourceUrl,
+          unit
+        ),
+        sourceUpdatedAt: now,
+        revision: existing.revision + 1,
+      };
+      await tx
+        .update(serviceRecords)
+        .set(metadata)
+        .where(eq(serviceRecords.id, existing.id));
+      changeAudits.push({
+        actorUserId,
+        action: "service.source.pricing.standardize",
+        entityType: "service",
+        entityId: String(existing.id),
+        summary:
+          "Source pricing metadata refreshed; editorial review preserved",
+        metadata: {
+          before: {
+            sourcePriceUnit: existing.sourcePriceUnit,
+            sourcePricingEvidenceUrl: existing.sourcePricingEvidenceUrl,
+            revision: existing.revision,
+          },
+          after: metadata,
+        },
+      });
+      unchanged.push(existing.id);
+      continue;
+    }
     const previousRate = existing?.sourceRate ?? existing?.priceAmount ?? "";
-    const decimalRates = /^\d+(\.\d+)?$/.test(previousRate) && /^\d+(\.\d+)?$/.test(item.sourceRate);
-    const priceChanged = Boolean(existing && (
-      decimalRates ? compareQuoteAmounts(previousRate, item.sourceRate) !== 0 : Number(previousRate) !== Number(item.sourceRate)
-    ));
+    const decimalRates =
+      /^\d+(\.\d+)?$/.test(previousRate) &&
+      /^\d+(\.\d+)?$/.test(item.sourceRate);
+    const priceChanged = Boolean(
+      existing &&
+        (decimalRates
+          ? compareQuoteAmounts(previousRate, item.sourceRate) !== 0
+          : Number(previousRate) !== Number(item.sourceRate))
+    );
     const { notes, ...data } = item;
     // A later price sync must not undo an operator's withdrawal from a public API catalogue.
-    const preserveWithdrawal = provider.apiCataloguePublished && existing?.reviewStatus === "changes_requested";
+    const preserveWithdrawal =
+      provider.apiCataloguePublished &&
+      existing?.reviewStatus === "changes_requested";
     const values = {
       ...data,
       refillMode:
@@ -169,20 +258,38 @@ export async function applyCatalogueBatch(
       sourceUrl,
       sourceUpdatedAt: now,
       normalizationVersion: NORMALIZATION_VERSION,
-      reviewStatus: preserveWithdrawal ? ("changes_requested" as const)
+      reviewStatus: preserveWithdrawal
+        ? ("changes_requested" as const)
         : ("pending" as const),
       incomplete: true,
       pricingConfirmed: false,
       sourceCurrency,
-      sourcePricingMode: existing?.sourcePricingMode ?? ("auto" as const),
+      sourcePricingMode: keepSourcePricing
+        ? ("manual" as const)
+        : ("auto" as const),
       sourcePriceUnit: unit,
-      sourcePackageDescription: keepSourcePricing ? existing!.sourcePackageDescription : null,
+      sourcePackageDescription: keepSourcePricing
+        ? existing!.sourcePackageDescription
+        : unit === "package"
+          ? item.name
+          : null,
       sourcePricingEvidenceUrl: evidenceUrl,
-      sourcePricingConfirmedAt: keepSourcePricing ? existing!.sourcePricingConfirmedAt : unit ? now : null,
-      sourcePricingIdentity: unit ? sourcePricingIdentity(item.sourceData, sourceCurrency, sourceUrl, unit) : null,
+      sourcePricingConfirmedAt: keepSourcePricing
+        ? existing!.sourcePricingConfirmedAt
+        : unit
+          ? now
+          : null,
+      sourcePricingIdentity: unit
+        ? sourcePricingIdentity(
+            item.sourceData,
+            sourceCurrency,
+            sourceUrl,
+            unit
+          )
+        : null,
       priceCurrency: sourceCurrency,
-      priceUnit: null,
-      packageDescription: null,
+      priceUnit: unit,
+      packageDescription: unit === "package" ? item.name : null,
       policyReviewed: false,
       priceCheckedAt: null,
       evidenceUrl: null,

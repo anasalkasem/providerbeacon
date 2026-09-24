@@ -3,7 +3,7 @@ export const syncEn = {
   syncQuarantined: "Quarantined source records",
   syncViewIssues: "Review source issues",
   syncIssuesBody:
-    "These source records were excluded from import. Previous service values are retained and held for review. Prices below are raw API values; currency and unit are unconfirmed.",
+    "These source records were excluded from import. Previous service values are retained and held for review. Prices below are raw API values; currency are unconfirmed.",
   syncIssueId: "Source ID",
   syncIssueRate: "Source rate",
   syncIssueMin: "Source minimum",
@@ -44,7 +44,7 @@ export const syncAr: Record<keyof typeof syncEn, string> = {
   syncQuarantined: "سجلات مصدر معزولة",
   syncViewIssues: "مراجعة سجلات المصدر المعيبة",
   syncIssuesBody:
-    "استُبعدت هذه السجلات من الاستيراد. تُحفظ القيم السابقة للخدمات الموجودة وتُحال للمراجعة. الأسعار أدناه قيم API خام؛ العملة ووحدة التسعير غير مؤكّدتين.",
+    "استُبعدت هذه السجلات من الاستيراد. تُحفظ القيم السابقة للخدمات الموجودة وتُحال للمراجعة. الأسعار أدناه قيم API خام؛ العملة غير مؤكدة.",
   syncIssueId: "معرّف المصدر",
   syncIssueRate: "سعر المصدر",
   syncIssueMin: "أقل كمية في المصدر",

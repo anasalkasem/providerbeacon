@@ -222,7 +222,6 @@ describe("exact, evidence-dependent multi-currency comparisons", () => {
     });
     for (const patch of [
       { priceCurrency: null },
-      { priceUnit: null },
       { priceType: "from" },
       { priceUnit: "package", packageDescription: "A fixed package" },
     ]) {

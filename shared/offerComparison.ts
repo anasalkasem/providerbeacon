@@ -37,7 +37,6 @@ export function comparisonFacts(services: Service[], quantity: number) {
         "countryCode",
         "refill",
         "quality",
-        "priceUnit",
       ] as const
     ).filter(field => new Set(services.map(s => s[field] ?? null)).size > 1),
   };

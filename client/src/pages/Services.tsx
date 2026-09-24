@@ -126,8 +126,8 @@ function ServicesPage() {
         </h1>
         <p className="mt-3 max-w-3xl leading-7 text-secondary-foreground">
           {ar
-            ? "ابحث حسب المنصة ونوع الخدمة. قارن أسعار المزوّدين بوحدات بيعها، وراجع حدود الطلب وشروط التنفيذ."
-            : "Search by platform and service type. Compare provider prices with their sale units, order limits and delivery terms."}
+            ? "ابحث حسب المنصة ونوع الخدمة. قارن أسعار المزوّدين، وراجع حدود الطلب وشروط التنفيذ."
+            : "Search by platform and service type. Compare provider prices, order limits and delivery terms."}
         </p>
         {providerIds.length > 0 && (
           <p className="mt-4 rounded-xl border border-border p-3 text-sm">
@@ -375,7 +375,7 @@ function ServicesPage() {
             {pagination.total.toLocaleString(locale)} {ar ? "عرض" : "offers"}
             <span className="ms-3 text-xs font-normal text-muted-foreground">
               {market === "smm" && sort === "price" && currency
-                ? `${currency} · ${ar ? "لكل 1,000" : "per 1,000"} · ${ar ? "من الأقل إلى الأعلى" : "low to high"}`
+                ? `${currency} · ${ar ? "من الأقل إلى الأعلى" : "low to high"}`
                 : offerResultsCopy[locale].recommended}
             </span>
           </p>

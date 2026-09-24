@@ -55,7 +55,7 @@ export function ServiceGuide() {
             <div className="rounded-2xl bg-ink p-6 text-white">
               <h2 className="font-extrabold">{t.scope}</h2>
               <p className="mt-3 text-lg leading-8 text-foreground">
-                {local(guide.unit, locale)}
+                {local(guide.scope, locale)}
               </p>
               <Link
                 href="/compare"

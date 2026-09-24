@@ -1,3 +1,4 @@
+import { standardRate } from "../shared/pricing";
 import { createHash } from "node:crypto";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -359,6 +360,7 @@ export async function watchHistory(auth: MemberAuth, id: number) {
       at: priceSnapshots.capturedAt,
       sourceRate: priceSnapshots.sourceRate,
       amount: priceSnapshots.priceAmount,
+      unit: priceSnapshots.priceUnit,
     })
     .from(priceSnapshots)
     .where(
@@ -366,7 +368,6 @@ export async function watchHistory(auth: MemberAuth, id: number) {
         eq(priceSnapshots.serviceId, watch.serviceId!),
         eq(priceSnapshots.comparisonKey, service.historyKey),
         eq(priceSnapshots.priceCurrency, service.priceCurrency),
-        eq(priceSnapshots.priceUnit, service.priceUnit),
         eq(
           priceSnapshots.kind,
           service.catalogueListing === "api_source" ? "source" : "review"
@@ -377,7 +378,7 @@ export async function watchHistory(auth: MemberAuth, id: number) {
     .limit(60);
   const points = rows
     .reverse()
-    .map(row => ({ at: row.at, rate: row.sourceRate ?? row.amount }))
+    .map(row => ({ at: row.at, rate: standardRate(row.sourceRate ?? row.amount, row.unit) }))
     .filter(point => /^\d+(\.\d+)?$/.test(point.rate));
   const rate =
     service.catalogueListing === "api_source"

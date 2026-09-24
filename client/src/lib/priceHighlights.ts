@@ -1,6 +1,7 @@
 import type { Service } from "@/data/marketplace";
 import {
   comparablePrices,
+  standardRate,
   compareQuoteAmounts,
   quantityQuoteExact,
 } from "../../../shared/pricing";
@@ -10,7 +11,7 @@ export function publishedRateExact(service: Service) {
     service.catalogueListing === "api_source"
       ? service.sourceRate
       : String(service.priceAmount);
-  return rate != null && /^\d+(\.\d+)?$/.test(rate) ? rate : null;
+  return rate != null && /^\d+(\.\d+)?$/.test(rate) ? standardRate(rate, service.priceUnit) : null;
 }
 
 // A page can contain different markets and currencies. Rank only within a
@@ -39,7 +40,6 @@ export function lowestVisiblePriceIds(services: Service[], quantity?: number) {
       service.refill,
       service.quality,
       service.priceCurrency,
-      service.priceUnit,
       service.billingCycle,
     ]);
     const group = groups.get(key) ?? [];

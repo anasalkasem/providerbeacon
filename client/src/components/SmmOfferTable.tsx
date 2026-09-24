@@ -10,7 +10,7 @@ import {
   formatNumber,
   pageCopy,
 } from "@/i18n/messages";
-import { formatPrice, unitLabel } from "@/i18n/pricing";
+import { formatPrice } from "@/i18n/pricing";
 import { priceHighlightCopy } from "@/i18n/priceHighlights";
 import { providerCatalogueCopy } from "@/i18n/providerCatalogue";
 import { offerResultsCopy } from "@/i18n/offerResults";
@@ -211,9 +211,7 @@ function OfferRows({
           <bdi dir="ltr" className="provider-catalogue-price">
             {formatPrice(locale, service)}
           </bdi>
-          <span className="provider-catalogue-unit">
-            {unitLabel(locale, service)}
-          </span>
+          
           {lowest && (
             <span
               className="offer-results-lowest"

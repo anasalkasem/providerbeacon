@@ -1,29 +1,15 @@
-import { priceCurrencies, type PriceCurrency } from "../shared/pricing";
-import type { ProviderPricingSnapshot } from "../shared/providerPricing";
 import {
-  fetchPublicRateTable,
-  publicRateTableUrl,
-  serviceNameFingerprint,
-} from "./publicRateTable";
+  priceCurrencies,
+  sourceRateBasis,
+  type PriceCurrency,
+} from "../shared/pricing";
+import type { ProviderPricingSnapshot } from "../shared/providerPricing";
 
 export function sourceCurrency(value: unknown): PriceCurrency | null {
   if (typeof value !== "string") return null;
   const code = value.trim().toUpperCase();
   return priceCurrencies.includes(code as PriceCurrency)
     ? (code as PriceCurrency)
-    : null;
-}
-
-// Only this provider's public rate table has been checked for this adapter.
-// A different hostname, endpoint or service type never inherits its sale unit.
-function rateTableUrl(endpoint: URL) {
-  return endpoint.origin === "https://smmpanelone.com" &&
-    endpoint.pathname === "/api/v2" &&
-    !endpoint.search &&
-    !endpoint.hash &&
-    !endpoint.username &&
-    !endpoint.password
-    ? "https://smmpanelone.com/services"
     : null;
 }
 
@@ -37,41 +23,6 @@ export function hasPerThousandTable(html: string) {
       /<th\b[^>]*>\s*Service\s*<\/th>/i.test(table) &&
       /<th\b[^>]*>\s*Rate per 1,?000\s*<\/th>/i.test(table)
   );
-}
-
-async function tableEvidence(endpoint: URL): Promise<string | null> {
-  const url = rateTableUrl(endpoint);
-  if (!url) return null;
-  try {
-    // Read only the table heading, never the multi-megabyte public catalogue.
-    const response = await fetch(url, {
-      redirect: "error",
-      signal: AbortSignal.timeout(12000),
-    });
-    if (!response.ok || !response.body) {
-      await response.body?.cancel();
-      return null;
-    }
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let html = "",
-      bytes = 0;
-    try {
-      while (bytes < 512 * 1024) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = value.subarray(0, 512 * 1024 - bytes);
-        bytes += chunk.byteLength;
-        html += decoder.decode(chunk, { stream: true });
-        if (hasPerThousandTable(html)) return url;
-      }
-    } finally {
-      await reader.cancel().catch(() => {});
-    }
-  } catch {
-    /* Missing evidence leaves the unit unconfirmed. */
-  }
-  return null;
 }
 
 async function accountCurrency(
@@ -126,17 +77,11 @@ export async function fetchProviderPricing(
   apiKey: string,
   previousCurrency: string | null
 ): Promise<ProviderPricingSnapshot> {
-  const [currency, perThousandEvidenceUrl, perThousandRows] = await Promise.all(
-    [
-      accountCurrency(endpoint, apiKey, previousCurrency),
-      tableEvidence(endpoint),
-      rateTableUrl(endpoint) ? undefined : fetchPublicRateTable(endpoint),
-    ]
-  );
+  // Account rates are authenticated. The standard SMM basis no longer depends
+  // on scraping a public HTML table, which omitted most real catalogue rows.
   return {
-    currency,
-    perThousandEvidenceUrl,
-    ...(perThousandRows ? { perThousandRows } : {}),
+    currency: await accountCurrency(endpoint, apiKey, previousCurrency),
+    perThousandEvidenceUrl: null,
   };
 }
 
@@ -149,49 +94,6 @@ export function automaticSourcePricing(
     source.currency != null
       ? sourceCurrency(source.currency)
       : sourceCurrency(snapshot?.currency);
-  if (!currency) return { currency, unit: null, evidenceUrl: null };
-  if (
-    typeof source.type === "string" &&
-    /package|subscription/i.test(source.type)
-  )
-    return { currency, unit: null, evidenceUrl: null };
-  const claim =
-    typeof source.unit === "string" ? source.unit.trim().toLowerCase() : null;
-  const unit = ["per_1000", "per 1000", "per1000"].includes(claim ?? "")
-    ? ("per_1000" as const)
-    : ["per_item", "per item", "each"].includes(claim ?? "")
-      ? ("per_item" as const)
-      : null;
-  if (unit) return { currency, unit, evidenceUrl: endpoint };
-  // Unknown/contradictory explicit units and packages require individual review.
-  if (source.unit != null) return { currency, unit: null, evidenceUrl: null };
-  // A generic per-1000 column also appears over fixed packages on some panels.
-  // A one-off service cannot inherit that header; it needs its own explicit unit.
-  if (Number(source.min) === 1 && Number(source.max) === 1)
-    return { currency, unit: null, evidenceUrl: null };
-  const tableUrl = rateTableUrl(new URL(endpoint));
-  if (
-    tableUrl &&
-    snapshot?.perThousandEvidenceUrl === tableUrl &&
-    source.type === "Default"
-  )
-    return { currency, unit: "per_1000" as const, evidenceUrl: tableUrl };
-  const rows = snapshot?.perThousandRows;
-  const id = String(source.service ?? source.id ?? "");
-  if (
-    rows &&
-    rows.url === publicRateTableUrl(new URL(endpoint)) &&
-    source.type === "Default" &&
-    typeof source.name === "string" &&
-    /^\d{1,64}$/.test(id) &&
-    Object.hasOwn(rows.names, id) &&
-    rows.names[id] === serviceNameFingerprint(source.name) &&
-    Number.isSafeInteger(Number(source.min)) &&
-    Number(source.min) >= 1 &&
-    Number.isSafeInteger(Number(source.max)) &&
-    Number(source.max) > 1 &&
-    Number(source.max) >= Number(source.min)
-  )
-    return { currency, unit: "per_1000" as const, evidenceUrl: rows.url };
-  return { currency, unit: null, evidenceUrl: null };
+  const unit = sourceRateBasis(source);
+  return { currency, unit, evidenceUrl: endpoint };
 }

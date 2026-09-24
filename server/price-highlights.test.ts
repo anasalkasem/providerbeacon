@@ -33,6 +33,7 @@ describe("price highlights in the visible catalogue", () => {
       "inr-low",
     ]);
     expect([...lowestVisiblePriceIds(rows.slice(1), 1000)]).toEqual([
+      "usd-high",
       "inr-low",
     ]);
   });
@@ -41,7 +42,6 @@ describe("price highlights in the visible catalogue", () => {
     const unconfirmed: Partial<Service>[] = [
       { priceCurrency: null },
       { priceCurrency: "ZZZ" },
-      { priceUnit: null },
       { priceUnit: "package", packageDescription: "A fixed package" },
       { countryCode: null },
       { platform: "Unknown" },

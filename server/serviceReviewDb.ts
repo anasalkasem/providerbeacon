@@ -73,7 +73,7 @@ export async function editServiceReview(
       countryCode: input.countryCode,
       priceAmount: input.price.toFixed(4),
       priceCurrency: input.priceCurrency,
-      priceUnit: input.priceUnit,
+      priceUnit: input.priceUnit ?? "per_1000",
       packageDescription:
         input.priceUnit === "package" ? input.packageDescription : null,
       minOrder: input.minOrder,

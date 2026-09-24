@@ -4,14 +4,13 @@ import { Link } from "wouter";
 import { PublicLayout } from "@/components/SiteChrome";
 import { useLocale } from "@/contexts/LocaleContext";
 import { discoveryText } from "@/i18n/discovery";
-import { priceCurrencies, type PriceUnit } from "../../../shared/pricing";
+import { priceCurrencies } from "../../../shared/pricing";
 import { quoteTotal } from "../../../shared/quoteCalculator";
 export default function QuoteWorkbench() {
   const { locale } = useLocale();
   const t = discoveryText(locale);
   const [currency, setCurrency] = useState("USD");
-  const [unit, setUnit] = useState<PriceUnit>("per_item");
-  const [quantity, setQuantity] = useState("1");
+  const [quantity, setQuantity] = useState("1000");
   const [quotes, setQuotes] = useState([
     { name: "", amount: "" },
     { name: "", amount: "" },
@@ -19,7 +18,7 @@ export default function QuoteWorkbench() {
   ]);
   const [matched, setMatched] = useState(false);
   const totals = quotes.map(q =>
-    quoteTotal(q.amount, unit === "package" ? 1 : Number(quantity), unit)
+    quoteTotal(q.amount, Number(quantity), "per_1000")
   );
   const valid = totals.filter((n): n is number => n !== null);
   const lowest = matched && valid.length >= 2 ? Math.min(...valid) : null;
@@ -39,7 +38,7 @@ export default function QuoteWorkbench() {
         <p className="mt-4 max-w-3xl text-lg leading-8 text-secondary-foreground">
           {t.quoteBody}
         </p>
-        <div className="mt-8 grid gap-4 rounded-2xl border border-border bg-card p-5 sm:grid-cols-3">
+        <div className="mt-8 grid gap-4 rounded-2xl border border-border bg-card p-5 sm:grid-cols-2">
           <label className="text-sm font-bold">
             {t.currency}
             <select
@@ -53,21 +52,6 @@ export default function QuoteWorkbench() {
             </select>
           </label>
           <label className="text-sm font-bold">
-            {t.unit}
-            <select
-              className={field}
-              value={unit}
-              onChange={e => {
-                setUnit(e.target.value as PriceUnit);
-                setMatched(false);
-              }}
-            >
-              <option value="per_item">{t.perItem}</option>
-              <option value="per_1000">{t.per1000}</option>
-              <option value="package">{t.package}</option>
-            </select>
-          </label>
-          <label className="text-sm font-bold">
             {t.quantity}
             <input
               className={field}
@@ -76,8 +60,7 @@ export default function QuoteWorkbench() {
               min="1"
               max="1000000"
               step="1"
-              disabled={unit === "package"}
-              value={unit === "package" ? "1" : quantity}
+              value={quantity}
               onChange={e => setQuantity(e.target.value)}
             />
           </label>
@@ -160,7 +143,7 @@ export default function QuoteWorkbench() {
                 { name: "", amount: "" },
               ]);
               setMatched(false);
-              setQuantity("1");
+              setQuantity("1000");
             }}
           >
             <RotateCcw className="size-4" />

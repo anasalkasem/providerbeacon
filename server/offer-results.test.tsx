@@ -240,8 +240,8 @@ it.each([false, true])(
       host.querySelectorAll(".provider-catalogue-detail-row:not([hidden])")
     ).toHaveLength(1);
     expect(
-      host.querySelector(".offer-results-detail")!.textContent
-    ).not.toContain("تكلفة الكمية المحددة");
+      host.querySelector(".offer-results-detail")!.textContent!.includes("تكلفة الكمية المحددة")
+    ).toBe(withQuantity);
   }
 );
 
