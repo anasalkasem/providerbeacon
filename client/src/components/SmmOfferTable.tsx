@@ -211,7 +211,7 @@ function OfferRows({
           <bdi dir="ltr" className="provider-catalogue-price">
             {formatPrice(locale, service)}
           </bdi>
-          
+
           {lowest && (
             <span
               className="offer-results-lowest"

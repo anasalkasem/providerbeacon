@@ -62,7 +62,7 @@ export const discoveryEn = {
   back: "Back to services",
   quoteTitle: "Put your quotes on the same page.",
   quoteBody:
-    "Enter up to three quotes for the same work, currency. These are your inputs, not verified ProviderBeacon prices.",
+    "Enter up to three quotes for the same work and currency. These are your inputs, not verified ProviderBeacon prices.",
   quoteName: "Provider or quote name",
   amount: "Quoted amount",
   quantity: "Quantity",

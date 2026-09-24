@@ -55,7 +55,7 @@ export const priceHighlightCopy: Record<Locale, typeof en> = {
     unconfirmedHint:
       "Se muestra el importe publicado; se excluye de los totales por cantidad y del ranking de menor precio.",
     pendingNotice:
-      "El menor precio se calcula entre ofertas equivalentes con moneda conocidas. Los demás importes se muestran como los publicó el proveedor.",
+      "El menor precio se calcula entre ofertas equivalentes con moneda conocida. Los demás importes se muestran como los publicó el proveedor.",
     visibleScope: "Entre ofertas equivalentes de esta página",
     comparisonScope: "Entre las ofertas seleccionadas",
     featuredHint:

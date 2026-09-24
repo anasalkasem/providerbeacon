@@ -44,7 +44,7 @@ export default function OfferPrice({
       >
         {formatPrice(locale, service)}
       </bdi>
-      
+
       {(showLowest || service.featured) && (
         <div className="mt-2 flex flex-wrap gap-1.5 text-xs font-bold">
           {showLowest && (

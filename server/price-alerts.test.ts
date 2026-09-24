@@ -42,7 +42,11 @@ describe("price alert evidence and messages", () => {
       )
     ).toMatchObject({ reached: true, original: "13.00", now: "12.00" });
   });
-  it("pauses missing, stale, future, changed-unit, unknown and incompatible offers", () => {
+  it("keeps saved native-rate alerts comparable after public normalization", () => {
+    const baseline = savedPrice({ ...original, priceUnit: "per_item", sourceRate: "0.0026", priceAmount: 0.0026 });
+    expect(priceAlertQuote(baseline, { ...original, sourceRate: "2.40" }, 5000, "12", now)).toMatchObject({ ready: true, reached: true, original: "13.00", now: "12.00" });
+  });
+  it("pauses missing, stale, future, changed-terms, unknown and incompatible offers", () => {
     for (const patch of [
       { checkedAt: null },
       { checkedAt: new Date(now - PRICE_ALERT_MAX_AGE_MS - 1).toISOString() },
@@ -50,7 +54,6 @@ describe("price alert evidence and messages", () => {
       { historyKey: "changed" },
       { priceCurrency: "INR" },
       { priceUnit: "per_item" as const },
-      { priceUnit: null },
       { priceType: "from" as const },
       { max: 100 },
     ])

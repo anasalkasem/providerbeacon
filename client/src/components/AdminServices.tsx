@@ -497,7 +497,7 @@ export default function AdminServices({
                               : "unconfirmedPrice"
                           )}
                         </p>
-                        
+
                       </td>
                       <td className="px-4 py-4">
                         <Badge

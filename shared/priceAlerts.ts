@@ -43,8 +43,7 @@ export function priceAlertQuote(
     now - observed <= PRICE_ALERT_MAX_AGE_MS;
   const comparable =
     ["same", "lower", "higher"].includes(change.status) &&
-    baseline.priceCurrency === service?.priceCurrency &&
-    baseline.priceUnit === service?.priceUnit;
+    baseline.priceCurrency === service?.priceCurrency;
   return {
     ...change,
     ready: !!target && comparable && fresh,

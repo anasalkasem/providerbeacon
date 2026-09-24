@@ -260,7 +260,7 @@ function ServiceRows({
           <bdi dir="ltr" className="provider-catalogue-price">
             {formatPrice(locale, service)}
           </bdi>
-          
+
         </td>
         <td className="provider-catalogue-limits">
           <bdi>

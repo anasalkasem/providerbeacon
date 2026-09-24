@@ -500,7 +500,7 @@ function AssistantChat({ path }: { path: string }) {
                                   service={offer.service}
                                   lowest={offer.lowest}
                                 />
-                                
+
                                 {turn.result!.quantity != null ? (
                                   <QuoteCost
                                     service={offer.service}
