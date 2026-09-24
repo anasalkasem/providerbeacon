@@ -8,12 +8,7 @@ import { useLocale } from "@/contexts/LocaleContext";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
 import { type Service } from "@/data/marketplace";
 import { platforms, serviceTypes } from "../../../shared/serviceReview";
-import {
-  priceCurrencies,
-  priceUnits,
-  type PriceCurrency,
-  type PriceUnit,
-} from "../../../shared/pricing";
+import { priceCurrencies, type PriceCurrency } from "../../../shared/pricing";
 import { localizeData } from "@/i18n/messages";
 import InlineServiceComparison from "@/components/InlineServiceComparison";
 import { useServiceSelection } from "@/hooks/useServiceSelection";
@@ -57,9 +52,6 @@ function ServicesPage() {
   const [currency, setCurrency] = useState<PriceCurrency | "">(
     params.get("market") === "packages" ? "" : "USD"
   );
-  const [unit, setUnit] = useState<PriceUnit | "">(
-    params.get("market") === "packages" ? "" : "per_1000"
-  );
   const [sort, setSort] = useState<"recommended" | "price">(
     params.get("market") === "packages" ? "recommended" : "price"
   );
@@ -93,12 +85,9 @@ function ServicesPage() {
               ? undefined
               : (category as (typeof serviceTypes)[number]),
           priceCurrency: currency || undefined,
-          priceUnit: market === "packages" ? "package" : unit || undefined,
+          priceUnit: market === "packages" ? "package" : "per_1000",
           refillOnly: market === "smm" && refillOnly,
-          sort:
-            market === "smm" && currency && unit && unit !== "package"
-              ? sort
-              : "recommended",
+          sort: market === "smm" && currency ? sort : "recommended",
         }),
       250
     );
@@ -109,7 +98,6 @@ function ServicesPage() {
     platform,
     category,
     currency,
-    unit,
     refillOnly,
     sort,
     countryCode,
@@ -122,7 +110,6 @@ function ServicesPage() {
     platform !== "all",
     category !== "all",
     !!currency,
-    !!unit,
     refillOnly,
     !!countryCode,
     refillDays > 0,
@@ -176,7 +163,6 @@ function ServicesPage() {
               onClick={() => {
                 setMarket(value);
                 setCategory("all");
-                setUnit(value === "smm" ? "per_1000" : "");
                 setCurrency(value === "smm" ? "USD" : "");
                 setRefillOnly(false);
                 setSort(value === "smm" ? "price" : "recommended");
@@ -282,37 +268,6 @@ function ServicesPage() {
                 ))}
               </select>
             </label>
-            {market === "smm" && (
-              <label className="grid gap-2 text-sm font-bold">
-                {ar ? "وحدة السعر" : "Sale unit"}
-                <select
-                  className={field}
-                  value={unit}
-                  onChange={e => {
-                    setUnit(e.target.value as PriceUnit | "");
-                    if (!e.target.value || e.target.value === "package")
-                      setSort("recommended");
-                  }}
-                >
-                  <option value="">{ar ? "جميع الوحدات" : "All units"}</option>
-                  {priceUnits.map(u => (
-                    <option key={u} value={u}>
-                      {u === "per_1000"
-                        ? ar
-                          ? "لكل 1,000"
-                          : "Per 1,000"
-                        : u === "per_item"
-                          ? ar
-                            ? "للوحدة الواحدة"
-                            : "Per item"
-                          : ar
-                            ? "للباقة"
-                            : "Per package"}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
             <label className="grid gap-2 text-sm font-bold">
               {ar ? "الترتيب" : "Sort"}
               <select
@@ -325,21 +280,16 @@ function ServicesPage() {
                 </option>
                 <option
                   value="price"
-                  disabled={
-                    !currency ||
-                    !unit ||
-                    unit === "package" ||
-                    market === "packages"
-                  }
+                  disabled={!currency || market === "packages"}
                 >
                   {ar ? "السعر: من الأقل للأعلى" : "Price: low to high"}
                 </option>
               </select>
-              {market === "smm" && (!currency || !unit) && (
+              {market === "smm" && !currency && (
                 <span className="text-xs font-normal text-muted-foreground">
                   {ar
-                    ? "اختر العملة ووحدة السعر لتفعيل الترتيب."
-                    : "Select a currency and sale unit to enable price sorting."}
+                    ? "اختر العملة لتفعيل ترتيب السعر."
+                    : "Select a currency to enable price sorting."}
                 </span>
               )}
             </label>
@@ -424,8 +374,8 @@ function ServicesPage() {
           <p className="font-bold text-secondary-foreground">
             {pagination.total.toLocaleString(locale)} {ar ? "عرض" : "offers"}
             <span className="ms-3 text-xs font-normal text-muted-foreground">
-              {sort === "price" && currency && unit && unit !== "package"
-                ? `${currency} · ${unit === "per_1000" ? (ar ? "لكل 1,000" : "per 1,000") : ar ? "للوحدة" : "per item"} · ${ar ? "من الأقل إلى الأعلى" : "low to high"}`
+              {market === "smm" && sort === "price" && currency
+                ? `${currency} · ${ar ? "لكل 1,000" : "per 1,000"} · ${ar ? "من الأقل إلى الأعلى" : "low to high"}`
                 : offerResultsCopy[locale].recommended}
             </span>
           </p>
@@ -439,7 +389,6 @@ function ServicesPage() {
               setPlatform("all");
               setCategory("all");
               setCurrency("");
-              setUnit("");
               setRefillOnly(false);
               setSort("recommended");
             }}
@@ -453,9 +402,7 @@ function ServicesPage() {
           toggle={toggle}
           pageSize={limit}
           priceSorted={
-            market === "smm" &&
-            Boolean(currency && unit && unit !== "package") &&
-            sort === "price"
+            market === "smm" && Boolean(currency) && sort === "price"
           }
         />
         {isLoading && (

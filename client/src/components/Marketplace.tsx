@@ -1,5 +1,5 @@
 import OfferEvidence, { serviceName, serviceScope, serviceTerms } from "./OfferEvidence";
-import { ProviderLogo } from "./ProviderMedia";
+import { ProviderImage, ProviderLogo } from "./ProviderMedia";
 import { ProviderRatingLink } from "./ProviderRatingLink";
 import { formatPrice, unitLabel, pricingCopy } from "@/i18n/pricing";
 import { useMarketplaceData } from "@/contexts/MarketplaceDataContext";
@@ -52,14 +52,17 @@ export function ProviderCard({ provider, selectedForCompare = false, onToggleCom
   const { locale } = useLocale(); const t = copy[locale]; const p = pageCopy[locale];
   const href = `/providers/${provider.slug}`;
   return <article className="provider-summary provider-poster group overflow-hidden rounded-2xl border border-border bg-card">
-    <Link href={href} className="provider-poster-art relative flex aspect-[4/3] flex-col items-center justify-center overflow-hidden bg-muted p-6 text-foreground">
-      <div className="relative z-10 flex w-full flex-col items-center text-center">
+    <Link href={href} className="block text-foreground">
+      <div className="provider-poster-art relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-muted p-6">
         <div className="provider-poster-logo"><ProviderLogo src={provider.logoUrl} name={provider.name} initials={provider.initials} className="size-24 rounded-2xl text-3xl sm:size-28"/></div>
-        <h2 className="mt-4 max-w-full break-words text-xl font-extrabold" dir="auto">{provider.name}</h2>
+        <ProviderImage src={provider.websitePreviewUrl} alt={locale === "ar" ? `معاينة موقع ${provider.name}` : `${provider.name} website preview`} className="absolute inset-0 size-full bg-muted object-contain"/>
+      </div>
+      <div className="flex flex-col items-center px-4 py-4 text-center">
+        <h2 className="max-w-full break-words text-xl font-extrabold" dir="auto">{provider.name}</h2>
         {provider.websiteUrl && <bdi dir="ltr" className="mt-2 max-w-full truncate text-xs text-muted-foreground">{provider.websiteUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}</bdi>}
       </div>
     </Link>
-    <div className="border-b border-border px-4 py-4 text-center"><p className="text-2xl font-extrabold text-foreground"><bdi>{formatNumber(locale, provider.activeServicesCount)}</bdi></p><p className="mt-1 text-xs text-muted-foreground">{locale === "ar" ? "خدمة متاحة للعرض" : "listed services"}</p></div>
+    <div className="border-y border-border px-4 py-4 text-center"><p className="text-2xl font-extrabold text-foreground"><bdi>{formatNumber(locale, provider.activeServicesCount)}</bdi></p><p className="mt-1 text-xs text-muted-foreground">{locale === "ar" ? "خدمة متاحة للعرض" : "listed services"}</p></div>
     <div className="flex justify-center px-3 pt-2"><ProviderRatingLink slug={provider.slug} name={provider.name} rating={provider.rating} reviews={provider.reviews} summary/></div>
     <div className="flex items-center gap-2 p-3">{showCompareToggle && onToggleCompare && <button onClick={() => onToggleCompare(provider)} aria-pressed={selectedForCompare} className={`flex min-h-11 items-center gap-1 rounded-xl border px-3 text-xs font-bold ${selectedForCompare ? "border-ring bg-secondary text-foreground" : "border-border text-secondary-foreground"}`} title={p.comparison}><Scale className="size-3.5"/>{selectedForCompare ? localizeData(locale,"Added") : t.compare}</button>}<Button variant="outline" asChild className="min-h-11 flex-1 justify-between rounded-xl text-xs font-bold"><Link href={href}>{locale === "ar" ? "عرض الخدمات والأسعار" : "View services and rates"}<ArrowUpRight className="size-4 rtl:-scale-x-100"/></Link></Button></div>
   </article>;

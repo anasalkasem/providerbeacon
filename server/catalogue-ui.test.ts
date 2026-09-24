@@ -140,7 +140,7 @@ describe("public catalogue rendering", () => {
     expect(html).not.toContain("Comparison quantity");
     expect(html).not.toContain("Accepts comparison quantity only");
     expect(html).not.toContain('type="number"');
-    expect(html).toContain("Sale unit");
+    expect(html).not.toContain("Sale unit");
   });
   it("uses exact totals and only marks the truly cheapest comparable source rate", () => {
     const a = {...state.data.services[0], catalogueListing:"api_source", sourceRate:"1.000000000000000001", priceAmount:1,priceCurrency:"USD",priceUnit:"per_1000",countryCode:"US",refill:"No refill",min:1,max:10000,
