@@ -26,7 +26,7 @@ export default function SmmOfferTable({
   services,
   selected,
   toggle,
-  quantity = 1000,
+  quantity,
   pageSize = 25,
   priceSorted = false,
 }: {
@@ -98,10 +98,7 @@ export default function SmmOfferTable({
           <thead>
             <tr>
               <th scope="col">{t.serviceProvider}</th>
-              <th
-                scope="col"
-                aria-sort={priceSorted ? "ascending" : undefined}
-              >
+              <th scope="col" aria-sort={priceSorted ? "ascending" : undefined}>
                 {catalogue.price}
               </th>
               <th scope="col" className="offer-results-extra">
@@ -155,7 +152,7 @@ function OfferRows({
 }: {
   service: Service;
   provider: Provider;
-  quantity: number;
+  quantity?: number;
   lowest: boolean;
   chosen: boolean;
   selectionFull: boolean;
@@ -278,14 +275,14 @@ function OfferRows({
                     <p className="mt-3 text-sm" dir="auto">
                       {serviceScope(locale, service)}
                     </p>
-                  ) : (
+                  ) : quantity !== undefined ? (
                     <QuoteCost
                       hideMissingBasis
                       service={service}
                       quantity={quantity}
                       lowest={lowest}
                     />
-                  )}
+                  ) : null}
                 </div>
                 <dl>
                   <div>
@@ -314,7 +311,18 @@ function OfferRows({
               <OfferEvidence service={service} showTerms />
               {service.priceUnit !== "package" && (
                 <div className="mt-3">
-                  <FollowPrice serviceId={service.id} quantity={quantity} />
+                  {quantity === undefined ? (
+                    <Link
+                      href={`/compare?services=${service.id}`}
+                      className="inline-flex min-h-10 items-center rounded-xl border border-border bg-card px-3 py-2 text-sm font-bold text-secondary-foreground hover:border-ring hover:text-foreground"
+                    >
+                      {locale === "ar"
+                        ? "متابعة سعر الخدمة"
+                        : "Follow service price"}
+                    </Link>
+                  ) : (
+                    <FollowPrice serviceId={service.id} quantity={quantity} />
+                  )}
                 </div>
               )}
             </div>
