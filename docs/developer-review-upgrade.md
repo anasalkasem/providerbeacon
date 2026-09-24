@@ -16,10 +16,18 @@ Secondary references researched in Refero:
 1. Existing provider identities must never be overwritten by creating a draft with a colliding name. Existing API connections cannot be reassigned to another provider, and credentials cannot silently move to another API host.
 2. New-provider creation is a visible first step. The resulting provider is selected automatically and its website is shown before saving the API connection.
 3. Compare up to four selected services inside the explorer, preserving selection across catalogue pages and filters. Keep shared comparison URLs and advanced quote tools working.
-4. Default wholesale browsing to USD, per 1,000, ascending price. Keep all currencies/units reachable. Preserve server ordering across pagination; do not promote page-local green minima above cheaper catalogue rows.
-5. Use compact quantity controls and a separate link to clearly identified sponsored placements. Advertising does not affect cheapest-price order.
-6. Provider cards use actual provider artwork/website previews when available, with a readable brand, centered service count and profile link. No invented reviews, logos, rankings or provider claims.
-7. Put methodology near search, replace the duplicate navigation entry with featured advertising, and explain provider offers as announcements/coupons rather than the price comparison catalogue.
+4. Wholesale browsing defaults to USD, per 1,000, ascending price. The explorer uses a fixed per-1,000 basis for SMM and a package basis for agency packages, with no sale-unit selector. Currency selection remains available; mixed currencies are not price-ranked. Preserve server ordering across pagination; do not promote page-local green minima above cheaper catalogue rows. Provider profiles retain their source-specific sale units.
+5. Remove the quantity calculator, its matching-only checkbox, and the sale-unit dropdown from the explorer, following the user's explicit corrections on 23–24 September. Do not shrink or relocate these controls within that page. Inline comparison uses published rates without an assumed quantity. A dedicated follow-price/comparison page retains explicit quote tools. Advertising does not affect cheapest-price order.
+6. Provider cards use actual provider artwork/website previews when available, in their original colors without a blue overlay. Keep the brand readable below the image, show the service count beneath it, and retain a neutral logo/initials fallback when artwork is absent or fails. No invented reviews, logos, rankings or provider claims.
+7. Put methodology near search. `/ads` is the single advertising/offers destination; `/vip` and `/offers` redirect there. Owner controls live at `/admin/ads`. Empty ad placements mean no approved current content, not a completed advertising campaign.
+
+## Full follow-up audit — 24 September 2026
+
+The request is checked against the original timestamped developer report and the user's subsequent screenshots. The removal of the comparison quantity input alone was incomplete: the sale-unit dropdown remained. Removing the blue tint had also removed provider artwork. Both omissions are corrected together in this follow-up.
+
+The audit confirmed inline comparison and persistent selections, ascending server-side price sorting, methodology beside discovery in navigation, one advertising destination, owner artwork/title/date/placement controls, the independent new-provider form, and separated OldSMM attribution. The source protections and new-provider import/publication journey are covered by the MySQL acceptance suites. No real provider, credential, publication state or campaign is created merely to exercise those flows.
+
+Remaining operational prerequisites are real approved advertisement content, a review decision on the unpublished OldSMM draft, and visual verification on a physical Android device. None is represented as completed by a desktop screenshot or an automated test.
 
 The audio alone does not establish which historical production rows have incorrect ownership. Do not relabel or migrate service data based on ambiguous spoken provider names.
 
