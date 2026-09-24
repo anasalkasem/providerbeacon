@@ -93,7 +93,7 @@ export default function Compare() {
   const convertedQuotes = trpc.assistant.quotes.useQuery(
     { serviceIds: requestedIds, quantity, currency },
     {
-      enabled: requestedIds.length >= 2 && validQuantity,
+      enabled: requestedIds.length >= 1 && validQuantity,
       staleTime: 10000,
       retry: false,
     }
@@ -105,7 +105,7 @@ export default function Compare() {
   );
   if (!params.get("services"))
     return params.get("manual") === "1" ? <QuoteWorkbench /> : <Services />;
-  if (missing || compared.length < 2)
+  if (missing || compared.length === 0)
     return (
       <PublicLayout>
         <CatalogueState
@@ -113,6 +113,7 @@ export default function Compare() {
         />
       </PublicLayout>
     );
+  const singleOffer = compared.length === 1;
   const nativeComparable =
     comparablePrices(compared) &&
     !!comparisonGroup(compared[0]!) &&
@@ -345,10 +346,18 @@ export default function Compare() {
                 {t.compareEyebrow}
               </div>
               <h1 className="mt-4 text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl">
-                {t.compareTitle}
+                {singleOffer
+                  ? ar
+                    ? "متابعة سعر الخدمة"
+                    : "Follow service price"
+                  : t.compareTitle}
               </h1>
               <p className="mt-3 max-w-2xl text-secondary-foreground">
-                {t.compareBody}
+                {singleOffer
+                  ? ar
+                    ? "راجع سعر الخدمة وحدود الطلب، ثم اختر الكمية التي تريد متابعة سعرها."
+                    : "Review the service rate and order limits, then choose the quantity whose price you want to follow."
+                  : t.compareBody}
               </p>
             </div>
             <p className="text-sm font-semibold text-muted-foreground">
@@ -377,7 +386,13 @@ export default function Compare() {
               </select>
             </label>
             <label className="grid gap-2 text-sm font-bold">
-              {ar ? "كمية المقارنة" : "Comparison quantity"}
+              {singleOffer
+                ? ar
+                  ? "الكمية المطلوب متابعتها"
+                  : "Quantity to follow"
+                : ar
+                  ? "كمية المقارنة"
+                  : "Comparison quantity"}
               <input
                 type="number"
                 min={1}
@@ -408,7 +423,7 @@ export default function Compare() {
             </p>
           </div>
         )}
-        {!comparable && (
+        {!singleOffer && !comparable && (
           <p
             role="note"
             className="mb-5 rounded-xl border border-warning-border bg-warning-muted p-4 text-sm text-warning"
@@ -416,11 +431,13 @@ export default function Compare() {
             {pricingCopy[locale].mixed}
           </p>
         )}
-        <ComparisonExplanation
-          services={compared}
-          quantity={quantity}
-          comparable={comparable}
-        />
+        {!singleOffer && (
+          <ComparisonExplanation
+            services={compared}
+            quantity={quantity}
+            comparable={comparable}
+          />
+        )}
         <div
           className={`mb-6 grid items-stretch gap-4 md:grid-cols-2 ${compared.length === 3 ? "xl:grid-cols-3" : compared.length > 3 ? "xl:grid-cols-4" : ""}`}
         >
@@ -442,14 +459,16 @@ export default function Compare() {
             );
           })}
         </div>
-        <div className="mb-6">
-          <SaveComparison
-            serviceIds={compared.map(s => s.id)}
-            quantity={quantity}
-            currency={currency}
-            name={compared.map(s => providerFor(s).name).join(" / ")}
-          />
-        </div>
+        {!singleOffer && (
+          <div className="mb-6">
+            <SaveComparison
+              serviceIds={compared.map(s => s.id)}
+              quantity={quantity}
+              currency={currency}
+              name={compared.map(s => providerFor(s).name).join(" / ")}
+            />
+          </div>
+        )}
         <details className="rounded-2xl border border-border bg-card p-4 sm:p-6">
           <summary className="mb-4 cursor-pointer font-extrabold text-foreground">
             {wt.details}

@@ -96,6 +96,29 @@ async function setCurrency(value: string) {
   });
 }
 describe("comparison journey", () => {
+  it("lets an explorer visitor follow one service after choosing a quantity", async () => {
+    window.history.replaceState({}, "", "/compare?services=service-40");
+    await mount();
+    expect(host.querySelector("h1")?.textContent).toBe("Follow service price");
+    expect(host.textContent).toContain("Quantity to follow");
+    expect(host.textContent).not.toContain("Select at least two");
+    await setQuantity("5000");
+    expect(state.quote).toHaveBeenLastCalledWith(
+      { serviceIds: ["service-40"], quantity: 5000, currency: "USD" },
+      expect.objectContaining({ enabled: true })
+    );
+    const links = host.querySelectorAll<HTMLAnchorElement>(
+      'a[href^="/sign-in"]'
+    );
+    expect(links).toHaveLength(1);
+    const next = new URL(
+      new URL(links[0].href).searchParams.get("next")!,
+      window.location.origin
+    );
+    expect(next.searchParams.get("services")).toBe("service-40");
+    expect(next.searchParams.get("quantity")).toBe("5000");
+  });
+
   it("retains edited options in the URL, quote request and every sign-in link without adding history entries", async () => {
     await mount();
     const historyLength = window.history.length;
