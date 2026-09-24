@@ -36,9 +36,23 @@ export const priceCurrencies = [
 export const priceUnits = ["per_1000", "per_item", "package"] as const;
 export type PriceCurrency = (typeof priceCurrencies)[number];
 export type PriceUnit = (typeof priceUnits)[number];
+export function sourceRateBasis(source: Record<string, unknown>): PriceUnit {
+  const claim =
+    typeof source.unit === "string" ? source.unit.trim().toLowerCase() : "";
+  if (
+    (typeof source.type === "string" &&
+      /package|subscription/i.test(source.type)) ||
+    /month|package|flat|fixed/i.test(claim) ||
+    (!claim && Number(source.min) === 1 && Number(source.max) === 1)
+  )
+    return "package";
+  return ["per_item", "per item", "each"].includes(claim)
+    ? "per_item"
+    : "per_1000";
+}
 export const pricingFields = {
   priceCurrency: z.enum(priceCurrencies).nullable().default(null),
-  priceUnit: z.enum(priceUnits).nullable().default(null),
+  priceUnit: z.enum(priceUnits).nullable().default("per_1000"),
   packageDescription: z
     .string()
     .trim()
@@ -52,10 +66,28 @@ export type PricingMetadata = {
   priceUnit?: string | null;
   packageDescription?: string | null;
 };
+// The marketplace uses a fixed SMM rate basis. Missing legacy metadata no
+// longer requires an operator to choose a unit. Explicit package prices stay fixed.
+export function effectivePriceUnit(row: PricingMetadata) {
+  return row.priceUnit ?? "per_1000";
+}
+
+export function standardRate(amount: string, unit?: string | null): string {
+  if (unit !== "per_item" || !/^\d+(\.\d+)?$/.test(amount)) return amount;
+  const [whole, fraction = ""] = amount.split(".");
+  const scale = Math.max(0, fraction.length - 3);
+  const digits = (whole + fraction.padEnd(3, "0"))
+    .replace(/^0+(?=\d)/, "")
+    .padStart(scale + 1, "0");
+  return scale
+    ? `${digits.slice(0, -scale) || "0"}.${digits.slice(-scale)}`
+    : digits;
+}
+
 export function hasPricingBasis(row: PricingMetadata) {
   return (
     priceCurrencies.includes(row.priceCurrency as PriceCurrency) &&
-    priceUnits.includes(row.priceUnit as PriceUnit) &&
+    priceUnits.includes(effectivePriceUnit(row) as PriceUnit) &&
     (row.priceUnit !== "package" ||
       (row.packageDescription?.trim().length ?? 0) >= 8)
   );
@@ -80,7 +112,6 @@ export function comparablePrices(
         hasPricingBasis(row) &&
         row.priceUnit !== "package" &&
         row.priceCurrency === first.priceCurrency &&
-        row.priceUnit === first.priceUnit &&
         row.platform === first.platform &&
         row.category === first.category &&
         row.countryCode === first.countryCode &&
@@ -107,7 +138,8 @@ export function quantityQuote(
   )
     return null;
   return (
-    (row.priceAmount * quantity) / (row.priceUnit === "per_1000" ? 1000 : 1)
+    (row.priceAmount * quantity) /
+    (effectivePriceUnit(row) === "per_1000" ? 1000 : 1)
   );
 }
 
@@ -129,7 +161,8 @@ export function quantityQuoteExact(
       : String(row.priceAmount);
   if (!rate || !/^\d+(\.\d+)?$/.test(rate)) return null;
   const [whole, fraction = ""] = rate.split(".");
-  const scale = fraction.length + (row.priceUnit === "per_1000" ? 3 : 0);
+  const scale =
+    fraction.length + (effectivePriceUnit(row) === "per_1000" ? 3 : 0);
   const digits = (BigInt(whole + fraction) * BigInt(quantity))
     .toString()
     .padStart(scale + 1, "0");

@@ -22,7 +22,7 @@ import {
 import { priceCurrencies, priceUnits } from "../shared/pricing";
 import { NORMALIZATION_VERSION } from "./serviceNormalizer";
 
-export const pricingBasis = sql`coalesce((${inArray(sql`binary ${serviceRecords.priceCurrency}`, priceCurrencies)} and ${inArray(serviceRecords.priceUnit, priceUnits)} and (${serviceRecords.priceUnit} <> 'package' or char_length(trim(${serviceRecords.packageDescription})) >= 8)), false)`;
+export const pricingBasis = sql`coalesce((${inArray(sql`binary ${serviceRecords.priceCurrency}`, priceCurrencies)} and ${inArray(sql`coalesce(${serviceRecords.priceUnit}, 'per_1000')`, priceUnits)} and (coalesce(${serviceRecords.priceUnit}, 'per_1000') <> 'package' or char_length(trim(${serviceRecords.packageDescription})) >= 8)), false)`;
 const unconfirmedPricing = or(
   eq(serviceRecords.pricingConfirmed, false),
   not(pricingBasis)

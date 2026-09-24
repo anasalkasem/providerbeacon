@@ -15,7 +15,7 @@ export const reviewEn = {
   need_stale: "Stale evidence",
   need_ready: "Ready for approval",
   needHelp_pricing_unconfirmed:
-    "Check the currency and price unit against a source, attach its evidence link and explicitly confirm pricing in the service details.",
+    "Check the amount and currency against a source, attach its evidence link and explicitly confirm pricing in the service details.",
   needHelp_evidence_missing:
     "Attach a public evidence page supporting this service's price and terms. A provider name or an unsupported claim is insufficient.",
   needHelp_policy_check:
@@ -69,7 +69,7 @@ export const reviewEn = {
     "The selection is not ready. Check missing evidence, provider status, paused services and source freshness.",
   reviewFailed: "The operation could not be completed. Refresh and try again.",
   rawPrice: "Stored rate",
-  unconfirmedPrice: "Pricing basis not fully confirmed",
+  unconfirmedPrice: "Price awaiting review",
   confirmedPrice: "Pricing confirmed",
   minQuantity: "Minimum quantity",
   maxQuantity: "Maximum quantity",
@@ -84,7 +84,7 @@ export const reviewEn = {
   evidenceHelp:
     "Public HTTPS page used to check the price and terms; no query strings or credentials.",
   confirmPricing:
-    "I checked the amount, currency and sale unit against the linked evidence.",
+    "I checked the amount and currency against the linked evidence.",
   confirmPolicy:
     "I reviewed the service and confirmed it is eligible for publication under the catalogue policy.",
   saveForReview: "Save for review",
@@ -113,7 +113,7 @@ export const reviewEn = {
   refill_unspecified: "Refill terms unspecified",
   policy_check: "Publication eligibility needs review",
   normalization_pending: "Classification pending",
-  pricing_unconfirmed: "Confirm currency and price unit",
+  pricing_unconfirmed: "Confirm amount and currency",
   evidence_missing: "Add a price evidence link",
   source_missing: "Service disappeared from the source",
   invalid_values: "Price or quantities are invalid",
@@ -153,7 +153,7 @@ export const reviewAr: Record<keyof typeof reviewEn, string> = {
   need_stale: "الأدلة قديمة",
   need_ready: "جاهزة للاعتماد",
   needHelp_pricing_unconfirmed:
-    "تحقق من العملة ووحدة السعر بالرجوع إلى المصدر، وأرفق رابط الدليل ثم أكّد التسعير صراحةً من تفاصيل الخدمة.",
+    "تحقق من المبلغ والعملة بالرجوع إلى المصدر، وأرفق رابط الدليل ثم أكّد التسعير صراحةً من تفاصيل الخدمة.",
   needHelp_evidence_missing:
     "أرفق صفحة عامة تدعم سعر هذه الخدمة وشروطها. اسم المزود أو ادعاء بلا دليل لا يكفيان.",
   needHelp_policy_check:
@@ -206,7 +206,7 @@ export const reviewAr: Record<keyof typeof reviewEn, string> = {
     "الخدمات المحددة غير جاهزة. راجع نواقص الأدلة وحالة المزود والخدمات المتوقفة وحداثة المصدر.",
   reviewFailed: "تعذّر إكمال الإجراء. حدّث البيانات وحاول مجددًا.",
   rawPrice: "السعر المحفوظ",
-  unconfirmedPrice: "أساس التسعير غير مكتمل",
+  unconfirmedPrice: "السعر بانتظار المراجعة",
   confirmedPrice: "تسعير مؤكد",
   minQuantity: "الكمية الدنيا",
   maxQuantity: "الكمية القصوى",
@@ -221,7 +221,7 @@ export const reviewAr: Record<keyof typeof reviewEn, string> = {
   evidenceHelp:
     "صفحة HTTPS عامة استُخدمت لفحص السعر والشروط؛ دون بيانات دخول أو معاملات في الرابط.",
   confirmPricing:
-    "تحققت من المبلغ والعملة ووحدة البيع بالرجوع إلى الدليل المرتبط.",
+    "تحققت من المبلغ والعملة بالرجوع إلى الدليل المرتبط.",
   confirmPolicy: "راجعت الخدمة وتأكدت من أهليتها للنشر وفق سياسة دليل الخدمات.",
   saveForReview: "حفظ للمراجعة",
   reviewResetHint:
@@ -249,7 +249,7 @@ export const reviewAr: Record<keyof typeof reviewEn, string> = {
   refill_unspecified: "شروط التعويض غير محددة",
   policy_check: "أهلية النشر تحتاج إلى مراجعة",
   normalization_pending: "التصنيف قيد الانتظار",
-  pricing_unconfirmed: "تأكيد العملة ووحدة السعر مطلوب",
+  pricing_unconfirmed: "تأكيد المبلغ والعملة مطلوب",
   evidence_missing: "أضف رابط الدليل على السعر",
   source_missing: "الخدمة اختفت من المصدر",
   invalid_values: "السعر أو الكميات غير صالحين",

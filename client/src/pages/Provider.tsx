@@ -65,8 +65,8 @@ export default function Provider() {
             </p>
             <p className="mt-2 text-sm leading-7 text-secondary-foreground">
               {locale === "ar"
-                ? "أسعار وخدمات من المصدر مباشرة. تظهر وحدة البيع عندما تتوفر بياناتها؛ يمكنك مراجعة مصدر كل عرض وتفاصيله. نشر الكتالوج لا يعني اعتماد جودة الخدمة."
-                : "Prices and services directly from the provider. Sale units appear where supported by source data; each offer includes its source and details. Catalogue publication does not approve service quality."}
+                ? "أسعار وخدمات من المصدر مباشرة. يمكنك مراجعة مصدر كل عرض وتفاصيله. نشر الكتالوج لا يعني اعتماد جودة الخدمة."
+                : "Prices and services directly from the provider. Each offer includes its source and details. Catalogue publication does not approve service quality."}
             </p>
           </div>
         </section>

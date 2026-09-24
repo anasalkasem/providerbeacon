@@ -24,7 +24,7 @@ export function providerCataloguePricingAcceptanceCases(
   const read = () => getProviderCataloguePricing([providerId()]);
 
   describe("public provider price summaries against MySQL", () => {
-    it("aggregates beyond a service page and separates currencies and units without exposing hidden offers", async () => {
+    it("aggregates beyond a service page and normalizes native rates within each currency without exposing hidden offers", async () => {
       await database().insert(serviceRecords).values([
         ...Array.from({ length: 40 }, (_, index) => offer(index + 1, { priceAmount: (index + 1).toFixed(4) })),
         offer(41, { priceCurrency: "EUR", priceUnit: "per_item", priceAmount: "8.2500" }),
@@ -40,9 +40,8 @@ export function providerCataloguePricingAcceptanceCases(
       const summary = (await read())?.[`provider-${providerId()}`];
       expect(summary).toMatchObject({ additionalGroups: 0, unconfirmedServices: 0 });
       expect(summary?.ranges).toEqual([
-        { currency: "USD", unit: "per_1000", minimum: "1.00", maximum: "40.00", services: 40 },
-        { currency: "USD", unit: "per_item", minimum: "9.5", maximum: "9.5", services: 1 },
-        { currency: "EUR", unit: "per_item", minimum: "8.25", maximum: "8.25", services: 1 },
+        { currency: "USD", unit: "per_1000", minimum: "1.00", maximum: "9500.00", services: 41 },
+        { currency: "EUR", unit: "per_1000", minimum: "8250.00", maximum: "8250.00", services: 1 },
       ]);
       const caller = appRouter.createCaller({ user: null, req: { headers: {}, ip: "127.0.0.1" }, res: { setHeader: vi.fn() } } as any);
       const directory = await caller.marketplace.snapshot({ scope: "providers", q: "Test provider", limit: 1 });
@@ -51,7 +50,7 @@ export function providerCataloguePricingAcceptanceCases(
       expect(JSON.stringify(directory)).not.toMatch(/credentialCiphertext|sourceData|local-test-key/);
     });
 
-    it("preserves exact API rates, flags unknown bases and keeps stored review decisions unchanged", async () => {
+    it("preserves exact API rates, uses the legacy default but flags unknown currency and keeps stored review decisions unchanged", async () => {
       const integration = await addIntegration();
       await database().update(providerIntegrations).set({ status: "active", lastSyncedAt: new Date() }).where(eq(providerIntegrations.id, integration));
       await database().update(providerRecords).set({ apiCataloguePublished: true }).where(eq(providerRecords.id, providerId()));
@@ -65,11 +64,12 @@ export function providerCataloguePricingAcceptanceCases(
         { ...source, slug: "price-summary-unknown", externalId: "101", sourceRate: "3.1400", sourcePriceUnit: null },
         { ...source, slug: "price-summary-withdrawn", externalId: "102", sourceRate: "0.0001", reviewStatus: "changes_requested" },
         { ...source, slug: "price-summary-held", externalId: "103", sourceRate: "0.0001", screeningStatus: "held" },
+        { ...source, slug: "price-summary-currency", externalId: "104", sourceCurrency: null },
       ]);
       const before = await database().select().from(serviceRecords).where(eq(serviceRecords.providerId, providerId()));
       const summary = (await read())?.[`provider-${providerId()}`];
       expect(summary).toEqual({
-        ranges: [{ currency: "USD", unit: "per_1000", minimum: "0.123456789123456789", maximum: "0.123456789123456789", services: 1 }],
+        ranges: [{ currency: "USD", unit: "per_1000", minimum: "0.123456789123456789", maximum: "3.14", services: 2 }],
         additionalGroups: 0, unconfirmedServices: 1,
       });
       expect(await database().select().from(serviceRecords).where(eq(serviceRecords.providerId, providerId()))).toEqual(before);

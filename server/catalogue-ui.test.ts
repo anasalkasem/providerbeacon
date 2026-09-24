@@ -91,30 +91,25 @@ describe("public catalogue rendering", () => {
     expect(empty).not.toContain('src="https://cdn.example.com/');
     expect(empty).not.toContain("Visit website");
   });
-  it("shows known currency once with neutral pricing details instead of repeated warning panels", () => {
-    const service = { ...state.data.services[0], catalogueListing: "api_source", sourceRate: "3000.00", priceCurrency: "EGP", priceUnit: null, sourceUrl: "https://foollo.com", min: 1, max: 1 };
-    const html = render(OfferPrice, { service, lowest: true });
+  it("renders legacy SMM rates and valid totals without a unit warning or control", () => {
+    const service = { ...state.data.services[0], catalogueListing: "api_source", sourceRate: "3000.00", priceCurrency: "EGP", priceUnit: null, sourceUrl: "https://foollo.com", min: 1, max: 10000 };
+    const html = render(OfferPrice, { service });
     expect(html).toContain("EGP 3000.00");
-    expect(html).toContain("sale unit unspecified");
-    expect(html).toContain("<details");
-    expect(html).toContain("Pricing details");
-    expect(html).toContain("https://foollo.com");
-    expect(html).not.toContain("bg-amber");
-    expect(html).not.toContain(">Lowest price<");
+    expect(html).not.toContain("sale unit");
+    expect(html).not.toContain("Pricing details");
     expect(html).not.toContain("currency unspecified");
-    expect(render(QuoteCost, { service, quantity: 1, hideMissingBasis: true })).toBe("");
-    const table = render(SmmOfferTable, { services: [service], selected: [], toggle: () => {}, quantity: 1 });
-    expect(table).not.toContain("Cost for selected quantity");
-    expect(table).not.toContain("bg-amber");
+    expect(render(QuoteCost, { service, quantity: 500, hideMissingBasis: true })).toContain("EGP 1500.00");
+    const table = render(SmmOfferTable, { services: [service], selected: [], toggle: () => {}, quantity: 500 });
+    expect(table).not.toContain("sale unit");
     expect(table).not.toContain("Awaiting confirmation");
   });
   it("does not mistake missing units for a failed currency conversion or hide valid quantity totals", () => {
     const service = { ...state.data.services[0], catalogueListing: "api_source", sourceRate: "32.0562", priceCurrency: "EGP", priceUnit: "per_1000", min: 10, max: 10000 };
     expect(render(QuoteCost, { service, quantity: 500, hideMissingBasis: true })).toContain("EGP 16.0281");
     const card = render(DecisionOffer, { service: { ...service, priceUnit: null }, provider: state.data.providers[0], quantity: 500, currency: "USD" });
-    expect(card).not.toContain("Cost for selected quantity");
+    expect(card).toContain("Cost for selected quantity");
     expect(card).not.toContain("text-amber-800");
-    expect(card).toContain("sale unit unspecified");
+    expect(card).not.toContain("sale unit");
   });
   it("preserves edited quantities and comparison currency when signing in to save", () => {
     vi.stubGlobal("window", { location: { pathname: "/compare", search: "?services=service-40,service-41&quantity=1000&currency=USD" } });
@@ -136,7 +131,7 @@ describe("public catalogue rendering", () => {
     const html=render(Services);
     expect(html).not.toContain("Service cost calculator");
     expect(html).toContain('id="service-comparison"');
-    expect(html).toContain("USD · per 1,000 · low to high");
+    expect(html).toContain("USD · low to high");
     expect(html).not.toContain("Comparison quantity");
     expect(html).not.toContain("Accepts comparison quantity only");
     expect(html).not.toContain('type="number"');
@@ -155,7 +150,7 @@ describe("public catalogue rendering", () => {
     expect(html).toContain("USD 5.00000000000000001");
     expect(html.split(">Lowest price<").length - 1).toBe(1);
     expect(render(QuoteCost,{service:a,quantity:10001})).toContain("Above maximum: 10,000");
-    expect(render(QuoteCost,{service:{...a,priceUnit:null},quantity:1000})).toContain("Total unavailable: sale unit unspecified");
+    expect(render(QuoteCost,{service:{...a,priceUnit:null},quantity:1000})).toContain("USD 1.000000000000000001");
   });
   it("renders connected API rates without rounding them into a currency or inventing a quantity total", () => {
     const provider = {...state.data.providers[0], apiConnected: true, activeServicesCount: 2,
@@ -167,7 +162,7 @@ describe("public catalogue rendering", () => {
     state.data = {...state.data, ...catalogueIndex([provider], [a,b])};
     const offer=render(DecisionOffer, { service: a, provider, quantity: 1000 });
     expect(offer).toContain("1.0123456"); expect(offer).toContain("API connected");
-    expect(offer).toContain("currency unspecified"); expect(offer).not.toContain("Outside order limits");
+    expect(offer).toContain("The source does not identify the currency"); expect(offer).not.toContain("Outside order limits");
     vi.stubGlobal("window",{location:{search:"?services=service-40,service-41"},
     });
     const comparison=render(Compare);
@@ -241,9 +236,9 @@ describe("public catalogue rendering", () => {
     vi.stubGlobal("window", {location: {search: "?services=service-40,service-41"},
     });
     const html = render(Compare);
-    expect(html).toContain("INR 0.0001"); expect(html).toContain("per item");
+    expect(html).toContain("INR 0.10"); expect(html).not.toContain("per item");
     expect(html).toContain("No lowest-price ranking"); expect(html).not.toContain(">Lowest price<");
-    expect(render(ServiceRow, {service: a, selected: false, onToggle: () => {}})).toContain("per item");
+    expect(render(ServiceRow, {service: a, selected: false, onToggle: () => {}})).not.toContain("per item");
   });
   it("compares sourced monthly packages with scope, terms and source links", () => {
     const provider = state.data.providers[0];

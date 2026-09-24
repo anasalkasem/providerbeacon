@@ -31,7 +31,6 @@ import { workspaceCopy } from "@/i18n/workspace";
 import { communityCopy } from "@/i18n/community";
 import { businessText } from "@/i18n/providerBusiness";
 import { PublicLayout } from "@/components/SiteChrome";
-import { unitLabel } from "@/i18n/pricing";
 import OfferEvidence from "@/components/OfferEvidence";
 import { toast } from "sonner";
 import PriceTargetForm from "@/components/PriceTargetForm";
@@ -497,7 +496,7 @@ function PriceHistory({
       )}
       {service && (
         <p className="mt-2 text-xs text-muted-foreground">
-          {unitLabel(locale, service)} · <bdi>{history.data?.currency}</bdi>
+          <bdi>{history.data?.currency}</bdi>
         </p>
       )}
       {points.length > 0 && (

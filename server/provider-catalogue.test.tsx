@@ -176,7 +176,7 @@ it("reveals full names, original exact prices and source terms within one row in
   await settle();
   expect(host.querySelector("table")).not.toBeNull();
   expect(host.textContent).toContain("EGP 1.0123456789");
-  expect(host.textContent).toContain("وحدة البيع غير محددة");
+  expect(host.textContent).not.toContain("وحدة البيع");
   expect(host.textContent).not.toContain("Unknown");
   const controls = host.querySelectorAll<HTMLButtonElement>(
     ".provider-catalogue-name"

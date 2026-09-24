@@ -59,7 +59,7 @@ export default function InlineServiceComparison({
   const failed = query.isError || data?.source === "unavailable";
   const labels = ar
     ? [
-        "السعر ووحدته",
+        "السعر",
         "إجمالي الكمية",
         "المنصة والنوع",
         "السوق",
@@ -69,7 +69,7 @@ export default function InlineServiceComparison({
         "المصدر",
       ]
     : [
-        "Rate and unit",
+        "Price",
         "Quantity total",
         "Platform and type",
         "Market",
@@ -288,8 +288,8 @@ export default function InlineServiceComparison({
                   ? "أضف عرضًا آخر للمقارنة."
                   : "Add another offer to compare."
                 : ar
-                  ? `الأخضر يظهر فقط عندما تتطابق العملة ووحدة السعر والخدمة والسوق والتعويض والجودة المعلنة${quantity === undefined ? ". راجع حدود الطلب لكل عرض" : "، وتقبل العروض الكمية"}. السعر الأقل ليس تقييمًا للجودة.`
-                  : `Green appears only when currency, unit, service, market, refill and stated quality match${quantity === undefined ? ". Check each offer's order limits" : " and offers accept the quantity"}. Lowest price is not a quality rating.`}
+                  ? `الأخضر يظهر فقط عندما تتطابق العملة والخدمة والسوق والتعويض والجودة المعلنة${quantity === undefined ? ". راجع حدود الطلب لكل عرض" : "، وتقبل العروض الكمية"}. السعر الأقل ليس تقييمًا للجودة.`
+                  : `Green appears only when currency, service, market, refill and stated quality match${quantity === undefined ? ". Check each offer's order limits" : " and offers accept the quantity"}. Lowest price is not a quality rating.`}
             </p>
             {selected.length === ids.length && selected.length >= 2 && (
               <Link

@@ -12,7 +12,7 @@ export const discoveryGuides = [
       en: "Plan your content, commission the creative and define who looks after your community.",
       ar: "خطط للمحتوى، وحدد المواد المطلوبة والمسؤول عن إدارة مجتمعك.",
     },
-    unit: { en: "Monthly scope or per asset", ar: "نطاق شهري أو لكل مادة" },
+    scope: { en: "Monthly scope or per asset", ar: "نطاق شهري أو لكل مادة" },
     checks: {
       en: [
         "A content calendar with a clear number of posts and formats.",
@@ -43,7 +43,7 @@ export const discoveryGuides = [
       en: "Compare creators on the work they will deliver: concepts, filming, editing and variations.",
       ar: "قارن صنّاع المحتوى بحسب ما سيسلّمونه: أفكار وتصوير ومونتاج ونسخ بديلة.",
     },
-    unit: { en: "Per video or defined batch", ar: "لكل فيديو أو دفعة محددة" },
+    scope: { en: "Per video or defined batch", ar: "لكل فيديو أو دفعة محددة" },
     checks: {
       en: [
         "Video count, duration, aspect ratio and subtitle languages.",
@@ -74,7 +74,7 @@ export const discoveryGuides = [
       en: "Find the right scope for scripts, editing, thumbnails and channel content planning.",
       ar: "حدد احتياجك من النصوص والمونتاج والصور المصغّرة وخطة محتوى القناة.",
     },
-    unit: {
+    scope: {
       en: "Per video or monthly production",
       ar: "لكل فيديو أو إنتاج شهري",
     },
@@ -105,7 +105,7 @@ export const discoveryGuides = [
       en: "Compare campaign management with ad spend and creative production shown separately.",
       ar: "قارن إدارة الحملات مع فصل ميزانية الإعلان وتكلفة إنتاج المواد.",
     },
-    unit: {
+    scope: {
       en: "Management fee plus ad spend",
       ar: "أتعاب الإدارة مع ميزانية الإعلان",
     },
@@ -139,7 +139,7 @@ export const discoveryGuides = [
       en: "Ask for specific audits, fixes and content deliverables when evaluating an SEO proposal.",
       ar: "اطلب فحوصًا وإصلاحات ومواد محددة عند تقييم عرض لتحسين محركات البحث.",
     },
-    unit: {
+    scope: {
       en: "Audit, project or monthly scope",
       ar: "فحص أو مشروع أو نطاق شهري",
     },
@@ -173,7 +173,7 @@ export const discoveryGuides = [
       en: "Define the events, sources and dashboards you need before comparing analytics specialists.",
       ar: "حدد الأحداث ومصادر البيانات والتقارير التي تحتاجها قبل مقارنة المختصين.",
     },
-    unit: {
+    scope: {
       en: "Setup project or reporting retainer",
       ar: "مشروع إعداد أو تقارير دورية",
     },
@@ -263,8 +263,8 @@ export const directoryProfiles = [
     source: "https://justanotherpanel.com/api",
     tags: ["Instagram", "TikTok", "YouTube", "Website"],
     question: {
-      en: "Establish the currency, sale unit and delivery method for each service. A catalogue listing does not establish authentic engagement.",
-      ar: "تحقق من العملة ووحدة البيع وطريقة تنفيذ كل خدمة. إدراجها في الكتالوج لا يثبت تفاعلًا حقيقيًا.",
+      en: "Establish the currency and delivery method for each service. A catalogue listing does not establish authentic engagement.",
+      ar: "تحقق من العملة وطريقة تنفيذ كل خدمة. إدراجها في الكتالوج لا يثبت تفاعلًا حقيقيًا.",
     },
   },
 ] as const;

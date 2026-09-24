@@ -2,174 +2,159 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   automaticSourcePricing,
   fetchProviderPricing,
-  hasPerThousandTable,
 } from "./providerPricing";
+import {
+  hasPricingBasis,
+  standardRate,
+  quantityQuoteExact,
+} from "../shared/pricing";
 
-const endpoint = new URL("https://smmpanelone.com/api/v2");
-const heading =
-  '<table class="table" id="service-table-3"><thead><tr><th>ID</th><th>Service</th><th class="nowrap">Rate per 1000</th></tr></thead>';
-const evidence = "https://smmpanelone.com/services";
+const endpoint = new URL("https://provider.example/api/v2");
 afterEach(() => vi.unstubAllGlobals());
-
-describe("source pricing evidence", () => {
-  it("reads the account currency and bounded public heading without retaining or sending account details", async () => {
-    const cancel = vi.fn();
-    const fetcher = vi.fn(async (url: URL | string, init?: RequestInit) => {
-      if (String(url).endsWith("/api/v2")) {
-        expect((init!.body as URLSearchParams).get("action")).toBe("balance");
-        expect(init?.redirect).toBe("error");
-        return new Response(
-          JSON.stringify({
-            balance: "987.654",
-            currency: "INR",
-            privateField: "must-not-retain",
-          })
-        );
-      }
-      expect(init?.body).toBeUndefined();
+describe("standard SMM source pricing", () => {
+  it("reads only the authenticated currency, without scraping a public table or retaining account data", async () => {
+    const fetcher = vi.fn(async (url: URL, init?: RequestInit) => {
+      expect(String(url)).toBe(endpoint.href);
+      expect((init!.body as URLSearchParams).get("action")).toBe("balance");
+      expect(init?.redirect).toBe("error");
       return new Response(
-        new ReadableStream({
-          start(controller) {
-            controller.enqueue(
-              new TextEncoder().encode("<!-- currency: USD -->" + heading)
-            );
-          },
-          cancel,
+        JSON.stringify({
+          balance: "987.654",
+          currency: "INR",
+          privateField: "private",
         })
       );
     });
     vi.stubGlobal("fetch", fetcher);
     const snapshot = await fetchProviderPricing(
       endpoint,
-      "synthetic-provider-key",
+      "synthetic-key",
       null
     );
-    expect(snapshot).toEqual({
-      currency: "INR",
-      perThousandEvidenceUrl: evidence,
-    });
+    expect(snapshot).toEqual({ currency: "INR", perThousandEvidenceUrl: null });
     expect(JSON.stringify(snapshot)).not.toMatch(/987|private|synthetic/);
-    expect(fetcher).toHaveBeenCalledTimes(2);
-    expect(cancel).toHaveBeenCalledOnce();
+    expect(fetcher).toHaveBeenCalledOnce();
   });
-
-  it("does not infer currency from a dollar symbol or pricing from generic page text", async () => {
+  it("retains a known currency on temporary failures but never invents a missing or unsupported currency", async () => {
     vi.stubGlobal(
       "fetch",
-      vi.fn(
-        async url =>
-          new Response(
-            String(url).endsWith("/api/v2")
-              ? JSON.stringify({ balance: "100", error: "not available" })
-              : "<p>Rate per 1000 $1.00</p>"
-          )
-      )
+      vi.fn(async () => new Response("unavailable", { status: 503 }))
     );
-    expect(await fetchProviderPricing(endpoint, "synthetic-key", null)).toEqual(
-      { currency: null, perThousandEvidenceUrl: null }
-    );
-    expect(hasPerThousandTable(heading.replace("Rate per 1000", "Rate"))).toBe(
-      false
-    );
-  });
-
-  it("retains a previously known account currency on a temporary failure, but clears an unsupported new currency", async () => {
-    const other = new URL("https://provider.example/api/v2");
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () => new Response("private error", { status: 503 }))
+    expect((await fetchProviderPricing(endpoint, "test", "EUR")).currency).toBe(
+      "EUR"
     );
     expect(
-      (await fetchProviderPricing(other, "synthetic-key", "EUR")).currency
-    ).toBe("EUR");
+      (await fetchProviderPricing(endpoint, "test", null)).currency
+    ).toBeNull();
     vi.stubGlobal(
       "fetch",
       vi.fn(async () => new Response('{"currency":"XXX"}'))
     );
     expect(
-      (await fetchProviderPricing(other, "synthetic-key", "EUR")).currency
+      (await fetchProviderPricing(endpoint, "test", "EUR")).currency
     ).toBeNull();
   });
-
-  it("rejects oversized account responses and stops reading a large public page", async () => {
+  it("bounds account responses and cancels an oversized body", async () => {
     const cancel = vi.fn();
     vi.stubGlobal(
       "fetch",
-      vi.fn(async url =>
-        String(url).endsWith("/api/v2")
-          ? new Response(" ".repeat(8193) + '{"currency":"USD"}')
-          : new Response(
-              new ReadableStream({
-                start(controller) {
-                  controller.enqueue(new Uint8Array(600 * 1024).fill(32));
-                },
-                cancel,
-              })
-            )
+      vi.fn(
+        async () =>
+          new Response(
+            new ReadableStream({
+              start(controller) {
+                controller.enqueue(new Uint8Array(8193).fill(32));
+              },
+              cancel,
+            })
+          )
       )
     );
-    expect(await fetchProviderPricing(endpoint, "synthetic-key", null)).toEqual(
-      { currency: null, perThousandEvidenceUrl: null }
-    );
+    expect(
+      (await fetchProviderPricing(endpoint, "test", null)).currency
+    ).toBeNull();
     expect(cancel).toHaveBeenCalledOnce();
   });
-
-  it("applies the checked rate table only to this endpoint's standard quantity services", () => {
-    const snapshot = { currency: "INR", perThousandEvidenceUrl: evidence };
-    expect(
-      automaticSourcePricing({ type: "Default" }, endpoint.href, snapshot)
-    ).toEqual({
-      currency: "INR",
-      unit: "per_1000",
-      evidenceUrl: evidence,
-    });
-    for (const patch of [
-      { type: "Package" },
-      { type: "Subscriptions" },
-      { type: "Unknown" },
-      { type: "Default", unit: "unknown" },
-      { type: "Default", currency: "XXX" },
-    ])
-      expect(
-        automaticSourcePricing(patch, endpoint.href, snapshot).unit
-      ).toBeNull();
-    expect(
-      automaticSourcePricing(
-        { type: "Default" },
-        "https://other.example/api/v2",
-        snapshot
-      ).unit
-    ).toBeNull();
-    expect(
-      automaticSourcePricing({ type: "Default" }, endpoint.href, {
-        ...snapshot,
+  it("uses the SMM default for any provider without requiring optional public HTML evidence", () => {
+    for (const row of [
+      {},
+      { type: "Default" },
+      { type: "Custom Comments" },
+      { unit: "unknown" },
+    ]) {
+      const result = automaticSourcePricing(row, endpoint.href, {
+        currency: "USD",
         perThousandEvidenceUrl: null,
-      }).unit
-    ).toBeNull();
+      });
+      expect(result).toEqual({
+        currency: "USD",
+        unit: "per_1000",
+        evidenceUrl: endpoint.href,
+      });
+      expect(
+        hasPricingBasis({
+          priceCurrency: result.currency,
+          priceUnit: result.unit,
+        })
+      ).toBe(true);
+    }
+    const noCurrency = automaticSourcePricing({}, endpoint.href);
+    expect(noCurrency.currency).toBeNull();
     expect(
-      automaticSourcePricing({ type: "Default" }, endpoint.href, {
-        ...snapshot,
-        currency: null,
-      }).unit
-    ).toBeNull();
+      hasPricingBasis({
+        priceCurrency: noCurrency.currency,
+        priceUnit: noCurrency.unit,
+      })
+    ).toBe(false);
   });
-
-  it("uses explicit row currency and units instead of overriding them with account defaults", () => {
-    const result = automaticSourcePricing(
-      { currency: "EUR", unit: "each" },
-      endpoint.href,
-      { currency: "USD", perThousandEvidenceUrl: evidence }
-    );
-    expect(result).toEqual({
+  it("preserves explicit currencies and fixed packages while normalizing item rates exactly for presentation", () => {
+    expect(
+      automaticSourcePricing({ currency: "EUR", unit: "each" }, endpoint.href, {
+        currency: "USD",
+        perThousandEvidenceUrl: null,
+      })
+    ).toEqual({
       currency: "EUR",
       unit: "per_item",
       evidenceUrl: endpoint.href,
     });
+    expect(standardRate("0.00000001", "per_item")).toBe("0.00001");
+    expect(standardRate("1.234567890123456789", "per_item")).toBe(
+      "1234.567890123456789"
+    );
+    for (const type of ["Package", "Subscriptions"])
+      expect(
+        automaticSourcePricing({ type, currency: "USD" }, endpoint.href).unit
+      ).toBe("package");
     expect(
       automaticSourcePricing(
-        { type: "Package", currency: "EUR", unit: "each" },
+        { unit: "per month", currency: "USD" },
         endpoint.href
       ).unit
+    ).toBe("package");
+    expect(
+      automaticSourcePricing(
+        { type: "Default", min: "1", max: "1", currency: "USD" },
+        endpoint.href
+      ).unit
+    ).toBe("package");
+  });
+  it("quotes legacy SMM rows with the same exact arithmetic as current rows", () => {
+    const row = {
+      priceCurrency: "USD",
+      priceUnit: null,
+      priceAmount: 1.2346,
+      sourceRate: "1.23456789",
+      catalogueListing: "api_source",
+      min: 1,
+      max: 100000,
+    };
+    expect(quantityQuoteExact(row, 2500)).toBe("3.086419725");
+    expect(quantityQuoteExact({ ...row, priceUnit: "per_1000" }, 2500)).toBe(
+      "3.086419725"
+    );
+    expect(
+      quantityQuoteExact({ ...row, priceCurrency: null }, 2500)
     ).toBeNull();
   });
 });

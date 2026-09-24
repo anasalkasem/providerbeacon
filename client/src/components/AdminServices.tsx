@@ -1,7 +1,6 @@
 import { ServiceScreeningPanel, ScreeningBadge } from "./ServiceScreening";
 import SourcedOfferImport from "./SourcedOfferImport";
-import SourcePricingEditor from "./SourcePricingEditor";
-import { formatPrice, unitLabel } from "@/i18n/pricing";
+import { formatPrice } from "@/i18n/pricing";
 import { useEffect, useState } from "react";
 import { useSearch } from "wouter";
 import { keepPreviousData } from "@tanstack/react-query";
@@ -344,7 +343,6 @@ export default function AdminServices({
                 {text("publishSelected")}
               </Button>
             )}
-            <SourcePricingEditor items={selected} disabled={busy || submitting} onSaved={refresh} />
           </div>
         </div>
       )}
@@ -499,7 +497,7 @@ export default function AdminServices({
                               : "unconfirmedPrice"
                           )}
                         </p>
-                        <p className="mt-1 text-xs text-muted-foreground">{unitLabel(locale, service)}</p>
+
                       </td>
                       <td className="px-4 py-4">
                         <Badge

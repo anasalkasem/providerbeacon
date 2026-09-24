@@ -17,7 +17,7 @@ export default function HomeComparison() {
   const { services, providerFor, isLoading, source, retry } =
     useMarketplaceData();
   // The existing home catalogue query is bounded and filters out orphan offers.
-  // Native prices keep their own units; no equivalence or lowest-price claim is made.
+  // Prices use the catalogue standard; no equivalence or lowest-price claim is made.
   const seenProviders = new Set<string>();
   const distinctProviders = services.filter(service => {
     if (seenProviders.has(service.providerId)) return false;

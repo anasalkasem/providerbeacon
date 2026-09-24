@@ -2,7 +2,7 @@ import { ArrowDown, Sparkles } from "lucide-react";
 import { useLocale } from "@/contexts/LocaleContext";
 import type { Service } from "@/data/marketplace";
 import { pageCopy } from "@/i18n/messages";
-import { formatPrice, unitLabel } from "@/i18n/pricing";
+import { formatPrice } from "@/i18n/pricing";
 import { priceHighlightCopy } from "@/i18n/priceHighlights";
 import { hasPricingBasis } from "../../../shared/pricing";
 
@@ -44,9 +44,7 @@ export default function OfferPrice({
       >
         {formatPrice(locale, service)}
       </bdi>
-      <p className="mt-1 text-xs leading-5 text-secondary-foreground">
-        {unitLabel(locale, service)}
-      </p>
+
       {(showLowest || service.featured) && (
         <div className="mt-2 flex flex-wrap gap-1.5 text-xs font-bold">
           {showLowest && (
@@ -76,7 +74,7 @@ export default function OfferPrice({
               ? t.currencyMissing
               : service.priceUnit === "package"
                 ? t.packageMissing
-                : t.unitMissing}
+                : t.currencyMissing}
           </p>
           <p className="mt-1">{t.unconfirmedHint}</p>
           {service.sourceUrl && (

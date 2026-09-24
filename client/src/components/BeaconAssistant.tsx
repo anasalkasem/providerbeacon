@@ -27,7 +27,6 @@ import { SignalMark } from "./orbit/SignalMark";
 import { usePageVisible } from "@/hooks/usePageVisible";
 import { useMessageAlerts } from "@/hooks/useMessageAlerts";
 import MessageAlertControls, { UnreadMessages } from "./MessageAlertControls";
-import { unitLabel } from "@/i18n/pricing";
 import { serviceName } from "./OfferEvidence";
 import OfferPrice from "./OfferPrice";
 import QuoteCost from "./QuoteCost";
@@ -501,9 +500,7 @@ function AssistantChat({ path }: { path: string }) {
                                   service={offer.service}
                                   lowest={offer.lowest}
                                 />
-                                <p className="text-xs text-muted-foreground">
-                                  {unitLabel(locale, offer.service)}
-                                </p>
+
                                 {turn.result!.quantity != null ? (
                                   <QuoteCost
                                     service={offer.service}

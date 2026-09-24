@@ -39,14 +39,14 @@ describe("provider directory price visibility", () => {
     const html = renderToStaticMarkup(<Providers />);
     expect(html).toContain("USD 0.123456");
     expect(html).toContain("EUR 8.25");
-    expect(html).toContain("per 1,000 units");
-    expect(html).toContain("per item");
+    expect(html).not.toContain("per 1,000 units");
+    expect(html).not.toContain("per item");
   });
 
   it("identifies unconfirmed pricing instead of inventing a zero or a USD basis", () => {
     state.providers = [{ ...state.providers[0], pricingSummary: { ranges: [], additionalGroups: 0, unconfirmedServices: 12 } }];
     const html = renderToStaticMarkup(<Providers />);
-    expect(html).toContain("Pricing basis not confirmed");
+    expect(html).toContain("Currency not confirmed");
     expect(html).not.toContain("USD 0");
   });
 

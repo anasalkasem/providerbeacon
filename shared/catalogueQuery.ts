@@ -62,10 +62,10 @@ export const catalogueInput = z
   .refine(
     value =>
       value.sort !== "price" ||
-      (value.priceCurrency && value.priceUnit && value.priceUnit !== "package"),
+      (value.priceCurrency && value.priceUnit !== "package"),
     {
       message:
-        "Price sorting requires the same currency and a non-package unit",
+        "Price sorting requires a selected currency and comparable services",
     }
   )
   .default({

@@ -105,7 +105,7 @@ export const reviewEditInput = reviewReference
       (Boolean(value.evidenceUrl) && hasPricingBasis(value)),
     {
       message:
-        "Price confirmation requires evidence, currency, unit and package scope when applicable",
+        "Price confirmation requires evidence, currency and package contents when applicable",
     }
   )
   .refine(value => value.maxOrder >= value.minOrder, {

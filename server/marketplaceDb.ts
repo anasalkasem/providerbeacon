@@ -1,3 +1,4 @@
+import { standardRate } from "../shared/pricing";
 import { visitorRatingSummaries } from "./providerRatings";
 import { savedLinkMetadata } from "./linkMetadata";
 import { currentProviderTelegram } from "./providerEntitlements";
@@ -13,7 +14,7 @@ import { retiredDemoSlugs, assertRealProviderSlug } from "./retiredDemoProviders
 import { auditEntries, localizedContent, priceSnapshots, providerRecords, serviceRecords, teamMembers } from "../drizzle/schema";
 import { getDb } from "./db";
 import { approvedService } from "./catalogueRules";
-import { cataloguePriceAmount, cataloguePriceUnit, confirmedSourcePricing, connectedApiCatalogue, syncedApiConnection, hasSourceCatalogueRecords, visibleCatalogueProvider, visibleCatalogueService } from "./apiCatalogue";
+import { cataloguePriceAmount, cataloguePriceUnit, sourceRateUnit, confirmedSourcePricing, connectedApiCatalogue, syncedApiConnection, hasSourceCatalogueRecords, visibleCatalogueProvider, visibleCatalogueService } from "./apiCatalogue";
 import { TRPCError } from "@trpc/server";
 import { adminProvidersInput, type AdminProvidersInput, catalogueInput, searchPattern, type CatalogueInput } from "../shared/catalogueQuery";
 
@@ -29,7 +30,7 @@ const publicServiceColumns = {
   externalId: serviceRecords.externalId, sourceRate: serviceRecords.sourceRate, reviewStatus: serviceRecords.reviewStatus,
   sourceCurrency: serviceRecords.sourceCurrency,
   sourcePriceUnit: serviceRecords.sourcePriceUnit, sourcePricingIdentity: serviceRecords.sourcePricingIdentity,
-  catalogueUnit: cataloguePriceUnit(), sourcePackageDescription: serviceRecords.sourcePackageDescription,
+  catalogueUnit: cataloguePriceUnit(), catalogueAmount: cataloguePriceAmount(), sourceBasis: sourceRateUnit(), sourcePackageDescription: serviceRecords.sourcePackageDescription,
   sourceUrl: serviceRecords.sourceUrl, providerWebsite: providerRecords.websiteUrl,
   apiListing: sql<boolean>`${serviceRecords.reviewStatus} = 'pending'`.mapWith(Boolean),
   category: serviceRecords.category, name: serviceRecords.name, priceAmount: serviceRecords.priceAmount,
@@ -113,7 +114,7 @@ async function buildMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       input.priceCurrency ? or(
         and(eq(serviceRecords.reviewStatus, "pending"), eq(serviceRecords.sourceCurrency, input.priceCurrency)),
         and(eq(serviceRecords.reviewStatus, "approved"), eq(serviceRecords.priceCurrency, input.priceCurrency))) : undefined,
-      input.priceUnit ? eq(cataloguePriceUnit(), input.priceUnit) : undefined,
+      input.priceUnit ? eq(cataloguePriceUnit(), input.priceUnit === "per_item" ? "per_1000" : input.priceUnit) : input.sort === "price" ? eq(cataloguePriceUnit(), "per_1000") : undefined,
       input.quantity ? and(sql`${serviceRecords.minOrder} <= ${input.quantity}`, sql`${serviceRecords.maxOrder} >= ${input.quantity}`) : undefined,
       input.quality ? eq(serviceRecords.quality, input.quality) : undefined,
       input.refillOnly ? inArray(serviceRecords.refillMode, ["manual", "automatic", "lifetime"]) : undefined,
@@ -172,13 +173,13 @@ async function buildMarketplaceSnapshot(raw?: Partial<CatalogueInput>) {
       // Provider API IDs are only unique within that provider. The database ID is global.
       ...publicOfferMetadata(row),
       historyKey: priceHistoryKey(row),
-      sourceRate: row.apiListing ? row.sourceRate : null,
+      sourceRate: row.apiListing ? standardRate(row.sourceRate ?? String(row.priceAmount), row.sourceBasis) : null,
       catalogueListing: row.apiListing ? "api_source" as const : "reviewed" as const,
       sourceServiceId: row.sourceKind === "provider_api" ? row.externalId : publicOfferMetadata(row).sourceServiceId,
       sourceUrl: row.apiListing ? safeSourceWebsite(row.providerWebsite, row.sourceUrl) : publicOfferMetadata(row).sourceUrl,
       id: `service-${row.id}`, providerId: `provider-${row.providerId}`, platform: row.platform, category: row.category,
-      name: row.name, priceAmount: Number(row.apiListing ? row.sourceRate : row.priceAmount), priceCurrency: row.apiListing ? row.sourceCurrency : row.priceCurrency,
-      priceUnit: row.catalogueUnit, packageDescription: row.apiListing ? row.sourcePackageDescription : row.packageDescription, countryCode: row.countryCode, min: row.minOrder, max: row.maxOrder,
+      name: row.name, priceAmount: Number(row.catalogueAmount), priceCurrency: row.apiListing ? row.sourceCurrency : row.priceCurrency,
+      priceUnit: row.catalogueUnit, packageDescription: row.apiListing ? (row.sourcePackageDescription ?? (row.catalogueUnit === "package" ? row.name : null)) : row.packageDescription, countryCode: row.countryCode, min: row.minOrder, max: row.maxOrder,
       startTime: durationLabel(row.startMinutesMin, row.startMinutesMax),
       delivery: durationLabel(row.deliveryMinutesMin, row.deliveryMinutesMax),
       refill: row.refillMode === "unknown" ? "—" : row.refillMode === "lifetime" ? "Lifetime guarantee" : row.refillMode === "none" ? "No refill" : row.refillDays == null ? "Refill available; duration unspecified" : `${row.refillDays}-day ${row.refillMode === "automatic" ? "auto " : ""}refill`,

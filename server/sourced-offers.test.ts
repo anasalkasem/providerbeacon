@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { publicEvidenceUrl, publicOfferMetadata, sameSourceHost, sourcedBatchInput } from "../shared/sourcedOffers";
-import { formatPrice, unitLabel } from "../client/src/i18n/pricing";
+import { formatPrice } from "../client/src/i18n/pricing";
 import { comparablePrices, quantityQuote } from "../shared/pricing";
 
 describe("wholesale SMM source offers", () => {
@@ -70,7 +70,5 @@ describe("source-attributed monthly offers", () => {
     const row = { priceAmount: 3000, priceCurrency: "USD", priceUnit: "package" as const, billingCycle: "monthly" as const, priceType: "from" as const };
     expect(formatPrice("en", row)).toBe("From USD 3,000.00");
     expect(formatPrice("ar", row)).toContain("ابتداءً من");
-    expect(unitLabel("en", row)).toContain("per month");
-    expect(unitLabel("ar", row)).toContain("شهريًا");
   });
 });

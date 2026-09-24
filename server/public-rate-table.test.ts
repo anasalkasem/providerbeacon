@@ -41,7 +41,7 @@ describe("service-specific public pricing evidence", () => {
     expect(automaticSourcePricing(source, endpoint.href, snapshot())).toEqual({
       currency: "EGP",
       unit: "per_1000",
-      evidenceUrl: "https://foollo.com/en/services",
+      evidenceUrl: endpoint.href,
     });
     expect(
       automaticSourcePricing(
@@ -59,45 +59,12 @@ describe("service-specific public pricing evidence", () => {
     ).toBe("per_1000");
   });
 
-  it("never borrows a header for a package, single purchase, subscription or mismatched service", () => {
-    for (const patch of [
-      { service: 1588 },
-      { name: "Different service" },
-      { type: "Package" },
-      { type: "Subscriptions" },
-      { type: "Unknown" },
-      { min: "1", max: "1" },
-      { unit: "per month" },
-      { currency: "XXX" },
-      { min: "10", max: "2" },
-      { min: "1.5" },
-      { max: "invalid" },
-    ])
-      expect(
-        automaticSourcePricing(
-          { ...source, ...patch },
-          endpoint.href,
-          snapshot()
-        ).unit
-      ).toBeNull();
-    expect(
-      automaticSourcePricing(source, "https://other.example/api/v2", snapshot())
-        .unit
-    ).toBeNull();
-    expect(
-      automaticSourcePricing(source, endpoint.href, {
-        ...snapshot(),
-        currency: null,
-      }).unit
-    ).toBeNull();
-    // An explicit row-level unit takes precedence over the general table header.
-    expect(
-      automaticSourcePricing(
-        { ...source, unit: "each", min: 1, max: 1 },
-        endpoint.href,
-        snapshot()
-      ).unit
-    ).toBe("per_item");
+  it("keeps source currency and explicit exceptions independent of optional public-table matches", () => {
+    expect(automaticSourcePricing({...source, service:1588, name:"Another service"}, endpoint.href, snapshot()).unit).toBe("per_1000");
+    for(const type of ["Package","Subscriptions"])
+      expect(automaticSourcePricing({...source,type},endpoint.href,snapshot()).unit).toBe("package");
+    expect(automaticSourcePricing({...source,unit:"each"},endpoint.href,snapshot()).unit).toBe("per_item");
+    expect(automaticSourcePricing({...source,currency:"XXX"},endpoint.href,snapshot()).currency).toBeNull();
   });
 
   it("rejects ambiguous duplicate IDs, contradictory columns, prose and nested description tables", () => {
@@ -157,7 +124,7 @@ describe("service-specific public pricing evidence", () => {
       expect(publicRateTableUrl(new URL(url))).toBeNull();
   });
 
-  it("fetches public rows without credentials and persists only currency and identity hashes", async () => {
+  it("does not require fetching a public table and persists only authenticated currency", async () => {
     const fetcher = vi.fn(async (url: URL | string, init?: RequestInit) => {
       if (String(url) === endpoint.href)
         return new Response(
@@ -175,11 +142,11 @@ describe("service-specific public pricing evidence", () => {
       "synthetic-secret",
       null
     );
-    expect(result).toEqual(snapshot());
+    expect(result).toEqual({currency:"EGP",perThousandEvidenceUrl:null});
     expect(JSON.stringify(result)).not.toMatch(
       /12345|sensitive|synthetic|Personal|neverExecute|<script/
     );
-    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
   it("does not use partial oversized tables or follow redirects, and keeps import available", async () => {
