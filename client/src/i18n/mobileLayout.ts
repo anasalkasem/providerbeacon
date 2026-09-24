@@ -5,7 +5,7 @@ export const mobileLayoutCopy = {
     providers: "المزودون",
     offers: "العروض",
     vip: "مزودو VIP",
-    filters: "الفلاتر والكمية",
+    filters: "الفلاتر",
     details: "تفاصيل العرض",
   },
   en: {
@@ -14,7 +14,7 @@ export const mobileLayoutCopy = {
     providers: "Providers",
     offers: "Offers",
     vip: "VIP providers",
-    filters: "Filters and quantity",
+    filters: "Filters",
     details: "Offer details",
   },
   es: {
@@ -23,7 +23,7 @@ export const mobileLayoutCopy = {
     providers: "Proveedores",
     offers: "Ofertas",
     vip: "VIP",
-    filters: "Filtros y cantidad",
+    filters: "Filtros",
     details: "Detalles de la oferta",
   },
   hi: {
@@ -32,7 +32,7 @@ export const mobileLayoutCopy = {
     providers: "प्रदाता",
     offers: "ऑफ़र",
     vip: "VIP प्रदाता",
-    filters: "फ़िल्टर और मात्रा",
+    filters: "फ़िल्टर",
     details: "ऑफ़र विवरण",
   },
   zh: {
@@ -41,7 +41,7 @@ export const mobileLayoutCopy = {
     providers: "供应商",
     offers: "优惠",
     vip: "VIP 供应商",
-    filters: "筛选和数量",
+    filters: "筛选",
     details: "优惠详情",
   },
 } as const;
