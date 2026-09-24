@@ -62,9 +62,9 @@ export const discoveryEn = {
   back: "Back to services",
   quoteTitle: "Put your quotes on the same page.",
   quoteBody:
-    "Enter up to three quotes for the same work and currency. These are your inputs, not verified ProviderBeacon prices.",
+    "Enter the total agreed price for up to three quotes covering the same work and currency. Include the full quantity or service period in each total. These are your inputs, not verified ProviderBeacon prices.",
   quoteName: "Provider or quote name",
-  amount: "Quoted amount",
+  amount: "Total quoted price",
   quantity: "Quantity",
   currency: "Currency",
   package: "One defined package",
@@ -159,9 +159,9 @@ export const discoveryAr: typeof discoveryEn = {
   back: "العودة إلى الخدمات",
   quoteTitle: "ضع عروضك في مقارنة واحدة.",
   quoteBody:
-    "أدخل حتى ثلاثة عروض للعمل نفسه وبعملة موحّدة. هذه مدخلاتك أنت، وليست أسعارًا موثقة من ProviderBeacon.",
+    "أدخل إجمالي السعر المتفق عليه لثلاثة عروض كحد أقصى للعمل نفسه وبعملة موحّدة، شاملًا الكمية أو مدة الخدمة كاملة. هذه مدخلاتك أنت، وليست أسعارًا موثقة من ProviderBeacon.",
   quoteName: "اسم المزود أو العرض",
-  amount: "المبلغ المعروض",
+  amount: "إجمالي سعر العرض",
   quantity: "الكمية",
   currency: "العملة",
   package: "باقة واحدة محددة",

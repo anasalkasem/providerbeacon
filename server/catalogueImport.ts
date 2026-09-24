@@ -185,8 +185,7 @@ export async function applyCatalogueBatch(
     if (
       existing &&
       !sourceChanged &&
-      (existing.sourcePriceUnit === unit ||
-        (existing.sourcePriceUnit == null && unit === "per_1000"))
+      (existing.sourcePriceUnit === unit || existing.sourcePriceUnit == null)
     ) {
       const metadata = {
         sourcePriceUnit: unit,

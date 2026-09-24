@@ -10,16 +10,13 @@ export default function QuoteWorkbench() {
   const { locale } = useLocale();
   const t = discoveryText(locale);
   const [currency, setCurrency] = useState("USD");
-  const [quantity, setQuantity] = useState("1000");
   const [quotes, setQuotes] = useState([
     { name: "", amount: "" },
     { name: "", amount: "" },
     { name: "", amount: "" },
   ]);
   const [matched, setMatched] = useState(false);
-  const totals = quotes.map(q =>
-    quoteTotal(q.amount, Number(quantity), "per_1000")
-  );
+  const totals = quotes.map(q => quoteTotal(q.amount, 1, "package"));
   const valid = totals.filter((n): n is number => n !== null);
   const lowest = matched && valid.length >= 2 ? Math.min(...valid) : null;
   const change = (i: number, patch: Partial<(typeof quotes)[number]>) =>
@@ -38,7 +35,7 @@ export default function QuoteWorkbench() {
         <p className="mt-4 max-w-3xl text-lg leading-8 text-secondary-foreground">
           {t.quoteBody}
         </p>
-        <div className="mt-8 grid gap-4 rounded-2xl border border-border bg-card p-5 sm:grid-cols-2">
+        <div className="mt-8 max-w-sm rounded-2xl border border-border bg-card p-5">
           <label className="text-sm font-bold">
             {t.currency}
             <select
@@ -50,19 +47,6 @@ export default function QuoteWorkbench() {
                 <option key={c}>{c}</option>
               ))}
             </select>
-          </label>
-          <label className="text-sm font-bold">
-            {t.quantity}
-            <input
-              className={field}
-              type="number"
-              dir="ltr"
-              min="1"
-              max="1000000"
-              step="1"
-              value={quantity}
-              onChange={e => setQuantity(e.target.value)}
-            />
           </label>
         </div>
         <div className="mt-6 grid gap-5 lg:grid-cols-3">
@@ -143,7 +127,6 @@ export default function QuoteWorkbench() {
                 { name: "", amount: "" },
               ]);
               setMatched(false);
-              setQuantity("1000");
             }}
           >
             <RotateCcw className="size-4" />

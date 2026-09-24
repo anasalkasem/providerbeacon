@@ -661,11 +661,11 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     expect(before.every((row: any) => !row.pricingConfirmed && row.reviewStatus === "pending")).toBe(true);
   });
 
-  it("preserves reviewed prices and publication during legacy pricing metadata refresh", async () => {
-    const [source] = await importUsdSource();
+  it.each(["per_1000", "package", "per_item"] as const)("preserves reviewed prices and publication during legacy %s metadata refresh", async basis => {
+    const [source] = await importUsdSource([{ ...payload[0], type: basis === "package" ? "Package" : "Default", ...(basis === "per_item" ? {unit:"each"} : {}) } as typeof payload[0]]);
     await state.db.update(serviceRecords).set({
       sourcePriceUnit: null, sourcePricingMode: "auto", sourcePricingEvidenceUrl: "https://provider.example/services",
-      priceAmount: "0.0010", priceCurrency: "EUR", priceUnit: "per_item", pricingConfirmed: true,
+      priceAmount: "0.0010", priceCurrency: "EUR", priceUnit: basis === "package" ? "package" : "per_item", packageDescription: basis === "package" ? "Editorially verified scope" : null, pricingConfirmed: true,
       policyReviewed: true, status: "active", reviewStatus: "approved", incomplete: false,
       evidenceUrl: "https://provider.example/reviewed", reviewedAt: new Date(), reviewedByUserId: actorId,
       reviewReason: "Approved operator correction",
@@ -674,8 +674,8 @@ describe.skipIf(!testUrl)("catalogue acceptance against MySQL", () => {
     const result = await sync();
     const after = (await getServiceReview(source.id)).service;
     expect(result.reviewCount).toBe(0);
-    for (const key of ["priceAmount", "priceCurrency", "priceUnit", "pricingConfirmed", "policyReviewed", "status", "reviewStatus", "incomplete", "evidenceUrl", "reviewedAt", "reviewedByUserId", "reviewReason"] as const) expect(after[key]).toEqual(before[key]);
-    expect(after).toMatchObject({ sourcePriceUnit: "per_1000", sourcePricingEvidenceUrl: "https://provider.example/api/v2", revision: before.revision + 1 });
+    for (const key of ["priceAmount", "priceCurrency", "priceUnit", "packageDescription", "pricingConfirmed", "policyReviewed", "status", "reviewStatus", "incomplete", "evidenceUrl", "reviewedAt", "reviewedByUserId", "reviewReason"] as const) expect(after[key]).toEqual(before[key]);
+    expect(after).toMatchObject({ sourcePriceUnit: basis, sourcePricingEvidenceUrl: "https://provider.example/api/v2", revision: before.revision + 1 });
     expect((await state.db.select().from(priceSnapshots))).toHaveLength(1);
     expect((await state.db.select().from(auditEntries).where(eq(auditEntries.action, "service.source.pricing.standardize")))).toHaveLength(1);
     await sync();
